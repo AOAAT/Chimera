@@ -352,6 +352,7 @@ GameObject:
   - component: {fileID: 923019978}
   - component: {fileID: 923019977}
   - component: {fileID: 923019976}
+  - component: {fileID: 923019979}
   m_Layer: 0
   m_Name: '[Workshop Desk]'
   m_TagString: Untagged
@@ -452,6 +453,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &923019979
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 923019975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93b47534e648d18408a572064778e1b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  UnitName: "\u5E95\u76D81"
+  DebugTotalStats:
+  - StatID: 0
+    Value: 180
+  - StatID: 1
+    Value: 100
+  - StatID: 3
+    Value: 2
+  - StatID: 5
+    Value: 17
+  - StatID: 6
+    Value: 32
+  - StatID: 7
+    Value: 47
+  - StatID: 10
+    Value: 41
+  - StatID: 4
+    Value: 50
+  DebugTags: []
+  TotalECAMechanicsCount: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

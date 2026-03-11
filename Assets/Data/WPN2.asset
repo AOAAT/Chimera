@@ -18,7 +18,15 @@ MonoBehaviour:
   ComponentIcon: {fileID: 21300000, guid: c169f21742889604ca515a0c6473a5b3, type: 3}
   Type: 1
   Tags: []
-  BaseStats: []
+  BaseStats:
+  - StatID: 5
+    Value: 12
+  - StatID: 6
+    Value: 31
+  - StatID: 7
+    Value: 41
+  - StatID: 10
+    Value: 41
   ECA_Mechanics: []
   AnchorOffset: {x: -0.692866, y: -0.055426136}
   BaseRotationOffset: 90

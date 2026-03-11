@@ -10,6 +10,21 @@ public enum ComponentType
     Factory,    // 工厂
     Movement    // 移动组件（如腿部、履带）
 }
+// 👇 【新增】这是你的“全局属性字典”！以后有新属性，直接在这张表里往下加！
+public enum StatType
+{
+    AddedHP,         // 提供的血量加成
+    AddedAP,         // 提供的护甲加成
+    PowerCost,       // 耗电量加成
+    AddedMass,       // 质量加成
+    EnginePower,     // 动力加成
+    MaxDamage,       // 攻击力上限（武器组件）
+    MinDamage,       // 攻击力下限（武器组件）
+    MaxRange,        // 最大攻击范围（武器组件）
+    MinRange,        // 最小攻击范围（武器组件）
+    AttackSpeed,     // 攻击速度（武器部件）
+    CriticalChance,  // 暴击率（武器部件）
+}
 
 [CreateAssetMenu(fileName = "NewComponent", menuName = "Chimera Protocol/Component Data")]
 public class ComponentDataSO : ScriptableObject
@@ -48,7 +63,7 @@ public class ComponentDataSO : ScriptableObject
 [System.Serializable]
 public struct StatEntry
 {
-    public string StatID;
+    public StatType StatID; // 以前这里是 string，现在变成了下拉菜单！
     public float Value;
 }
 
