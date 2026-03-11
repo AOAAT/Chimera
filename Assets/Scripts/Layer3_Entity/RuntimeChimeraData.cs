@@ -9,6 +9,10 @@ public class RuntimeWeapon
     public Dictionary<StatType, float> WeaponStats = new Dictionary<StatType, float>();
     public List<ECABlock> WeaponMechanics = new List<ECABlock>();
 
+    public WeaponDeliveryType DeliveryType;
+    public WeaponTargetType TargetType;
+    public GameObject ProjectilePrefab;
+
     public float GetStat(StatType statID)
     {
         return WeaponStats.ContainsKey(statID) ? WeaponStats[statID] : 0f;
@@ -58,13 +62,17 @@ public class RuntimeChimeraData
 
             // 标签全局汇总
             foreach (var tag in comp.Tags) AllTags.Add(tag);
-
             if (comp.Type == ComponentType.Weapon)
             {
                 // 如果是武器，创建独立实体！
                 RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = comp.ComponentName };
 
-                // 将机制塞给武器自己（如果未来有全局光环，可以另做判定）
+                // 👇【核心修复 1】：把图纸里的这三个特殊机制，真真切切地印到运行实体上！
+                newWeapon.DeliveryType = comp.DeliveryType;
+                newWeapon.TargetType = comp.TargetType;
+                newWeapon.ProjectilePrefab = comp.ProjectilePrefab;
+
+                // 将机制塞给武器自己
                 if (comp.ECA_Mechanics != null) newWeapon.WeaponMechanics.AddRange(comp.ECA_Mechanics);
 
                 // 处理属性：分离全局与局部
@@ -115,6 +123,7 @@ public class RuntimeChimeraData
     }
 
     // 智能属性过滤器：决定哪些属性不能被融合
+    // 智能属性过滤器：决定哪些属性不能被融合
     private bool IsWeaponSpecificStat(StatType type)
     {
         return type == StatType.MaxDamage ||
@@ -122,9 +131,12 @@ public class RuntimeChimeraData
                type == StatType.MaxRange ||
                type == StatType.MinRange ||
                type == StatType.AttackSpeed ||
-               type == StatType.CriticalChance;
+               type == StatType.CriticalChance ||
+               // 👇【核心修复 2】：把新加的三个子弹属性也加入武器的“私有财产”白名单！
+               type == StatType.ExplosionRadius ||
+               type == StatType.MultiShotCount ||
+               type == StatType.ProjectileSpeed;
     }
-
     public float GetGlobalStat(StatType statID)
     {
         return GlobalStats.ContainsKey(statID) ? GlobalStats[statID] : 0f;

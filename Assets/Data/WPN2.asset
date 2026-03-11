@@ -19,15 +19,26 @@ MonoBehaviour:
   Type: 1
   Tags: []
   BaseStats:
+  - StatID: 9
+    Value: 100
   - StatID: 5
-    Value: 12
+    Value: 50
   - StatID: 6
-    Value: 31
+    Value: 40
   - StatID: 7
-    Value: 41
+    Value: 30
+  - StatID: 8
+    Value: 0
   - StatID: 10
-    Value: 41
+    Value: 100
+  - StatID: 12
+    Value: 2
+  - StatID: 11
+    Value: 30
   ECA_Mechanics: []
   AnchorOffset: {x: -0.692866, y: -0.055426136}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 0.9
+  DeliveryType: 0
+  TargetType: 2
+  ProjectilePrefab: {fileID: 0}

@@ -19,11 +19,12 @@ public class AssemblyStatMonitor : MonoBehaviour
     [Header("=== 独立武器阵列 (战斗时将分别开火) ===")]
     [SerializeField]
     private List<WeaponDebugView> EquippedWeapons = new List<WeaponDebugView>();
-
     [System.Serializable]
     public struct WeaponDebugView
     {
         public string WeaponName;
+        public WeaponDeliveryType DeliveryType; // 新增：显示近战/远程
+        public WeaponTargetType TargetType;     // 新增：显示单体/群伤
         public List<StatEntry> Stats;
     }
 
@@ -35,7 +36,44 @@ public class AssemblyStatMonitor : MonoBehaviour
     {
         setupHelper = GetComponent<ChassisSetupHelper>();
     }
+    private void Start()
+    {
+        // 确保只有在真正运行游戏时才执行
+        if (Application.isPlaying)
+        {
+            // 👇【核心修复】：在点火瞬间，命令车间根据图纸，把零件在游戏里真实地造出来！
+            setupHelper.UpdateVisuals();
 
+            // 1. 确保最新数据已计算完毕
+            CalculateTotalLoad();
+
+            // 2. 激活底盘的受击系统
+            DamageReceiver receiver = GetComponent<DamageReceiver>();
+            if (receiver != null)
+            {
+                receiver.Initialize(Final_MaxHP, Final_MaxAP);
+            }
+
+            // 3. 自动扫描并为武器“通电”！
+            int weaponDataIndex = 0;
+            for (int i = 0; i < setupHelper.EquippedComponents.Length; i++)
+            {
+                var comp = setupHelper.EquippedComponents[i];
+                if (comp != null && comp.Type == ComponentType.Weapon)
+                {
+                    // 因为上面调用了 UpdateVisuals，这里的转轴已经变成了真实存在的物理实体！
+                    Transform hinge = transform.Find($"PREVIEW_HINGE_[{i}]");
+                    if (hinge != null)
+                    {
+                        WeaponModule weaponScript = hinge.gameObject.AddComponent<WeaponModule>();
+                        weaponScript.Initialize(runtimeData.EquippedWeapons[weaponDataIndex]);
+                        Debug.Log($"【系统自检】插槽 [{i}] 的武器 ({comp.ComponentName}) 已通电并上线！");
+                    }
+                    weaponDataIndex++;
+                }
+            }
+        }
+    }
     private void Update()
     {
         if (!Application.isPlaying && setupHelper != null)
@@ -60,7 +98,14 @@ public class AssemblyStatMonitor : MonoBehaviour
         EquippedWeapons.Clear();
         foreach (var weapon in runtimeData.EquippedWeapons)
         {
-            var wView = new WeaponDebugView { WeaponName = weapon.WeaponName, Stats = new List<StatEntry>() };
+            // 👇【UI 修复 2】：读取实体里的状态并显示在界面上！
+            var wView = new WeaponDebugView
+            {
+                WeaponName = weapon.WeaponName,
+                DeliveryType = weapon.DeliveryType,
+                TargetType = weapon.TargetType,
+                Stats = new List<StatEntry>()
+            };
             foreach (var kvp in weapon.WeaponStats)
             {
                 wView.Stats.Add(new StatEntry { StatID = kvp.Key, Value = kvp.Value });

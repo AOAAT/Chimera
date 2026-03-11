@@ -85,7 +85,14 @@ public class ChassisSetupHelper : MonoBehaviour
 
             // 1. 生成转轴
             GameObject hingeObj = new GameObject($"PREVIEW_HINGE_[{i}]");
-            hingeObj.hideFlags = HideFlags.DontSave;
+
+            if (!Application.isPlaying)
+            {
+                // 如果没运行游戏，它是全息投影，不保存
+                hingeObj.hideFlags = HideFlags.DontSave;
+            }
+            // 如果正在运行游戏，它就是真实的物理节点，永远存在！
+
             hingeObj.transform.SetParent(this.transform);
 
             // 2. 生成贴图

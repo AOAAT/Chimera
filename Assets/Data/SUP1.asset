@@ -23,3 +23,6 @@ MonoBehaviour:
   AnchorOffset: {x: 0.008905717, y: -0.0427356}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
+  DeliveryType: 1
+  TargetType: 0
+  ProjectilePrefab: {fileID: 0}
