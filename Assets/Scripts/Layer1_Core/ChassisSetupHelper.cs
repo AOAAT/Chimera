@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -13,18 +14,27 @@ public class ChassisSetupHelper : MonoBehaviour
     [Range(0.1f, 10f)]
     public float GlobalVisualScale = 1.0f;
 
-    [Header("实体预览调试")]
-    public ComponentDataSO TestComponent;
-    public int TestSlotIndex = 0;
+    [Header("多组件装配阵列 (自动与底盘插槽同步)")]
+    // 用数组来接收多个组件
+    public ComponentDataSO[] EquippedComponents = new ComponentDataSO[0];
 
+    // 用列表来管理生成的多个预览转轴
     [SerializeField, HideInInspector]
-    private GameObject previewObject;
+    private List<GameObject> previewObjects = new List<GameObject>();
 
     private SpriteRenderer chassisRenderer;
     private bool needsUpdate = false;
 
     private void OnValidate()
     {
+        // 【智能阵列同步】：自动检测底盘有几个插槽，就给你开几个测试框
+        if (TargetChassis != null && TargetChassis.Sockets != null)
+        {
+            if (EquippedComponents.Length != TargetChassis.Sockets.Count)
+            {
+                System.Array.Resize(ref EquippedComponents, TargetChassis.Sockets.Count);
+            }
+        }
         needsUpdate = true;
     }
 
@@ -32,10 +42,7 @@ public class ChassisSetupHelper : MonoBehaviour
     {
         if (!Application.isPlaying)
         {
-            // 【核心修复】：在编辑器模式下，每帧实时同步位置和角度！
-            // 无论你在哪里改了数据，转轴和贴图都会立刻响应，无需重建实体。
             SyncPreviewTransforms();
-
             if (needsUpdate)
             {
                 UpdateVisuals();
@@ -48,7 +55,7 @@ public class ChassisSetupHelper : MonoBehaviour
     {
         if (TargetChassis == null)
         {
-            ClearPreview();
+            ClearPreviews();
             return;
         }
 
@@ -61,70 +68,87 @@ public class ChassisSetupHelper : MonoBehaviour
 
     private void HandleComponentPreviewSafe()
     {
-        if (TestComponent == null || TargetChassis.Sockets == null || TestSlotIndex >= TargetChassis.Sockets.Count)
+        ClearPreviews();
+
+        if (TargetChassis.Sockets == null) return;
+
+        // 遍历所有插槽，如果该槽位填了组件，就生成实体
+        for (int i = 0; i < TargetChassis.Sockets.Count; i++)
         {
-            ClearPreview();
-            return;
+            // 塞一个空位，保证列表索引和插槽索引严格对应
+            previewObjects.Add(null);
+
+            // 如果这个格子没放组件数据，就跳过
+            if (i >= EquippedComponents.Length || EquippedComponents[i] == null) continue;
+
+            var comp = EquippedComponents[i];
+
+            // 1. 生成转轴
+            GameObject hingeObj = new GameObject($"PREVIEW_HINGE_[{i}]");
+            hingeObj.hideFlags = HideFlags.DontSave;
+            hingeObj.transform.SetParent(this.transform);
+
+            // 2. 生成贴图
+            GameObject spriteObj = new GameObject("Sprite_Visual");
+            spriteObj.transform.SetParent(hingeObj.transform);
+
+            SpriteRenderer cpRenderer = spriteObj.AddComponent<SpriteRenderer>();
+            cpRenderer.sprite = comp.ComponentIcon;
+
+            // 巧妙的层级处理：后装的组件稍微靠前一点，防止多组件Z轴闪烁
+            cpRenderer.sortingOrder = chassisRenderer.sortingOrder + 1 + i;
+
+            // 存入列表
+            previewObjects[i] = hingeObj;
         }
 
-        // 只有当你彻底更换了组件或插槽时，我们才执行“销毁重建”
-        ClearPreview();
-
-        // 1. 创建“转轴 (Hinge)”
-        previewObject = new GameObject("PREVIEW_HINGE");
-        previewObject.hideFlags = HideFlags.DontSave;
-        previewObject.transform.SetParent(this.transform);
-
-        // 2. 创建真正的“贴图实体”
-        GameObject spriteObj = new GameObject("Sprite_Visual");
-        spriteObj.transform.SetParent(previewObject.transform);
-
-        SpriteRenderer cpRenderer = spriteObj.AddComponent<SpriteRenderer>();
-        cpRenderer.sprite = TestComponent.ComponentIcon;
-        cpRenderer.sortingOrder = chassisRenderer.sortingOrder + 1;
-
-        // 生成后立刻同步一次位置
         SyncPreviewTransforms();
     }
 
-    // 【新增的核心公共函数】：不销毁物体，只刷新物理姿态
     public void SyncPreviewTransforms()
     {
-        if (previewObject == null || TargetChassis == null || TestComponent == null) return;
-        if (TargetChassis.Sockets == null || TestSlotIndex >= TargetChassis.Sockets.Count) return;
+        if (TargetChassis == null || TargetChassis.Sockets == null) return;
 
-        var slot = TargetChassis.Sockets[TestSlotIndex];
-
-        // 1. 实时同步“转轴”的角度和缩放
-        float totalAngle = slot.MountAngle + TestComponent.BaseRotationOffset;
-        previewObject.transform.localPosition = slot.LocalPosition;
-        previewObject.transform.localRotation = Quaternion.Euler(0, 0, totalAngle);
-
-        float finalScale = slot.DefaultComponentScale * TestComponent.VisualScaleMultiplier;
-        previewObject.transform.localScale = Vector3.one * finalScale;
-
-        // 2. 实时同步“贴图实体”的反向偏移
-        if (previewObject.transform.childCount > 0)
+        // 批量同步所有存活组件的位置和角度
+        for (int i = 0; i < TargetChassis.Sockets.Count; i++)
         {
-            Transform spriteObj = previewObject.transform.GetChild(0);
-            spriteObj.localPosition = -TestComponent.AnchorOffset;
+            if (i >= previewObjects.Count || previewObjects[i] == null) continue;
+            if (i >= EquippedComponents.Length || EquippedComponents[i] == null) continue;
 
-            // 防呆设计：如果你突然换了图片素材，也让它实时刷新
-            SpriteRenderer sr = spriteObj.GetComponent<SpriteRenderer>();
-            if (sr != null && sr.sprite != TestComponent.ComponentIcon)
+            var comp = EquippedComponents[i];
+            var slot = TargetChassis.Sockets[i];
+            var hingeObj = previewObjects[i];
+
+            // 同步转轴
+            float totalAngle = slot.MountAngle + comp.BaseRotationOffset;
+            hingeObj.transform.localPosition = slot.LocalPosition;
+            hingeObj.transform.localRotation = Quaternion.Euler(0, 0, totalAngle);
+
+            float finalScale = slot.DefaultComponentScale * comp.VisualScaleMultiplier;
+            hingeObj.transform.localScale = Vector3.one * finalScale;
+
+            // 同步图片反向偏移
+            if (hingeObj.transform.childCount > 0)
             {
-                sr.sprite = TestComponent.ComponentIcon;
+                Transform spriteObj = hingeObj.transform.GetChild(0);
+                spriteObj.localPosition = -comp.AnchorOffset;
+
+                SpriteRenderer sr = spriteObj.GetComponent<SpriteRenderer>();
+                if (sr != null && sr.sprite != comp.ComponentIcon)
+                {
+                    sr.sprite = comp.ComponentIcon;
+                }
             }
         }
     }
 
-    private void ClearPreview()
+    private void ClearPreviews()
     {
-        if (previewObject != null)
+        foreach (var obj in previewObjects)
         {
-            DestroyImmediate(previewObject);
-            previewObject = null;
+            if (obj != null) DestroyImmediate(obj);
         }
+        previewObjects.Clear();
     }
 
     private void OnDrawGizmos()
@@ -134,10 +158,14 @@ public class ChassisSetupHelper : MonoBehaviour
         for (int i = 0; i < TargetChassis.Sockets.Count; i++)
         {
             var slot = TargetChassis.Sockets[i];
-            bool isTesting = (i == TestSlotIndex);
+
+            // 检查这个插槽上有没有装东西
+            bool isEquipped = (i < EquippedComponents.Length && EquippedComponents[i] != null);
 
             Vector3 worldPos = transform.TransformPoint(slot.LocalPosition);
-            Gizmos.color = isTesting ? Color.green : Color.cyan;
+
+            // 如果装了组件，圆圈变绿；空着就是青色
+            Gizmos.color = isEquipped ? Color.green : Color.cyan;
             Gizmos.DrawWireSphere(worldPos, 0.1f * GlobalVisualScale);
 
 #if UNITY_EDITOR
@@ -149,5 +177,5 @@ public class ChassisSetupHelper : MonoBehaviour
         }
     }
 
-    private void OnDisable() { ClearPreview(); }
+    private void OnDisable() { ClearPreviews(); }
 }
