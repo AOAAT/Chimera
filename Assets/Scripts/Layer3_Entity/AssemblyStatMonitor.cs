@@ -113,6 +113,10 @@ public class AssemblyStatMonitor : MonoBehaviour
 
         // 3. 刷新标签
         DebugTags.Clear();
-        foreach (var tag in runtimeData.AllTags) DebugTags.Add(tag);
+        // 👇【终极修复】：改为读取强类型的 Tags，并使用 .ToString() 翻译成文字显示！
+        foreach (var tag in runtimeData.Tags)
+        {
+            DebugTags.Add(tag.ToString());
+        }
     }
 }

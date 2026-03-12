@@ -8,6 +8,8 @@ public class ECAContext
     public float BaseDamage;          // 基础伤害
     public RuntimeWeapon SourceWeapon;// 伤害来源（武器数据）
     public bool IsCriticalHit;
+    public RuntimeChimeraData ChassisData;    // 这台机甲的运行时总线黑盒
+    public ComponentDataSO SourceComponentSO; // 提供这个光环的零件图纸（溯源用）
 }
 
 // 2. 动作基类：所有具体机制（扣血、爆炸、拉人）的祖宗

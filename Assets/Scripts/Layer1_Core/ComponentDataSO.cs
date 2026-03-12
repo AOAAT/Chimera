@@ -54,7 +54,10 @@ public class ComponentDataSO : ScriptableObject
     // 这就是你想要的下拉选择表！
     public ComponentType Type;
     // Tag 依然保留，用于极特殊的 ECA 逻辑判定（比如区分“血肉”还是“机械”）
-    public List<string> Tags = new List<string> { "Mechanical" };
+    // 👇【核心修复】：把旧的 List<string> Tags 删掉，换成这行！
+    [Header("=== 核心标识 ===")]
+    public List<ComponentTag> Tags = new List<ComponentTag>();
+
 
     [Header("核心数值池 (自由增删)")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
@@ -88,7 +91,12 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== ECA: 命中时触发 (On Hit) ===")]
     public List<ECAAction> OnHitActions = new List<ECAAction>();
 
-  
+    // 👇【全新插座】：装配期光环触发器
+    [Header("=== ECA: 装配期触发 (On Assemble) ===")]
+    public List<ECAAction> OnAssembleActions = new List<ECAAction>();
+
+
+
 }
 
 

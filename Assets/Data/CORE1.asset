@@ -25,3 +25,7 @@ MonoBehaviour:
   AnchorOffset: {x: -0.14762393, y: -0.2734787}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 0}
+  OnFireActions: []
+  OnHitActions: []

@@ -494,7 +494,7 @@ Transform:
   m_GameObject: {fileID: 923019975}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.75, y: -0.04, z: 0}
+  m_LocalPosition: {x: -4.09, y: 1.24, z: 0}
   m_LocalScale: {x: 0.6, y: 0.6, z: 0.6}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -513,11 +513,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
-  Final_MaxHP: 180
-  Final_MaxAP: 100
+  Final_MaxHP: 0
+  Final_MaxAP: 0
   Final_TotalPowerCost: 0
-  Final_TotalMass: 2
-  Final_TotalEnginePower: 50
+  Final_TotalMass: 0
+  Final_TotalEnginePower: 0
   EquippedWeapons:
   - WeaponName: "\u94BB\u5934"
     DeliveryType: 1
@@ -678,7 +678,7 @@ Transform:
   m_GameObject: {fileID: 1085117746}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.52, y: 2.95, z: 0}
+  m_LocalPosition: {x: -0.05, y: 2.37, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
