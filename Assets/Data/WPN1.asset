@@ -26,9 +26,9 @@ MonoBehaviour:
   - StatID: 6
     Value: 0
   - StatID: 7
-    Value: 150
+    Value: 70
   - StatID: 8
-    Value: 50
+    Value: 30
   - StatID: 13
     Value: 50
   - StatID: 12
@@ -47,3 +47,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
   - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
   OnAssembleActions: []
+  TargetingLogic: 0
+  MovementLogic: 0
+  SafeDodgeDistance: 8

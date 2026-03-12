@@ -95,7 +95,15 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== ECA: 装配期触发 (On Assemble) ===")]
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
 
+    // === 全新 AI 字典 ===
+    public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest }
+    public enum MovementStrategy { Active_Firepower, Active_Survival, Dodge }
 
+    // 在你的 ComponentDataSO 类中，找个合适的地方加上：
+    [Header("=== 核心组件独有 AI 设定 (仅当 Type 为 Core 时有效) ===")]
+    public TargetingStrategy TargetingLogic = TargetingStrategy.Nearest;
+    public MovementStrategy MovementLogic = MovementStrategy.Active_Firepower;
+    public float SafeDodgeDistance = 8f; // 躲避型专属：安全距离
 
 }
 

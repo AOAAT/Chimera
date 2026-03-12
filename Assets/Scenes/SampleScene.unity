@@ -400,6 +400,7 @@ GameObject:
   - component: {fileID: 923019976}
   - component: {fileID: 923019979}
   - component: {fileID: 923019980}
+  - component: {fileID: 923019981}
   m_Layer: 0
   m_Name: '[Workshop Desk]'
   m_TagString: Untagged
@@ -513,11 +514,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
-  Final_MaxHP: 0
-  Final_MaxAP: 0
+  Final_MaxHP: 180
+  Final_MaxAP: 100
   Final_TotalPowerCost: 0
-  Final_TotalMass: 0
-  Final_TotalEnginePower: 0
+  Final_TotalMass: 2
+  Final_TotalEnginePower: 85
   EquippedWeapons:
   - WeaponName: "\u94BB\u5934"
     DeliveryType: 1
@@ -529,14 +530,15 @@ MonoBehaviour:
     - StatID: 6
       Value: 0
     - StatID: 7
-      Value: 150
+      Value: 70
     - StatID: 8
-      Value: 50
+      Value: 30
     - StatID: 13
       Value: 50
     - StatID: 12
       Value: 1
-  DebugTags: []
+  DebugTags:
+  - Factory
 --- !u!114 &923019980
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -552,6 +554,22 @@ MonoBehaviour:
   isEnemy: 0
   CurrentHP: 0
   CurrentAP: 0
+--- !u!114 &923019981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 923019975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac98eeb9cb7695c409be4bbe2d3b0b71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CurrentSpeed: 0
+  MaxStamina: 0
+  CurrentStamina: 0
+  IsExhausted: 0
 --- !u!1 &1085117746
 GameObject:
   m_ObjectHideFlags: 0
@@ -602,6 +620,7 @@ MonoBehaviour:
   Speed: 10
   MeleeDamage: 15
   AttackInterval: 1.5
+  AttackRange: 1.5
 --- !u!114 &1085117749
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -678,7 +697,7 @@ Transform:
   m_GameObject: {fileID: 1085117746}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.05, y: 2.37, z: 0}
+  m_LocalPosition: {x: 5.25, y: 0.08, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -734,6 +753,7 @@ MonoBehaviour:
   Speed: 10
   MeleeDamage: 15
   AttackInterval: 1.5
+  AttackRange: 1.5
 --- !u!114 &1657384684
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -866,6 +886,7 @@ MonoBehaviour:
   Speed: 10
   MeleeDamage: 15
   AttackInterval: 1.5
+  AttackRange: 1.5
 --- !u!114 &1683398496
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using static ComponentDataSO;
 
 // 武器的运行时实体数据
 [System.Serializable]
@@ -32,6 +33,10 @@ public class RuntimeChimeraData
     public float TotalPowerCost { get; private set; }
     public float TotalMass { get; private set; }
     public float TotalEnginePower { get; private set; }
+
+    public TargetingStrategy TargetingLogic;
+    public MovementStrategy MovementLogic;
+    public float SafeDodgeDistance;
 
     public Dictionary<StatType, float> GlobalStats = new Dictionary<StatType, float>();
     public List<ComponentTag> Tags = new List<ComponentTag>(); // 强类型标签列表
@@ -93,6 +98,12 @@ public class RuntimeChimeraData
             }
             else
             {
+                if (comp.Type == ComponentType.Core)
+                {
+                    TargetingLogic = comp.TargetingLogic;
+                    MovementLogic = comp.MovementLogic;
+                    SafeDodgeDistance = comp.SafeDodgeDistance;
+                }
                 // 其他组件（核心、辅助、移动），所有机制和属性归属全局
                 if (comp.ECA_Mechanics != null) GlobalMechanics.AddRange(comp.ECA_Mechanics);
                 ProcessStats(comp.BaseStats, isWeaponLocal: false, null);

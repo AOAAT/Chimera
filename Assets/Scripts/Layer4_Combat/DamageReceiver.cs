@@ -5,6 +5,10 @@ public class DamageReceiver : MonoBehaviour
 {
     public bool isEnemy; // 用于区分阵营
 
+    // 👇【核心修复】：对外公开的属性上限，让 AI 大脑能顺利读取！
+    public float MaxHP { get; private set; }
+    public float MaxAP { get; private set; }
+
     [Header("实时状态 (运行时查看)")]
     public float CurrentHP;
     public float CurrentAP;
@@ -12,6 +16,10 @@ public class DamageReceiver : MonoBehaviour
     // 初始化血量和护甲
     public void Initialize(float maxHP, float maxAP)
     {
+        // 👇【核心修复】：在这里把传进来的上限值存起来！
+        MaxHP = maxHP;
+        MaxAP = maxAP;
+
         CurrentHP = maxHP;
         CurrentAP = maxAP;
     }
@@ -19,8 +27,7 @@ public class DamageReceiver : MonoBehaviour
     // 核心物理交互：接收伤害
     public void TakeDamage(float rawDamage, string sourceName)
     {
-
-       // Debug.LogWarning($"【抓内鬼】{gameObject.name} 受到伤害！来源:{sourceName}\n追踪路径:\n{StackTraceUtility.ExtractStackTrace()}");
+        // Debug.LogWarning($"【抓内鬼】{gameObject.name} 受到伤害！来源:{sourceName}\n追踪路径:\n{StackTraceUtility.ExtractStackTrace()}");
         if (CurrentHP <= 0) return; // 已经死了
 
         float finalDamage = rawDamage;

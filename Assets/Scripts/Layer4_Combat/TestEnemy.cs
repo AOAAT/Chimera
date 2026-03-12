@@ -3,49 +3,72 @@
 [RequireComponent(typeof(DamageReceiver))]
 public class TestEnemy : MonoBehaviour
 {
-    [Header("敌人内置数据")]
-    public float Speed = 20f; // 相当于 EnginePower
+    [Header("=== 敌人基础属性 ===")]
+    public float Speed = 2f;
     public float MeleeDamage = 15f;
     public float AttackInterval = 1.5f;
+    public float AttackRange = 1.5f; // 攻击距离提取出来
 
     private DamageReceiver myReceiver;
-    private DamageReceiver playerCore;
+    private DamageReceiver currentTarget; // 当前锁定的目标
     private float attackTimer;
 
     private void Start()
     {
         myReceiver = GetComponent<DamageReceiver>();
         myReceiver.isEnemy = true;
-        myReceiver.Initialize(100f, 50f); // 给它 100血，50甲
-
-        // 假设咱们的奇美拉挂载了 DamageReceiver 并且 isEnemy = false
-        // 为了白盒测试，它直接去抱玩家大腿
-        var all = FindObjectsOfType<DamageReceiver>();
-        foreach (var a in all) if (!a.isEnemy) playerCore = a;
+        myReceiver.Initialize(100f, 50f);
     }
 
     private void Update()
     {
-        if (myReceiver.CurrentHP <= 0 || playerCore == null || playerCore.CurrentHP <= 0) return;
+        if (myReceiver.CurrentHP <= 0) return;
 
-        float dist = Vector3.Distance(transform.position, playerCore.transform.position);
+        // 1. 实时索敌：每帧（或用计时器每隔0.5秒）寻找最近的玩家单位
+        FindNearestTarget();
 
-        // 假设它的近战攻击距离是 1.5 米
-        if (dist > 1.5f)
+        // 2. 如果场上一个玩家单位都没了，原地发呆或继续往左走（拆家）
+        if (currentTarget == null)
         {
-            // 移动：应用全局度量衡！
-            float realSpeed = Speed * CombatSandbox.Instance.SpeedMultiplier;
-            transform.position = Vector3.MoveTowards(transform.position, playerCore.transform.position, realSpeed * Time.deltaTime);
+            transform.Translate(Vector3.left * Speed * Time.deltaTime);
+            return;
         }
-        else
+
+        float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
+
+        if (dist > AttackRange)
         {
-            // 贴脸近战攻击
-            attackTimer -= Time.deltaTime;
-            if (attackTimer <= 0)
+            // 恢复度量衡限制！(加了一个防呆检测，万一场景里忘了放沙盒管理器也不至于报错)
+            float realSpeed = Speed;
+            if (CombatSandbox.Instance != null)
             {
-                playerCore.TakeDamage(MeleeDamage, "测试生化兽");
-                attackTimer = AttackInterval;
+                realSpeed *= CombatSandbox.Instance.SpeedMultiplier;
+            }
+
+            transform.position = Vector3.MoveTowards(transform.position, currentTarget.transform.position, realSpeed * Time.deltaTime);
+        }
+    }
+
+    // 👇 全新的智能索敌：寻找最近的非敌人单位！
+    private void FindNearestTarget()
+    {
+        var allReceivers = FindObjectsOfType<DamageReceiver>();
+        float minDistance = float.MaxValue;
+        DamageReceiver nearest = null;
+
+        foreach (var r in allReceivers)
+        {
+            // 必须是活着的，且是友军（玩家单位）
+            if (!r.isEnemy && r.CurrentHP > 0)
+            {
+                float d = Vector3.Distance(transform.position, r.transform.position);
+                if (d < minDistance)
+                {
+                    minDistance = d;
+                    nearest = r;
+                }
             }
         }
+        currentTarget = nearest;
     }
 }

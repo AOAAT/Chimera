@@ -53,6 +53,13 @@ public class AssemblyStatMonitor : MonoBehaviour
                 receiver.Initialize(Final_MaxHP, Final_MaxAP);
             }
 
+            ChimeraAIController aiController = GetComponent<ChimeraAIController>();
+            if (aiController != null)
+            {
+                aiController.Initialize(runtimeData);
+                Debug.Log($"【系统自检】机甲大脑已通电！当前移速: {aiController.CurrentSpeed}，耐力: {aiController.MaxStamina}");
+            }
+
             // 3. 自动扫描并为武器“通电”！
             int weaponDataIndex = 0;
             for (int i = 0; i < setupHelper.EquippedComponents.Length; i++)
