@@ -424,7 +424,7 @@ MonoBehaviour:
   EquippedComponents:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
-  - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
+  - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
   previewObjects:
@@ -519,21 +519,21 @@ MonoBehaviour:
   Final_TotalMass: 2
   Final_TotalEnginePower: 50
   EquippedWeapons:
-  - WeaponName: "\u94FE\u952F"
-    DeliveryType: 0
+  - WeaponName: "\u94BB\u5934"
+    DeliveryType: 1
     Stats:
     - StatID: 9
       Value: 100
     - StatID: 5
       Value: 50
     - StatID: 6
-      Value: 40
-    - StatID: 7
-      Value: 100
-    - StatID: 8
       Value: 0
-    - StatID: 10
-      Value: 100
+    - StatID: 7
+      Value: 150
+    - StatID: 8
+      Value: 50
+    - StatID: 13
+      Value: 50
     - StatID: 12
       Value: 1
   DebugTags: []
@@ -678,7 +678,7 @@ Transform:
   m_GameObject: {fileID: 1085117746}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 5.27, y: 4.27, z: 0}
+  m_LocalPosition: {x: 2.52, y: 2.95, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -810,7 +810,7 @@ Transform:
   m_GameObject: {fileID: 1657384681}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.7, y: -3.29, z: 0}
+  m_LocalPosition: {x: 5.5, y: 2.02, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -942,7 +942,7 @@ Transform:
   m_GameObject: {fileID: 1683398493}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.39, y: 2.24, z: 0}
+  m_LocalPosition: {x: 4.13, y: 3.06, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

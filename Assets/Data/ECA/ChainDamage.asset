@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: ChainDamage
   m_EditorClassIdentifier: 
   MaxTargets: 2
-  ChainRadius: 5
+  ChainRadius: 40
   DamageRatio: 0.5
