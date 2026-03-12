@@ -10,13 +10,16 @@ public class RuntimeWeapon
     public List<ECABlock> WeaponMechanics = new List<ECABlock>();
 
     public WeaponDeliveryType DeliveryType;
-    public WeaponTargetType TargetType;
+    // 删掉 TargetType!
     public GameObject ProjectilePrefab;
+    
+    public List<ECAAction> OnFireActions = new List<ECAAction>(); // 新增插座
+    public List<ECAAction> OnHitActions = new List<ECAAction>();
 
-    public float GetStat(StatType statID)
-    {
-        return WeaponStats.ContainsKey(statID) ? WeaponStats[statID] : 0f;
-    }
+    // 👇【新增】：动态临时暴击率池
+    public float BonusCriticalChance = 0f;
+
+    public float GetStat(StatType statID) { return WeaponStats.ContainsKey(statID) ? WeaponStats[statID] : 0f; }
 }
 
 // 奇美拉总机的运行时数据
@@ -64,20 +67,25 @@ public class RuntimeChimeraData
             foreach (var tag in comp.Tags) AllTags.Add(tag);
             if (comp.Type == ComponentType.Weapon)
             {
-                // 如果是武器，创建独立实体！
                 RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = comp.ComponentName };
 
-                // 👇【核心修复 1】：把图纸里的这三个特殊机制，真真切切地印到运行实体上！
                 newWeapon.DeliveryType = comp.DeliveryType;
-                newWeapon.TargetType = comp.TargetType;
                 newWeapon.ProjectilePrefab = comp.ProjectilePrefab;
 
-                // 将机制塞给武器自己
+                // 【之前加的】：把图纸里的“命中时”积木，装填到运行时的武器里！
+                if (comp.OnHitActions != null)
+                {
+                    newWeapon.OnHitActions.AddRange(comp.OnHitActions);
+                }
+
+                // 👇【现在要加的】：把图纸里的“开火时”积木，也装填进去！
+                if (comp.OnFireActions != null)
+                {
+                    newWeapon.OnFireActions.AddRange(comp.OnFireActions);
+                }
+
                 if (comp.ECA_Mechanics != null) newWeapon.WeaponMechanics.AddRange(comp.ECA_Mechanics);
-
-                // 处理属性：分离全局与局部
                 ProcessStats(comp.BaseStats, isWeaponLocal: true, newWeapon);
-
                 EquippedWeapons.Add(newWeapon);
             }
             else

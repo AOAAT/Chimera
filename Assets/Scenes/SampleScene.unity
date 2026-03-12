@@ -424,7 +424,7 @@ MonoBehaviour:
   EquippedComponents:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
-  - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
+  - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
   previewObjects:
@@ -519,26 +519,23 @@ MonoBehaviour:
   Final_TotalMass: 2
   Final_TotalEnginePower: 50
   EquippedWeapons:
-  - WeaponName: "\u94BB\u5934"
-    DeliveryType: 1
-    TargetType: 2
+  - WeaponName: "\u94FE\u952F"
+    DeliveryType: 0
     Stats:
     - StatID: 9
-      Value: 500
+      Value: 100
     - StatID: 5
       Value: 50
     - StatID: 6
       Value: 40
     - StatID: 7
-      Value: 150
+      Value: 100
     - StatID: 8
-      Value: 50
-    - StatID: 11
-      Value: 30
-    - StatID: 13
-      Value: 50
+      Value: 0
+    - StatID: 10
+      Value: 100
     - StatID: 12
-      Value: 2
+      Value: 1
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -617,7 +614,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44440bf8452be7e48a7ab8492dc828bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isEnemy: 0
+  isEnemy: 1
   CurrentHP: 0
   CurrentAP: 0
 --- !u!212 &1085117750
@@ -749,7 +746,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44440bf8452be7e48a7ab8492dc828bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isEnemy: 0
+  isEnemy: 1
   CurrentHP: 0
   CurrentAP: 0
 --- !u!212 &1657384685
@@ -813,7 +810,7 @@ Transform:
   m_GameObject: {fileID: 1657384681}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.99, y: -3.7, z: 0}
+  m_LocalPosition: {x: 2.7, y: -3.29, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -881,7 +878,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44440bf8452be7e48a7ab8492dc828bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isEnemy: 0
+  isEnemy: 1
   CurrentHP: 0
   CurrentAP: 0
 --- !u!212 &1683398497
@@ -945,7 +942,7 @@ Transform:
   m_GameObject: {fileID: 1683398493}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.18, y: 4.45, z: 0}
+  m_LocalPosition: {x: 2.39, y: 2.24, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

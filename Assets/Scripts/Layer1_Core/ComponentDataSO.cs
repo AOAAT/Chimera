@@ -75,10 +75,20 @@ public class ComponentDataSO : ScriptableObject
 
     [Header("=== 武器专属机制 (仅武器有效) ===")]
     public WeaponDeliveryType DeliveryType = WeaponDeliveryType.Ranged;
-    public WeaponTargetType TargetType = WeaponTargetType.Single;
+
+    // 【屠宰旧逻辑】：删除了 public WeaponTargetType TargetType;
 
     [Tooltip("如果是远程武器，请在这里放入子弹的预制体")]
     public GameObject ProjectilePrefab;
+
+    // 👇【全新 ECA 接口】：子弹命中时，该执行哪些原子动作？
+    [Header("=== ECA: 开火时触发 (On Fire) ===")]
+    public List<ECAAction> OnFireActions = new List<ECAAction>();
+
+    [Header("=== ECA: 命中时触发 (On Hit) ===")]
+    public List<ECAAction> OnHitActions = new List<ECAAction>();
+
+  
 }
 
 

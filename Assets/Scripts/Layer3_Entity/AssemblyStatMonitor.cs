@@ -24,7 +24,6 @@ public class AssemblyStatMonitor : MonoBehaviour
     {
         public string WeaponName;
         public WeaponDeliveryType DeliveryType; // 新增：显示近战/远程
-        public WeaponTargetType TargetType;     // 新增：显示单体/群伤
         public List<StatEntry> Stats;
     }
 
@@ -103,7 +102,6 @@ public class AssemblyStatMonitor : MonoBehaviour
             {
                 WeaponName = weapon.WeaponName,
                 DeliveryType = weapon.DeliveryType,
-                TargetType = weapon.TargetType,
                 Stats = new List<StatEntry>()
             };
             foreach (var kvp in weapon.WeaponStats)

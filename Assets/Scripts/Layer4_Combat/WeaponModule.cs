@@ -73,29 +73,69 @@ public class WeaponModule : MonoBehaviour
 
     private void Fire()
     {
-        // 1. 全新的攻速公式！
         float atkSpeed = weaponData.GetStat(StatType.AttackSpeed);
         if (atkSpeed <= 0) atkSpeed = 100f;
         fireCooldown = 100f / atkSpeed;
 
         if (CurrentTargets.Count == 0) return;
 
-        // 2. 算伤害
+        // 1. 基础浮动伤害
         float finalDmg = Random.Range(weaponData.GetStat(StatType.MinDamage), weaponData.GetStat(StatType.MaxDamage));
-        if (Random.value <= weaponData.GetStat(StatType.CriticalChance)) finalDmg *= 1.5f;
 
-        // 3. 【核心变革】：无论有多少个目标，挨个对他们进行独立打击！
+        // 2. 动态暴击结算（基础暴击率 + 临时叠起来的暴击率）
+        float totalCritChance = weaponData.GetStat(StatType.CriticalChance) + weaponData.BonusCriticalChance;
+        bool isCrit = Random.value <= totalCritChance;
+
+        if (isCrit)
+        {
+            finalDmg *= 1.5f; // 暴击伤害倍率
+            Debug.Log($"【暴击触发！】当前总暴击率: {totalCritChance:F2}");
+        }
+
+        // 3. 👇【全新机制：开火事件派发！】（挥动电锯/开枪的瞬间触发）
+        ECAContext fireContext = new ECAContext
+        {
+            ImpactPoint = transform.position,
+            PrimaryTarget = CurrentTargets[0],
+            BaseDamage = finalDmg,
+            SourceWeapon = weaponData,
+            IsCriticalHit = isCrit // 把暴击结果传进去！
+        };
+
+        if (weaponData.OnFireActions != null)
+        {
+            foreach (var action in weaponData.OnFireActions)
+            {
+                if (action != null) action.Execute(fireContext);
+            }
+        }
+
+        // 4. 遍历所有目标派发命中事件 (向下兼容你之前的代码)
         foreach (var target in CurrentTargets)
         {
             if (weaponData.DeliveryType == WeaponDeliveryType.Melee)
             {
-                // 如果是近战群伤，这里就会在每个目标身上爆开一个圈！
-                WeaponDamageHandler.DeliverDamage(transform.position, target, finalDmg, weaponData);
+                ECAContext hitContext = new ECAContext
+                {
+                    ImpactPoint = transform.position,
+                    PrimaryTarget = target,
+                    BaseDamage = finalDmg,
+                    SourceWeapon = weaponData,
+                    IsCriticalHit = isCrit // 同样传给命中事件
+                };
+
+                if (weaponData.OnHitActions != null)
+                {
+                    foreach (var action in weaponData.OnHitActions)
+                    {
+                        if (action != null) action.Execute(hitContext);
+                    }
+                }
                 Debug.DrawLine(transform.position, target.position, Color.yellow, 0.1f);
             }
+            // ... 远程分支 (Projectile) 同样传参，如果需要的话可以把子弹的 Fire 方法也加上 isCrit 参数，这里为了简化先略过
             else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)
             {
-                // 生成独立的子弹
                 GameObject projObj = Instantiate(weaponData.ProjectilePrefab, transform.position, transform.rotation);
                 Projectile projectile = projObj.GetComponent<Projectile>();
                 projectile.Fire(target, finalDmg, weaponData);

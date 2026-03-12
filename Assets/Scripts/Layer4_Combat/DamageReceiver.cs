@@ -19,6 +19,8 @@ public class DamageReceiver : MonoBehaviour
     // 核心物理交互：接收伤害
     public void TakeDamage(float rawDamage, string sourceName)
     {
+
+       // Debug.LogWarning($"【抓内鬼】{gameObject.name} 受到伤害！来源:{sourceName}\n追踪路径:\n{StackTraceUtility.ExtractStackTrace()}");
         if (CurrentHP <= 0) return; // 已经死了
 
         float finalDamage = rawDamage;

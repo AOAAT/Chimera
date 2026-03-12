@@ -29,8 +29,6 @@ MonoBehaviour:
     Value: 150
   - StatID: 8
     Value: 50
-  - StatID: 11
-    Value: 30
   - StatID: 13
     Value: 50
   - StatID: 12
@@ -40,5 +38,5 @@ MonoBehaviour:
   BaseRotationOffset: 103
   VisualScaleMultiplier: 0.9
   DeliveryType: 1
-  TargetType: 2
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  OnHitActions: []

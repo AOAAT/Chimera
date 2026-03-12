@@ -44,12 +44,25 @@ public class Projectile : MonoBehaviour
         }
     }
 
-    private void HitTarget()
+private void HitTarget()
     {
-        // 将伤害逻辑提取到一个公共静态方法，因为近战（Melee）也会用到完全一样的结算！
-        WeaponDamageHandler.DeliverDamage(transform.position, target, damage, weaponData);
+        ECAContext context = new ECAContext
+        {
+            ImpactPoint = transform.position,
+            PrimaryTarget = target,
+            BaseDamage = damage,
+            SourceWeapon = weaponData
+        };
 
-        // 子弹完成使命，销毁自己
+        // 这里只负责呼叫积木，绝对不能自己扣血！
+        if (weaponData.OnHitActions != null)
+        {
+            foreach (var action in weaponData.OnHitActions)
+            {
+                if (action != null) action.Execute(context);
+            }
+        }
+
         Destroy(gameObject);
     }
 }
