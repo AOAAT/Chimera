@@ -4,7 +4,27 @@ using System.Linq;
 using UnityEngine;
 
 // ==========================================
-// 1. 散件实体的“身份证” (独立占格)
+// 1. 底盘实体的“身份证” (消耗品概念)
+// ==========================================
+[Serializable]
+public class InstancedChassis
+{
+    public string InstanceID; // 宇宙唯一的身份证号
+    public ChassisDataSO BaseData; // 指向底盘图纸
+    public string EquippedUnitID; // 记录它被组装成了哪台机甲。如果为空，说明在仓库里吃灰。
+
+    public InstancedChassis(ChassisDataSO data)
+    {
+        InstanceID = Guid.NewGuid().ToString();
+        BaseData = data;
+        EquippedUnitID = string.Empty;
+    }
+
+    public bool IsEquipped => !string.IsNullOrEmpty(EquippedUnitID);
+}
+
+// ==========================================
+// 2. 散件实体的“身份证” (独立占格)
 // ==========================================
 [Serializable]
 public class InstancedComponent
@@ -26,7 +46,7 @@ public class InstancedComponent
 }
 
 // ==========================================
-// 2. 机甲的持久化档案 (占用8个车库槽位)
+// 3. 机甲的持久化档案 (占用8个车库槽位)
 // ==========================================
 [Serializable]
 public class SavedUnitProfile
@@ -43,20 +63,25 @@ public class SavedUnitProfile
     public List<int> SlotIndices = new List<int>();
     public List<string> EquippedComponentIDs = new List<string>();
 
-    public SavedUnitProfile(ChassisDataSO chassis, string name = "未命名机甲")
+    public string ChassisInstanceID; // 【新增】记录消耗的具体是哪个底盘实体
+
+    // 构造函数改成接收“底盘实体”，而不是“底盘图纸”
+    public SavedUnitProfile(InstancedChassis chassisInstance, string name = "未命名机甲")
     {
         UnitID = Guid.NewGuid().ToString();
         UnitName = name;
-        ChassisData = chassis;
+
+        ChassisData = chassisInstance.BaseData;
+        ChassisInstanceID = chassisInstance.InstanceID; // 锁定消耗的具体实体！
 
         // 统一使用查字典的方式读取底盘的初始贡献血量与护甲
-        CurrentHP = PlayerInventoryManager.GetStatValue(chassis.BaseStats, StatType.AddedHP);
-        CurrentAP = PlayerInventoryManager.GetStatValue(chassis.BaseStats, StatType.AddedAP);
+        CurrentHP = PlayerInventoryManager.GetStatValue(ChassisData.BaseStats, StatType.AddedHP);
+        CurrentAP = PlayerInventoryManager.GetStatValue(ChassisData.BaseStats, StatType.AddedAP);
     }
 }
 
 // ==========================================
-// 3. 玩家资产总管 (挂载到场景里的空物体上)
+// 4. 玩家资产总管 (挂载到场景里的空物体上)
 // ==========================================
 public class PlayerInventoryManager : MonoBehaviour
 {
@@ -65,13 +90,35 @@ public class PlayerInventoryManager : MonoBehaviour
     [Header("=== 核心资产 ===")]
     public int MaxUnitSlots = 8; // 硬核机库上限
     public List<SavedUnitProfile> HangarUnits = new List<SavedUnitProfile>(); // 玩家拥有的机甲
+
+    [Header("=== 实体仓库 ===")]
+    public List<InstancedChassis> ChassisInventory = new List<InstancedChassis>(); // 【这就是为你补上的底盘仓库】
     public List<InstancedComponent> ComponentInventory = new List<InstancedComponent>(); // 玩家拥有的所有散件实体
 
+    [Header("=== 测试作弊专用 ===")]
+    public ChassisDataSO DebugChassisBlueprint; // 拖入你想测试的底盘图纸
     private void Awake()
     {
         // 简易单例模式，方便全局调用
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    private void Update()
+    {
+        // 按下键盘的 T 键，模拟工厂造出一个底盘！
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (DebugChassisBlueprint != null)
+            {
+                AddChassisToInventory(DebugChassisBlueprint);
+                Debug.Log("【作弊成功】叮！您的工厂刚刚为您生产了一台全新底盘，请查收！");
+            }
+            else
+            {
+                Debug.LogWarning("【作弊失败】您还没有在 Inspector 里配置 DebugChassisBlueprint 图纸！");
+            }
+        }
     }
 
     // ==========================================
@@ -140,12 +187,22 @@ public class PlayerInventoryManager : MonoBehaviour
     }
 
     // ==========================================
-    // 🔧 辅助测试：发家致富一键包
+    // 🔧 辅助测试：发家致富一键包 (生产零件)
     // ==========================================
     public void AddComponentToInventory(ComponentDataSO so)
     {
         var newItem = new InstancedComponent(so);
         ComponentInventory.Add(newItem);
-        Debug.Log($"【仓库入库】获得了新实体: {so.ComponentName} | 序列号: {newItem.InstanceID}");
+        Debug.Log($"【零件入库】获得了新实体: {so.ComponentName} | 序列号: {newItem.InstanceID}");
+    }
+
+    // ==========================================
+    // 🔧 辅助测试：工厂生产底盘下线 (生产底盘)
+    // ==========================================
+    public void AddChassisToInventory(ChassisDataSO so)
+    {
+        var newItem = new InstancedChassis(so);
+        ChassisInventory.Add(newItem);
+        Debug.Log($"【底盘入库】获得了新底盘实体: {so.ChassisName} | 序列号: {newItem.InstanceID}");
     }
 }

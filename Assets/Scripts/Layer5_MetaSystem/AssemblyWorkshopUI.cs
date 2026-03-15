@@ -26,6 +26,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text PowerText;
     public TMP_Text UnitNameText;
 
+    [Header("=== 视觉与排版控制 ===")]
+    public float WorldToUIMultiplier = 100f; // 坐标放大系数，跟机库里的一样
     private void Awake()
     {
         Instance = this;
@@ -100,20 +102,104 @@ public class AssemblyWorkshopUI : MonoBehaviour
     // ==========================================
     public void OnClickGhostChassis()
     {
-        Debug.Log("【交互】玩家请求选择底盘！正在呼出右侧仓库...");
+        Debug.Log("【交互】玩家请求安装底盘！呼出右侧仓库...");
 
-        // 呼出右侧仓库，并传入极其严苛的过滤指令：【只看底盘】
-        RightInventoryPanel.SetActive(true);
-        // TODO: 通知 Inventory UI 只显示底盘列表
+        // 去大管家那里，把【没有被占用】的底盘实体筛选出来！
+        List<InstancedChassis> availableChassis = PlayerInventoryManager.Instance.ChassisInventory
+            .FindAll(c => !c.IsEquipped);
+
+        if (availableChassis.Count == 0)
+        {
+            Debug.LogWarning("【库存告急】仓库里没有任何闲置的底盘！");
+            return;
+        }
+
+        // 【终极重构】：不再自动代选，而是让右侧面板真正把列表刷出来！
+        RightInventoryPanelUI.Instance.OpenForChassisSelection(availableChassis, OnChassisSelectedFromInventory);
+    }
+    // ==========================================
+    // 回调枢纽：当玩家在右侧仓库点击了某个底盘后触发
+    // ==========================================
+    public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
+    {
+        Debug.Log($"【组装开始】底盘实体 [{selectedChassis.BaseData.ChassisName}] 落地！");
+
+        // 1. 消耗这个实体，生成机甲档案！
+        currentEditingProfile = new SavedUnitProfile(selectedChassis, "特制原型机");
+
+        // 2. 核心：将这个底盘实体标记为“已被这台机甲占用”！
+        selectedChassis.EquippedUnitID = currentEditingProfile.UnitID;
+        isCreatingNew = true;
+
+        // 3. 隐藏右侧仓库，保持屏幕干净
+        RightInventoryPanel.SetActive(false);
+
+        // 4. 核心大招：刷新车间状态 (从幽灵态 -> 实体态)
+        RefreshWorkshopState();
     }
 
     // ==========================================
     // 渲染机甲实体与生成隐式交互按钮 (核心难点预留)
     // ==========================================
+    // ==========================================
+    // 核心渲染：动态生成底盘与插槽按钮
+    // ==========================================
     private void RenderMechAndSockets()
     {
-        // 这里的逻辑会非常精彩！我们会读取图纸里的插槽坐标，
-        // 在 UI 上动态生成透明的 Button。点哪里，就能改装哪里的零件！
+        // 1. 清理旧的视觉表现 (防止来回切换时图片重叠)
+        foreach (Transform child in ChassisVisualRoot)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // 2. 生成底盘基座
+        GameObject chassisObj = new GameObject("UI_ChassisBase");
+        chassisObj.transform.SetParent(ChassisVisualRoot, false);
+
+        Image chassisImg = chassisObj.AddComponent<Image>();
+        chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
+        chassisImg.SetNativeSize(); // 恢复原始原画尺寸
+
+        // 3. 极其硬核的环节：按照图纸动态生成“插槽按钮”！
+        for (int i = 0; i < currentEditingProfile.ChassisData.Sockets.Count; i++)
+        {
+            var slotDef = currentEditingProfile.ChassisData.Sockets[i];
+            int slotIndex = i; // 闭包防坑，必须把索引存下来
+
+            // 创建插槽的空壳
+            GameObject slotObj = new GameObject($"UI_Socket_{slotDef.SlotName}");
+            slotObj.transform.SetParent(chassisObj.transform, false);
+
+            // 给插槽加个半透明底色，方便玩家知道点哪里 (测试阶段用)
+            Image slotImg = slotObj.AddComponent<Image>();
+            slotImg.color = new Color(1f, 1f, 1f, 0.3f); // 半透明的白色方块
+            slotImg.rectTransform.sizeDelta = new Vector2(60, 60); // 插槽按钮的大小
+
+            // 【坐标系转换】：把图纸里的世界坐标放大成 UI 坐标
+            slotImg.rectTransform.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
+            // 还原旋转
+            slotImg.rectTransform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
+
+            // 给插槽装上真正的交互灵魂：Button
+            Button slotBtn = slotObj.AddComponent<Button>();
+
+            // 当玩家点下这个半透明方块时，呼叫 OnSlotClicked！
+            slotBtn.onClick.AddListener(() => OnSlotClicked(slotIndex));
+
+            // TODO: 未来如果这个插槽上已经装了零件，我们还要在这里叠一层零件的图片！
+        }
+    }
+
+    // ==========================================
+    // 玩家行为：点击了某个具体的零件插槽！
+    // ==========================================
+    private void OnSlotClicked(int slotIndex)
+    {
+        var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
+        Debug.Log($"【车间交互】玩家点击了插槽 [{slotDef.SlotName}]，索引: {slotIndex}！");
+
+        // 接下来我们要呼出右侧仓库，并且极其严格地只显示“符合该插槽类型”的闲置零件！
+        // TODO: 通知 RightInventoryPanelUI 展示零件
     }
 
     // ==========================================
