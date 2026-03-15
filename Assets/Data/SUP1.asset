@@ -29,6 +29,7 @@ MonoBehaviour:
   OnHitActions: []
   OnAssembleActions:
   - {fileID: 11400000, guid: bef97419f58f91442b940e8a148c74f0, type: 2}
+  - {fileID: 11400000, guid: 682796eb9c7a5fd42baebdde25a42d67, type: 2}
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

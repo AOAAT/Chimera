@@ -426,7 +426,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
   - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
   previewObjects:
   - {fileID: 0}
@@ -516,9 +516,9 @@ MonoBehaviour:
   UnitName: "\u5E95\u76D81"
   Final_MaxHP: 180
   Final_MaxAP: 100
-  Final_TotalPowerCost: 0
+  Final_TotalPowerCost: 14
   Final_TotalMass: 2
-  Final_TotalEnginePower: 85
+  Final_TotalEnginePower: 20
   EquippedWeapons:
   - WeaponName: "\u94BB\u5934"
     DeliveryType: 1
@@ -537,7 +537,25 @@ MonoBehaviour:
       Value: 50
     - StatID: 12
       Value: 1
+  - WeaponName: "\u94FE\u952F"
+    DeliveryType: 0
+    Stats:
+    - StatID: 9
+      Value: 100
+    - StatID: 5
+      Value: 50
+    - StatID: 6
+      Value: 40
+    - StatID: 7
+      Value: 50
+    - StatID: 8
+      Value: 0
+    - StatID: 10
+      Value: 0
+    - StatID: 12
+      Value: 1
   DebugTags:
+  - Factory
   - Factory
 --- !u!114 &923019980
 MonoBehaviour:

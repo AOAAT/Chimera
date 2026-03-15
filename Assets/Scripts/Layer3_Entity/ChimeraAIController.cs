@@ -37,7 +37,7 @@ public class ChimeraAIController : MonoBehaviour
 
         // 2. 终极耐力公式：内部消耗逻辑，不需要物理缩放
         float powerCost = Mathf.Max(runtimeData.TotalPowerCost, 1f);
-        MaxStamina = Mathf.Max(5f, (runtimeData.TotalEnginePower / powerCost) * 0.01f);
+        MaxStamina = Mathf.Max(20f, (runtimeData.TotalEnginePower / powerCost) * 0.1f);
         CurrentStamina = MaxStamina;
 
         // 3. 统计射程，并【极其关键地】乘以全局距离缩放！
@@ -58,16 +58,26 @@ public class ChimeraAIController : MonoBehaviour
         if (IsExhausted)
         {
             exhaustionTimer -= Time.deltaTime;
-            // 瘫痪期间强行回复一点点耐力，防止无限瘫痪
             CurrentStamina += (MaxStamina * 0.2f) * Time.deltaTime;
-            if (exhaustionTimer <= 0) IsExhausted = false;
+
+            // 👇【加上这两句】：过热时变成警告的暗红色！
+            GetComponent<SpriteRenderer>().color = new Color(1f, 0.5f, 0.5f);
+
+            if (exhaustionTimer <= 0)
+            {
+                IsExhausted = false;
+                // 👇【恢复原色】：冷却完毕，重新出发！
+                GetComponent<SpriteRenderer>().color = Color.white;
+            }
             return; // 瘫痪时什么都做不了！
         }
+
+        // 正常状态下，确保颜色是白的（防止某些奇怪的打断）
+        GetComponent<SpriteRenderer>().color = Color.white;
 
         FindTarget();
         HandleMovementAndStamina();
     }
-
     private void FindTarget()
     {
         var allEnemies = FindObjectsOfType<DamageReceiver>().Where(e => e.isEnemy && e.CurrentHP > 0).ToList();
@@ -76,7 +86,7 @@ public class ChimeraAIController : MonoBehaviour
         // (为了防止每帧打印卡死控制台，咱们粗略限制一下打印频率)
         if (Time.frameCount % 60 == 0)
         {
-            Debug.Log($"【雷达扫描】场上活着的、且被标记为Enemy的敌人数量: {allEnemies.Count}");
+            //Debug.Log($"【雷达扫描】场上活着的、且被标记为Enemy的敌人数量: {allEnemies.Count}");
         }
 
         if (allEnemies.Count == 0)
@@ -121,7 +131,7 @@ public class ChimeraAIController : MonoBehaviour
 
         // 👇【日志移到这里】：只要有目标，就疯狂汇报！
         //Debug.Log($"【AI监控】已锁定: {currentTarget.name} | 距离: {dist} | 策略: {runtimeData.MovementLogic} | 耐力: {CurrentStamina}");
-
+        //Debug.LogWarning($"【机甲听诊器】当前策略: {runtimeData.MovementLogic} | 最短射程: {minWeaponRange} | 最长射程: {maxWeaponRange} | 距敌: {dist}");
         if (runtimeData.MovementLogic == MovementStrategy.Dodge)
         {
             if (dist < runtimeData.SafeDodgeDistance)
@@ -168,6 +178,22 @@ public class ChimeraAIController : MonoBehaviour
             if (CurrentStamina < MaxStamina)
             {
                 CurrentStamina += 3f * Time.deltaTime;
+            }
+        }
+    }
+    private void OnDrawGizmos()
+    {
+        // 只有当游戏运行中，且大脑已经通电拿到了数据才画
+        if (Application.isPlaying && runtimeData != null)
+        {
+            // 如果当前的战术是“躲避型”
+            if (runtimeData.MovementLogic == ComponentDataSO.MovementStrategy.Dodge)
+            {
+                // 设置画笔颜色为绿色
+                Gizmos.color = Color.green;
+
+                // 画出一个圆圈！(SafeDodgeDistance 在通电时已经乘过全局比例尺了，这里直接用就是绝对准确的物理距离)
+                Gizmos.DrawWireSphere(transform.position, runtimeData.SafeDodgeDistance);
             }
         }
     }

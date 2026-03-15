@@ -21,6 +21,8 @@ MonoBehaviour:
   BaseStats:
   - StatID: 9
     Value: 100
+  - StatID: 2
+    Value: 10
   - StatID: 5
     Value: 50
   - StatID: 6
@@ -33,8 +35,6 @@ MonoBehaviour:
     Value: 50
   - StatID: 12
     Value: 1
-  - StatID: 4
-    Value: 100
   ECA_Mechanics: []
   AnchorOffset: {x: -0.7829679, y: 0.088736415}
   BaseRotationOffset: 103
