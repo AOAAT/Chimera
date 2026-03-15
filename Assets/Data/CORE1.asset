@@ -32,4 +32,4 @@ MonoBehaviour:
   OnAssembleActions: []
   TargetingLogic: 0
   MovementLogic: 0
-  SafeDodgeDistance: 0
+  SafeDodgeDistance: 80
