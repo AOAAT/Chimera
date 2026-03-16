@@ -532,7 +532,7 @@ MonoBehaviour:
   HPText: {fileID: 7867621086738909809}
   APText: {fileID: 2987938034032187527}
   PowerText: {fileID: 3933826182410466197}
-  PreviewScale: 1
+  PreviewScale: 0.5
   WorldToUIMultiplier: 100
 --- !u!1 &3741915724240292543
 GameObject:

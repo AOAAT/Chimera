@@ -95,15 +95,15 @@ public class PlayerInventoryManager : MonoBehaviour
     public List<InstancedChassis> ChassisInventory = new List<InstancedChassis>(); // 【这就是为你补上的底盘仓库】
     public List<InstancedComponent> ComponentInventory = new List<InstancedComponent>(); // 玩家拥有的所有散件实体
 
-    [Header("=== 测试作弊专用 ===")]
-    public ChassisDataSO DebugChassisBlueprint; // 拖入你想测试的底盘图纸
+    [Header("=== 测试作弊专用 (一键进货包) ===")]
+    public ChassisDataSO DebugChassisBlueprint; // 底盘测试槽保留
+    public List<ComponentDataSO> DebugComponentBundle = new List<ComponentDataSO>(); // 【全家桶套餐】改成列表！
     private void Awake()
     {
         // 简易单例模式，方便全局调用
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
     }
-
     private void Update()
     {
         // 按下键盘的 T 键，模拟工厂造出一个底盘！
@@ -116,7 +116,27 @@ public class PlayerInventoryManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("【作弊失败】您还没有在 Inspector 里配置 DebugChassisBlueprint 图纸！");
+                Debug.LogWarning("【作弊失败】您还没有配置 DebugChassisBlueprint 图纸！");
+            }
+        }
+
+        // 【史诗级加强】：按下 Y 键，天降正义，一键获取列表里的所有零件！
+        if (Input.GetKeyDown(KeyCode.Y))
+        {
+            if (DebugComponentBundle != null && DebugComponentBundle.Count > 0)
+            {
+                foreach (var blueprint in DebugComponentBundle)
+                {
+                    if (blueprint != null)
+                    {
+                        AddComponentToInventory(blueprint);
+                    }
+                }
+                Debug.Log($"【空投抵达】爽！一键获取了 {DebugComponentBundle.Count} 个新零件！");
+            }
+            else
+            {
+                Debug.LogWarning("【作弊失败】您的零件包 (DebugComponentBundle) 是空的，请在 Inspector 里填入图纸！");
             }
         }
     }

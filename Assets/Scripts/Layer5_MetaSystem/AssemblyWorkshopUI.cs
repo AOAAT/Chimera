@@ -1,24 +1,30 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class AssemblyWorkshopUI : MonoBehaviour
 {
     public static AssemblyWorkshopUI Instance;
 
     [Header("=== 核心状态机数据 ===")]
-    private SavedUnitProfile currentEditingProfile; // 当前正在编辑的机甲档案
-    private bool isCreatingNew = false; // 是否是“从零开始”的新建模式
+    private SavedUnitProfile currentEditingProfile;
+    private bool isCreatingNew = false;
+
+    // 👇👇👇 【新增核心系统】：时光倒流快照机！
+    [Header("=== 快照备份系统 ===")]
+    private List<int> snapshot_SlotIndices = new List<int>();
+    private List<string> snapshot_EquippedComponentIDs = new List<string>();
 
     [Header("=== 左右分层 UI 面板 ===")]
-    public GameObject LeftStatsPanel;     // 左侧属性展示区 (HP, AP, 雷达图)
-    public GameObject CenterPreviewArea;  // 中央机甲预览区
-    public GameObject RightInventoryPanel;// 右侧弹出的仓库面板 (后续实现)
+    public GameObject LeftStatsPanel;
+    public GameObject CenterPreviewArea;
+    public GameObject RightInventoryPanel;
 
     [Header("=== 中央预览区 UI 绑定 ===")]
-    public GameObject GhostChassisPrompt; // 幽灵态：提示“点击安装底盘”的巨大虚线框按钮
-    public Transform ChassisVisualRoot;   // 实体态：用来生成底盘和零件图像的父节点
+    public GameObject GhostChassisPrompt;
+    public Transform ChassisVisualRoot;
 
     [Header("=== 左侧属性区 UI 绑定 ===")]
     public TMP_Text HPText;
@@ -27,15 +33,16 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text UnitNameText;
 
     [Header("=== 视觉与排版控制 ===")]
-    public float WorldToUIMultiplier = 100f; // 坐标放大系数，跟机库里的一样
+    public float WorldToUIMultiplier = 100f;
+
     private void Awake()
     {
         Instance = this;
-        gameObject.SetActive(false); // 默认隐藏装配车间
+        gameObject.SetActive(false);
     }
 
     // ==========================================
-    // 入口 1：从机库点击 "+" 号进来 (幽灵态)
+    // 入口 1：从机库点击 "+" 号进来 (新建)
     // ==========================================
     public void OpenEmptyWorkshop()
     {
@@ -43,12 +50,15 @@ public class AssemblyWorkshopUI : MonoBehaviour
         currentEditingProfile = null;
         isCreatingNew = true;
 
+        // 新建机甲，清空快照
+        snapshot_SlotIndices.Clear();
+        snapshot_EquippedComponentIDs.Clear();
+
         RefreshWorkshopState();
-        Debug.Log("【车间开启】欢迎来到空车间！请先安装底盘。");
     }
 
     // ==========================================
-    // 入口 2：从机库点击已有单位进来 (实体态/查看修改)
+    // 入口 2：从机库点击已有单位进来 (修改)
     // ==========================================
     public void OpenWorkshopWithUnit(SavedUnitProfile unitProfile)
     {
@@ -56,25 +66,25 @@ public class AssemblyWorkshopUI : MonoBehaviour
         currentEditingProfile = unitProfile;
         isCreatingNew = false;
 
+        // 👇【核心】：进门瞬间，拍下快照备份！
+        snapshot_SlotIndices = new List<int>(unitProfile.SlotIndices);
+        snapshot_EquippedComponentIDs = new List<string>(unitProfile.EquippedComponentIDs);
+
         RefreshWorkshopState();
-        Debug.Log($"【车间开启】正在检修机甲: {unitProfile.UnitName}");
     }
 
     // ==========================================
-    // 核心心流：刷新车间表现
+    // 核心心流：刷新车间表现 (保持不变)
     // ==========================================
     private void RefreshWorkshopState()
     {
-        // 先把右侧仓库关掉，保持视野干净
         RightInventoryPanel.SetActive(false);
 
         if (currentEditingProfile == null)
         {
-            // 幽灵态：什么都没有，只能点虚线框
             GhostChassisPrompt.SetActive(true);
             ChassisVisualRoot.gameObject.SetActive(false);
 
-            // 属性归零
             HPText.text = "HP: --";
             APText.text = "AP: --";
             PowerText.text = "耗电: --";
@@ -82,147 +92,219 @@ public class AssemblyWorkshopUI : MonoBehaviour
         }
         else
         {
-            // 实体态：底盘已就位，开放全部装配功能
             GhostChassisPrompt.SetActive(false);
             ChassisVisualRoot.gameObject.SetActive(true);
 
-            // 1. 刷新左侧数值面板
-            HPText.text = $"HP: {currentEditingProfile.CurrentHP}";
-            APText.text = $"AP: {currentEditingProfile.CurrentAP}";
-            // TODO: 调用与 HangarSlotUI 里一样的计算耗电量逻辑
+            float totalHP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedHP);
+            float totalAP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedAP);
+            float totalPower = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.PowerCost);
+
+            foreach (string compID in currentEditingProfile.EquippedComponentIDs)
+            {
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null && comp.BaseData != null)
+                {
+                    totalHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
+                    totalAP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedAP);
+                    totalPower += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.PowerCost);
+                }
+            }
+
+            currentEditingProfile.CurrentHP = totalHP;
+            currentEditingProfile.CurrentAP = totalAP;
+
+            HPText.text = $"HP: {totalHP}";
+            APText.text = $"AP: {totalAP}";
+            PowerText.text = $"耗电: {totalPower}";
             UnitNameText.text = currentEditingProfile.UnitName;
 
-            // 2. 渲染中央机甲与隐式插槽按钮
             RenderMechAndSockets();
         }
     }
 
-    // ==========================================
-    // 玩家行为：点击了中央的“幽灵虚线框”
-    // ==========================================
     public void OnClickGhostChassis()
     {
-        Debug.Log("【交互】玩家请求安装底盘！呼出右侧仓库...");
-
-        // 去大管家那里，把【没有被占用】的底盘实体筛选出来！
-        List<InstancedChassis> availableChassis = PlayerInventoryManager.Instance.ChassisInventory
-            .FindAll(c => !c.IsEquipped);
-
-        if (availableChassis.Count == 0)
-        {
-            Debug.LogWarning("【库存告急】仓库里没有任何闲置的底盘！");
-            return;
-        }
-
-        // 【终极重构】：不再自动代选，而是让右侧面板真正把列表刷出来！
+        List<InstancedChassis> availableChassis = PlayerInventoryManager.Instance.ChassisInventory.FindAll(c => !c.IsEquipped);
+        if (availableChassis.Count == 0) return;
         RightInventoryPanelUI.Instance.OpenForChassisSelection(availableChassis, OnChassisSelectedFromInventory);
     }
-    // ==========================================
-    // 回调枢纽：当玩家在右侧仓库点击了某个底盘后触发
-    // ==========================================
+
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
-        Debug.Log($"【组装开始】底盘实体 [{selectedChassis.BaseData.ChassisName}] 落地！");
-
-        // 1. 消耗这个实体，生成机甲档案！
         currentEditingProfile = new SavedUnitProfile(selectedChassis, "特制原型机");
-
-        // 2. 核心：将这个底盘实体标记为“已被这台机甲占用”！
         selectedChassis.EquippedUnitID = currentEditingProfile.UnitID;
         isCreatingNew = true;
-
-        // 3. 隐藏右侧仓库，保持屏幕干净
         RightInventoryPanel.SetActive(false);
+        RefreshWorkshopState();
+    }
 
-        // 4. 核心大招：刷新车间状态 (从幽灵态 -> 实体态)
+    private void RenderMechAndSockets()
+    {
+        foreach (Transform child in ChassisVisualRoot) Destroy(child.gameObject);
+
+        GameObject chassisObj = new GameObject("UI_ChassisBase");
+        chassisObj.transform.SetParent(ChassisVisualRoot, false);
+        Image chassisImg = chassisObj.AddComponent<Image>();
+        chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
+        chassisImg.SetNativeSize();
+
+        for (int i = 0; i < currentEditingProfile.ChassisData.Sockets.Count; i++)
+        {
+            var slotDef = currentEditingProfile.ChassisData.Sockets[i];
+            int slotIndex = i;
+
+            GameObject slotObj = new GameObject($"UI_Socket_{slotDef.SlotName}");
+            slotObj.transform.SetParent(chassisObj.transform, false);
+
+            Image slotImg = slotObj.AddComponent<Image>();
+            slotImg.color = new Color(1f, 1f, 1f, 0.3f);
+            slotImg.rectTransform.sizeDelta = new Vector2(60, 60);
+            slotImg.rectTransform.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
+            slotImg.rectTransform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
+
+            Button slotBtn = slotObj.AddComponent<Button>();
+            slotBtn.onClick.AddListener(() => OnSlotClicked(slotIndex));
+
+            int equippedIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
+            if (equippedIdx != -1)
+            {
+                string compID = currentEditingProfile.EquippedComponentIDs[equippedIdx];
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+
+                if (comp != null && comp.BaseData != null)
+                {
+                    slotImg.color = new Color(1f, 1f, 1f, 0f);
+
+                    GameObject compHingeObj = new GameObject($"UI_Hinge_{comp.BaseData.ComponentName}");
+                    compHingeObj.transform.SetParent(slotObj.transform, false);
+                    compHingeObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
+                    compHingeObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
+
+                    GameObject compVisObj = new GameObject("Sprite_Visual");
+                    compVisObj.transform.SetParent(compHingeObj.transform, false);
+                    Image compImg = compVisObj.AddComponent<Image>();
+                    compImg.sprite = comp.BaseData.ComponentIcon;
+                    compImg.SetNativeSize();
+                    compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
+                }
+            }
+        }
+    }
+
+    private void OnSlotClicked(int slotIndex)
+    {
+        var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
+        List<InstancedComponent> availableComponents = PlayerInventoryManager.Instance.ComponentInventory
+            .Where(c => !c.IsEquipped && slotDef.AllowedTypes.Contains(c.BaseData.Type)).ToList();
+
+        int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
+        bool hasEquippedComp = (existingIdx != -1);
+
+        RightInventoryPanelUI.Instance.OpenForComponentSelection(availableComponents, hasEquippedComp,
+            (selectedComp) => OnComponentSelectedFromInventory(slotIndex, selectedComp));
+    }
+
+    private void OnComponentSelectedFromInventory(int slotIndex, InstancedComponent selectedComp)
+    {
+        int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
+        if (existingIdx != -1)
+        {
+            string oldCompID = currentEditingProfile.EquippedComponentIDs[existingIdx];
+            var oldComp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == oldCompID);
+            if (oldComp != null) oldComp.EquippedUnitID = string.Empty;
+
+            currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
+            currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
+        }
+
+        if (selectedComp != null)
+        {
+            selectedComp.EquippedUnitID = currentEditingProfile.UnitID;
+            currentEditingProfile.SlotIndices.Add(slotIndex);
+            currentEditingProfile.EquippedComponentIDs.Add(selectedComp.InstanceID);
+        }
         RefreshWorkshopState();
     }
 
     // ==========================================
-    // 渲染机甲实体与生成隐式交互按钮 (核心难点预留)
+    // 终极按钮 1：保存并退出 (确定)
     // ==========================================
-    // ==========================================
-    // 核心渲染：动态生成底盘与插槽按钮
-    // ==========================================
-    private void RenderMechAndSockets()
+    public void SaveAndExitWorkshop()
     {
-        // 1. 清理旧的视觉表现 (防止来回切换时图片重叠)
-        foreach (Transform child in ChassisVisualRoot)
+        if (currentEditingProfile == null)
         {
-            Destroy(child.gameObject);
+            CancelAndExitWorkshop(); return;
         }
 
-        // 2. 生成底盘基座
-        GameObject chassisObj = new GameObject("UI_ChassisBase");
-        chassisObj.transform.SetParent(ChassisVisualRoot, false);
-
-        Image chassisImg = chassisObj.AddComponent<Image>();
-        chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
-        chassisImg.SetNativeSize(); // 恢复原始原画尺寸
-
-        // 3. 极其硬核的环节：按照图纸动态生成“插槽按钮”！
-        for (int i = 0; i < currentEditingProfile.ChassisData.Sockets.Count; i++)
-        {
-            var slotDef = currentEditingProfile.ChassisData.Sockets[i];
-            int slotIndex = i; // 闭包防坑，必须把索引存下来
-
-            // 创建插槽的空壳
-            GameObject slotObj = new GameObject($"UI_Socket_{slotDef.SlotName}");
-            slotObj.transform.SetParent(chassisObj.transform, false);
-
-            // 给插槽加个半透明底色，方便玩家知道点哪里 (测试阶段用)
-            Image slotImg = slotObj.AddComponent<Image>();
-            slotImg.color = new Color(1f, 1f, 1f, 0.3f); // 半透明的白色方块
-            slotImg.rectTransform.sizeDelta = new Vector2(60, 60); // 插槽按钮的大小
-
-            // 【坐标系转换】：把图纸里的世界坐标放大成 UI 坐标
-            slotImg.rectTransform.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
-            // 还原旋转
-            slotImg.rectTransform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
-
-            // 给插槽装上真正的交互灵魂：Button
-            Button slotBtn = slotObj.AddComponent<Button>();
-
-            // 当玩家点下这个半透明方块时，呼叫 OnSlotClicked！
-            slotBtn.onClick.AddListener(() => OnSlotClicked(slotIndex));
-
-            // TODO: 未来如果这个插槽上已经装了零件，我们还要在这里叠一层零件的图片！
-        }
-    }
-
-    // ==========================================
-    // 玩家行为：点击了某个具体的零件插槽！
-    // ==========================================
-    private void OnSlotClicked(int slotIndex)
-    {
-        var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
-        Debug.Log($"【车间交互】玩家点击了插槽 [{slotDef.SlotName}]，索引: {slotIndex}！");
-
-        // 接下来我们要呼出右侧仓库，并且极其严格地只显示“符合该插槽类型”的闲置零件！
-        // TODO: 通知 RightInventoryPanelUI 展示零件
-    }
-
-    // ==========================================
-    // 退出车间拦截器 (防呆设计)
-    // ==========================================
-    // ==========================================
-    // 退出车间拦截器 (防呆设计 + 彻底消除CS0414警告)
-    // ==========================================
-    public void TryExitWorkshop()
-    {
-        // 这里就是 isCreatingNew 大显身手的地方！
         if (isCreatingNew)
         {
-            Debug.Log("【保存逻辑】玩家正在新建机甲！即将执行[新建档案]并占用一个新的车库槽位...");
-            // TODO: 把 currentEditingProfile 塞进 PlayerInventoryManager 的 HangarUnits 列表里
+            PlayerInventoryManager.Instance.HangarUnits.Add(currentEditingProfile);
+            Debug.Log($"【保存成功】新机甲 [{currentEditingProfile.UnitName}] 正式入驻机库！");
         }
         else
         {
-            Debug.Log("【保存逻辑】玩家正在修改已有机甲！即将执行[覆盖原档案]操作...");
-            // TODO: 因为传进来的是引用，数据其实已经实时修改了，这里可能只需要存个盘
+            Debug.Log($"【保存成功】老机甲 [{currentEditingProfile.UnitName}] 改装覆盖完毕！");
         }
 
-        // 退出车间，回到机库
+        ExitToHangar();
+    }
+
+    // ==========================================
+    // 终极按钮 2：撤销并退出 (取消)
+    // ==========================================
+    public void CancelAndExitWorkshop()
+    {
+        if (currentEditingProfile == null)
+        {
+            Debug.Log("【撤销】空车间直接退出。");
+            ExitToHangar(); return;
+        }
+
+        if (isCreatingNew)
+        {
+            // 撤销新建：把消耗的底盘和零件全洗白还给仓库！
+            var chassis = PlayerInventoryManager.Instance.ChassisInventory.Find(c => c.InstanceID == currentEditingProfile.ChassisInstanceID);
+            if (chassis != null) chassis.EquippedUnitID = string.Empty;
+
+            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
+            {
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null) comp.EquippedUnitID = string.Empty;
+            }
+            Debug.Log("【撤销成功】新机甲生产取消，所有物资已退回仓库！");
+        }
+        else
+        {
+            // 撤销修改：触发“时光倒流”机制！
+            // 1. 把现在身上的零件全扒下来！
+            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
+            {
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null) comp.EquippedUnitID = string.Empty;
+            }
+
+            // 2. 覆盖旧数据
+            currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
+            currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
+
+            // 3. 照着快照，重新把老零件焊回去！
+            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
+            {
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null) comp.EquippedUnitID = currentEditingProfile.UnitID;
+            }
+            Debug.Log("【撤销成功】改装已取消，机甲已恢复到进车间前的状态！");
+        }
+
+        ExitToHangar();
+    }
+
+    // ==========================================
+    // 通用退出逻辑
+    // ==========================================
+    private void ExitToHangar()
+    {
+        currentEditingProfile = null;
         gameObject.SetActive(false);
         HangarMenuUI.Instance.gameObject.SetActive(true);
         HangarMenuUI.Instance.RefreshHangar();

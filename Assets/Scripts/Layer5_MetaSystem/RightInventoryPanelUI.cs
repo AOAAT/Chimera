@@ -42,6 +42,40 @@ public class RightInventoryPanelUI : MonoBehaviour
             });
         }
     }
+    // ==========================================
+    // 专属通道：根据插槽要求，严格筛选零件供玩家挑选
+    // ==========================================
+    public void OpenForComponentSelection(List<InstancedComponent> availableComponents, bool allowUnequip, Action<InstancedComponent> onComponentSelected)
+    {
+        gameObject.SetActive(true);
+        ClearShelf();
 
+        // 【极其核心】：如果允许卸载（插槽上原本有东西），就把卸载按钮放在第一位！
+        if (allowUnequip)
+        {
+            var unequipSlotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+            unequipSlotObj.SetupUnequip(() =>
+            {
+                gameObject.SetActive(false); // 选完关门
+                onComponentSelected?.Invoke(null); // 【魔法信号】：传 null 代表玩家选择了卸载！
+            });
+        }
+
+        // 正常遍历生成仓库里其他可换装的组件
+        foreach (var comp in availableComponents)
+        {
+            var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+
+            // 确保生成正常组件时图标是可见的 (防止被预制体污染)
+            slotObj.ItemIcon.color = new Color(1, 1, 1, 1);
+            slotObj.ItemNameText.color = Color.white;
+
+            slotObj.SetupComponent(comp, (selected) =>
+            {
+                gameObject.SetActive(false);
+                onComponentSelected?.Invoke(selected);
+            });
+        }
+    }
     // TODO: 未来还会有一个 OpenForComponentSelection 方法，用来选武器！
 }
