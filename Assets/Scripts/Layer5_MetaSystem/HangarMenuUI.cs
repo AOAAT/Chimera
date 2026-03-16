@@ -67,10 +67,12 @@ public class HangarMenuUI : MonoBehaviour
         AssemblyWorkshopUI.Instance.OpenEmptyWorkshop();
     }
 
-    public void TriggerOpenUnitDetail(SavedUnitProfile unit)
+    public void TriggerOpenUnitDetail(SavedUnitProfile profile)
     {
-        gameObject.SetActive(false);
-        // 连招接上！带入实体数据！
-        AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(unit);
+        // 以前是直接粗暴地进入车间：
+        // AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(profile); 
+
+        // 现在是优雅地呼出详情面板：
+        UnitDetailPanelUI.Instance.OpenDetail(profile);
     }
 }

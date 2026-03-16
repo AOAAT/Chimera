@@ -30,7 +30,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text HPText;
     public TMP_Text APText;
     public TMP_Text PowerText;
-    public TMP_Text UnitNameText;
+    public TMP_InputField UnitNameInput; // 【新增】变成可输入文本框！
 
     [Header("=== 视觉与排版控制 ===")]
     public float WorldToUIMultiplier = 100f;
@@ -88,7 +88,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
             HPText.text = "HP: --";
             APText.text = "AP: --";
             PowerText.text = "耗电: --";
-            UnitNameText.text = "等待底盘接入...";
+            UnitNameInput.text = "等待底盘接入...";
+            UnitNameInput.interactable = false; // 还没装底盘时不让改名
         }
         else
         {
@@ -116,7 +117,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
             HPText.text = $"HP: {totalHP}";
             APText.text = $"AP: {totalAP}";
             PowerText.text = $"耗电: {totalPower}";
-            UnitNameText.text = currentEditingProfile.UnitName;
+            UnitNameInput.text = currentEditingProfile.UnitName;
+            UnitNameInput.interactable = true; // 允许玩家自由敲键盘改名！
 
             RenderMechAndSockets();
         }
@@ -227,6 +229,47 @@ public class AssemblyWorkshopUI : MonoBehaviour
     }
 
     // ==========================================
+    // 出厂安检：校验机甲合法性
+    // ==========================================
+    private bool ValidateUnitLegality(out string errorMessage)
+    {
+        errorMessage = "";
+        int coreCount = 0;
+        int mobilityCount = 0;
+
+        // 遍历当前插槽上所有已安装的零件
+        foreach (string compID in currentEditingProfile.EquippedComponentIDs)
+        {
+            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+            if (comp != null && comp.BaseData != null)
+            {
+                // ⚠️注意：如果你的枚举名字不叫 Core 或 Mobility，请把下面换成你实际的枚举名！
+                if (comp.BaseData.Type == ComponentType.Core) coreCount++;
+                if (comp.BaseData.Type == ComponentType.Movement) mobilityCount++;
+            }
+        }
+
+        // 规则 1：必须有且仅有一个核心
+        if (coreCount != 1)
+        {
+            errorMessage = $"【安检失败】机甲必须有且仅有 1 个核心引擎！当前数量: {coreCount}";
+            return false;
+        }
+
+        // 规则 2：必须至少有一个移动组件
+        if (mobilityCount < 1)
+        {
+            errorMessage = "【安检失败】机甲缺乏移动模块 (Mobility)，无法出击！";
+            return false;
+        }
+
+        return true; // 安检通过！
+    }
+
+    // ==========================================
+    // 终极按钮 1：保存并退出 (确定)
+    // ==========================================
+    // ==========================================
     // 终极按钮 1：保存并退出 (确定)
     // ==========================================
     public void SaveAndExitWorkshop()
@@ -235,6 +278,18 @@ public class AssemblyWorkshopUI : MonoBehaviour
         {
             CancelAndExitWorkshop(); return;
         }
+
+        // 👇👇👇 【新增核心拦截：出厂安检！】 👇👇👇
+        if (!ValidateUnitLegality(out string errorMsg))
+        {
+            Debug.LogWarning(errorMsg);
+            // TODO: 未来你可以在这里弹出一个红色的 UI 警告框，把 errorMsg 显示给玩家看！
+            return; // 直接 return，绝不执行后续的保存和退出逻辑！
+        }
+        // 👆👆👆 ============================== 👆👆👆
+
+        // 如果安检通过，才允许落盘和改名！
+        currentEditingProfile.UnitName = UnitNameInput.text;
 
         if (isCreatingNew)
         {
@@ -248,7 +303,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
         ExitToHangar();
     }
-
     // ==========================================
     // 终极按钮 2：撤销并退出 (取消)
     // ==========================================
