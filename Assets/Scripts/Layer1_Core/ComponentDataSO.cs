@@ -47,8 +47,10 @@ public class ComponentDataSO : ScriptableObject
     public string ComponentID = "WPN_000";
     public string ComponentName = "新组件";
     [TextArea]
-    public string Description = "组件描述...";
+    public string Description = "组件风味描述...";
     public Sprite ComponentIcon;
+
+    [TextArea] public string SpecialMechanicDesc = "特殊机制";
 
     [Header("装配规则")]
     // 这就是你想要的下拉选择表！

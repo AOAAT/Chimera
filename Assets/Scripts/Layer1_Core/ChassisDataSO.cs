@@ -9,6 +9,13 @@ public class ChassisDataSO : ScriptableObject
     public string ChassisName = "新底盘";
     public Sprite ChassisSprite; // 底盘的主贴图
 
+    [Header("=== 文本与世界观 ===")]
+    [TextArea] public string Description = "底盘的风味描述";
+    [TextArea] public string SpecialMechanicDesc = "特殊机制";
+
+    [Header("=== 核心标识 (三级流派标签) ===")]
+    public List<ComponentTag> Tags = new List<ComponentTag>();
+
     [Header("底盘自身属性加成")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
 
