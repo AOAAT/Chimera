@@ -108,8 +108,27 @@ public class UnitDetailPanelUI : MonoBehaviour
 
             // 【核心负号偏移】治愈脱臼！
             compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
+
+            // 👇👇👇 【新增核心逻辑：给图片注入点击灵魂！】 👇👇👇
+
+            // 1. 动态给这个零件图片挂上一个 Button 组件
+            Button compBtn = visObj.AddComponent<Button>();
+
+            // 【极其重要的主程防坑提醒】：闭包陷阱！
+            // 因为这是在 for 循环里，必须把当前零件的数据暂存到一个局部变量里，否则所有按钮都会指向最后一个零件！
+            ComponentDataSO targetData = comp.BaseData;
+
+            // 2. 用代码给按钮绑定点击事件：召唤物品详情页！
+            compBtn.onClick.AddListener(() =>
+            {
+                // 呼叫咱们刚做好的高级流式标签详情页
+                ItemDetailPanelUI.Instance.ShowComponentDetail(targetData);
+            });
+
+            // 👆👆👆 ========================================== 👆👆👆
         }
     }
+    
 
     // ==========================================
     // 按钮功能 1：进入车间改装！

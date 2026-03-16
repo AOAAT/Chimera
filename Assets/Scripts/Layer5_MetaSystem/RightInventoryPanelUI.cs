@@ -6,76 +6,112 @@ public class RightInventoryPanelUI : MonoBehaviour
 {
     public static RightInventoryPanelUI Instance;
 
-    public Transform ContentRoot; // 挂载了 GridLayoutGroup 的那个 Content 节点
-    public InventoryItemSlotUI ItemSlotPrefab; // 你的商品格子预制体
+    public Transform ContentRoot;
+    public InventoryItemSlotUI ItemSlotPrefab;
 
-    private void Awake()
+    [Tooltip("如果不为空，当仓库没东西时会自动显示这个提示字")]
+    public GameObject EmptyWarningText; // 【新增】防空堡垒
+
+    // ==========================================
+    // 缓存“筛选逻辑”，用于热更新时重新去后台提货！
+    // ==========================================
+    private enum PanelMode { None, Chassis, Component }
+    private PanelMode currentMode = PanelMode.None;
+
+    private Func<List<InstancedChassis>> getChassisFunc;
+    private Action<InstancedChassis> onChassisSelectedCallback;
+
+    private Func<List<InstancedComponent>> getComponentsFunc;
+    private bool currentAllowUnequip;
+    private Action<InstancedComponent> onComponentSelectedCallback;
+
+    private void Awake() { Instance = this; }
+
+    // 👇 【核心接线】：开机戴耳机，关机摘耳机
+    private void Start()
     {
-        Instance = this;
+        PlayerInventoryManager.Instance.OnInventoryChanged += RefreshPanel;
+    }
+    private void OnDestroy()
+    {
+        if (PlayerInventoryManager.Instance != null)
+            PlayerInventoryManager.Instance.OnInventoryChanged -= RefreshPanel;
     }
 
-    // 每次打开前，清理旧货架
     private void ClearShelf()
     {
-        foreach (Transform child in ContentRoot)
-        {
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in ContentRoot) Destroy(child.gameObject);
     }
 
     // ==========================================
-    // 专属通道：只展示闲置的底盘供玩家挑选
+    // 打开面板入口 (参数变成了 Func 获取器！)
     // ==========================================
-    public void OpenForChassisSelection(List<InstancedChassis> availableChassis, Action<InstancedChassis> onChassisSelected)
+    public void OpenForChassisSelection(Func<List<InstancedChassis>> getChassis, Action<InstancedChassis> onChassisSelected)
     {
+        currentMode = PanelMode.Chassis;
+        getChassisFunc = getChassis;
+        onChassisSelectedCallback = onChassisSelected;
         gameObject.SetActive(true);
+        RefreshPanel(); // 打开时立刻刷一次
+    }
+
+    public void OpenForComponentSelection(Func<List<InstancedComponent>> getComponents, bool allowUnequip, Action<InstancedComponent> onComponentSelected)
+    {
+        currentMode = PanelMode.Component;
+        getComponentsFunc = getComponents;
+        currentAllowUnequip = allowUnequip;
+        onComponentSelectedCallback = onComponentSelected;
+        gameObject.SetActive(true);
+        RefreshPanel();
+    }
+
+    // ==========================================
+    // 【神级功能】：热更新引擎
+    // ==========================================
+    private void RefreshPanel()
+    {
+        if (!gameObject.activeSelf) return; // 如果面板没开着，就不浪费性能去刷
+
         ClearShelf();
 
-        foreach (var chassis in availableChassis)
+        if (currentMode == PanelMode.Chassis && getChassisFunc != null)
         {
-            var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-            slotObj.SetupChassis(chassis, (selected) =>
+            var list = getChassisFunc.Invoke(); // 实时去后台现抓最新数据！
+            if (EmptyWarningText != null) EmptyWarningText.SetActive(list.Count == 0);
+
+            foreach (var chassis in list)
             {
-                // 玩家点击后，关闭面板，并执行选择回调
-                gameObject.SetActive(false);
-                onChassisSelected?.Invoke(selected);
-            });
+                var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                slotObj.SetupChassis(chassis, (selected) => {
+                    gameObject.SetActive(false);
+                    onChassisSelectedCallback?.Invoke(selected);
+                });
+            }
+        }
+        else if (currentMode == PanelMode.Component && getComponentsFunc != null)
+        {
+            var list = getComponentsFunc.Invoke();
+            if (EmptyWarningText != null) EmptyWarningText.SetActive(list.Count == 0 && !currentAllowUnequip);
+
+            if (currentAllowUnequip)
+            {
+                var unequipSlotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                unequipSlotObj.SetupUnequip(() => {
+                    gameObject.SetActive(false);
+                    onComponentSelectedCallback?.Invoke(null);
+                });
+            }
+
+            foreach (var comp in list)
+            {
+                var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                slotObj.ItemIcon.color = Color.white;
+                slotObj.ItemNameText.color = Color.white;
+                slotObj.SetupComponent(comp, (selected) => {
+                    gameObject.SetActive(false);
+                    onComponentSelectedCallback?.Invoke(selected);
+                });
+            }
         }
     }
-    // ==========================================
-    // 专属通道：根据插槽要求，严格筛选零件供玩家挑选
-    // ==========================================
-    public void OpenForComponentSelection(List<InstancedComponent> availableComponents, bool allowUnequip, Action<InstancedComponent> onComponentSelected)
-    {
-        gameObject.SetActive(true);
-        ClearShelf();
-
-        // 【极其核心】：如果允许卸载（插槽上原本有东西），就把卸载按钮放在第一位！
-        if (allowUnequip)
-        {
-            var unequipSlotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-            unequipSlotObj.SetupUnequip(() =>
-            {
-                gameObject.SetActive(false); // 选完关门
-                onComponentSelected?.Invoke(null); // 【魔法信号】：传 null 代表玩家选择了卸载！
-            });
-        }
-
-        // 正常遍历生成仓库里其他可换装的组件
-        foreach (var comp in availableComponents)
-        {
-            var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-
-            // 确保生成正常组件时图标是可见的 (防止被预制体污染)
-            slotObj.ItemIcon.color = new Color(1, 1, 1, 1);
-            slotObj.ItemNameText.color = Color.white;
-
-            slotObj.SetupComponent(comp, (selected) =>
-            {
-                gameObject.SetActive(false);
-                onComponentSelected?.Invoke(selected);
-            });
-        }
-    }
-    // TODO: 未来还会有一个 OpenForComponentSelection 方法，用来选武器！
 }

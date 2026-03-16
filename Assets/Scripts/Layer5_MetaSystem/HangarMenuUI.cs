@@ -14,6 +14,8 @@ public class HangarMenuUI : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        
+        gameObject.SetActive(false);
     }
 
     private void Start()
@@ -74,5 +76,24 @@ public class HangarMenuUI : MonoBehaviour
 
         // 现在是优雅地呼出详情面板：
         UnitDetailPanelUI.Instance.OpenDetail(profile);
+    }
+
+    // ==========================================
+    // 封装入口：打开机库
+    // ==========================================
+    public void OpenHangar()
+    {
+        gameObject.SetActive(true);
+        RefreshHangar(); // 调用你原本写好的刷新机甲列表的函数
+    }
+
+    // ==========================================
+    // 封装出口：关闭机库并返回主基地
+    // ==========================================
+    public void CloseHangar()
+    {
+        gameObject.SetActive(false);
+        // 【核心联动】：关掉机库后，把主基地大厅重新显示出来！
+        // MainBaseUI.Instance.gameObject.SetActive(true); 
     }
 }

@@ -123,12 +123,13 @@ public class AssemblyWorkshopUI : MonoBehaviour
             RenderMechAndSockets();
         }
     }
-
     public void OnClickGhostChassis()
     {
-        List<InstancedChassis> availableChassis = PlayerInventoryManager.Instance.ChassisInventory.FindAll(c => !c.IsEquipped);
-        if (availableChassis.Count == 0) return;
-        RightInventoryPanelUI.Instance.OpenForChassisSelection(availableChassis, OnChassisSelectedFromInventory);
+        // 把原本的死列表替换成 ()=> 的匿名获取函数！
+        RightInventoryPanelUI.Instance.OpenForChassisSelection(
+            () => PlayerInventoryManager.Instance.ChassisInventory.FindAll(c => !c.IsEquipped),
+            OnChassisSelectedFromInventory
+        );
     }
 
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
@@ -196,14 +197,15 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private void OnSlotClicked(int slotIndex)
     {
         var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
-        List<InstancedComponent> availableComponents = PlayerInventoryManager.Instance.ComponentInventory
-            .Where(c => !c.IsEquipped && slotDef.AllowedTypes.Contains(c.BaseData.Type)).ToList();
-
         int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
         bool hasEquippedComp = (existingIdx != -1);
 
-        RightInventoryPanelUI.Instance.OpenForComponentSelection(availableComponents, hasEquippedComp,
-            (selectedComp) => OnComponentSelectedFromInventory(slotIndex, selectedComp));
+        // 同样，传入 ()=> 筛选逻辑，而不是提前算好的列表！
+        RightInventoryPanelUI.Instance.OpenForComponentSelection(
+            () => PlayerInventoryManager.Instance.ComponentInventory.FindAll(c => !c.IsEquipped && slotDef.AllowedTypes.Contains(c.BaseData.Type)),
+            hasEquippedComp,
+            (selectedComp) => OnComponentSelectedFromInventory(slotIndex, selectedComp)
+        );
     }
 
     private void OnComponentSelectedFromInventory(int slotIndex, InstancedComponent selectedComp)

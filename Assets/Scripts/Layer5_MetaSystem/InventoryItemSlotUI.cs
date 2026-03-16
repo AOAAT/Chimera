@@ -57,11 +57,24 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     // ==========================================
     // 【全新机制】：物理射线事件拦截
     // ==========================================
+// ==========================================
+    // 【全新机制】：左右键分离的物理射线事件拦截
+    // ==========================================
     public void OnPointerClick(PointerEventData eventData)
     {
-        onClickCallback?.Invoke();
-        // 点击后如果要隐藏悬浮窗，可以解除下面这行的注释
-        // ItemDetailPanelUI.Instance?.HidePanel(); 
+        // 1. 玩家按下了【鼠标左键】 (或触屏点击)
+        if (eventData.button == PointerEventData.InputButton.Left)
+        {
+            onClickCallback?.Invoke();
+            // 注意：全局仓库里左键只是看详情，不一定要关详情页，具体看你需求
+            ItemDetailPanelUI.Instance?.HidePanel(); 
+        }
+        // 2. 玩家按下了【鼠标右键】
+        else if (eventData.button == PointerEventData.InputButton.Right)
+        {
+            Debug.Log($"【系统提示】你右键点击了 [{ItemNameText.text}]！此处预留给未来的【分解/强化】功能！");
+            // TODO: 未来在这里写右键菜单的呼出逻辑
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)

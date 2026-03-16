@@ -87,6 +87,8 @@ public class PlayerInventoryManager : MonoBehaviour
 {
     public static PlayerInventoryManager Instance;
 
+    public event Action OnInventoryChanged; // 【新增】全局大喇叭！
+
     [Header("=== 核心资产 ===")]
     public int MaxUnitSlots = 8; // 硬核机库上限
     public List<SavedUnitProfile> HangarUnits = new List<SavedUnitProfile>(); // 玩家拥有的机甲
@@ -206,14 +208,14 @@ public class PlayerInventoryManager : MonoBehaviour
         return true; // 允许装配
     }
 
-    // ==========================================
-    // 🔧 辅助测试：发家致富一键包 (生产零件)
-    // ==========================================
     public void AddComponentToInventory(ComponentDataSO so)
     {
         var newItem = new InstancedComponent(so);
         ComponentInventory.Add(newItem);
         Debug.Log($"【零件入库】获得了新实体: {so.ComponentName} | 序列号: {newItem.InstanceID}");
+
+        // 👇 进货完毕，按喇叭！
+        OnInventoryChanged?.Invoke();
     }
 
     // ==========================================
@@ -224,5 +226,8 @@ public class PlayerInventoryManager : MonoBehaviour
         var newItem = new InstancedChassis(so);
         ChassisInventory.Add(newItem);
         Debug.Log($"【底盘入库】获得了新底盘实体: {so.ChassisName} | 序列号: {newItem.InstanceID}");
+
+        // 👇 进货完毕，按喇叭！
+        OnInventoryChanged?.Invoke();
     }
 }
