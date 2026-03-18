@@ -38,14 +38,24 @@ public class TestEnemy : MonoBehaviour
 
         if (dist > AttackRange)
         {
-            // 恢复度量衡限制！(加了一个防呆检测，万一场景里忘了放沙盒管理器也不至于报错)
+            // 恢复度量衡限制！
             float realSpeed = Speed;
             if (CombatSandbox.Instance != null)
             {
                 realSpeed *= CombatSandbox.Instance.SpeedMultiplier;
             }
-
             transform.position = Vector3.MoveTowards(transform.position, currentTarget.transform.position, realSpeed * Time.deltaTime);
+        }
+        else // 👇【核心修复】：加上 else 攻击分支！
+        {
+            attackTimer -= Time.deltaTime;
+            if (attackTimer <= 0)
+            {
+                attackTimer = AttackInterval; // 重置攻击间隔
+                // 狠狠地揍机甲！
+                currentTarget.TakeDamage(MeleeDamage, gameObject.name);
+                Debug.Log($"【敌人猛击】{gameObject.name} 狠狠地捶了机甲一拳！造成 {MeleeDamage} 伤害！");
+            }
         }
     }
 

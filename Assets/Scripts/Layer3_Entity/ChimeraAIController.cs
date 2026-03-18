@@ -60,20 +60,21 @@ public class ChimeraAIController : MonoBehaviour
             exhaustionTimer -= Time.deltaTime;
             CurrentStamina += (MaxStamina * 0.2f) * Time.deltaTime;
 
-            // 👇【加上这两句】：过热时变成警告的暗红色！
-            GetComponent<SpriteRenderer>().color = new Color(1f, 0.5f, 0.5f);
+            // 👇【核心修复】：呼叫全身染色系统，变成暗红警告色！
+            TintMech(new Color(1f, 0.5f, 0.5f));
 
             if (exhaustionTimer <= 0)
             {
                 IsExhausted = false;
-                // 👇【恢复原色】：冷却完毕，重新出发！
-                GetComponent<SpriteRenderer>().color = Color.white;
+                // 👇【核心修复】：冷却完毕，全身恢复白色！
+                TintMech(Color.white);
             }
             return; // 瘫痪时什么都做不了！
         }
 
         // 正常状态下，确保颜色是白的（防止某些奇怪的打断）
-        GetComponent<SpriteRenderer>().color = Color.white;
+        // 👇【核心修复】
+        TintMech(Color.white);
 
         FindTarget();
         HandleMovementAndStamina();
@@ -195,6 +196,16 @@ public class ChimeraAIController : MonoBehaviour
                 // 画出一个圆圈！(SafeDodgeDistance 在通电时已经乘过全局比例尺了，这里直接用就是绝对准确的物理距离)
                 Gizmos.DrawWireSphere(transform.position, runtimeData.SafeDodgeDistance);
             }
+        }
+    }
+
+    private void TintMech(Color targetColor)
+    {
+        // 瞬间扫描机甲身上和所有子节点里的图层，全部统一上色！
+        SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in allRenderers)
+        {
+            sr.color = targetColor;
         }
     }
 }

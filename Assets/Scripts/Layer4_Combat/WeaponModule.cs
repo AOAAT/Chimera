@@ -34,7 +34,18 @@ public class WeaponModule : MonoBehaviour
             {
                 Vector3 dir = primaryTarget.position - transform.position;
                 float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-                transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+
+                // 👇 【核心修改】：因为现在 WeaponModule 是挂在 Socket 上，咱们直接转动它的子物体 Hinge！
+                if (transform.childCount > 0)
+                {
+                    // 找到那个叫 "Component_Hinge" 的转轴，让它转！
+                    transform.GetChild(0).rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+                }
+                else
+                {
+                    // 备用方案：如果没有转轴，就转自己
+                    transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+                }
             }
 
             // 开火逻辑
@@ -48,10 +59,15 @@ public class WeaponModule : MonoBehaviour
     public List<Transform> CurrentTargets = new List<Transform>();
 
     private void FindTarget()
-    {
-        float maxRange = weaponData.GetStat(StatType.MaxRange) * CombatSandbox.Instance.DistanceMultiplier;
-        float minRange = weaponData.GetStat(StatType.MinRange) * CombatSandbox.Instance.DistanceMultiplier;
+    {// 👇【防呆修复】：防止沙盒未启动时报错宕机
+        float distMult = 1.0f;
+        if (CombatSandbox.Instance != null)
+        {
+            distMult = CombatSandbox.Instance.DistanceMultiplier;
+        }
 
+        float maxRange = weaponData.GetStat(StatType.MaxRange) * distMult;
+        float minRange = weaponData.GetStat(StatType.MinRange) * distMult;
         // 读取武器能同时锁定几个目标（没填默认就是 1 个）
         int maxLockCount = (int)weaponData.GetStat(StatType.MultiShotCount);
         if (maxLockCount <= 0) maxLockCount = 1;

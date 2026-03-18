@@ -16,6 +16,7 @@ MonoBehaviour:
   ComponentName: "\u6838\u5FC31"
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: f1296da3eebda4543b6b4067c3308844, type: 3}
+  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   Type: 0
   Tags: 
   BaseStats:
@@ -31,5 +32,5 @@ MonoBehaviour:
   OnHitActions: []
   OnAssembleActions: []
   TargetingLogic: 0
-  MovementLogic: 0
+  MovementLogic: 2
   SafeDodgeDistance: 80

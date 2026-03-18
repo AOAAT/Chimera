@@ -11,6 +11,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     [Header("=== 核心状态机数据 ===")]
     private SavedUnitProfile currentEditingProfile;
     private bool isCreatingNew = false;
+    private int targetHangarSlotIndex = -1; // 【新增】记住自己是从几号坑位进来的！
 
     // 👇👇👇 【新增核心系统】：时光倒流快照机！
     [Header("=== 快照备份系统 ===")]
@@ -40,39 +41,36 @@ public class AssemblyWorkshopUI : MonoBehaviour
         Instance = this;
         gameObject.SetActive(false);
     }
-
     // ==========================================
     // 入口 1：从机库点击 "+" 号进来 (新建)
     // ==========================================
-    public void OpenEmptyWorkshop()
+    public void OpenEmptyWorkshop(int slotIndex) // 【修改】接收车位号
     {
         gameObject.SetActive(true);
         currentEditingProfile = null;
         isCreatingNew = true;
+        targetHangarSlotIndex = slotIndex; // 【新增】存下号码牌
 
-        // 新建机甲，清空快照
         snapshot_SlotIndices.Clear();
         snapshot_EquippedComponentIDs.Clear();
 
         RefreshWorkshopState();
     }
-
     // ==========================================
     // 入口 2：从机库点击已有单位进来 (修改)
     // ==========================================
-    public void OpenWorkshopWithUnit(SavedUnitProfile unitProfile)
+    public void OpenWorkshopWithUnit(int slotIndex, SavedUnitProfile unitProfile) // 【修改】接收车位号
     {
         gameObject.SetActive(true);
         currentEditingProfile = unitProfile;
         isCreatingNew = false;
+        targetHangarSlotIndex = slotIndex; // 【新增】存下号码牌
 
-        // 👇【核心】：进门瞬间，拍下快照备份！
         snapshot_SlotIndices = new List<int>(unitProfile.SlotIndices);
         snapshot_EquippedComponentIDs = new List<string>(unitProfile.EquippedComponentIDs);
 
         RefreshWorkshopState();
     }
-
     // ==========================================
     // 核心心流：刷新车间表现 (保持不变)
     // ==========================================
@@ -295,16 +293,24 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
         if (isCreatingNew)
         {
-            PlayerInventoryManager.Instance.HangarUnits.Add(currentEditingProfile);
-            Debug.Log($"【保存成功】新机甲 [{currentEditingProfile.UnitName}] 正式入驻机库！");
+            // 👇👇👇 【极其核心的修改：定点停车！】 👇👇👇
+            // 不再是 Add() 往后挤，而是精准塞进刚才传进来的那个坑位里！
+            PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
+
+            Debug.Log($"【保存成功】新机甲 [{currentEditingProfile.UnitName}] 正式入驻 {targetHangarSlotIndex} 号机库！");
         }
         else
         {
+            // 👇 修改机甲时，其实不需要重新赋值，因为它是引用类型，改了就生效了
+            // 但为了双保险，我们还是把它写回数组
+            PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
+
             Debug.Log($"【保存成功】老机甲 [{currentEditingProfile.UnitName}] 改装覆盖完毕！");
         }
 
         ExitToHangar();
     }
+   
     // ==========================================
     // 终极按钮 2：撤销并退出 (取消)
     // ==========================================

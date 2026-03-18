@@ -6,15 +6,14 @@ public class HangarMenuUI : MonoBehaviour
     public static HangarMenuUI Instance;
 
     [Header("=== UI 引用 ===")]
-    public Transform SlotGridParent; // 挂载了 GridLayoutGroup 的节点
-    public HangarSlotUI SlotPrefab;  // 你做好的槽位预制体
+    public Transform SlotGridParent;
+    public HangarSlotUI SlotPrefab;
 
     private List<HangarSlotUI> spawnedSlots = new List<HangarSlotUI>();
 
     private void Awake()
     {
         Instance = this;
-        
         gameObject.SetActive(false);
     }
 
@@ -24,9 +23,6 @@ public class HangarMenuUI : MonoBehaviour
         RefreshHangar();
     }
 
-    // ==========================================
-    // 初始化：硬核生成 8 个坑位
-    // ==========================================
     private void InitializeGrid()
     {
         int maxSlots = PlayerInventoryManager.Instance.MaxUnitSlots;
@@ -42,58 +38,44 @@ public class HangarMenuUI : MonoBehaviour
     // ==========================================
     public void RefreshHangar()
     {
+        // 现在这是一个长度必定为 8 的数组
         var playerUnits = PlayerInventoryManager.Instance.HangarUnits;
 
         for (int i = 0; i < spawnedSlots.Count; i++)
         {
-            if (i < playerUnits.Count)
-            {
-                // 这个车位有车
-                spawnedSlots[i].RefreshSlot(playerUnits[i]);
-            }
-            else
-            {
-                // 这个车位是空的
-                spawnedSlots[i].RefreshSlot(null);
-            }
+            // 【极其优雅】：索引 i 完美对应车位号！
+            // 把车位号 i 一起传给格子，让格子记住自己是几号车位！
+            spawnedSlots[i].RefreshSlot(i, playerUnits[i]);
         }
     }
 
     // ==========================================
     // 导航枢纽：引出下一步的装配功能
     // ==========================================
-    public void TriggerCreateNewUnit()
+    // 【修改】：点击新建时，必须把车位号传给车间！
+    public void TriggerCreateNewUnit(int slotIndex)
     {
         gameObject.SetActive(false);
-        // 连招接上！启动装配车间幽灵态！
-        AssemblyWorkshopUI.Instance.OpenEmptyWorkshop();
+        // 这里未来需要让 AssemblyWorkshopUI 也接收这个 slotIndex
+        // 今天咱们先把参数传过去：
+        AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(slotIndex); 
+        Debug.Log($"【准备新建】长官，我们将在 {slotIndex} 号车位为您建造新机甲！");
     }
-
-    public void TriggerOpenUnitDetail(SavedUnitProfile profile)
+    // 【修改】增加 int slotIndex 参数
+    public void TriggerOpenUnitDetail(int slotIndex, SavedUnitProfile profile)
     {
-        // 以前是直接粗暴地进入车间：
-        // AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(profile); 
-
-        // 现在是优雅地呼出详情面板：
-        UnitDetailPanelUI.Instance.OpenDetail(profile);
+        // 传递给详情页
+        UnitDetailPanelUI.Instance.OpenDetail(slotIndex, profile);
     }
 
-    // ==========================================
-    // 封装入口：打开机库
-    // ==========================================
     public void OpenHangar()
     {
         gameObject.SetActive(true);
-        RefreshHangar(); // 调用你原本写好的刷新机甲列表的函数
+        RefreshHangar();
     }
 
-    // ==========================================
-    // 封装出口：关闭机库并返回主基地
-    // ==========================================
     public void CloseHangar()
     {
         gameObject.SetActive(false);
-        // 【核心联动】：关掉机库后，把主基地大厅重新显示出来！
-        // MainBaseUI.Instance.gameObject.SetActive(true); 
     }
 }

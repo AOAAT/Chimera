@@ -609,6 +609,9 @@ MonoBehaviour:
   PowerText: {fileID: 3933826182410466197}
   PreviewScale: 0.5
   WorldToUIMultiplier: 100
+  MechPrefab: {fileID: 2724532761662945261, guid: a723d5ae80659514499dca258d25699b, type: 3}
+  mySlotIndex: -1
+  DeployedStampObj: {fileID: 0}
 --- !u!1 &3583781647732501711
 GameObject:
   m_ObjectHideFlags: 0

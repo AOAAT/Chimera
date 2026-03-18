@@ -59,6 +59,8 @@ public class SavedUnitProfile
     public float CurrentHP;
     public float CurrentAP; // 虽然战斗后会回满，但存下来以备不时之需
 
+    public bool IsDeployed = false;
+
     // 记录插槽装配关系：Key是底盘的插槽索引(0, 1, 2...)，Value是 InstancedComponent 的身份证号
     public List<int> SlotIndices = new List<int>();
     public List<string> EquippedComponentIDs = new List<string>();
@@ -91,7 +93,7 @@ public class PlayerInventoryManager : MonoBehaviour
 
     [Header("=== 核心资产 ===")]
     public int MaxUnitSlots = 8; // 硬核机库上限
-    public List<SavedUnitProfile> HangarUnits = new List<SavedUnitProfile>(); // 玩家拥有的机甲
+    public SavedUnitProfile[] HangarUnits;
 
     [Header("=== 实体仓库 ===")]
     public List<InstancedChassis> ChassisInventory = new List<InstancedChassis>(); // 【这就是为你补上的底盘仓库】
@@ -102,9 +104,11 @@ public class PlayerInventoryManager : MonoBehaviour
     public List<ComponentDataSO> DebugComponentBundle = new List<ComponentDataSO>(); // 【全家桶套餐】改成列表！
     private void Awake()
     {
-        // 简易单例模式，方便全局调用
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        // 👇 【新增】：开机时，直接用水泥浇筑 8 个空车位！
+        HangarUnits = new SavedUnitProfile[MaxUnitSlots];
     }
     private void Update()
     {

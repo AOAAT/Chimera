@@ -22,6 +22,7 @@ public class UnitDetailPanelUI : MonoBehaviour
     public float WorldToUIMultiplier = 100f;
 
     private SavedUnitProfile currentProfile;
+    private int currentSlotIndex = -1; // 【新增】接住传过来的车位号
 
     private void Awake()
     {
@@ -32,8 +33,9 @@ public class UnitDetailPanelUI : MonoBehaviour
     // ==========================================
     // 从机库接收指令：打开详情页！
     // ==========================================
-    public void OpenDetail(SavedUnitProfile profile)
+    public void OpenDetail(int slotIndex, SavedUnitProfile profile)
     {
+        currentSlotIndex = slotIndex; // 现在编译器认识它了，开开心心地揣进了兜里
         currentProfile = profile;
         gameObject.SetActive(true);
 
@@ -128,7 +130,7 @@ public class UnitDetailPanelUI : MonoBehaviour
             // 👆👆👆 ========================================== 👆👆👆
         }
     }
-    
+
 
     // ==========================================
     // 按钮功能 1：进入车间改装！
@@ -137,7 +139,8 @@ public class UnitDetailPanelUI : MonoBehaviour
     {
         gameObject.SetActive(false);
         HangarMenuUI.Instance.gameObject.SetActive(false);
-        AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(currentProfile);
+        // 👇 【核心修复】：把 currentSlotIndex 传给车间！
+        AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(currentSlotIndex, currentProfile);
     }
 
     // ==========================================
