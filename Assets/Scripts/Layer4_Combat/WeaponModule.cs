@@ -7,13 +7,37 @@ public class WeaponModule : MonoBehaviour
     private RuntimeWeapon weaponData;
     private float fireCooldown = 0f;
 
-    [Header("调试信息")]
-    public Transform CurrentTarget;
+    // 逻辑心脏数据
+    private Vector2 logicCenterOffset;
+    private Transform mechRoot;
 
-    // 接收车间传来的独立武器数据
-    public void Initialize(RuntimeWeapon data)
+    [Header("调试信息")]
+    public List<Transform> CurrentTargets = new List<Transform>();
+
+    public void Initialize(RuntimeWeapon data, Vector2 centerOffset, Transform root)
     {
         weaponData = data;
+        logicCenterOffset = centerOffset;
+        mechRoot = root;
+    }
+
+    // 获取绝对世界坐标下的逻辑心脏
+    public Vector3 GetLogicCenter()
+    {
+        if (mechRoot != null) return mechRoot.TransformPoint(logicCenterOffset);
+        return transform.position;
+    }
+
+    // 👇【神级防坑】：智能寻找真正的转轴，绝不去碰贴图(Sprite_Visual)！
+    private Transform GetActualHinge()
+    {
+        // 如果挂在了插槽 (Socket) 上，它的第一个子节点才是 Hinge
+        if (transform.name.StartsWith("Socket_") && transform.childCount > 0)
+        {
+            return transform.GetChild(0);
+        }
+        // 如果它自己就叫 Hinge (测试台的情况)，那它自己就是转轴！
+        return transform;
     }
 
     private void Update()
@@ -21,81 +45,69 @@ public class WeaponModule : MonoBehaviour
         if (weaponData == null) return;
 
         fireCooldown -= Time.deltaTime;
-
-        // 全新多目标雷达扫描
         FindTarget();
 
-        // 👇【核心修复】：检查新的多目标列表里有没有敌人！
         if (CurrentTargets != null && CurrentTargets.Count > 0)
         {
-            // 瞄准逻辑：武器的枪口默认对准列表里的第一个（也就是最近的）那个敌人
             Transform primaryTarget = CurrentTargets[0];
             if (primaryTarget != null)
             {
-                Vector3 dir = primaryTarget.position - transform.position;
-                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                // 👇【视觉修复】：枪管必须从自己的真实把手(Hinge)位置，死死盯住敌人！
+                Transform actualHinge = GetActualHinge();
+                Vector3 aimDir = primaryTarget.position - actualHinge.position;
+                float angle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
 
-                // 👇 【核心修改】：因为现在 WeaponModule 是挂在 Socket 上，咱们直接转动它的子物体 Hinge！
-                if (transform.childCount > 0)
-                {
-                    // 找到那个叫 "Component_Hinge" 的转轴，让它转！
-                    transform.GetChild(0).rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-                }
-                else
-                {
-                    // 备用方案：如果没有转轴，就转自己
-                    transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-                }
+                // 转动转轴，完美保留 -AnchorOffset 齿轮效应！
+                actualHinge.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
             }
 
-            // 开火逻辑
-            if (fireCooldown <= 0f)
-            {
-                Fire();
-            }
+            if (fireCooldown <= 0f) Fire();
         }
     }
 
-    public List<Transform> CurrentTargets = new List<Transform>();
-
     private void FindTarget()
-    {// 👇【防呆修复】：防止沙盒未启动时报错宕机
-        float distMult = 1.0f;
-        if (CombatSandbox.Instance != null)
-        {
-            distMult = CombatSandbox.Instance.DistanceMultiplier;
-        }
-
+    {
+        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
         float maxRange = weaponData.GetStat(StatType.MaxRange) * distMult;
         float minRange = weaponData.GetStat(StatType.MinRange) * distMult;
-        // 读取武器能同时锁定几个目标（没填默认就是 1 个）
-        int maxLockCount = (int)weaponData.GetStat(StatType.MultiShotCount);
-        if (maxLockCount <= 0) maxLockCount = 1;
+        int maxLockCount = Mathf.Max((int)weaponData.GetStat(StatType.MultiShotCount), 1);
+        Vector3 center = GetLogicCenter();
 
-        DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
+        // 👇【阵营判定】：看看这把枪是挂在机甲身上还是敌人身上？
+        DamageReceiver myReceiver = mechRoot.GetComponent<DamageReceiver>();
+        bool amIEnemy = (myReceiver != null && myReceiver.isEnemy);
 
-        // 简易的就近排序机制（利用 C# 的 LINQ 库，需要在文件顶部加上 using System.Linq;）
-        CurrentTargets = allReceivers
-            .Where(r => r.isEnemy && r.CurrentHP > 0)
-            .Where(r => {
-                Collider2D enemyCol = r.GetComponent<Collider2D>();
-                float d = Vector3.Distance(transform.position, r.transform.position); // 兜底方案
+        // 👇【雷达过滤】：机甲只扫 Enemy_Hitbox，敌人只扫 Player_Hitbox！
+        int targetLayerMask = amIEnemy ?
+            LayerMask.GetMask("Player_Hitbox") :
+            LayerMask.GetMask("Enemy_Hitbox");
 
-                if (enemyCol != null)
-                {
-                    // ClosestPoint 可以极其精准地找到敌人身上离枪管最近的那一块肉！
-                    Vector2 closestPoint = enemyCol.ClosestPoint(transform.position);
-                    d = Vector2.Distance(transform.position, closestPoint);
-                }
+        // 👇【物理引擎级索敌】：瞬间拿到射程圈内的所有碰撞体，性能薄纱 FindObjectsOfType！
+        Collider2D[] hits = Physics2D.OverlapCircleAll(center, maxRange, targetLayerMask);
 
-                return d >= minRange && d <= maxRange;
+        CurrentTargets = hits
+            .Select(hit => {
+                // 顺藤摸瓜找血条
+                DamageReceiver r = hit.GetComponentInParent<DamageReceiver>();
+                return new { Collider = hit, Receiver = r };
             })
-            .OrderBy(r => Vector3.Distance(transform.position, r.transform.position))
-            .Take(maxLockCount) // 截取前 N 个最近的敌人！
-            .Select(r => r.transform)
+            .Where(x => x.Receiver != null && x.Receiver.CurrentHP > 0)
+            .Where(x => {
+                // 精准剔除在“最小射程盲区”内的目标
+                Vector2 closestPoint = x.Collider.ClosestPoint(center);
+                float d = Vector2.Distance(center, closestPoint);
+                return d >= minRange;
+            })
+            // 👇 因为同一个怪物可能有多个零件/Hitbox被扫到，必须去重！
+            .GroupBy(x => x.Receiver)
+            .Select(group => group.First()) // 每个怪物只取离中心最近的那个 Hitbox
+            .OrderBy(x => {
+                Vector2 closestPoint = x.Collider.ClosestPoint(center);
+                return Vector2.Distance(center, closestPoint);
+            })
+            .Take(maxLockCount)
+            .Select(x => x.Receiver.transform)
             .ToList();
-
-
     }
 
     private void Fire()
@@ -106,96 +118,85 @@ public class WeaponModule : MonoBehaviour
 
         if (CurrentTargets.Count == 0) return;
 
-        // 1. 基础浮动伤害
         float finalDmg = Random.Range(weaponData.GetStat(StatType.MinDamage), weaponData.GetStat(StatType.MaxDamage));
-
-        // 2. 动态暴击结算（基础暴击率 + 临时叠起来的暴击率）
         float totalCritChance = weaponData.GetStat(StatType.CriticalChance) + weaponData.BonusCriticalChance;
         bool isCrit = Random.value <= totalCritChance;
+        if (isCrit) finalDmg *= 1.5f;
 
-        if (isCrit)
-        {
-            finalDmg *= 1.5f; // 暴击伤害倍率
-            Debug.Log($"【暴击触发！】当前总暴击率: {totalCritChance:F2}");
-        }
-
-        // 3. 👇【全新机制：开火事件派发！】（挥动电锯/开枪的瞬间触发）
         ECAContext fireContext = new ECAContext
         {
             ImpactPoint = transform.position,
             PrimaryTarget = CurrentTargets[0],
             BaseDamage = finalDmg,
             SourceWeapon = weaponData,
-            IsCriticalHit = isCrit // 把暴击结果传进去！
+            IsCriticalHit = isCrit
         };
 
         if (weaponData.OnFireActions != null)
-        {
             foreach (var action in weaponData.OnFireActions)
-            {
                 if (action != null) action.Execute(fireContext);
-            }
-        }
 
-        // 4. 遍历所有目标派发命中事件 (向下兼容你之前的代码)
+        // 👇【完美发射点】：基于心脏坐标，向真实的武器插槽偏移 30%！
+        // 这样既是以底盘中心为火力发射源，多把武器同时开火时又会有完美的扇形错位，绝不重叠！
+        Vector3 logicCenter = GetLogicCenter();
+        Transform actualHinge = GetActualHinge();
+        Vector3 spawnPos = Vector3.Lerp(logicCenter, actualHinge.position, 0.3f);
+
         foreach (var target in CurrentTargets)
         {
             if (weaponData.DeliveryType == WeaponDeliveryType.Melee)
             {
                 ECAContext hitContext = new ECAContext
                 {
-                    ImpactPoint = transform.position,
+                    ImpactPoint = target.position,
                     PrimaryTarget = target,
                     BaseDamage = finalDmg,
                     SourceWeapon = weaponData,
-                    IsCriticalHit = isCrit // 同样传给命中事件
+                    IsCriticalHit = isCrit
                 };
 
                 if (weaponData.OnHitActions != null)
-                {
                     foreach (var action in weaponData.OnHitActions)
-                    {
                         if (action != null) action.Execute(hitContext);
-                    }
-                }
-                Debug.DrawLine(transform.position, target.position, Color.yellow, 0.1f);
+
+                Debug.DrawLine(spawnPos, target.position, Color.yellow, 0.1f);
             }
-            // ... 远程分支 (Projectile) 同样传参，如果需要的话可以把子弹的 Fire 方法也加上 isCrit 参数，这里为了简化先略过
             else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)
             {
-                GameObject projObj = Instantiate(weaponData.ProjectilePrefab, transform.position, transform.rotation);
+                // 子弹飞行朝向：从发射点(心脏偏置)飞向目标！
+                Vector3 bulletDir = target.position - spawnPos;
+                float bulletAngle = Mathf.Atan2(bulletDir.y, bulletDir.x) * Mathf.Rad2Deg;
+                Quaternion bulletRot = Quaternion.AngleAxis(bulletAngle, Vector3.forward);
+
+                GameObject projObj = Instantiate(weaponData.ProjectilePrefab, spawnPos, bulletRot);
                 Projectile projectile = projObj.GetComponent<Projectile>();
                 projectile.Fire(target, finalDmg, weaponData);
             }
         }
     }
+
     private void OnDrawGizmos()
     {
-        // 如果武器数据还没注入（比如还没按下 Play 键），就不画
         if (weaponData == null) return;
 
-        // 获取沙盒的全局度量衡比例（防呆：如果沙盒没挂载，默认按 1.0 算）
-        float distanceMultiplier = 1.0f;
-        if (CombatSandbox.Instance != null)
-        {
-            distanceMultiplier = CombatSandbox.Instance.DistanceMultiplier;
-        }
-
-        // 提取面板数据并乘以全局度量衡，得到真实的物理射程
+        float distanceMultiplier = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
         float maxRange = weaponData.GetStat(StatType.MaxRange) * distanceMultiplier;
         float minRange = weaponData.GetStat(StatType.MinRange) * distanceMultiplier;
 
-        // 1. 绘制最大攻击距离（蓝色圆圈）
-        // transform.position 完美对应了这把武器所在“接口”的绝对物理坐标！
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, maxRange);
+        Vector3 center = GetLogicCenter();
+        Gizmos.color = new Color(0, 0, 1f, 0.3f);
+        Gizmos.DrawWireSphere(center, maxRange);
 
-        // 2. 绘制最小攻击盲区（红色圆圈）
-        // 只有当策划设置了最小射程（大于 0）时，才绘制红圈
         if (minRange > 0f)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, minRange);
+            Gizmos.color = new Color(1f, 0, 0, 0.3f);
+            Gizmos.DrawWireSphere(center, minRange);
         }
+
+        // 【开发可视化】：画一条紫色的线，帮你直观看到子弹从哪里飞出去的
+        Transform actualHinge = GetActualHinge();
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawLine(center, actualHinge.position);
+        Gizmos.DrawSphere(Vector3.Lerp(center, actualHinge.position, 0.3f), 0.05f);
     }
 }

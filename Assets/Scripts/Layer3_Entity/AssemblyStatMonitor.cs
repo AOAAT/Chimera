@@ -88,10 +88,12 @@ public class AssemblyStatMonitor : MonoBehaviour
                 {
                     // 因为上面调用了 UpdateVisuals，这里的转轴已经变成了真实存在的物理实体！
                     Transform hinge = transform.Find($"PREVIEW_HINGE_[{i}]");
+                    // ... 找到转轴 hinge ...
                     if (hinge != null)
                     {
                         WeaponModule weaponScript = hinge.gameObject.AddComponent<WeaponModule>();
-                        weaponScript.Initialize(runtimeData.EquippedWeapons[weaponDataIndex]);
+                        // 👇【核心修改】：把心脏坐标和机甲的真实肉体根节点(this.transform)传给武器！
+                        weaponScript.Initialize(runtimeData.EquippedWeapons[weaponDataIndex], runtimeData.LogicCenterOffset, this.transform);
                         Debug.Log($"【系统自检】插槽 [{i}] 的武器 ({comp.ComponentName}) 已通电并上线！");
                     }
                     weaponDataIndex++;

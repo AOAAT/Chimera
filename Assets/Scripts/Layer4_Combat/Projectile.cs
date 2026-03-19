@@ -62,13 +62,15 @@ private void HitTarget()
 
     private void Start()
     {
-        // 自动给子弹披上物理外衣
+        // 👇【层级剥离】：子弹去它该去的图层！
+        gameObject.layer = LayerMask.NameToLayer("Projectile");
+
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.isKinematic = true; }
 
         Collider2D col = GetComponent<Collider2D>();
         if (col == null) { col = gameObject.AddComponent<CircleCollider2D>(); col.isTrigger = true; }
-        else col.isTrigger = true; // 确保一定是触发器
+        else col.isTrigger = true;
     }
 
     // 👇【极其硬核的物理命中感知】

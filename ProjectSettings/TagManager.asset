@@ -16,11 +16,11 @@ TagManager:
   - Water
   - UI
   - Floor
-  - Player
-  - Enemy
-  - Bullet
-  - 
-  - 
+  - Player_Body
+  - Enemy_Body
+  - Player_Hitbox
+  - Enemy_Hitbox
+  - Projectile
   - 
   - 
   - 
@@ -44,4 +44,13 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Floor
+    uniqueID: 3180896667
+    locked: 0
+  - name: Entities
+    uniqueID: 1154650499
+    locked: 0
+  - name: VFX
+    uniqueID: 1659366351
     locked: 0

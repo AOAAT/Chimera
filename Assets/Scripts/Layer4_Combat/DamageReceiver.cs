@@ -13,17 +13,17 @@ public class DamageReceiver : MonoBehaviour
     public float CurrentHP;
     public float CurrentAP;
 
-    // 初始化血量和护甲
-    public void Initialize(float maxHP, float maxAP)
+    private SpriteRenderer rendererReference; // 增加引用缓存
+
+    // 修改初始化方法，允许传入渲染器
+    public void Initialize(float maxHP, float maxAP, SpriteRenderer sr = null)
     {
-        // 👇【核心修复】：在这里把传进来的上限值存起来！
         MaxHP = maxHP;
         MaxAP = maxAP;
-
         CurrentHP = maxHP;
         CurrentAP = maxAP;
+        rendererReference = sr; // 存起来
     }
-
     // 核心物理交互：接收伤害
     public void TakeDamage(float rawDamage, string sourceName)
     {
@@ -65,8 +65,12 @@ public class DamageReceiver : MonoBehaviour
     private void Die()
     {
         Debug.LogWarning($"【死亡】{gameObject.name} 已被摧毁！");
-        // 测试阶段，直接变红代表死亡
-        GetComponent<SpriteRenderer>().color = Color.red;
+
+        // 使用缓存的引用
+        if (rendererReference != null)
+        {
+            rendererReference.color = Color.red;
+        }
         this.enabled = false;
     }
 }

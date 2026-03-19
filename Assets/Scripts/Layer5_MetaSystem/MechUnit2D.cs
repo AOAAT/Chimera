@@ -1,111 +1,99 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems; // 【新增】：用来侦测鼠标是否悬停在 UI 上！
+using UnityEngine.Rendering; // 【新增】：为了操作 SortingGroup
+using UnityEngine.EventSystems;
 
 // ==========================================
 // 战场级机甲通用载体 (Battlefield Assembler)
 // ==========================================
 public class MechUnit2D : MonoBehaviour
 {
-    // 🌍 【灵魂绑定】：记住自己的灵魂数据
     private SavedUnitProfile bindedData;
 
     [Header("=== 核心引用 ===")]
-    // 👇 【新增】：为了让机甲所有的零件都能同步移动，我们要有一个专门挂载所有图片的容器
     public Transform VisualRoot;
 
-    [Header("=== 2D 排序层控制 ===")]
-    [Tooltip("机甲整体所在的排序层名称")]
-    public string SortingLayerName = "Default";
-    [Tooltip("底盘的排序号 (后面的零件会在此基础上递增)")]
+    [Header("=== 2D 排序层控制 (方案一强制修正) ===")]
+    [Tooltip("机甲整体所在的排序层名称，强制建议设为 Entities")]
+    public string SortingLayerName = "Entities";
+    [Tooltip("底盘的排序号")]
     public int BaseSortingOrder = 0;
 
-    [Header("=== 2D PPU 像素转换比例 ===")]
-    [Tooltip("通常默认是100像素=1个Unity单位。这里要和你在车间里设置的一致才能对齐！")]
-    public float PixelsPerUnit = 100f; // 【神级对齐细节】
-
-    // 👇【新增】：实战部署时的全局放大/缩水率！
     [Header("=== 战场视觉与物理缩放 ===")]
     [Range(0.1f, 5f)]
     public float GlobalBattleScale = 1.0f;
 
-    // TODO: 这里未来会挂载 2D 移动 AI、武器控制、HP 逻辑脚本
+    private Rigidbody2D rb;
+    private Collider2D physicsCol; // 脚底板物理碰撞体
+    private bool isDragging = false;
+    private Vector3 dragStartPos;
 
     private void Awake()
     {
-        // 如果你没有在 Inspector 里指定容器，咱们就自己建一个
         if (VisualRoot == null)
         {
             GameObject visualRootObj = new GameObject("UnitVisualContainer_2D");
             visualRootObj.transform.SetParent(this.transform, false);
             VisualRoot = visualRootObj.transform;
         }
+
+        // --- 方案一：核心强制补丁 ---
+        // 自动挂载 SortingGroup，并强制锁定层级为 Entities
+        SortingGroup sg = GetComponent<SortingGroup>();
+        if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
+        sg.sortingLayerName = SortingLayerName; //
     }
 
-    // ==========================================
-    // 核心接口：天降正义时的灵魂注射与【战场级实时拼装】！
-    // ==========================================
-    // ==========================================
-    // 核心接口：天降正义时的灵魂注射与【战场级实时拼装】！
-    // ==========================================
     public void InitUnitData(SavedUnitProfile data)
     {
         this.bindedData = data;
         this.name = $"[UNIT] {data.UnitName}";
 
-        // 1. 清理旧的拼装图样 (防止重部署时重叠)
-        foreach (Transform child in VisualRoot)
-        {
-            Destroy(child.gameObject);
-        }
-        transform.localScale = Vector3.one * GlobalBattleScale;
-        // ==========================================================
-        // 👇👇👇 【神级复刻】：2D 世界拼装算法 (已注入物理肉体与图层遗传)
-        // ==========================================================
+        foreach (Transform child in VisualRoot) Destroy(child.gameObject);
 
-        // --- 1. 给总控根节点 (Root) 注入刚体灵魂 ---
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        // 1. 物理坐标修正：Z轴稍微向前推一点点 (-0.01)，确保在3D空间也绝对靠前
+        transform.position = new Vector3(transform.position.x, transform.position.y, -0.01f);
+        transform.localScale = Vector3.one * GlobalBattleScale;
+
+        // --- 2. 根节点注入：刚体与【脚底板软碰撞】 ---
+        gameObject.layer = LayerMask.NameToLayer("Player_Body"); //
+
         if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
-        rb.gravityScale = 0f;          // 俯视角，无重力
-        rb.freezeRotation = true;      // 锁定旋转，防止被撞成陀螺
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-        // --- 2. 生成底盘基座 (受击物理肉体) ---
+        // 【物理底座】：只占脚底30%，负责走位推搡 (非 Trigger)
+        if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
+        ((BoxCollider2D)physicsCol).isTrigger = false;
+
+        // --- 3. 生成底盘基座与【全身受击判定】 ---
         GameObject chassisObj = new GameObject("Visual_ChassisBase");
         chassisObj.transform.SetParent(VisualRoot, false);
-
-        // 【基因遗传】：自动继承预制体最外层的 Layer (比如 PlayerMech)
-        chassisObj.layer = this.gameObject.layer;
+        chassisObj.layer = LayerMask.NameToLayer("Player_Hitbox"); //
 
         SpriteRenderer chassisSR = chassisObj.AddComponent<SpriteRenderer>();
         chassisSR.sprite = data.ChassisData.ChassisSprite;
-        chassisSR.sortingLayerName = SortingLayerName;
+        chassisSR.sortingLayerName = SortingLayerName; // 强制图层遗传
         chassisSR.sortingOrder = BaseSortingOrder;
 
-        // 👇【核心物理】：给底盘加上碰撞体！SpriteRenderer 会自动帮它完美贴合图片大小！
-        BoxCollider2D col = chassisObj.AddComponent<BoxCollider2D>();
-
-        // 1. 获取原画的真实物理尺寸
+        // 动态计算尺寸：脚底板窄一点矮一点，受击盒大一点覆盖全身
         Vector2 spriteSize = chassisSR.sprite.bounds.size;
+        ((BoxCollider2D)physicsCol).size = new Vector2(spriteSize.x * 0.7f, spriteSize.y * 0.25f);
+        ((BoxCollider2D)physicsCol).offset = new Vector2(0f, -(spriteSize.y / 2f) + (physicsCol.bounds.extents.y));
 
-        // 2. 削肉剔骨：只保留贴图底部 30% 的高度作为真实肉体，宽度也稍微收窄 (80%) 防止边缘死磕
-        float heightRatio = 0.3f;
-        col.size = new Vector2(spriteSize.x * 0.8f, spriteSize.y * heightRatio);
+        // 【受击判定盒】：全身覆盖 (必须是 Trigger)
+        BoxCollider2D hitboxCol = chassisObj.AddComponent<BoxCollider2D>();
+        hitboxCol.isTrigger = true;
+        hitboxCol.size = new Vector2(spriteSize.x * 0.9f, spriteSize.y * 0.9f);
+        hitboxCol.offset = Vector2.zero;
 
-        // 3. 骨骼下沉：把碰撞体中心点硬拽到脚底板！
-        // 公式：向下偏移半个图片高度，再向上拉回半个碰撞体高度
-        float yOffset = -(spriteSize.y / 2f) + (col.size.y / 2f);
-        col.offset = new Vector2(0f, yOffset);
-
-        // 👇👇👇 【全新注入：动态深度排序引擎】 👇👇👇
-        // 把 SortingGroup 和咱们刚写的脚本强行注入给机甲的总控根节点！
+        // --- 4. 注入：动态深度排序引擎 ---
         DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
         if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
+        sorter.YOffset = -(spriteSize.y / 2f); // 以脚底板为基准线排序
 
-        // 把排序判定的基准点，也精准设置到贴图的绝对脚底板位置！
-        sorter.YOffset = -(spriteSize.y / 2f);
-
-        // --- 3. 按照插槽档案，把零件一个个“焊”上去 ---
+        // --- 5. 拼装零件 (遗传图层逻辑) ---
         for (int i = 0; i < data.SlotIndices.Count; i++)
         {
             int slotIdx = data.SlotIndices[i];
@@ -114,207 +102,138 @@ public class MechUnit2D : MonoBehaviour
             if (comp == null || comp.BaseData == null) continue;
             var slotDef = data.ChassisData.Sockets[slotIdx];
 
-            // B. 插槽基座
             GameObject slotObj = new GameObject($"Socket_{slotDef.SlotName}");
-            slotObj.layer = this.gameObject.layer; // 【基因遗传】
+            slotObj.layer = this.gameObject.layer;
             slotObj.transform.SetParent(chassisObj.transform, false);
             slotObj.transform.localPosition = slotDef.LocalPosition;
             slotObj.transform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
 
-            // C. Hinge 转轴
             GameObject hingeObj = new GameObject("Component_Hinge");
-            hingeObj.layer = this.gameObject.layer; // 【基因遗传】
+            hingeObj.layer = this.gameObject.layer;
             hingeObj.transform.SetParent(slotObj.transform, false);
             hingeObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
             hingeObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
 
-            // D. Visual 图片
             GameObject visObj = new GameObject("Visual_VisualSprite");
-            visObj.layer = this.gameObject.layer; // 【基因遗传】
+            visObj.layer = this.gameObject.layer;
             visObj.transform.SetParent(hingeObj.transform, false);
             SpriteRenderer compSR = visObj.AddComponent<SpriteRenderer>();
             compSR.sprite = comp.BaseData.ComponentIcon;
-            compSR.sortingLayerName = SortingLayerName;
+            compSR.sortingLayerName = SortingLayerName; // 强制图层遗传
             compSR.sortingOrder = BaseSortingOrder + 1;
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
-        Debug.Log($"【天降正义】[{data.UnitName}] 已成功降落战场！当前 HP: {data.CurrentHP}");
-        // 1. 翻译数据：把 UI 里的 SavedUnitProfile 翻译成战斗能用的 RuntimeChimeraData
-        RuntimeChimeraData combatData = new RuntimeChimeraData();
 
-        // 我们需要把装备的 ID 转换回真实的 SO 图纸数组
+        // --- 6. 战斗大脑激活逻辑 ---
+        ActivateCombatBrains(data);
+    }
+
+    private void ActivateCombatBrains(SavedUnitProfile data)
+    {
+        RuntimeChimeraData combatData = new RuntimeChimeraData();
         List<ComponentDataSO> compBlueprints = new List<ComponentDataSO>();
         foreach (string compID in data.EquippedComponentIDs)
         {
             var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (compInstance != null && compInstance.BaseData != null)
-            {
-                compBlueprints.Add(compInstance.BaseData);
-            }
+            if (compInstance != null) compBlueprints.Add(compInstance.BaseData);
         }
 
-        // 呼叫组装函数，生成战斗面板！
         combatData.Assemble(data.ChassisData, compBlueprints.ToArray());
 
-        // 2. 激活肉体受击感知 (DamageReceiver)
-        DamageReceiver receiver = GetComponent<DamageReceiver>();
-        if (receiver == null) receiver = gameObject.AddComponent<DamageReceiver>();
-        receiver.isEnemy = false; // 降落的肯定是友军！
+        DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
+        receiver.isEnemy = false;
         receiver.Initialize(combatData.MaxHP, combatData.MaxAP);
 
-        // 3. 激活大脑 AI (ChimeraAIController)
-        ChimeraAIController aiController = GetComponent<ChimeraAIController>();
-        if (aiController == null) aiController = gameObject.AddComponent<ChimeraAIController>();
+        ChimeraAIController aiController = GetComponent<ChimeraAIController>() ?? gameObject.AddComponent<ChimeraAIController>();
         aiController.Initialize(combatData);
-        // 4. 激活所有武器模块 (WeaponModule)
-        // 【究极修复】：按图索骥，精准找到底盘下的插槽，接通武器神经！
+
+        // 激活武器系统
         int weaponDataIndex = 0;
         for (int i = 0; i < data.SlotIndices.Count; i++)
         {
-            string compID = data.EquippedComponentIDs[i];
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-
-            // 确认这个插槽上装的真的是武器！
+            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == data.EquippedComponentIDs[i]);
             if (compInstance != null && compInstance.BaseData.Type == ComponentType.Weapon)
             {
                 var slotDef = data.ChassisData.Sockets[data.SlotIndices[i]];
-
-                // 在 VisualRoot 的所有子孙节点里，无论藏多深，直接硬搜这个插槽！
-                Transform[] allChildren = VisualRoot.GetComponentsInChildren<Transform>(true);
-                Transform socketTrans = null;
-                foreach (var child in allChildren)
-                {
-                    if (child.name == $"Socket_{slotDef.SlotName}")
-                    {
-                        socketTrans = child;
-                        break;
-                    }
-                }
+                Transform socketTrans = VisualRoot.FindRecursive($"Socket_{slotDef.SlotName}"); // 辅助扩展方法
 
                 if (socketTrans != null)
                 {
                     WeaponModule weaponScript = socketTrans.gameObject.AddComponent<WeaponModule>();
-                    weaponScript.Initialize(combatData.EquippedWeapons[weaponDataIndex]);
+                    weaponScript.Initialize(combatData.EquippedWeapons[weaponDataIndex], combatData.LogicCenterOffset, this.transform);
                     weaponDataIndex++;
-                    Debug.Log($"【武装完毕】武器 [{compInstance.BaseData.ComponentName}] 成功挂载到了插槽 [{slotDef.SlotName}] 上！");
                 }
             }
         }
     }
 
-    private bool isDragging = false;
-    private Vector3 dragStartPos;
-    private Rigidbody2D rb;
-    private Collider2D col;
-
-    private void Start()
-    {
-        // 缓存物理组件，方便在拖拽时开关
-        rb = GetComponent<Rigidbody2D>();
-        col = GetComponent<Collider2D>();
-    }
-
-    // 1. 玩家鼠标按下机甲的瞬间
+    // --- 拖拽逻辑保持优化 ---
     private void OnMouseDown()
     {
-        // TODO: 未来在这里加一个判断，如果是“战斗中(Combat Phase)”，就 return 不允许拖拽！
-        // 目前咱们先假设全天候允许拖拽。
-
         isDragging = true;
-        dragStartPos = transform.position; // 记住被抓起来前的位置
-
-        // 变成半透明，并暂时关闭物理推挤，防止被拖着走的时候撞飞队友！
+        dragStartPos = transform.position;
         TintMech(new Color(1f, 1f, 1f, 0.5f));
         if (rb != null) rb.isKinematic = true;
-        if (col != null) col.enabled = false; // 暂时关闭自己的碰撞体，防止干扰放手时的雷达扫描！
+        if (physicsCol != null) physicsCol.enabled = false; // 拖拽时暂时取消物理体积，防止穿墙/撞队友
     }
 
-    // 2. 玩家按住鼠标拖拽的过程中
     private void OnMouseDrag()
     {
         if (!isDragging) return;
-
-        // 让机甲跟着鼠标走
         Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePos.z = 0; // 锁死 Z 轴
-        transform.position = mousePos;
+        transform.position = new Vector3(mousePos.x, mousePos.y, -0.01f); // 锁定Z轴
     }
 
-    // 3. 玩家松开鼠标的瞬间 (审判时刻)
     private void OnMouseUp()
     {
         if (!isDragging) return;
         isDragging = false;
-
-        // 恢复视觉状态
         TintMech(Color.white);
         if (rb != null) rb.isKinematic = false;
 
-        // --- 审判分支 A：玩家把它扔进了下方的 UI 机库里？(退役回收) ---
         if (EventSystem.current.IsPointerOverGameObject())
         {
-            if (col != null) col.enabled = true; // 回收前恢复碰撞体
+            if (physicsCol != null) physicsCol.enabled = true;
             RecycleToHangar();
             return;
         }
 
-        // --- 审判分支 B：玩家想把它换个位置，扔在了地砖上？ ---
-        // 👇【核心修复】：用 OverlapPointAll 穿透扫描！防止被自己或其他东西挡住！
+        // 射线扫描判定是否在地块上
         Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
         bool isValidZone = false;
+        foreach (var hit in hits) if (hit.CompareTag("DeployZone")) { isValidZone = true; break; }
 
-        foreach (var hit in hits)
-        {
-            // 只要探针穿透的这一堆东西里，有一块地砖是 DeployZone，就判定成功！
-            if (hit.CompareTag("DeployZone"))
-            {
-                isValidZone = true;
-                break;
-            }
-        }
+        if (isValidZone) Debug.Log($"部署成功: {transform.position}");
+        else transform.position = dragStartPos;
 
-        if (isValidZone)
-        {
-            // 换位成功！稳稳落地！
-            Debug.Log($"【阵型调整】[{bindedData.UnitName}] 重新部署到了新坐标: {transform.position}");
-        }
-        else
-        {
-            // 扔到了虚空或者墙上？直接瞬移回抓起前的位置 (防错容错机制)
-            Debug.LogWarning("【部署失败】目标区域无效，机甲退回原位！");
-            transform.position = dragStartPos;
-        }
-
-        // 👇【核心时机修复】：扫描完脚底板之后，再把自己的物理碰撞体打开，防止自己绊倒自己！
-        if (col != null) col.enabled = true;
+        if (physicsCol != null) physicsCol.enabled = true; // 落地后恢复物理推挤
     }
 
-    // 4. 核心回收逻辑：分解肉体，灵魂归位！
     private void RecycleToHangar()
     {
-        Debug.Log($"【回收成功】[{bindedData.UnitName}] 已退出现役，返回机库！");
-
-        // 1. 大管家数据重置
-        if (bindedData != null)
-        {
-            bindedData.IsDeployed = false;
-            // TODO: 未来在这里执行【返还电力负荷】逻辑！
-        }
-
-        // 2. 呼叫机库 UI，让刚才变灰的格子重新亮起来！
-        if (HangarMenuUI.Instance != null)
-        {
-            HangarMenuUI.Instance.RefreshHangar();
-        }
-
-        // 3. 销毁这具场上的物理肉体
+        if (bindedData != null) bindedData.IsDeployed = false;
+        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar();
         Destroy(gameObject);
     }
 
-    // 附带一个染色小工具，复用咱们 AI 里的变色逻辑
     private void TintMech(Color targetColor)
     {
         SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
         foreach (var sr in allRenderers) sr.color = targetColor;
+    }
+}
+
+// 辅助扩展类：用于深层查找插槽
+public static class TransformExtensions
+{
+    public static Transform FindRecursive(this Transform parent, string name)
+    {
+        if (parent.name == name) return parent;
+        foreach (Transform child in parent)
+        {
+            Transform result = FindRecursive(child, name);
+            if (result != null) return result;
+        }
+        return null;
     }
 }

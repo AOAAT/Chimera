@@ -33,6 +33,7 @@ public class RuntimeChimeraData
     public float TotalPowerCost { get; private set; }
     public float TotalMass { get; private set; }
     public float TotalEnginePower { get; private set; }
+    public Vector2 LogicCenterOffset { get; private set; }
 
     public TargetingStrategy TargetingLogic;
     public MovementStrategy MovementLogic;
@@ -60,6 +61,8 @@ public class RuntimeChimeraData
 
         if (chassis == null) return;
         UnitName = chassis.ChassisName;
+
+        LogicCenterOffset = chassis.LogicCenterOffset;
 
         // 1. 结算底盘基础
         ProcessStats(chassis.BaseStats, isWeaponLocal: false, null);

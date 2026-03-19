@@ -14,28 +14,48 @@ public class TestEnemy : MonoBehaviour
     private float attackTimer;
     private Rigidbody2D rb;
 
-  private void Start()
+    private void Start()
     {
         myReceiver = GetComponent<DamageReceiver>();
         myReceiver.isEnemy = true;
-        myReceiver.Initialize(100f, 50f);
 
-        // 👇【自动长出肉体】：防止你忘了挂组件
+      
+
+        // 👇【层级剥离】：根节点只做物理推挤 (Enemy_Body)
+        gameObject.layer = LayerMask.NameToLayer("Enemy_Body");
+
         rb = GetComponent<Rigidbody2D>();
         if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.freezeRotation = true; }
-        BoxCollider2D col = GetComponent<BoxCollider2D>();
-        if (col == null) col = gameObject.AddComponent<BoxCollider2D>();
 
-        SpriteRenderer sr = GetComponent<SpriteRenderer>();
-        if (sr != null && sr.sprite != null)
+        BoxCollider2D physicsCol = gameObject.AddComponent<BoxCollider2D>();
+        physicsCol.isTrigger = false;
+
+        // 👇【极其关键的分离】：把贴图和 Hitbox 挪到一个专门的子节点上！
+        GameObject visualObj = new GameObject("Enemy_Visual_Hitbox");
+        visualObj.transform.SetParent(this.transform, false);
+        visualObj.layer = LayerMask.NameToLayer("Enemy_Hitbox"); // 专属受击层！
+
+        // 把原来挂在自己身上的 SpriteRenderer 搬到子节点去（防呆，如果原来有的话）
+        SpriteRenderer mySr = GetComponent<SpriteRenderer>();
+        SpriteRenderer visSr = visualObj.AddComponent<SpriteRenderer>();
+        if (mySr != null)
         {
-            Vector2 spriteSize = sr.sprite.bounds.size;
+            visSr.sprite = mySr.sprite;
+            visSr.color = mySr.color;
+            Destroy(mySr); // 删掉原有的，免得画两遍
+        }
 
-            // 敌人的肉体也可以设置得娇小一点，比如 80% 宽，30% 高
-            col.size = new Vector2(spriteSize.x * 0.8f, spriteSize.y * 0.3f);
-            col.offset = new Vector2(0f, -(spriteSize.y / 2f) + (col.size.y / 2f));
+        myReceiver.Initialize(100f, 50f, visSr);
+        // 在子节点上挂载触发器 (接子弹用)
+        BoxCollider2D hitboxCol = visualObj.AddComponent<BoxCollider2D>();
+        hitboxCol.isTrigger = true;
 
-            // 同样注入深度排序引擎
+        if (visSr.sprite != null)
+        {
+            Vector2 spriteSize = visSr.sprite.bounds.size;
+            physicsCol.size = new Vector2(spriteSize.x * 0.8f, spriteSize.y * 0.3f);
+            physicsCol.offset = new Vector2(0f, -(spriteSize.y / 2f) + (physicsCol.size.y / 2f));
+
             DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
             if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
             sorter.YOffset = -(spriteSize.y / 2f);

@@ -16,6 +16,7 @@ MonoBehaviour:
   ComponentName: "\u94FE\u952F"
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: c169f21742889604ca515a0c6473a5b3, type: 3}
+  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   Type: 1
   Tags: 01000000
   BaseStats:
@@ -28,7 +29,7 @@ MonoBehaviour:
   - StatID: 6
     Value: 40
   - StatID: 7
-    Value: 30
+    Value: 25
   - StatID: 8
     Value: 0
   - StatID: 10
