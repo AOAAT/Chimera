@@ -23,7 +23,23 @@ public class TestEnemy : MonoBehaviour
         // 👇【自动长出肉体】：防止你忘了挂组件
         rb = GetComponent<Rigidbody2D>();
         if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.freezeRotation = true; }
-        if (GetComponent<Collider2D>() == null) gameObject.AddComponent<BoxCollider2D>();
+        BoxCollider2D col = GetComponent<BoxCollider2D>();
+        if (col == null) col = gameObject.AddComponent<BoxCollider2D>();
+
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
+        {
+            Vector2 spriteSize = sr.sprite.bounds.size;
+
+            // 敌人的肉体也可以设置得娇小一点，比如 80% 宽，30% 高
+            col.size = new Vector2(spriteSize.x * 0.8f, spriteSize.y * 0.3f);
+            col.offset = new Vector2(0f, -(spriteSize.y / 2f) + (col.size.y / 2f));
+
+            // 同样注入深度排序引擎
+            DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
+            if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
+            sorter.YOffset = -(spriteSize.y / 2f);
+        }
     }
 
     private void Update()

@@ -83,7 +83,27 @@ public class MechUnit2D : MonoBehaviour
         chassisSR.sortingOrder = BaseSortingOrder;
 
         // 👇【核心物理】：给底盘加上碰撞体！SpriteRenderer 会自动帮它完美贴合图片大小！
-        chassisObj.AddComponent<BoxCollider2D>();
+        BoxCollider2D col = chassisObj.AddComponent<BoxCollider2D>();
+
+        // 1. 获取原画的真实物理尺寸
+        Vector2 spriteSize = chassisSR.sprite.bounds.size;
+
+        // 2. 削肉剔骨：只保留贴图底部 30% 的高度作为真实肉体，宽度也稍微收窄 (80%) 防止边缘死磕
+        float heightRatio = 0.3f;
+        col.size = new Vector2(spriteSize.x * 0.8f, spriteSize.y * heightRatio);
+
+        // 3. 骨骼下沉：把碰撞体中心点硬拽到脚底板！
+        // 公式：向下偏移半个图片高度，再向上拉回半个碰撞体高度
+        float yOffset = -(spriteSize.y / 2f) + (col.size.y / 2f);
+        col.offset = new Vector2(0f, yOffset);
+
+        // 👇👇👇 【全新注入：动态深度排序引擎】 👇👇👇
+        // 把 SortingGroup 和咱们刚写的脚本强行注入给机甲的总控根节点！
+        DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
+        if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
+
+        // 把排序判定的基准点，也精准设置到贴图的绝对脚底板位置！
+        sorter.YOffset = -(spriteSize.y / 2f);
 
         // --- 3. 按照插槽档案，把零件一个个“焊”上去 ---
         for (int i = 0; i < data.SlotIndices.Count; i++)

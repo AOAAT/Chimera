@@ -5022,7 +5022,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &923019976
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5043,12 +5043,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
-  previewObjects:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  previewObjects: []
 --- !u!212 &923019977
 SpriteRenderer:
   m_ObjectHideFlags: 0
