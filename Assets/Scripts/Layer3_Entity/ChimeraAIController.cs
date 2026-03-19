@@ -7,6 +7,7 @@ public class ChimeraAIController : MonoBehaviour
     private RuntimeChimeraData runtimeData;
     private Transform currentTarget;
     private Rigidbody2D rb;
+    private Collider2D myCollider;
 
     [Header("=== 动态物理计算结果 ===")]
     public float CurrentSpeed;
@@ -52,6 +53,7 @@ public class ChimeraAIController : MonoBehaviour
         runtimeData.SafeDodgeDistance *= distMult;
 
         rb = GetComponent<Rigidbody2D>();
+        myCollider = GetComponent<Collider2D>();
     }
     private void Update()
     {
@@ -124,6 +126,20 @@ public class ChimeraAIController : MonoBehaviour
 
     private void HandleMovementAndStamina()
     {
+
+        if (currentTarget == null)
+        {
+            // 👇【物理手刹】：天下太平了，立刻清空物理惯性，原地待命！
+            if (rb != null) rb.velocity = Vector2.zero;
+
+            // 顺便让它在没怪打的时候，能慢慢把刚才消耗的耐力回满！
+            if (CurrentStamina < MaxStamina)
+            {
+                CurrentStamina += 3f * Time.deltaTime;
+            }
+
+            return;
+        }
         // 👇【关键修改】：把判断找不到目标的逻辑单独拎出来！
         if (currentTarget == null)
         {
@@ -133,8 +149,18 @@ public class ChimeraAIController : MonoBehaviour
         }
 
         bool isMoving = false;
-        float dist = Vector3.Distance(transform.position, currentTarget.position);
+
+        // 获取基础方向和中心点距离
         Vector3 dirToTarget = (currentTarget.position - transform.position).normalized;
+        float dist = Vector3.Distance(transform.position, currentTarget.position);
+
+        // 👇【核心边缘感知】：如果双方都有物理肉体，计算“边缘到边缘”的绝对物理距离！
+        Collider2D targetCol = currentTarget.GetComponent<Collider2D>();
+        if (myCollider != null && targetCol != null)
+        {
+            ColliderDistance2D collDist = Physics2D.Distance(myCollider, targetCol);
+            dist = collDist.isOverlapped ? 0f : collDist.distance;
+        }
 
         // 👇【核心物理】：声明一个目标速度
         Vector2 targetVelocity = Vector2.zero;

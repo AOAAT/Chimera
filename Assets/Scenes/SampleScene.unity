@@ -4883,7 +4883,7 @@ GameObject:
   - component: {fileID: 904160337}
   - component: {fileID: 904160336}
   - component: {fileID: 904160335}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Battle
   m_TagString: DeployZone
   m_Icon: {fileID: 0}
@@ -5016,7 +5016,7 @@ GameObject:
   - component: {fileID: 923019979}
   - component: {fileID: 923019980}
   - component: {fileID: 923019981}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: '[Workshop Desk]'
   m_TagString: PlayerMech
   m_Icon: {fileID: 0}
@@ -6215,7 +6215,7 @@ GameObject:
   - component: {fileID: 1085117749}
   - component: {fileID: 1085117748}
   - component: {fileID: 1085117747}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Enemy1
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -10603,7 +10603,7 @@ GameObject:
   - component: {fileID: 1657384684}
   - component: {fileID: 1657384683}
   - component: {fileID: 1657384682}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Enemy2
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -10870,7 +10870,7 @@ GameObject:
   - component: {fileID: 1683398496}
   - component: {fileID: 1683398495}
   - component: {fileID: 1683398494}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Enemy3
   m_TagString: Enemy
   m_Icon: {fileID: 0}

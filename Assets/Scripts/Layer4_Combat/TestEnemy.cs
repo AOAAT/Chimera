@@ -41,24 +41,24 @@ public class TestEnemy : MonoBehaviour
         }
 
         float dist = Vector3.Distance(transform.position, currentTarget.transform.position);
-
         if (dist > AttackRange)
         {
             float realSpeed = Speed;
             if (CombatSandbox.Instance != null) realSpeed *= CombatSandbox.Instance.SpeedMultiplier;
 
-            // 👇【物理推挤】
+            // 👇【核心物理】：彻底删除 MoveTowards，换成真实的刚体推力！
             Vector2 dir = (currentTarget.transform.position - transform.position).normalized;
             rb.velocity = dir * realSpeed;
         }
-        else // 👇【核心修复】：加上 else 攻击分支！
+        else
         {
+            // 👇【紧急手刹】：敌人到达攻击距离后，也必须把速度清零，否则惯性会推走机甲！
             rb.velocity = Vector2.zero;
+
             attackTimer -= Time.deltaTime;
             if (attackTimer <= 0)
             {
-                attackTimer = AttackInterval; // 重置攻击间隔
-                // 狠狠地揍机甲！
+                attackTimer = AttackInterval;
                 currentTarget.TakeDamage(MeleeDamage, gameObject.name);
                 Debug.Log($"【敌人猛击】{gameObject.name} 狠狠地捶了机甲一拳！造成 {MeleeDamage} 伤害！");
             }

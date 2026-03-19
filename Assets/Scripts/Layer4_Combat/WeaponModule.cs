@@ -78,13 +78,24 @@ public class WeaponModule : MonoBehaviour
         CurrentTargets = allReceivers
             .Where(r => r.isEnemy && r.CurrentHP > 0)
             .Where(r => {
-                float d = Vector3.Distance(transform.position, r.transform.position);
+                Collider2D enemyCol = r.GetComponent<Collider2D>();
+                float d = Vector3.Distance(transform.position, r.transform.position); // 兜底方案
+
+                if (enemyCol != null)
+                {
+                    // ClosestPoint 可以极其精准地找到敌人身上离枪管最近的那一块肉！
+                    Vector2 closestPoint = enemyCol.ClosestPoint(transform.position);
+                    d = Vector2.Distance(transform.position, closestPoint);
+                }
+
                 return d >= minRange && d <= maxRange;
             })
             .OrderBy(r => Vector3.Distance(transform.position, r.transform.position))
             .Take(maxLockCount) // 截取前 N 个最近的敌人！
             .Select(r => r.transform)
             .ToList();
+
+
     }
 
     private void Fire()
