@@ -12,12 +12,18 @@ public class TestEnemy : MonoBehaviour
     private DamageReceiver myReceiver;
     private DamageReceiver currentTarget; // 当前锁定的目标
     private float attackTimer;
+    private Rigidbody2D rb;
 
-    private void Start()
+  private void Start()
     {
         myReceiver = GetComponent<DamageReceiver>();
         myReceiver.isEnemy = true;
         myReceiver.Initialize(100f, 50f);
+
+        // 👇【自动长出肉体】：防止你忘了挂组件
+        rb = GetComponent<Rigidbody2D>();
+        if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.freezeRotation = true; }
+        if (GetComponent<Collider2D>() == null) gameObject.AddComponent<BoxCollider2D>();
     }
 
     private void Update()
@@ -38,16 +44,16 @@ public class TestEnemy : MonoBehaviour
 
         if (dist > AttackRange)
         {
-            // 恢复度量衡限制！
             float realSpeed = Speed;
-            if (CombatSandbox.Instance != null)
-            {
-                realSpeed *= CombatSandbox.Instance.SpeedMultiplier;
-            }
-            transform.position = Vector3.MoveTowards(transform.position, currentTarget.transform.position, realSpeed * Time.deltaTime);
+            if (CombatSandbox.Instance != null) realSpeed *= CombatSandbox.Instance.SpeedMultiplier;
+
+            // 👇【物理推挤】
+            Vector2 dir = (currentTarget.transform.position - transform.position).normalized;
+            rb.velocity = dir * realSpeed;
         }
         else // 👇【核心修复】：加上 else 攻击分支！
         {
+            rb.velocity = Vector2.zero;
             attackTimer -= Time.deltaTime;
             if (attackTimer <= 0)
             {

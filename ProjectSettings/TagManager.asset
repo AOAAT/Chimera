@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - DeployZone
+  - PlayerMech
+  - Enemy
+  - Projectile
   layers:
   - Default
   - TransparentFX
@@ -12,10 +15,10 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
+  - Floor
+  - Player
+  - Enemy
+  - Bullet
   - 
   - 
   - 

@@ -86,6 +86,8 @@ public class ChassisSetupHelper : MonoBehaviour
             // 1. 生成转轴
             GameObject hingeObj = new GameObject($"PREVIEW_HINGE_[{i}]");
 
+            hingeObj.layer = this.gameObject.layer;
+
             if (!Application.isPlaying)
             {
                 // 如果没运行游戏，它是全息投影，不保存
@@ -97,6 +99,8 @@ public class ChassisSetupHelper : MonoBehaviour
 
             // 2. 生成贴图
             GameObject spriteObj = new GameObject("Sprite_Visual");
+
+            spriteObj.layer = this.gameObject.layer;
             spriteObj.transform.SetParent(hingeObj.transform);
 
             SpriteRenderer cpRenderer = spriteObj.AddComponent<SpriteRenderer>();

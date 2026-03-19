@@ -32,5 +32,5 @@ MonoBehaviour:
   OnHitActions: []
   OnAssembleActions: []
   TargetingLogic: 0
-  MovementLogic: 2
+  MovementLogic: 0
   SafeDodgeDistance: 80

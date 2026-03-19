@@ -36,12 +36,6 @@ public class Projectile : MonoBehaviour
 
         // 飞向目标
         transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
-
-        // 撞击判定 (距离极近时视为命中)
-        if (Vector3.Distance(transform.position, target.position) < 0.2f)
-        {
-            HitTarget();
-        }
     }
 
 private void HitTarget()
@@ -64,5 +58,31 @@ private void HitTarget()
         }
 
         Destroy(gameObject);
+    }
+
+    private void Start()
+    {
+        // 自动给子弹披上物理外衣
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.isKinematic = true; }
+
+        Collider2D col = GetComponent<Collider2D>();
+        if (col == null) { col = gameObject.AddComponent<CircleCollider2D>(); col.isTrigger = true; }
+        else col.isTrigger = true; // 确保一定是触发器
+    }
+
+    // 👇【极其硬核的物理命中感知】
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        // 顺藤摸瓜：撞到了左手或底盘？直接找它最上层的血条！
+        DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
+
+        // 如果碰到了带血条的物体，且它是敌人！
+        if (receiver != null && receiver.isEnemy)
+        {
+            // 把目标强行扭转为当前撞到的这个倒霉蛋，然后结算伤害！
+            this.target = receiver.transform;
+            HitTarget();
+        }
     }
 }

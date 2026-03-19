@@ -6,6 +6,7 @@ public class ChimeraAIController : MonoBehaviour
 {
     private RuntimeChimeraData runtimeData;
     private Transform currentTarget;
+    private Rigidbody2D rb;
 
     [Header("=== 动态物理计算结果 ===")]
     public float CurrentSpeed;
@@ -49,6 +50,8 @@ public class ChimeraAIController : MonoBehaviour
 
         // 把躲避型的安全距离也同步缩放
         runtimeData.SafeDodgeDistance *= distMult;
+
+        rb = GetComponent<Rigidbody2D>();
     }
     private void Update()
     {
@@ -57,16 +60,19 @@ public class ChimeraAIController : MonoBehaviour
         // 状态 1：过热瘫痪态 (被榨干耐力的惩罚)
         if (IsExhausted)
         {
+            // 👇【核心修复】：物理手刹！瘫痪瞬间强行清空刚体的惯性速度！
+            if (rb != null) rb.velocity = Vector2.zero;
+
             exhaustionTimer -= Time.deltaTime;
             CurrentStamina += (MaxStamina * 0.2f) * Time.deltaTime;
 
-            // 👇【核心修复】：呼叫全身染色系统，变成暗红警告色！
+            // 呼叫全身染色系统，变成暗红警告色！
             TintMech(new Color(1f, 0.5f, 0.5f));
 
             if (exhaustionTimer <= 0)
             {
                 IsExhausted = false;
-                // 👇【核心修复】：冷却完毕，全身恢复白色！
+                // 冷却完毕，全身恢复白色！
                 TintMech(Color.white);
             }
             return; // 瘫痪时什么都做不了！
@@ -130,33 +136,30 @@ public class ChimeraAIController : MonoBehaviour
         float dist = Vector3.Distance(transform.position, currentTarget.position);
         Vector3 dirToTarget = (currentTarget.position - transform.position).normalized;
 
-        // 👇【日志移到这里】：只要有目标，就疯狂汇报！
-        //Debug.Log($"【AI监控】已锁定: {currentTarget.name} | 距离: {dist} | 策略: {runtimeData.MovementLogic} | 耐力: {CurrentStamina}");
-        //Debug.LogWarning($"【机甲听诊器】当前策略: {runtimeData.MovementLogic} | 最短射程: {minWeaponRange} | 最长射程: {maxWeaponRange} | 距敌: {dist}");
-        if (runtimeData.MovementLogic == MovementStrategy.Dodge)
+        // 👇【核心物理】：声明一个目标速度
+        Vector2 targetVelocity = Vector2.zero;
+
+        if (runtimeData.MovementLogic == MovementStrategy.Dodge && dist < runtimeData.SafeDodgeDistance)
         {
-            if (dist < runtimeData.SafeDodgeDistance)
-            {
-                transform.position -= dirToTarget * CurrentSpeed * Time.deltaTime;
-                isMoving = true;
-            }
+            targetVelocity = -dirToTarget * CurrentSpeed;
+            isMoving = true;
         }
-        else if (runtimeData.MovementLogic == MovementStrategy.Active_Survival)
+        else if (runtimeData.MovementLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
         {
-            if (dist > maxWeaponRange)
-            {
-                transform.position += dirToTarget * CurrentSpeed * Time.deltaTime;
-                isMoving = true;
-            }
+            targetVelocity = dirToTarget * CurrentSpeed;
+            isMoving = true;
         }
-        else if (runtimeData.MovementLogic == MovementStrategy.Active_Firepower)
+        else if (runtimeData.MovementLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange)
         {
-            if (dist > minWeaponRange)
-            {
-                transform.position += dirToTarget * CurrentSpeed * Time.deltaTime;
-                isMoving = true;
-            }
+            targetVelocity = dirToTarget * CurrentSpeed;
+            isMoving = true;
         }
+
+        // 瘫痪时速度归零
+        if (IsExhausted) targetVelocity = Vector2.zero;
+
+        // 👇【物理引擎接管】：把算好的速度直接交给刚体！
+        if (rb != null) rb.velocity = targetVelocity;
 
         // --- 耐力核心运转 ---
         // ... (保持你原来的耐力运转代码不变)

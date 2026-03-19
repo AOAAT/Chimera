@@ -36,10 +36,29 @@ public class AssemblyStatMonitor : MonoBehaviour
         setupHelper = GetComponent<ChassisSetupHelper>();
     }
     private void Start()
+
+
     {
         // 确保只有在真正运行游戏时才执行
         if (Application.isPlaying)
         {
+
+            setupHelper.UpdateVisuals();
+
+            // 👇👇👇 【新增：测试台自动肉体觉醒系统】 👇👇👇
+            // 1. 自动注入物理刚体 (Rigidbody2D)
+            Rigidbody2D rb = GetComponent<Rigidbody2D>();
+            if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
+            rb.gravityScale = 0f;          // 俯视角，必须关掉重力！
+            rb.freezeRotation = true;      // 锁定 Z 轴，防止被撞得满地打转！
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous; // 防止高速子弹穿模
+
+            // 2. 自动生成受击碰撞体 (BoxCollider2D)
+            // 因为你的 ChassisSetupHelper 是把底盘贴图画在自己身上的，
+            // Unity 极其智能：只要身上有 SpriteRenderer，AddComponent 加的 Collider 会自动完美贴合图片大小！
+            BoxCollider2D col = GetComponent<BoxCollider2D>();
+            if (col == null) col = gameObject.AddComponent<BoxCollider2D>();
+
             // 👇【核心修复】：在点火瞬间，命令车间根据图纸，把零件在游戏里真实地造出来！
             setupHelper.UpdateVisuals();
 

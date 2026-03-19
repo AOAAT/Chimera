@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 4923148941261226031}
   - component: {fileID: 7225761150544584164}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: UnitPrefab
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -48,3 +48,4 @@ MonoBehaviour:
   SortingLayerName: Default
   BaseSortingOrder: 0
   PixelsPerUnit: 100
+  GlobalBattleScale: 0.7
