@@ -1,0 +1,121 @@
+﻿using UnityEngine;
+
+[RequireComponent(typeof(MapGenerator))]
+public class MapManager : MonoBehaviour
+{
+    // 单例模式，方便全局随时随地呼叫它
+    public static MapManager Instance { get; private set; }
+
+    private MapGenerator mapGenerator;
+
+    [Header("=== 场景遮罩流 ===")]
+    public GameObject MapUIPanel; // 👇【新增】：拖入包含地图卷轴的整个大 UI 父节点
+
+    [Header("=== 玩家当前状态 ===")]
+    public string CurrentNodeID;
+    public int CurrentLayer;
+
+    // 您大纲里提到的全局资源，未来会接管这部分
+    public int CurrentSAN = 100;
+    public int CurrentPower = 50;
+
+    private void Awake()
+    {
+        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
+        else { Destroy(gameObject); return; }
+
+        mapGenerator = GetComponent<MapGenerator>();
+    }
+
+    private void Start()
+    {
+        // 测试发车！生成新地图
+        StartNewExpedition();
+    }
+
+    public void StartNewExpedition()
+    {
+        mapGenerator.GenerateNewMap();
+
+        // 找到第0层的起点，把玩家扔上去
+        var startNode = mapGenerator.GeneratedMap["Node_0_0"];
+        MoveToNode(startNode);
+    }
+
+    public void TrySelectNode(string targetNodeID)
+    {
+        if (!mapGenerator.GeneratedMap.ContainsKey(targetNodeID)) return;
+        MapNodeData targetData = mapGenerator.GeneratedMap[targetNodeID];
+
+        if (targetData.NodeState != MapNodeState.Selectable) return;
+
+        // 👇【核心修改】：切入战斗流！
+        if (targetData.NodeType == MapNodeType.Enemy || targetData.NodeType == MapNodeType.Elite || targetData.NodeType == MapNodeType.Boss)
+        {
+            // 1. 隐藏地图界面的皮囊
+            if (MapUIPanel != null) MapUIPanel.SetActive(false);
+
+            // 2. 呼叫战斗导演，接管比赛！
+            CombatDirector.Instance.EnterCombatPhase(targetData);
+        }
+        else if (targetData.NodeType == MapNodeType.Event || targetData.NodeType == MapNodeType.Workshop)
+        {
+            // TODO: 类似地，呼叫 EventDirector 或 WorkshopDirector
+            Debug.Log("【地图管控】进入和平节点，即将弹出事件面板...");
+            MoveToNode(targetData); // 目前测试先直接踩上去
+        }
+    }
+
+    // 👇【新增】：打赢了回来，继续地图结算
+    public void OnCombatVictory(MapNodeData nodeData)
+    {
+        // 重新显示地图
+        if (MapUIPanel != null) MapUIPanel.SetActive(true);
+
+        // 结算节点状态（打勾，点亮下一层）
+        MoveToNode(nodeData);
+
+        // 刷新所有线和图标的颜色
+        GetComponent<MapVisualizer>().RefreshAllVisuals();
+    }
+
+    // 玩家实际到达该节点后的逻辑处理
+    private void MoveToNode(MapNodeData newNode)
+    {
+        // 1. 把刚才站的节点状态设为“已通过”
+        if (!string.IsNullOrEmpty(CurrentNodeID))
+        {
+            mapGenerator.GeneratedMap[CurrentNodeID].NodeState = MapNodeState.Passed;
+            // 把周围的其他未选节点全部锁死，这就叫肉鸽的一锤子买卖！
+            LockUnselectedSiblings();
+        }
+
+        // 2. 更新玩家当前位置
+        CurrentNodeID = newNode.NodeID;
+        CurrentLayer = newNode.LayerIndex;
+        newNode.NodeState = MapNodeState.Passed; // 自己踩上去就变为已通过
+
+        // 3. 点亮它前方的所有连线节点，设为“可选择”
+        foreach (string nextID in newNode.NextNodeIDs)
+        {
+            mapGenerator.GeneratedMap[nextID].NodeState = MapNodeState.Selectable;
+        }
+
+        // TODO: 通知 UI 系统刷新整个地图的画面
+        Debug.Log($"【状态更新】已到达第 {CurrentLayer} 层。前方有 {newNode.NextNodeIDs.Count} 条路线可供选择！");
+    }
+
+    private void LockUnselectedSiblings()
+    {
+        // 遍历所有节点，如果它和我在同一层，但不是我刚才选的那个，就把它彻底锁死
+        foreach (var node in mapGenerator.GeneratedMap.Values)
+        {
+            if (node.LayerIndex == CurrentLayer && node.NodeID != CurrentNodeID)
+            {
+                node.NodeState = MapNodeState.Locked;
+            }
+        }
+    }
+
+
+}

@@ -42,7 +42,8 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         mySlotIndex = index;
         bindedProfile = profile;
 
-        if (profile == null)
+        // 👇【主程防坑】：不但要防 profile 本身为 null，还要防 Unity 自动生成的没有 ChassisData 的空壳！
+        if (profile == null || profile.ChassisData == null)
         {
             EmptyStateObj.SetActive(true);
             OccupiedStateObj.SetActive(false);
@@ -72,7 +73,13 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
     private float CalculateTotalPowerCost(SavedUnitProfile profile)
     {
+        // 👇【双保险拦截】：如果没有底盘图纸，直接返回 0，绝不往下走！
+        if (profile == null || profile.ChassisData == null) return 0f;
+
         float power = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.PowerCost);
+
+        // 👇【防呆拦截 2】：如果在测试时 PlayerInventoryManager 还没准备好，也安全退出
+        if (PlayerInventoryManager.Instance == null) return power;
 
         foreach (string compID in profile.EquippedComponentIDs)
         {
