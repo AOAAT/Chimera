@@ -102,30 +102,40 @@ public class MapManager : MonoBehaviour
     }
 
     // 玩家实际到达该节点后的逻辑处理
+    // 玩家实际到达该节点后的逻辑处理
     private void MoveToNode(MapNodeData newNode)
     {
         // 1. 把刚才站的节点状态设为“已通过”
         if (!string.IsNullOrEmpty(CurrentNodeID))
         {
             mapGenerator.GeneratedMap[CurrentNodeID].NodeState = MapNodeState.Passed;
-            // 把周围的其他未选节点全部锁死，这就叫肉鸽的一锤子买卖！
-            LockUnselectedSiblings();
         }
 
-        // 2. 更新玩家当前位置
+        // 2. 👇【核心修复】：在玩家踏上新节点的那一刻，无情地锁死同一层的所有其他选项！
+        foreach (var node in mapGenerator.GeneratedMap.Values)
+        {
+            // 如果节点和玩家新选的节点在同一层，且不是玩家选的这个，直接宣判死刑 (Locked)！
+            if (node.LayerIndex == newNode.LayerIndex && node.NodeID != newNode.NodeID)
+            {
+                node.NodeState = MapNodeState.Locked;
+            }
+        }
+
+        // 3. 更新玩家当前位置
         CurrentNodeID = newNode.NodeID;
         CurrentLayer = newNode.LayerIndex;
         newNode.NodeState = MapNodeState.Passed; // 自己踩上去就变为已通过
 
-        // 3. 点亮它前方的所有连线节点，设为“可选择”
+        // 4. 点亮它前方的所有连线节点，设为“可选择”
         foreach (string nextID in newNode.NextNodeIDs)
         {
             mapGenerator.GeneratedMap[nextID].NodeState = MapNodeState.Selectable;
         }
 
-        // TODO: 通知 UI 系统刷新整个地图的画面
-        Debug.Log($"【状态更新】已到达第 {CurrentLayer} 层。前方有 {newNode.NextNodeIDs.Count} 条路线可供选择！");
+        Debug.Log($"【状态更新】已到达第 {CurrentLayer} 层。前方有 {newNode.NextNodeIDs.Count} 条路线可供选择！同层其他路线已截断！");
     }
+
+    // 🗑️ 注意：原来那个单独的 private void LockUnselectedSiblings() 方法可以彻底删掉了！
 
     private void LockUnselectedSiblings()
     {
