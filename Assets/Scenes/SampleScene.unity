@@ -2284,7 +2284,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &489852394
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3002,9 +3002,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CombatUIPanel: {fileID: 939371126}
   StartBattleButton: {fileID: 2080268534}
+  SettlementPanel: {fileID: 0}
+  SettlementTitleText: {fileID: 0}
+  ReturnToMapButton: {fileID: 0}
   EnemySpawnWorldPoint: {fileID: 1181035856}
   TestEnemyPrefab: {fileID: 2606436442585209177, guid: de53288e7ac3552479517d38e3f18f84, type: 3}
-  SpawnSpreadRadius: 150
 --- !u!1 &615706837
 GameObject:
   m_ObjectHideFlags: 0
@@ -5571,7 +5573,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &939371127
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8113,9 +8115,9 @@ RectTransform:
   m_Father: {fileID: 621017807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -17, y: 20}
+  m_SizeDelta: {x: 0, y: 20}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1275134800
 MonoBehaviour:
@@ -8161,7 +8163,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1983796831}
   m_Direction: 0
   m_Value: 1
-  m_Size: 0.9999992
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -8404,9 +8406,9 @@ RectTransform:
   m_Father: {fileID: 621017807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 20, y: -17}
+  m_SizeDelta: {x: 20, y: 0}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1301976996
 MonoBehaviour:
@@ -8751,9 +8753,9 @@ RectTransform:
   m_Father: {fileID: 621017807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -17, y: -17}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1370983094
 MonoBehaviour:
@@ -9632,7 +9634,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 391.5491, y: 0.00036621094}
+  m_AnchoredPosition: {x: 391.54987, y: 0}
   m_SizeDelta: {x: -697, y: -63}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1430235885
@@ -11109,7 +11111,7 @@ Transform:
   m_GameObject: {fileID: 1614543384}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 8.66, y: 2.44, z: 0.04413018}
+  m_LocalPosition: {x: 7.76, y: 0.57, z: 0.04413018}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11142,7 +11144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d287641edfda1714a9caa329370c0cf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 10
+  Speed: 1
   MeleeDamage: 15
   AttackInterval: 1.5
   AttackRange: 1.5
@@ -11408,7 +11410,7 @@ RectTransform:
   m_Father: {fileID: 866316937}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -11497,7 +11499,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d287641edfda1714a9caa329370c0cf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 10
+  Speed: 1
   MeleeDamage: 15
   AttackInterval: 1.5
   AttackRange: 1.5
@@ -11764,7 +11766,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d287641edfda1714a9caa329370c0cf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 10
+  Speed: 1
   MeleeDamage: 15
   AttackInterval: 1.5
   AttackRange: 1.5
@@ -12834,8 +12836,8 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1746111095}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.0000007748604, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}

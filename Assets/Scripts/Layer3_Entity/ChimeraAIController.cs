@@ -59,6 +59,14 @@ public class ChimeraAIController : MonoBehaviour
     {
         if (runtimeData == null) return;
 
+        // 👇【核心静默控制】：如果没开战，引擎处于怠速状态，严禁挂挡！
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
+        {
+            if (rb != null) rb.velocity = Vector2.zero; // 拉手刹
+            return;
+        }
+
+
         // 状态 1：过热瘫痪态 (被榨干耐力的惩罚)
         if (IsExhausted)
         {
@@ -126,45 +134,41 @@ public class ChimeraAIController : MonoBehaviour
 
     private void HandleMovementAndStamina()
     {
-
         if (currentTarget == null)
         {
-            // 👇【物理手刹】：天下太平了，立刻清空物理惯性，原地待命！
+            // 天下太平，原地待命
             if (rb != null) rb.velocity = Vector2.zero;
-
-            // 顺便让它在没怪打的时候，能慢慢把刚才消耗的耐力回满！
-            if (CurrentStamina < MaxStamina)
-            {
-                CurrentStamina += 3f * Time.deltaTime;
-            }
-
-            return;
-        }
-        // 👇【关键修改】：把判断找不到目标的逻辑单独拎出来！
-        if (currentTarget == null)
-        {
-            // 如果你看到机甲没动，且控制台也没疯狂刷这句话，说明连 Update 都没进！
-            // 如果疯狂刷这句话，说明确实是找不到小怪！
+            if (CurrentStamina < MaxStamina) CurrentStamina += 3f * Time.deltaTime;
             return;
         }
 
         bool isMoving = false;
 
-        // 获取基础方向和中心点距离
-        Vector3 dirToTarget = (currentTarget.position - transform.position).normalized;
-        float dist = Vector3.Distance(transform.position, currentTarget.position);
+        // 👇【核心修复 1】：获取绝对的“逻辑心脏”世界坐标！
+        Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
 
-        // 👇【核心边缘感知】：如果双方都有物理肉体，计算“边缘到边缘”的绝对物理距离！
-        Collider2D targetCol = currentTarget.GetComponent<Collider2D>();
-        if (myCollider != null && targetCol != null)
+        // 获取基础方向（以心脏为基准指向敌人）
+        Vector3 dirToTarget = (currentTarget.position - logicCenter).normalized;
+        float dist = Vector3.Distance(logicCenter, currentTarget.position);
+
+        // 👇【核心修复 2】：寻找敌人身上的受击判定框 (Hitbox)
+        // 因为咱们做了层级分离，敌人的 Hitbox 可能在子节点上，优先找 isTrigger 的那个！
+        Collider2D[] enemyCols = currentTarget.GetComponentsInChildren<Collider2D>();
+        Collider2D targetCol = null;
+        foreach (var c in enemyCols) { if (c.isTrigger) { targetCol = c; break; } }
+        if (targetCol == null && enemyCols.Length > 0) targetCol = enemyCols[0]; // 兜底
+
+        if (targetCol != null)
         {
-            ColliderDistance2D collDist = Physics2D.Distance(myCollider, targetCol);
-            dist = collDist.isOverlapped ? 0f : collDist.distance;
+            // 👇【完美闭环】：从“我的心脏”到“敌人最边缘”的距离！
+            // 现在的 dist 计算结果，和 WeaponModule 里的计算结果绝对是 100% 一模一样的！
+            Vector2 closestPoint = targetCol.ClosestPoint(logicCenter);
+            dist = Vector2.Distance(logicCenter, closestPoint);
         }
 
-        // 👇【核心物理】：声明一个目标速度
         Vector2 targetVelocity = Vector2.zero;
 
+        // 战术走位判断
         if (runtimeData.MovementLogic == MovementStrategy.Dodge && dist < runtimeData.SafeDodgeDistance)
         {
             targetVelocity = -dirToTarget * CurrentSpeed;
@@ -177,6 +181,7 @@ public class ChimeraAIController : MonoBehaviour
         }
         else if (runtimeData.MovementLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange)
         {
+            // 激进火力型：只要没进入最小盲区，就一直往前怼！
             targetVelocity = dirToTarget * CurrentSpeed;
             isMoving = true;
         }
@@ -184,46 +189,36 @@ public class ChimeraAIController : MonoBehaviour
         // 瘫痪时速度归零
         if (IsExhausted) targetVelocity = Vector2.zero;
 
-        // 👇【物理引擎接管】：把算好的速度直接交给刚体！
+        // 物理接管
         if (rb != null) rb.velocity = targetVelocity;
 
         // --- 耐力核心运转 ---
-        // ... (保持你原来的耐力运转代码不变)
-        // --- 耐力核心运转 ---
         if (isMoving)
         {
-            // 移动时扣除耐力
-            CurrentStamina -= 5f * Time.deltaTime; // 每秒扣5点，数值可配
+            CurrentStamina -= 5f * Time.deltaTime;
             if (CurrentStamina <= 0)
             {
                 CurrentStamina = 0;
                 IsExhausted = true;
-                exhaustionTimer = 3f; // 强制原地瘫痪 3 秒！
+                exhaustionTimer = 3f;
                 Debug.LogWarning($"[{runtimeData.UnitName}] 引擎过热！强制瘫痪 3 秒！");
             }
         }
         else
         {
-            // 停下时恢复耐力
-            if (CurrentStamina < MaxStamina)
-            {
-                CurrentStamina += 3f * Time.deltaTime;
-            }
+            if (CurrentStamina < MaxStamina) CurrentStamina += 3f * Time.deltaTime;
         }
     }
     private void OnDrawGizmos()
     {
-        // 只有当游戏运行中，且大脑已经通电拿到了数据才画
         if (Application.isPlaying && runtimeData != null)
         {
-            // 如果当前的战术是“躲避型”
             if (runtimeData.MovementLogic == ComponentDataSO.MovementStrategy.Dodge)
             {
-                // 设置画笔颜色为绿色
                 Gizmos.color = Color.green;
-
-                // 画出一个圆圈！(SafeDodgeDistance 在通电时已经乘过全局比例尺了，这里直接用就是绝对准确的物理距离)
-                Gizmos.DrawWireSphere(transform.position, runtimeData.SafeDodgeDistance);
+                // 👇【圆心统一】：画安全距离圈时，也要以心脏为圆心！
+                Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
+                Gizmos.DrawWireSphere(logicCenter, runtimeData.SafeDodgeDistance);
             }
         }
     }

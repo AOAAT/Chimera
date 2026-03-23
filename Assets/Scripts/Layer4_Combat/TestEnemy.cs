@@ -66,6 +66,13 @@ public class TestEnemy : MonoBehaviour
     {
         if (myReceiver.CurrentHP <= 0) return;
 
+        // 👇【核心静默控制】：如果战斗导演存在，且发令枪还没响，全员原地罚站！
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
+        {
+            if (rb != null) rb.velocity = Vector2.zero; // 物理手刹死死拉住
+            return;
+        }
+
         // 1. 实时索敌：每帧（或用计时器每隔0.5秒）寻找最近的玩家单位
         FindNearestTarget();
 

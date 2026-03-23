@@ -69,14 +69,36 @@ public class MapManager : MonoBehaviour
     // 👇【新增】：打赢了回来，继续地图结算
     public void OnCombatVictory(MapNodeData nodeData)
     {
-        // 重新显示地图
+        // 1. 重新显示地图 UI
         if (MapUIPanel != null) MapUIPanel.SetActive(true);
 
-        // 结算节点状态（打勾，点亮下一层）
+        // 2. 核心状态机结算（打勾，点亮下一层）
         MoveToNode(nodeData);
 
-        // 刷新所有线和图标的颜色
-        GetComponent<MapVisualizer>().RefreshAllVisuals();
+        // 3. 👇【核心修复】：不能在自己身上找，要去 UI 节点里找 MapVisualizer！
+        MapVisualizer visualizer = null;
+        if (MapUIPanel != null)
+        {
+            // true 代表即使它是隐藏的也能找到
+            visualizer = MapUIPanel.GetComponentInChildren<MapVisualizer>(true);
+        }
+
+        // 兜底防呆：如果上面没找到，就全宇宙广播找一下
+        if (visualizer == null)
+        {
+            visualizer = FindObjectOfType<MapVisualizer>(true);
+        }
+
+        // 找到后命令 UI 刷新颜色
+        if (visualizer != null)
+        {
+            visualizer.RefreshAllVisuals();
+            Debug.Log("【系统广播】地图视觉已刷新，请长官选择下一节点！");
+        }
+        else
+        {
+            Debug.LogError("【严重警报】长官，找不到 MapVisualizer，地图颜色可能无法更新！");
+        }
     }
 
     // 玩家实际到达该节点后的逻辑处理

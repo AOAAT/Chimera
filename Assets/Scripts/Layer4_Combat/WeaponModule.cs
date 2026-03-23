@@ -44,6 +44,9 @@ public class WeaponModule : MonoBehaviour
     {
         if (weaponData == null) return;
 
+        // 👇【核心静默控制】：没开战不准雷达扫怪，也不准冷却转CD！保险关死！
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
+
         fireCooldown -= Time.deltaTime;
         FindTarget();
 
