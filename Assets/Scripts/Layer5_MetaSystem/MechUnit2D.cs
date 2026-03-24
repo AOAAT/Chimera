@@ -221,6 +221,25 @@ public class MechUnit2D : MonoBehaviour
         SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
         foreach (var sr in allRenderers) sr.color = targetColor;
     }
+
+    public void SyncPostCombatState()
+    {
+        // 如果没有绑定机库档案，说明这是个临时生成的怪物或测试机甲，不处理
+        if (bindedData == null) return;
+
+        DamageReceiver receiver = GetComponent<DamageReceiver>();
+        if (receiver != null)
+        {
+            // 1. 真实战损保留：无论剩多少血，都原原本本地写回档案！
+            // 使用 Mathf.Max(0, ...) 确保死透的机甲血量是 0 而不是负数
+            bindedData.CurrentHP = Mathf.Max(0, receiver.CurrentHP);
+
+            // 2. 护甲自动充能：把刚出厂时的最大护甲，重新充满！
+            bindedData.CurrentAP = receiver.MaxAP;
+
+            Debug.Log($"【数据同步】机甲 [{bindedData.UnitName}] 战损已回传机库！当前 HP: {bindedData.CurrentHP}, 护甲已重置为: {bindedData.CurrentAP}");
+        }
+    }
 }
 
 // 辅助扩展类：用于深层查找插槽

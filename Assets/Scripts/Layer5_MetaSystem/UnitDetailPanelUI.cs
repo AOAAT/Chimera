@@ -35,24 +35,30 @@ public class UnitDetailPanelUI : MonoBehaviour
     // ==========================================
     public void OpenDetail(int slotIndex, SavedUnitProfile profile)
     {
-        currentSlotIndex = slotIndex; // 现在编译器认识它了，开开心心地揣进了兜里
+        currentSlotIndex = slotIndex;
         currentProfile = profile;
         gameObject.SetActive(true);
 
-        // 1. 刷新纯文本数据
-        NameText.text = profile.UnitName;
-        HPText.text = $"最大生命值 (HP): {profile.CurrentHP}";
-        APText.text = $"装甲值 (AP): {profile.CurrentAP}";
-
+        // 👇【核心修复】：在详情页当场算出这台机甲的 MaxHP 和总耗电！
+        float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
         float totalPower = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.PowerCost);
+
         foreach (var compID in profile.EquippedComponentIDs)
         {
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (comp != null) totalPower += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.PowerCost);
+            if (comp != null)
+            {
+                maxHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
+                totalPower += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.PowerCost);
+            }
         }
+
+        NameText.text = profile.UnitName;
+        // 👇 统一为 RPG 格式：当前血量 / 最大血量！
+        HPText.text = $"生命值 (HP): {profile.CurrentHP} / {maxHP}";
+        APText.text = $"装甲值 (AP): {profile.CurrentAP}"; // AP在车间外永远是满的，就不写分母了
         PowerText.text = $"机体总耗电: {totalPower}";
 
-        // 2. 👇 召唤渲染魔法，拼装高清大图！
         BuildUnitVisual(profile);
     }
 

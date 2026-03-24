@@ -70,28 +70,47 @@ public class MapGenerator : MonoBehaviour
             List<MapNodeData> currLayer = layers[i];
             List<MapNodeData> nextLayer = layers[i + 1];
 
-            // 规则A：确保当前层的每个节点，至少连向下一个层的一个节点
-            for (int j = 0; j < currLayer.Count; j++)
-            {
-                // 巧妙的映射算法：根据自身索引按比例找到下一层的对应目标，防止X型交叉
-                int targetIndex = Mathf.Clamp(Mathf.RoundToInt((float)j / currLayer.Count * nextLayer.Count), 0, nextLayer.Count - 1);
-                ConnectNodes(currLayer[j], nextLayer[targetIndex]);
+            int currIdx = 0;
+            int nextIdx = 0;
 
-                // 有概率额外连向旁边的一个节点，增加路线选择的丰富度
-                if (Random.value > 0.5f && targetIndex + 1 < nextLayer.Count)
+            // 使用双指针拉链法，指针只能向右走，绝对不可能产生物理交叉！
+            while (currIdx < currLayer.Count || nextIdx < nextLayer.Count)
+            {
+                // 1. 连线当前指针指向的两个节点
+                ConnectNodes(currLayer[currIdx], nextLayer[nextIdx]);
+
+                // 2. 看看两边是不是还能往右走？
+                bool currCanMove = currIdx < currLayer.Count - 1;
+                bool nextCanMove = nextIdx < nextLayer.Count - 1;
+
+                if (currCanMove && nextCanMove)
                 {
-                    ConnectNodes(currLayer[j], nextLayer[targetIndex + 1]);
+                    // 都在半路上，随机决定谁往右走（或者一起走）
+                    float roll = Random.value;
+                    if (roll < 0.3f)
+                        currIdx++;      // 下面的节点往右走，连向同一个上面的节点 (形成 V 字)
+                    else if (roll < 0.6f)
+                        nextIdx++;      // 上面的节点往右走，连向同一个下面的节点 (形成倒 V 字)
+                    else
+                    {
+                        currIdx++;
+                        nextIdx++;
+                    } // 一起往右走，形成两条平行向上的线
                 }
-            }
-
-            // 规则B：反向检查，确保下一层的每个节点都至少有一个入口！(防止出现死节点)
-            for (int k = 0; k < nextLayer.Count; k++)
-            {
-                if (nextLayer[k].PrevNodeIDs.Count == 0)
+                else if (currCanMove)
                 {
-                    // 如果它没有上游，强行把它连向当前层离它最近的节点
-                    int closestIndex = Mathf.Clamp(Mathf.RoundToInt((float)k / nextLayer.Count * currLayer.Count), 0, currLayer.Count - 1);
-                    ConnectNodes(currLayer[closestIndex], nextLayer[k]);
+                    // 上面到头了，下面只能乖乖往右走，全部汇聚到上面的最右侧节点
+                    currIdx++;
+                }
+                else if (nextCanMove)
+                {
+                    // 下面到头了，上面只能乖乖往右走，全部从下面的最右侧节点出发
+                    nextIdx++;
+                }
+                else
+                {
+                    // 两边都到头了，本层连线完美收工！
+                    break;
                 }
             }
         }
@@ -110,7 +129,7 @@ public class MapGenerator : MonoBehaviour
         if (layerIndex == 0) return MapNodeType.Start;
         if (layerIndex == TotalLayers - 1) return MapNodeType.Boss;
         // 可以在中后期强制刷一个车间让玩家喘口气
-        if (layerIndex == TotalLayers / 2) return MapNodeType.Workshop;
+        //if (layerIndex == TotalLayers / 2) return MapNodeType.Workshop;
 
         float totalWeight = EnemyWeight + EventWeight + EliteWeight + WorkshopWeight;
         float roll = Random.Range(0, totalWeight);

@@ -54,8 +54,18 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             EmptyStateObj.SetActive(false);
             OccupiedStateObj.SetActive(true);
 
+            // 👇【核心修复】：给格子也加上当场计算 MaxHP 的逻辑！
+            float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
+            foreach (string compID in profile.EquippedComponentIDs)
+            {
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null && comp.BaseData != null)
+                    maxHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
+            }
+
             UnitNameText.text = profile.UnitName;
-            HPText.text = $"HP: {profile.CurrentHP}";
+            // 👇 统一为当前血量 / 最大血量
+            HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
             APText.text = $"AP: {profile.CurrentAP}";
             PowerText.text = $"耗电: {CalculateTotalPowerCost(profile)}";
 
@@ -146,12 +156,20 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             return;
         }
 
-        if (bindedProfile == null)
+        // 👇【核心修复】：将判断标准对齐 RefreshSlot！
+        // 只有当档案不为空，且档案里确实装载了底盘 (ChassisData) 时，才算真正“有车”！
+        bool isEmptySlot = (bindedProfile == null || bindedProfile.ChassisData == null);
+
+        if (isEmptySlot)
         {
+            Debug.Log($"【机库流转】{mySlotIndex} 号车位为空，已引导长官前往【组装车间】！");
+            // 是空车，正确跳转至新建组装页
             HangarMenuUI.Instance.TriggerCreateNewUnit(mySlotIndex);
         }
         else
         {
+            Debug.Log($"【机库流转】{mySlotIndex} 号车位已停放机甲，正在打开【详情档案】！");
+            // 有货，跳转至详情页
             HangarMenuUI.Instance.TriggerOpenUnitDetail(mySlotIndex, bindedProfile);
         }
     }

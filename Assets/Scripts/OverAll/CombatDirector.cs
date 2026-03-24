@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // 引入TMP用于文本显示
+using TMPro;
 
 public class CombatDirector : MonoBehaviour
 {
@@ -9,15 +9,21 @@ public class CombatDirector : MonoBehaviour
 
     public bool IsCombatActive { get; private set; }
 
+
     [Header("=== UI 引用：战前部署 ===")]
     public GameObject CombatUIPanel;
     public Button StartBattleButton;
 
-    // 👇【新增】：战后结算界面 UI 引用
+    // 👇【新增】：把左侧导航栏的两个“罪魁祸首”按钮拉进来！
+    [Header("=== UI 引用：导航栏大锁 ===")]
+    public Button NavHangarButton;      // 点击打开机库的那个按钮
+    public Button NavWarehouseButton;   // 点击打开仓库的那个按钮
+
     [Header("=== UI 引用：战后结算 ===")]
     public GameObject SettlementPanel;
     public TMP_Text SettlementTitleText;
     public Button ReturnToMapButton;
+
 
     [Header("=== 真实世界引用 ===")]
     public Transform EnemySpawnWorldPoint;
@@ -25,7 +31,6 @@ public class CombatDirector : MonoBehaviour
 
     private MapNodeData currentNodeData;
 
-    // 👇【新增】：裁判的小本本，记录场上活着的单位
     private List<DamageReceiver> activeEnemies = new List<DamageReceiver>();
     private List<DamageReceiver> activePlayerUnits = new List<DamageReceiver>();
     private bool isCheckingWinCondition = false;
@@ -40,7 +45,6 @@ public class CombatDirector : MonoBehaviour
         if (StartBattleButton != null)
             StartBattleButton.onClick.AddListener(OnBattleStartClicked);
 
-        // 绑定结算面板的返回按钮
         if (ReturnToMapButton != null)
             ReturnToMapButton.onClick.AddListener(OnReturnToMapClicked);
 
@@ -60,6 +64,10 @@ public class CombatDirector : MonoBehaviour
         if (StartBattleButton != null) StartBattleButton.interactable = true;
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
 
+        if (NavHangarButton != null) NavHangarButton.interactable = true;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
+
+        // 极其贴心地自动为玩家弹开机库面板，方便拖拽
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
 
         SpawnEnemiesForDeployment(nodeData);
@@ -87,7 +95,7 @@ public class CombatDirector : MonoBehaviour
     // ==========================================
     private void OnBattleStartClicked()
     {
-        // 👇【防呆拦截】：开战前清点人数！没下兵不准开战！
+        // 1. 【防呆拦截】：开战前清点人数！没下兵不准开战！
         activeEnemies.Clear();
         activePlayerUnits.Clear();
 
@@ -104,13 +112,21 @@ public class CombatDirector : MonoBehaviour
             return; // 直接拦截！
         }
 
+        // 2. 👇【核心锁定】：最高指令！封锁所有战前交互 UI！
         if (StartBattleButton != null) StartBattleButton.interactable = false;
+
+        // 强制关闭左侧【机库】与【全局仓库】面板，彻底断绝战时作弊念想！
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
+        if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
 
-        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！");
+        if (NavHangarButton != null) NavHangarButton.interactable = false;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
 
+        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！机库与物品库的大门连同钥匙已全部销毁！");
+
+        // 3. 裁判开始吹哨！AI 激活！
         IsCombatActive = true;
-        isCheckingWinCondition = true; // 裁判开始吹哨！
+        isCheckingWinCondition = true;
     }
 
     // ==========================================
@@ -120,7 +136,6 @@ public class CombatDirector : MonoBehaviour
     {
         if (!IsCombatActive || !isCheckingWinCondition) return;
 
-        // 1. 检查虫族是否死绝？
         bool allEnemiesDead = true;
         foreach (var e in activeEnemies)
         {
@@ -133,7 +148,6 @@ public class CombatDirector : MonoBehaviour
             return;
         }
 
-        // 2. 检查咱们的机甲是否全炸了？
         bool allPlayersDead = true;
         foreach (var p in activePlayerUnits)
         {
@@ -156,7 +170,6 @@ public class CombatDirector : MonoBehaviour
 
         Debug.Log(isVictory ? "【战斗结束】大获全胜！" : "【战斗结束】全军覆没...");
 
-        // 弹出结算面板
         if (SettlementPanel != null)
         {
             SettlementPanel.SetActive(true);
@@ -166,8 +179,6 @@ public class CombatDirector : MonoBehaviour
                 SettlementTitleText.color = isVictory ? Color.green : Color.red;
             }
         }
-
-        // TODO: 未来在这里可以生成战利品（随机抽取散件加入 PlayerInventoryManager）
     }
 
     // ==========================================
@@ -178,24 +189,37 @@ public class CombatDirector : MonoBehaviour
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
 
-        // 1. 打扫战场：强行销毁场上所有残留的物理肉体（尸体、残留子弹等）
+        // 👇👇👇【核心修复 1】：在毁尸灭迹之前，先命令所有玩家机甲把数据写回机库！
+        MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
+        foreach (var mech in allMechs)
+        {
+            mech.SyncPostCombatState(); // 抄写数据！
+            Destroy(mech.gameObject);   // 抄完再销毁
+        }
+
+        // 👇👇👇【核心修复 2】：销毁场上剩下的敌人沙包
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
         foreach (var r in allReceivers)
         {
-            Destroy(r.gameObject);
+            if (r != null) Destroy(r.gameObject);
         }
 
         Projectile[] allBullets = FindObjectsOfType<Projectile>();
         foreach (var b in allBullets) Destroy(b.gameObject);
 
-        // 2. 数据归位：把出战的机甲状态重置为“在库闲置”，以便下个节点继续用！
+        if (SettlementPanel != null) SettlementPanel.SetActive(false);
+        if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
+
+        if (NavHangarButton != null) NavHangarButton.interactable = true;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
+
+        // 2. 数据归位：重置出战状态
         foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
         {
             if (profile != null) profile.IsDeployed = false;
         }
 
-        // 3. 呼叫地图系统：我打完了，请切回地图！
-        // 如果是胜利，告诉地图节点打勾；如果是失败，这里未来可以写 Roguelike 的 Game Over 逻辑。
+        // 3. 呼叫地图系统：切回地图
         bool isVictory = SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
@@ -204,7 +228,6 @@ public class CombatDirector : MonoBehaviour
         else
         {
             Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请大侠重新来过！");
-            // TODO: 调用主菜单的重启大退逻辑
         }
     }
 }
