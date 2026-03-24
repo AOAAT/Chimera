@@ -24,11 +24,12 @@ MonoBehaviour:
   - StatID: 17
     Value: 20
   TargetingLogic: 0
-  MovementLogic: 0
-  SafeDodgeDistance: 8
+  MovementLogic: 1
+  SafeDodgeDistance: 60
   MoveType: 0
   Skills:
   - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
+  - {fileID: 11400000, guid: 2e75894cdf92071468eb62da5879122b, type: 2}
   OnSpawnActions: []
   OnDeathActions: []
   OnTakeDamageActions: []

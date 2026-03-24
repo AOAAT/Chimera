@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c585269d6ff8ee499577ea1af6bc860, type: 3}
   m_Name: "\u8FDC\u7A0B\u653B\u51FB"
   m_EditorClassIdentifier: 
-  SkillName: "\u6495\u54AC"
+  SkillName: "\u6CD5\u7403"
   SelectionWeight: 10
   AttackSpeed: 200
   MaxRange: 60
-  MinRange: 0
-  MinDamage: 10
-  MaxDamage: 20
+  MinRange: 15
+  MinDamage: 0
+  MaxDamage: 1
   CriticalChance: 0.05
-  DeliveryType: 0
+  DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   ProjectileSpeed: 100
   KnockbackForce: 5

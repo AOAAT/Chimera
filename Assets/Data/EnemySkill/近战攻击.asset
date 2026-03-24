@@ -15,10 +15,10 @@ MonoBehaviour:
   SkillName: "\u6495\u54AC"
   SelectionWeight: 10
   AttackSpeed: 200
-  MaxRange: 60
+  MaxRange: 40
   MinRange: 0
-  MinDamage: 10
-  MaxDamage: 20
+  MinDamage: 0
+  MaxDamage: 1
   CriticalChance: 0.05
   DeliveryType: 0
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
