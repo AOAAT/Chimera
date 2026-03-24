@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using UnityEngine;
-using static ComponentDataSO;
+// 👇【核心修复 1】：彻底删除了 using static ComponentDataSO; 因为不再需要寄人篱下了！
 
 public class ChimeraAIController : MonoBehaviour
 {
@@ -24,7 +24,7 @@ public class ChimeraAIController : MonoBehaviour
     {
         runtimeData = data;
 
-        // 👇【核心修复】：获取沙盒全局度量衡
+        // 获取沙盒全局度量衡
         float speedMult = 1f;
         float distMult = 1f;
         if (CombatSandbox.Instance != null)
@@ -55,22 +55,22 @@ public class ChimeraAIController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         myCollider = GetComponent<Collider2D>();
     }
+
     private void Update()
     {
         if (runtimeData == null) return;
 
-        // 👇【核心静默控制】：如果没开战，引擎处于怠速状态，严禁挂挡！
+        // 核心静默控制：如果没开战，引擎处于怠速状态，严禁挂挡！
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
             if (rb != null) rb.velocity = Vector2.zero; // 拉手刹
             return;
         }
 
-
         // 状态 1：过热瘫痪态 (被榨干耐力的惩罚)
         if (IsExhausted)
         {
-            // 👇【核心修复】：物理手刹！瘫痪瞬间强行清空刚体的惯性速度！
+            // 物理手刹！瘫痪瞬间强行清空刚体的惯性速度！
             if (rb != null) rb.velocity = Vector2.zero;
 
             exhaustionTimer -= Time.deltaTime;
@@ -89,22 +89,15 @@ public class ChimeraAIController : MonoBehaviour
         }
 
         // 正常状态下，确保颜色是白的（防止某些奇怪的打断）
-        // 👇【核心修复】
         TintMech(Color.white);
 
         FindTarget();
         HandleMovementAndStamina();
     }
+
     private void FindTarget()
     {
         var allEnemies = FindObjectsOfType<DamageReceiver>().Where(e => e.isEnemy && e.CurrentHP > 0).ToList();
-
-        // 👇【新增雷达日志】：每秒打印一次，看看场上到底有几个活着的敌人？
-        // (为了防止每帧打印卡死控制台，咱们粗略限制一下打印频率)
-        if (Time.frameCount % 60 == 0)
-        {
-            //Debug.Log($"【雷达扫描】场上活着的、且被标记为Enemy的敌人数量: {allEnemies.Count}");
-        }
 
         if (allEnemies.Count == 0)
         {
@@ -112,6 +105,7 @@ public class ChimeraAIController : MonoBehaviour
             return;
         }
 
+        // 👇【核心修复 2】：所有 TargetingStrategy 前面的前缀全没了，极其清爽！
         switch (runtimeData.TargetingLogic)
         {
             case TargetingStrategy.Nearest:
@@ -144,15 +138,14 @@ public class ChimeraAIController : MonoBehaviour
 
         bool isMoving = false;
 
-        // 👇【核心修复 1】：获取绝对的“逻辑心脏”世界坐标！
+        // 获取绝对的“逻辑心脏”世界坐标！
         Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
 
         // 获取基础方向（以心脏为基准指向敌人）
         Vector3 dirToTarget = (currentTarget.position - logicCenter).normalized;
         float dist = Vector3.Distance(logicCenter, currentTarget.position);
 
-        // 👇【核心修复 2】：寻找敌人身上的受击判定框 (Hitbox)
-        // 因为咱们做了层级分离，敌人的 Hitbox 可能在子节点上，优先找 isTrigger 的那个！
+        // 寻找敌人身上的受击判定框 (Hitbox)
         Collider2D[] enemyCols = currentTarget.GetComponentsInChildren<Collider2D>();
         Collider2D targetCol = null;
         foreach (var c in enemyCols) { if (c.isTrigger) { targetCol = c; break; } }
@@ -160,15 +153,14 @@ public class ChimeraAIController : MonoBehaviour
 
         if (targetCol != null)
         {
-            // 👇【完美闭环】：从“我的心脏”到“敌人最边缘”的距离！
-            // 现在的 dist 计算结果，和 WeaponModule 里的计算结果绝对是 100% 一模一样的！
+            // 从“我的心脏”到“敌人最边缘”的距离！
             Vector2 closestPoint = targetCol.ClosestPoint(logicCenter);
             dist = Vector2.Distance(logicCenter, closestPoint);
         }
 
         Vector2 targetVelocity = Vector2.zero;
 
-        // 战术走位判断
+        // 👇【核心修复 3】：MovementStrategy 前面的前缀也全没了！
         if (runtimeData.MovementLogic == MovementStrategy.Dodge && dist < runtimeData.SafeDodgeDistance)
         {
             targetVelocity = -dirToTarget * CurrentSpeed;
@@ -181,7 +173,6 @@ public class ChimeraAIController : MonoBehaviour
         }
         else if (runtimeData.MovementLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange)
         {
-            // 激进火力型：只要没进入最小盲区，就一直往前怼！
             targetVelocity = dirToTarget * CurrentSpeed;
             isMoving = true;
         }
@@ -209,14 +200,15 @@ public class ChimeraAIController : MonoBehaviour
             if (CurrentStamina < MaxStamina) CurrentStamina += 3f * Time.deltaTime;
         }
     }
+
     private void OnDrawGizmos()
     {
         if (Application.isPlaying && runtimeData != null)
         {
-            if (runtimeData.MovementLogic == ComponentDataSO.MovementStrategy.Dodge)
+            // 👇【核心修复 4】：去掉了 ComponentDataSO. 前缀！
+            if (runtimeData.MovementLogic == MovementStrategy.Dodge)
             {
                 Gizmos.color = Color.green;
-                // 👇【圆心统一】：画安全距离圈时，也要以心脏为圆心！
                 Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
                 Gizmos.DrawWireSphere(logicCenter, runtimeData.SafeDodgeDistance);
             }
@@ -225,7 +217,6 @@ public class ChimeraAIController : MonoBehaviour
 
     private void TintMech(Color targetColor)
     {
-        // 瞬间扫描机甲身上和所有子节点里的图层，全部统一上色！
         SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
         foreach (var sr in allRenderers)
         {

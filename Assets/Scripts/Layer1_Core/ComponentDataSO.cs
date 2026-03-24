@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-// 定义下拉菜单的选项（你可以随时在这里加新类型）
+// 组件类型枚举（仅限组件使用，所以保留在这里）
 public enum ComponentType
 {
     Core,       // 核心
@@ -9,35 +9,6 @@ public enum ComponentType
     Support,    // 辅助/插件
     Factory,    // 工厂
     Movement    // 移动组件（如腿部、履带）
-}
-// 全局属性字典（v2.0 浮动与加成版）
-
-// 【新增】伤害投递方式
-public enum WeaponDeliveryType { Melee, Ranged }
-
-// 【新增】伤害作用类型
-public enum WeaponTargetType { Single, MultiTarget, AreaOfEffect }
-
-
-public enum StatType
-{
-    AddedHP,         // 提供的血量加成
-    AddedAP,         // 提供的护甲加成
-    PowerCost,       // 耗电量加成（用于向全局总闸申请电量）
-    AddedMass,       // 质量加成（影响击退与碰撞）
-    EnginePower,     // 动力加成（结合质量计算最终移速）
-
-    // 武器专属词缀
-    MaxDamage,       // 攻击力上限
-    MinDamage,       // 攻击力下限
-    MaxRange,        // 最大攻击范围
-    MinRange,        // 最小攻击范围（可用于设计狙击武器的盲区）
-    AttackSpeed,     // 攻击速度
-    CriticalChance,  // 暴击率
-
-    ExplosionRadius, // 爆炸范围 (用于 AoE)
-    MultiShotCount,
-    ProjectileSpeed  // 子弹飞行速度 (用于 Ranged)
 }
 
 [CreateAssetMenu(fileName = "NewComponent", menuName = "Chimera Protocol/Component Data")]
@@ -53,13 +24,10 @@ public class ComponentDataSO : ScriptableObject
     [TextArea] public string SpecialMechanicDesc = "特殊机制";
 
     [Header("装配规则")]
-    // 这就是你想要的下拉选择表！
     public ComponentType Type;
-    // Tag 依然保留，用于极特殊的 ECA 逻辑判定（比如区分“血肉”还是“机械”）
-    // 👇【核心修复】：把旧的 List<string> Tags 删掉，换成这行！
+
     [Header("=== 核心标识 ===")]
     public List<ComponentTag> Tags = new List<ComponentTag>();
-
 
     [Header("核心数值池 (自由增删)")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
@@ -81,43 +49,25 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== 武器专属机制 (仅武器有效) ===")]
     public WeaponDeliveryType DeliveryType = WeaponDeliveryType.Ranged;
 
-    // 【屠宰旧逻辑】：删除了 public WeaponTargetType TargetType;
-
     [Tooltip("如果是远程武器，请在这里放入子弹的预制体")]
     public GameObject ProjectilePrefab;
 
-    // 👇【全新 ECA 接口】：子弹命中时，该执行哪些原子动作？
     [Header("=== ECA: 开火时触发 (On Fire) ===")]
     public List<ECAAction> OnFireActions = new List<ECAAction>();
 
     [Header("=== ECA: 命中时触发 (On Hit) ===")]
     public List<ECAAction> OnHitActions = new List<ECAAction>();
 
-    // 👇【全新插座】：装配期光环触发器
     [Header("=== ECA: 装配期触发 (On Assemble) ===")]
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
 
-    // === 全新 AI 字典 ===
-    public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest }
-    public enum MovementStrategy { Active_Firepower, Active_Survival, Dodge }
-
-    // 在你的 ComponentDataSO 类中，找个合适的地方加上：
     [Header("=== 核心组件独有 AI 设定 (仅当 Type 为 Core 时有效) ===")]
     public TargetingStrategy TargetingLogic = TargetingStrategy.Nearest;
     public MovementStrategy MovementLogic = MovementStrategy.Active_Firepower;
     public float SafeDodgeDistance = 8f; // 躲避型专属：安全距离
-
 }
 
-
-
-[System.Serializable]
-public struct StatEntry
-{
-    public StatType StatID; // 以前这里是 string，现在变成了下拉菜单！
-    public float Value;
-}
-
+// ECA 触发器结构体（组件附带，保留）
 [System.Serializable]
 public struct ECABlock
 {

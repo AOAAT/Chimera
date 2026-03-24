@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6656353821565084172}
   - component: {fileID: 4932567609694150885}
   - component: {fileID: 3648522620002074788}
-  - component: {fileID: 7251688623844070872}
   m_Layer: 8
   m_Name: TestEnemy
   m_TagString: Enemy
@@ -118,18 +117,3 @@ MonoBehaviour:
   MeleeDamage: 15
   AttackInterval: 1.5
   AttackRange: 1.5
---- !u!114 &7251688623844070872
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2606436442585209177}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 44440bf8452be7e48a7ab8492dc828bf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isEnemy: 1
-  CurrentHP: 0
-  CurrentAP: 0

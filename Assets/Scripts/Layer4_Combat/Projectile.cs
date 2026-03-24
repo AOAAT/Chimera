@@ -6,40 +6,41 @@ public class Projectile : MonoBehaviour
     private float damage;
     private RuntimeWeapon weaponData;
     private float speed;
+    public bool IsFiredByEnemy = false;
 
-    // 弹药点火装填
-    public void Fire(Transform target, float damage, RuntimeWeapon data)
+    public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemyFire = false)
     {
         this.target = target;
         this.damage = damage;
         this.weaponData = data;
+        this.IsFiredByEnemy = isEnemyFire;
 
-        // 读取子弹基础速度
         this.speed = data.GetStat(StatType.ProjectileSpeed);
         if (this.speed <= 0) this.speed = 10f;
 
-        // 👇【核心修复】：接入全局战区沙盒的速度比例尺！
         if (CombatSandbox.Instance != null)
         {
             this.speed *= CombatSandbox.Instance.SpeedMultiplier;
         }
+
+        string shooter = isEnemyFire ? "敌人" : "玩家";
+        Debug.Log($"<color=#FFFF00>【子弹发射】</color> {shooter} 开火！武器: {data.WeaponName}，目标: {(target ? target.name : "无")}");
     }
 
     private void Update()
     {
-        // 如果目标死了或者丢了，子弹自毁（未来可以优化为飞向最后已知坐标）
         if (target == null || !target.gameObject.activeInHierarchy)
         {
             Destroy(gameObject);
             return;
         }
-
-        // 飞向目标
         transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
     }
 
-private void HitTarget()
+    private void HitTarget()
     {
+        Debug.Log($"<color=#FFFF00>【子弹引爆】</color> {weaponData.WeaponName} 的子弹成功命中目标: {target.name}，正在派发 ECA 伤害总线...");
+
         ECAContext context = new ECAContext
         {
             ImpactPoint = transform.position,
@@ -48,7 +49,6 @@ private void HitTarget()
             SourceWeapon = weaponData
         };
 
-        // 这里只负责呼叫积木，绝对不能自己扣血！
         if (weaponData.OnHitActions != null)
         {
             foreach (var action in weaponData.OnHitActions)
@@ -56,15 +56,12 @@ private void HitTarget()
                 if (action != null) action.Execute(context);
             }
         }
-
         Destroy(gameObject);
     }
 
     private void Start()
     {
-        // 👇【层级剥离】：子弹去它该去的图层！
         gameObject.layer = LayerMask.NameToLayer("Projectile");
-
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.isKinematic = true; }
 
@@ -73,18 +70,25 @@ private void HitTarget()
         else col.isTrigger = true;
     }
 
-    // 👇【极其硬核的物理命中感知】
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 顺藤摸瓜：撞到了左手或底盘？直接找它最上层的血条！
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
 
-        // 如果碰到了带血条的物体，且它是敌人！
-        if (receiver != null && receiver.isEnemy)
+        // 【极其硬核的调试播报】
+        if (receiver != null)
         {
-            // 把目标强行扭转为当前撞到的这个倒霉蛋，然后结算伤害！
-            this.target = receiver.transform;
-            HitTarget();
+            bool isFriendlyFire = (receiver.isEnemy == this.IsFiredByEnemy);
+            if (isFriendlyFire)
+            {
+                // 打到自己人了，或者穿过了自己
+                // Debug.Log($"[子弹穿透] 穿过友军: {receiver.gameObject.name}"); 
+            }
+            else
+            {
+                // 打到敌人了！
+                this.target = receiver.transform;
+                HitTarget();
+            }
         }
     }
 }

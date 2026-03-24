@@ -15,10 +15,10 @@ public class ChassisDataSO : ScriptableObject
 
     [Header("=== 核心标识 (三级流派标签) ===")]
     public List<ComponentTag> Tags = new List<ComponentTag>();
+
     [Header("底盘自身属性加成")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
 
-    // 👇【新增】：逻辑心脏偏移量！一切武器射程的绝对圆心！
     [Header("=== 战斗逻辑心脏 (Logic Center) ===")]
     [Tooltip("偏离底盘图片中心的坐标。这是所有武器统一索敌和发射子弹的原点！")]
     public Vector2 LogicCenterOffset = Vector2.zero;
@@ -37,7 +37,7 @@ public class SlotDefinition
 
     [Header("姿态控制")]
     [Range(-180f, 180f)]
-    public float MountAngle = 0f; // 插槽的默认旋转角度 (比如左侧武器朝左填 90)
+    public float MountAngle = 0f; // 插槽的默认旋转角度
 
     [Range(0.1f, 5f)]
     public float DefaultComponentScale = 1.0f;
