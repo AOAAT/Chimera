@@ -17,7 +17,7 @@ public class Action_AreaDamage : ECAAction
         DamageReceiver[] all = FindObjectsOfType<DamageReceiver>();
         foreach (var rec in all)
         {
-            if (rec.isEnemy && Vector3.Distance(context.ImpactPoint, rec.transform.position) <= realRadius)
+            if (rec.isEnemy != context.IsEnemyFire && Vector3.Distance(context.ImpactPoint, rec.transform.position) <= realRadius)
             {
                 rec.TakeDamage(finalDmg, context.SourceWeapon.WeaponName + " (溅射)");
             }

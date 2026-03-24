@@ -16,32 +16,19 @@ MonoBehaviour:
   EnemyName: "\u672A\u77E5\u751F\u7269"
   Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
   EnemySprite: {fileID: 21300000, guid: c29dcea383f5cbf408940d584b0168af, type: 3}
+  VisualScaleMultiplier: 0.3
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
-  Tags: 
   BaseStats:
-  - StatID: 17
-    Value: 10
-  - StatID: 5
-    Value: 20
-  - StatID: 6
-    Value: 20
-  - StatID: 7
-    Value: 80
   - StatID: 14
-    Value: 20000
-  - StatID: 13
-    Value: 100
-  - StatID: 9
-    Value: 200
+    Value: 2000
+  - StatID: 17
+    Value: 20
   TargetingLogic: 0
   MovementLogic: 0
+  SafeDodgeDistance: 8
   MoveType: 0
-  DeliveryType: 1
-  TargetType: 0
-  DamageTag: 0
-  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  Skills:
+  - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
   OnSpawnActions: []
   OnDeathActions: []
-  OnAttackHitActions:
-  - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
   OnTakeDamageActions: []

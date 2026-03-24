@@ -1,9 +1,8 @@
 ﻿using UnityEngine;
 
-// 统一的受击判定组件
 public class DamageReceiver : MonoBehaviour
 {
-    public bool isEnemy; // 用于区分阵营
+    public bool isEnemy;
 
     public float MaxHP { get; private set; }
     public float MaxAP { get; private set; }
@@ -12,38 +11,36 @@ public class DamageReceiver : MonoBehaviour
     public float CurrentHP;
     public float CurrentAP;
 
-    private SpriteRenderer rendererReference;
-
     public void Initialize(float maxHP, float maxAP, SpriteRenderer sr = null)
     {
         MaxHP = maxHP;
         MaxAP = maxAP;
         CurrentHP = maxHP;
         CurrentAP = maxAP;
-        rendererReference = sr;
     }
 
-    // 核心物理交互：接收伤害
     public void TakeDamage(float rawDamage, string sourceName)
     {
-        if (CurrentHP <= 0) return; // 已经死了
+        if (CurrentHP <= 0) return; // 已经死了，拒收伤害
 
+        float oldHP = CurrentHP;
+        float oldAP = CurrentAP;
         float finalDamage = rawDamage;
-        string unitType = isEnemy ? "敌人" : "玩家";
+        float absorbed = 0f;
 
         // 1. AP（护甲）优先承伤逻辑
         if (CurrentAP > 0)
         {
             if (finalDamage <= CurrentAP)
             {
+                absorbed = finalDamage;
                 CurrentAP -= finalDamage;
-                Debug.Log($"<color=#00FFFF>【护甲吸收】</color> [{unitType}] {gameObject.name} 被 {sourceName} 命中，护甲吸收了 {finalDamage} 点伤害！剩余 AP: {CurrentAP}");
                 finalDamage = 0;
             }
             else
             {
+                absorbed = CurrentAP;
                 finalDamage -= CurrentAP;
-                Debug.Log($"<color=#FF8800>【护甲击穿】</color> [{unitType}] {gameObject.name} 被 {sourceName} 击穿护甲！溢出真实伤害: {finalDamage}");
                 CurrentAP = 0;
             }
         }
@@ -52,25 +49,32 @@ public class DamageReceiver : MonoBehaviour
         if (finalDamage > 0)
         {
             CurrentHP -= finalDamage;
-            Debug.Log($"<color=#FF0000>【真实伤害】</color> [{unitType}] {gameObject.name} 受到 {finalDamage} 点真实伤害！剩余 HP: {CurrentHP}");
+        }
 
-            // 闪红视觉反馈
-            if (rendererReference != null)
-            {
-                rendererReference.color = Color.red;
-                Invoke(nameof(ResetColor), 0.1f);
-            }
+        // 👇【主策专属：极限增强版战损 Debug】
+        string camp = isEnemy ? "敌人" : "玩家";
+        string color = isEnemy ? "#FF4500" : "#00FFFF"; // 敌人掉血橘红，玩家受创青蓝
 
-            if (CurrentHP <= 0)
-            {
-                CurrentHP = 0;
-                Debug.Log($"<color=#FF0000><b>【单位阵亡】</b></color> [{unitType}] {gameObject.name} 被 {sourceName} 击毁！");
-            }
+        Debug.Log($"<color={color}><b>【伤害结算】</b></color> [{camp}] {gameObject.name} 被 <color=yellow>{sourceName}</color> 命中！\n" +
+                  $"<color=#AAAAAA>▶ 承受总伤: {rawDamage:F1} (护甲吸收: {absorbed:F1}, 肉体受创: {finalDamage:F1})</color>\n" +
+                  $"<color=#00FF00>▶ AP 变化: {oldAP:F1} -> {CurrentAP:F1}</color>\n" +
+                  $"<color=#FF6666>▶ HP 变化: {oldHP:F1} -> {CurrentHP:F1}</color>");
+
+        if (CurrentHP <= 0)
+        {
+            Die();
         }
     }
 
-    private void ResetColor()
+    private void Die()
     {
-        if (rendererReference != null) rendererReference.color = Color.white;
+        string camp = isEnemy ? "敌人" : "玩家";
+        Debug.Log($"<b><color=#8B0000>【单位阵亡】</color></b> [{camp}] {gameObject.name} 已被彻底摧毁！");
+
+        // 死亡时尸体变黑，视觉反馈更直接
+        SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in srs) sr.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+
+        this.enabled = false;
     }
 }

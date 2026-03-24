@@ -126,21 +126,25 @@ public class WeaponModule : MonoBehaviour
         bool isCrit = Random.value <= totalCritChance;
         if (isCrit) finalDmg *= 1.5f;
 
+        // 👇【新增评估日志】：玩家武器开火详情
+        string critLog = isCrit ? "<color=#FFD700><b>(暴击!)</b></color>" : "";
+        Debug.Log($"<color=#00FFFF>【玩家开火】</color> 武器 [{weaponData.WeaponName}] 锁定了 [{CurrentTargets[0].name}] | 判定伤害: {finalDmg:F1} {critLog}");
+
+        // 触发开火动作，标记 IsEnemyFire = false
         ECAContext fireContext = new ECAContext
         {
             ImpactPoint = transform.position,
             PrimaryTarget = CurrentTargets[0],
             BaseDamage = finalDmg,
             SourceWeapon = weaponData,
-            IsCriticalHit = isCrit
+            IsCriticalHit = isCrit,
+            IsEnemyFire = false // 玩家开火！
         };
 
         if (weaponData.OnFireActions != null)
             foreach (var action in weaponData.OnFireActions)
                 if (action != null) action.Execute(fireContext);
 
-        // 👇【完美发射点】：基于心脏坐标，向真实的武器插槽偏移 30%！
-        // 这样既是以底盘中心为火力发射源，多把武器同时开火时又会有完美的扇形错位，绝不重叠！
         Vector3 logicCenter = GetLogicCenter();
         Transform actualHinge = GetActualHinge();
         Vector3 spawnPos = Vector3.Lerp(logicCenter, actualHinge.position, 0.3f);
@@ -149,31 +153,20 @@ public class WeaponModule : MonoBehaviour
         {
             if (weaponData.DeliveryType == WeaponDeliveryType.Melee)
             {
-                ECAContext hitContext = new ECAContext
-                {
-                    ImpactPoint = target.position,
-                    PrimaryTarget = target,
-                    BaseDamage = finalDmg,
-                    SourceWeapon = weaponData,
-                    IsCriticalHit = isCrit
-                };
-
-                if (weaponData.OnHitActions != null)
-                    foreach (var action in weaponData.OnHitActions)
-                        if (action != null) action.Execute(hitContext);
-
+                ECAContext hitContext = new ECAContext { ImpactPoint = target.position, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false };
+                if (weaponData.OnHitActions != null) foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(hitContext);
                 Debug.DrawLine(spawnPos, target.position, Color.yellow, 0.1f);
             }
             else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)
             {
-                // 子弹飞行朝向：从发射点(心脏偏置)飞向目标！
                 Vector3 bulletDir = target.position - spawnPos;
                 float bulletAngle = Mathf.Atan2(bulletDir.y, bulletDir.x) * Mathf.Rad2Deg;
                 Quaternion bulletRot = Quaternion.AngleAxis(bulletAngle, Vector3.forward);
 
                 GameObject projObj = Instantiate(weaponData.ProjectilePrefab, spawnPos, bulletRot);
                 Projectile projectile = projObj.GetComponent<Projectile>();
-                projectile.Fire(target, finalDmg, weaponData);
+                // 👇【核心对接】：告诉子弹这是玩家发射的！
+                projectile.Fire(target, finalDmg, weaponData, isEnemy: false);
             }
         }
     }

@@ -24,7 +24,7 @@ public class Action_ChainDamage : ECAAction
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
 
         var chainTargets = allReceivers
-            .Where(r => r.isEnemy && r.CurrentHP > 0)
+            .Where(r => r.isEnemy != context.IsEnemyFire && r.CurrentHP > 0)
             .Where(r => r.transform != context.PrimaryTarget) // 排除掉刚刚被主炮打中的那个人
             .Where(r => Vector3.Distance(context.ImpactPoint, r.transform.position) <= realRadius)
             .OrderBy(r => Vector3.Distance(context.ImpactPoint, r.transform.position))
