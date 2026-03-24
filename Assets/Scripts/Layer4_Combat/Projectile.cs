@@ -7,10 +7,9 @@ public class Projectile : MonoBehaviour
     private RuntimeWeapon weaponData;
     private float speed;
 
-    // 👇【新增阵营标识】
     private bool isEnemyFire;
+    private bool hasHit = false; // 👇【新增】：防连击锁，保证一颗子弹绝对只炸一次！
 
-    // 👇【修复】：发车时传入阵营标识
     public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy = false)
     {
         this.target = target;
@@ -21,30 +20,9 @@ public class Projectile : MonoBehaviour
         this.speed = data.GetStat(StatType.ProjectileSpeed);
         if (this.speed <= 0) this.speed = 10f;
         if (CombatSandbox.Instance != null) this.speed *= CombatSandbox.Instance.SpeedMultiplier;
-    }
 
-    private void Update()
-    {
-        if (target == null || !target.gameObject.activeInHierarchy) { Destroy(gameObject); return; }
-        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
-    }
-
-    private void HitTarget()
-    {
-        ECAContext context = new ECAContext
-        {
-            ImpactPoint = transform.position,
-            PrimaryTarget = target,
-            BaseDamage = damage,
-            SourceWeapon = weaponData,
-            IsEnemyFire = this.isEnemyFire // 👇 把阵营传给爆炸积木！
-        };
-
-        if (weaponData.OnHitActions != null)
-            foreach (var action in weaponData.OnHitActions)
-                if (action != null) action.Execute(context);
-
-        Destroy(gameObject);
+        // 👇【核心修复 1：绝对图层控制】：发车瞬间，强行注入 Projectile 图层，撕碎预制体的错误配置！
+        gameObject.layer = LayerMask.NameToLayer("Projectile");
     }
 
     private void Start()
@@ -56,11 +34,54 @@ public class Projectile : MonoBehaviour
         else col.isTrigger = true;
     }
 
+    private void Update()
+    {
+        // 如果已经炸了，或者目标蒸发了，直接销毁
+        if (hasHit) return;
+        if (target == null || !target.gameObject.activeInHierarchy) { Destroy(gameObject); return; }
+
+        // 巡航追踪
+        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+
+        // 👇【核心修复 2：主程的神级兜底】：管你物理引擎碰没碰到，只要贴脸（距离 < 0.2f），强制执行引爆！
+        if (Vector3.Distance(transform.position, target.position) <= 0.2f)
+        {
+            HitTarget();
+        }
+    }
+
+    private void HitTarget()
+    {
+        if (hasHit) return; // 防连击
+        hasHit = true;      // 上锁！
+
+        ECAContext context = new ECAContext
+        {
+            ImpactPoint = transform.position,
+            PrimaryTarget = target,
+            BaseDamage = damage,
+            SourceWeapon = weaponData,
+            IsEnemyFire = this.isEnemyFire // 传递阵营
+        };
+
+        if (weaponData != null && weaponData.OnHitActions != null)
+        {
+            foreach (var action in weaponData.OnHitActions)
+            {
+                if (action != null) action.Execute(context);
+            }
+        }
+
+        Destroy(gameObject);
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        if (hasHit) return;
+
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
 
-        // 👇【核心修复】：必须是异一阵营，才能引爆！(机甲打敌人，或敌人打机甲)
+        // 阵营比对：必须是异一阵营，才能引爆！
         if (receiver != null && receiver.isEnemy != this.isEnemyFire)
         {
             this.target = receiver.transform;
