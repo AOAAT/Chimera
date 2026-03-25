@@ -9,25 +9,32 @@ public class CombatDirector : MonoBehaviour
 
     public bool IsCombatActive { get; private set; }
 
-
     [Header("=== UI 引用：战前部署 ===")]
     public GameObject CombatUIPanel;
     public Button StartBattleButton;
 
-    // 👇【新增】：把左侧导航栏的两个“罪魁祸首”按钮拉进来！
     [Header("=== UI 引用：导航栏大锁 ===")]
-    public Button NavHangarButton;      // 点击打开机库的那个按钮
-    public Button NavWarehouseButton;   // 点击打开仓库的那个按钮
+    public Button NavHangarButton;
+    public Button NavWarehouseButton;
 
     [Header("=== UI 引用：战后结算 ===")]
     public GameObject SettlementPanel;
     public TMP_Text SettlementTitleText;
     public Button ReturnToMapButton;
 
-
     [Header("=== 真实世界引用 ===")]
-    public Transform EnemySpawnWorldPoint;
-    public GameObject TestEnemyPrefab;
+    [Tooltip("战场正中心点")]
+    public Transform ArenaCenter;
+    [Tooltip("怪物的通用空壳预制体 (必须挂载 EnemyBrain)")]
+    public GameObject BaseEnemyPrefab;
+
+    // 👇视觉红区的白色像素贴图引用
+    [Tooltip("一张纯白色的 1x1 像素贴图，用于可视化红区")]
+    public Sprite WhitePixelSprite;
+
+    [Header("=== 运行时状态监视 (只读) ===")]
+    public EncounterLayoutSO CurrentLayout;
+    private GameObject forbiddenZonesContainer;
 
     private MapNodeData currentNodeData;
 
@@ -67,93 +74,146 @@ public class CombatDirector : MonoBehaviour
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        // 极其贴心地自动为玩家弹开机库面板，方便拖拽
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
 
-        SpawnEnemiesForDeployment(nodeData);
+        if (RunManager.Instance == null)
+        {
+            Debug.LogError("【致命错误】找不到 RunManager 指挥中枢！无法生成敌人！");
+            return;
+        }
+
+        CurrentLayout = RunManager.Instance.GetNextEncounterForCurrentNode();
+        if (CurrentLayout != null)
+        {
+            SpawnEnemiesFromLayout(); // 恢复了！
+            GenerateForbiddenZones();
+        }
+        else
+        {
+            Debug.LogWarning("【警告】当前节点没有获取到遭遇战图纸！");
+        }
     }
 
-    private void SpawnEnemiesForDeployment(MapNodeData nodeData)
+    // 👇【这就是刚才被我弄丢的刷怪代码！】
+    private void SpawnEnemiesFromLayout()
     {
-        foreach (Transform child in EnemySpawnWorldPoint) Destroy(child.gameObject);
-
-        int enemyCount = (nodeData.NodeType == MapNodeType.Elite) ? 3 : 2;
-
-        for (int i = 0; i < enemyCount; i++)
+        if (ArenaCenter != null)
         {
-            GameObject enemy = Instantiate(TestEnemyPrefab, EnemySpawnWorldPoint);
-            enemy.transform.localScale = TestEnemyPrefab.transform.localScale;
+            foreach (Transform child in ArenaCenter) Destroy(child.gameObject);
+        }
 
-            Vector2 randomVisualOffset = Random.insideUnitCircle * 1.5f;
-            Vector3 finalPos = new Vector3(randomVisualOffset.x, randomVisualOffset.y, 0f);
-            enemy.transform.localPosition = finalPos;
+        Vector3 centerPos = ArenaCenter != null ? ArenaCenter.position : Vector3.zero;
+
+        foreach (var spawnData in CurrentLayout.Enemies)
+        {
+            if (spawnData.EnemyType == null) continue;
+
+            Vector3 spawnPos = centerPos + new Vector3(spawnData.LocalPosition.x, spawnData.LocalPosition.y, 0f);
+            GameObject enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, ArenaCenter);
+            enemyObj.name = $"[Enemy] {spawnData.EnemyType.EnemyName}";
+
+            EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
+            if (brain != null) brain.MyData = spawnData.EnemyType;
+
+            SpriteRenderer sr = enemyObj.GetComponentInChildren<SpriteRenderer>();
+            if (sr != null && spawnData.EnemyType.EnemySprite != null)
+            {
+                sr.sprite = spawnData.EnemyType.EnemySprite;
+                enemyObj.transform.localScale = Vector3.one * spawnData.EnemyType.VisualScaleMultiplier;
+            }
+        }
+    }
+
+    // 👇 生成浅红色禁飞区 (楚河汉界)
+    private void GenerateForbiddenZones()
+    {
+        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
+        forbiddenZonesContainer = new GameObject("[Forbidden Zones]");
+        forbiddenZonesContainer.transform.SetParent(this.transform);
+
+        Vector3 centerPos = ArenaCenter != null ? ArenaCenter.position : Vector3.zero;
+
+        int noDeployLayer = LayerMask.NameToLayer("NoDeploy");
+        if (noDeployLayer == -1)
+        {
+            Debug.LogError("【致命错误】长官！你还没有在 Unity 里建一个叫 NoDeploy 的 Layer！拦截机制瘫痪！");
+        }
+
+        foreach (var rect in CurrentLayout.ForbiddenZones)
+        {
+            GameObject zoneObj = new GameObject("Zone_Blocker_Visible");
+            zoneObj.transform.SetParent(forbiddenZonesContainer.transform);
+
+            Vector3 zonePos = centerPos + new Vector3(rect.x + rect.width / 2f, rect.y - rect.height / 2f, 0f);
+            zoneObj.transform.position = zonePos;
+
+            BoxCollider2D col = zoneObj.AddComponent<BoxCollider2D>();
+            col.size = new Vector2(rect.width, rect.height);
+            col.isTrigger = true;
+
+            if (noDeployLayer != -1) zoneObj.layer = noDeployLayer;
+
+            // 铺设浅红色背景
+            if (WhitePixelSprite != null)
+            {
+                SpriteRenderer sr = zoneObj.AddComponent<SpriteRenderer>();
+                sr.sprite = WhitePixelSprite;
+                sr.transform.localScale = new Vector3(rect.width * 100f, rect.height * 100f, 1f);
+                sr.color = new Color(1f, 0f, 0f, 0.2f);
+                sr.sortingOrder = 15;
+            }
         }
     }
 
     // ==========================================
-    // 阶段 2：正式开战
+    // 阶段 2：正式开战 
     // ==========================================
     private void OnBattleStartClicked()
     {
-        // 1. 【防呆拦截】：开战前清点人数！没下兵不准开战！
         activeEnemies.Clear();
         activePlayerUnits.Clear();
-
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
         foreach (var r in allReceivers)
         {
             if (r.isEnemy) activeEnemies.Add(r);
             else activePlayerUnits.Add(r);
         }
-
         if (activePlayerUnits.Count == 0)
         {
             Debug.LogWarning("【系统警告】长官，您还没有向战场空投任何机甲，禁止开战！");
-            return; // 直接拦截！
+            return;
         }
-
-        // 2. 👇【核心锁定】：最高指令！封锁所有战前交互 UI！
         if (StartBattleButton != null) StartBattleButton.interactable = false;
-
-        // 强制关闭左侧【机库】与【全局仓库】面板，彻底断绝战时作弊念想！
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
         if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
-
         if (NavHangarButton != null) NavHangarButton.interactable = false;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
-
-        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！机库与物品库的大门连同钥匙已全部销毁！");
-
-        // 3. 裁判开始吹哨！AI 激活！
+        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！");
         IsCombatActive = true;
         isCheckingWinCondition = true;
     }
 
     // ==========================================
-    // 阶段 2.5：裁判时刻 (每帧死盯血条)
+    // 阶段 2.5：裁判时刻
     // ==========================================
     private void Update()
     {
         if (!IsCombatActive || !isCheckingWinCondition) return;
-
         bool allEnemiesDead = true;
         foreach (var e in activeEnemies)
         {
             if (e != null && e.CurrentHP > 0) { allEnemiesDead = false; break; }
         }
-
         if (allEnemiesDead)
         {
             TriggerSettlement(true);
             return;
         }
-
         bool allPlayersDead = true;
         foreach (var p in activePlayerUnits)
         {
             if (p != null && p.CurrentHP > 0) { allPlayersDead = false; break; }
         }
-
         if (allPlayersDead)
         {
             TriggerSettlement(false);
@@ -161,15 +221,13 @@ public class CombatDirector : MonoBehaviour
     }
 
     // ==========================================
-    // 阶段 3：吹哨停战，弹结算面板
+    // 阶段 3：吹哨停战
     // ==========================================
     private void TriggerSettlement(bool isVictory)
     {
-        IsCombatActive = false; // 瞬间锁死全场 AI 和武器
+        IsCombatActive = false;
         isCheckingWinCondition = false;
-
         Debug.Log(isVictory ? "【战斗结束】大获全胜！" : "【战斗结束】全军覆没...");
-
         if (SettlementPanel != null)
         {
             SettlementPanel.SetActive(true);
@@ -182,44 +240,36 @@ public class CombatDirector : MonoBehaviour
     }
 
     // ==========================================
-    // 阶段 4：打扫战场，班师回朝
+    // 阶段 4：打扫战场
     // ==========================================
     private void OnReturnToMapClicked()
     {
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
-
-        // 👇👇👇【核心修复 1】：在毁尸灭迹之前，先命令所有玩家机甲把数据写回机库！
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
         foreach (var mech in allMechs)
         {
-            mech.SyncPostCombatState(); // 抄写数据！
-            Destroy(mech.gameObject);   // 抄完再销毁
+            mech.SyncPostCombatState();
+            Destroy(mech.gameObject);
         }
-
-        // 👇👇👇【核心修复 2】：销毁场上剩下的敌人沙包
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
         foreach (var r in allReceivers)
         {
             if (r != null) Destroy(r.gameObject);
         }
-
         Projectile[] allBullets = FindObjectsOfType<Projectile>();
         foreach (var b in allBullets) Destroy(b.gameObject);
 
+        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
+
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
-
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
-
-        // 2. 数据归位：重置出战状态
         foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
         {
             if (profile != null) profile.IsDeployed = false;
         }
-
-        // 3. 呼叫地图系统：切回地图
         bool isVictory = SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
@@ -228,6 +278,17 @@ public class CombatDirector : MonoBehaviour
         else
         {
             Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请大侠重新来过！");
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (ArenaCenter != null)
+        {
+            Gizmos.color = new Color(1f, 1f, 0f, 0.5f);
+            Gizmos.DrawLine(ArenaCenter.position + Vector3.up * 2, ArenaCenter.position + Vector3.down * 2);
+            Gizmos.DrawLine(ArenaCenter.position + Vector3.left * 2, ArenaCenter.position + Vector3.right * 2);
+            Gizmos.DrawWireSphere(ArenaCenter.position, 0.5f);
         }
     }
 }

@@ -13,18 +13,18 @@ MonoBehaviour:
   m_Name: "\u8702\u5DE2"
   m_EditorClassIdentifier: 
   EnemyID: ENM_000
-  EnemyName: "\u672A\u77E5\u751F\u7269"
+  EnemyName: "\u8702\u5DE2"
   Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
   EnemySprite: {fileID: 21300000, guid: c29dcea383f5cbf408940d584b0168af, type: 3}
   VisualScaleMultiplier: 0.3
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
   - StatID: 14
-    Value: 100000
+    Value: 100
   - StatID: 17
     Value: 20
   - StatID: 16
-    Value: 20
+    Value: 1000
   TargetingLogic: 0
   MovementLogic: 0
   HoverDistance: 5

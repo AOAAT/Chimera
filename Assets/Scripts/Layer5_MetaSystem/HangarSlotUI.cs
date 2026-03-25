@@ -252,28 +252,48 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             Vector3 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
             Vector2 dropPos2D = new Vector2(worldPoint.x, worldPoint.y);
 
-            // 2. 发射 2D 探针，看看有没有扎到碰撞体
-            Collider2D hitCollider = Physics2D.OverlapPoint(dropPos2D);
+            // ==========================================
+            // 🚨 安检门 1：升级严苛的【体积检测】机制！
+            // ==========================================
+            int noDeployLayerMask = LayerMask.GetMask("NoDeploy");
 
-            // 3. 校验是不是部署地块
-            if (hitCollider != null && hitCollider.CompareTag("DeployZone"))
+            // 👇【核心修改】：从细针检测升级为气泡检测！
+            // 假设机甲的标准物理体积半径是 0.5 米
+            // 我们生成一个 0.5 米的圆形气泡探测器，扫描红区图层
+            Collider2D forbiddenHit = Physics2D.OverlapCircle(dropPos2D, 0.5f, noDeployLayerMask);
+
+            if (forbiddenHit != null)
+            {
+                // 只要气泡边缘碰到一点点红线，就会触发拦截！
+                Debug.LogWarning("【空投驳回】指挥官！该体积范围内有敌人禁区，强制禁止部署！");
+                return;
+            }
+
+            // ==========================================
+            // ✅ 安检门 2：如果没有红区，再检测是不是合法的绿区！
+            // (这里可以保持原来宽松的“中心点在绿区就行”)
+            // ==========================================
+            Collider2D[] allHits = Physics2D.OverlapPointAll(dropPos2D);
+            bool isValidDeployZone = false;
+            foreach (var hit in allHits)
+            {
+                if (hit.CompareTag("DeployZone"))
+                {
+                    isValidDeployZone = true;
+                    break;
+                }
+            }
+            if (isValidDeployZone)
             {
                 bindedProfile.IsDeployed = true;
-
-                // 生成机甲！Z 轴强制锁死在 0，防止在 2D 游戏里看不见
                 Vector3 spawnPos = new Vector3(dropPos2D.x, dropPos2D.y, 0f);
                 GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
-
-                // 灵魂注射！
                 MechUnit2D mechScript = newMech.GetComponent<MechUnit2D>();
                 if (mechScript != null)
                 {
                     mechScript.InitUnitData(bindedProfile);
                 }
-
                 Debug.Log($"【天降正义】[{bindedProfile.UnitName}] 已成功部署到战场坐标: {spawnPos}");
-
-                // 刷新机库，自己置灰
                 HangarMenuUI.Instance.RefreshHangar();
             }
             else

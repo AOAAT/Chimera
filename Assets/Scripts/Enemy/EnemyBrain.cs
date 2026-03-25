@@ -40,15 +40,63 @@ public class EnemyBrain : MonoBehaviour
 
         myReceiver = GetComponent<DamageReceiver>();
         rb = GetComponent<Rigidbody2D>();
+
+        // 1. 从图纸中读取最大生命值，兜底 100 血
+        float maxHP = MyData.GetStat(StatType.HP);
+        if (maxHP <= 0) maxHP = 100f;
+        myReceiver.Initialize(maxHP, 0f);
+        myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
 
-        Collider2D[] allCols = GetComponentsInChildren<Collider2D>();
-        foreach (var col in allCols)
-        {
-            if (col.isTrigger) { myHitboxCollider = col; break; }
-        }
-        if (myHitboxCollider == null) myHitboxCollider = GetComponent<Collider2D>();
+        // 👇👇👇【终极物理塑形：全自动双碰撞箱与图层分配】👇👇👇
 
+        // 核心参数：获取怪物的贴图尺寸和缩放
+        SpriteRenderer mainSr = GetComponentInChildren<SpriteRenderer>();
+        Vector2 spriteSize = mainSr != null && mainSr.sprite != null ?
+                             mainSr.sprite.bounds.size * MyData.VisualScaleMultiplier :
+                             new Vector2(1f, 1f);
+
+        // --- 物理肉体 (脚底板) ---
+        // 1. 设置物理图层 (请在 Unity 里建一个叫 Enemy_Body 的 Layer)
+        int bodyLayer = LayerMask.NameToLayer("Enemy_Body");
+        if (bodyLayer != -1) gameObject.layer = bodyLayer;
+
+        // 2. 刚体配置
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+        // 3. 脚底板非触发器碰撞箱 (只占下半部分，用于阻挡和防穿模)
+        BoxCollider2D physicsCol = GetComponent<BoxCollider2D>();
+        if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
+        physicsCol.isTrigger = false;
+        physicsCol.size = new Vector2(spriteSize.x * 0.7f, spriteSize.y * 0.3f);
+        physicsCol.offset = new Vector2(0f, -(spriteSize.y / 2f) + (physicsCol.size.y / 2f));
+
+
+        // --- 弱点 Hitbox (受击框) ---
+        // 4. 寻找或创建 Hitbox 子物体
+        Transform hitboxTrans = transform.Find("Enemy_Hitbox");
+        GameObject hitboxObj = hitboxTrans != null ? hitboxTrans.gameObject : new GameObject("Enemy_Hitbox");
+        if (hitboxTrans == null) hitboxObj.transform.SetParent(this.transform, false);
+
+        // 5. 设置 Hitbox 图层 (请在 Unity 里建一个叫 Enemy_Hitbox 的 Layer)
+        int hitboxLayer = LayerMask.NameToLayer("Enemy_Hitbox");
+        if (hitboxLayer != -1) hitboxObj.layer = hitboxLayer;
+
+        // 6. Hitbox 触发器碰撞箱 (1:1 包裹全身，用于接子弹和索敌)
+        BoxCollider2D hitboxCol = hitboxObj.GetComponent<BoxCollider2D>();
+        if (hitboxCol == null) hitboxCol = hitboxObj.AddComponent<BoxCollider2D>();
+        hitboxCol.isTrigger = true;
+        hitboxCol.size = spriteSize;
+        hitboxCol.offset = Vector2.zero;
+
+        // 7. 缓存给防追尾雷达使用
+        myHitboxCollider = hitboxCol;
+        // 👆👆👆==========================================👆👆👆
+
+
+        // 解析怪物技能 (保持原样)
         foreach (var skillSO in MyData.Skills)
         {
             if (skillSO == null) continue;
