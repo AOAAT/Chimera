@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public enum TargetFilterType { Self, ByTag, ByType, All }
 public enum StatOperation { Add, Multiply }
 
-[CreateAssetMenu(fileName = "ModifyComponentStat", menuName = "Chimera/ECA Actions/Modifier: Modify Component Stat (万能属性修饰器)")]
+[CreateAssetMenu(fileName = "ModifyComponentStat", menuName = "Chimera Protocol/ECA Actions/Modifier: Modify Component Stat (万能属性修饰器)")]
 public class Action_ModifyComponentStat : ECAAction
 {
     // 👇【修复1】：删除了所有的 [Header] 标签，消除“双重表头”现象！

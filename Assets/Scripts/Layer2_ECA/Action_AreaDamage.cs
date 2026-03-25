@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "AreaDamage", menuName = "Chimera/ECA Actions/Area Damage (范围爆炸)")]
+[CreateAssetMenu(fileName = "AreaDamage", menuName = "Chimera Protocol/ECA Actions/Area Damage (范围爆炸)")]
 public class Action_AreaDamage : ECAAction
 {
     [Range(0f, 3f)] public float DamageMultiplier = 1.0f;

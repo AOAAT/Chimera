@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ChainDamage", menuName = "Chimera/ECA Actions/Chain Damage (连锁闪电)")]
+[CreateAssetMenu(fileName = "ChainDamage", menuName = "Chimera Protocol/ECA Actions/Chain Damage (连锁闪电)")]
 public class Action_ChainDamage : ECAAction
 {
     public int MaxTargets = 2;              // 弹射数量

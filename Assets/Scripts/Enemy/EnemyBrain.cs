@@ -18,17 +18,15 @@ public class EnemyBrain : MonoBehaviour
     private DamageReceiver myReceiver;
     private Rigidbody2D rb;
 
-    // 👇【防穿模核心】：不仅记住目标是谁，还要缓存目标的“物理肉身”
     private Transform currentTarget;
     private Collider2D targetCollider;
-
     private Collider2D myHitboxCollider;
 
     private List<RuntimeEnemySkill> runtimeSkills = new List<RuntimeEnemySkill>();
     private RuntimeEnemySkill currentIntent = null;
 
-    // 👇 双腿运动执行器状态机
-    private enum MoveExecutionState { Ready, Charging, Dashing, Cooldown }
+    // 👇【修复：加入了 Staggered 状态！】
+    private enum MoveExecutionState { Ready, Charging, Dashing, Cooldown, Staggered }
     private MoveExecutionState currentMoveState = MoveExecutionState.Ready;
     private float moveStateTimer = 0f;
     private Vector2 lockedMoveDirection;
@@ -49,7 +47,7 @@ public class EnemyBrain : MonoBehaviour
         {
             if (col.isTrigger) { myHitboxCollider = col; break; }
         }
-        if (myHitboxCollider == null) myHitboxCollider = GetComponent<Collider2D>(); // 兜底
+        if (myHitboxCollider == null) myHitboxCollider = GetComponent<Collider2D>();
 
         foreach (var skillSO in MyData.Skills)
         {
@@ -130,15 +128,8 @@ public class EnemyBrain : MonoBehaviour
                 break;
         }
 
-        // 👇【防穿模挂载】：顺藤摸瓜抓取目标身上真正的物理边框
         if (currentTarget != null)
         {
-            targetCollider = currentTarget.GetComponentInChildren<Collider2D>();
-        }
-
-        if (currentTarget != null)
-        {
-            // 👇【精准抓取目标肉体】：只找 isTrigger 的 Hitbox，不找脚底板
             Collider2D[] targetCols = currentTarget.GetComponentsInChildren<Collider2D>();
             foreach (var c in targetCols)
             {
@@ -162,30 +153,22 @@ public class EnemyBrain : MonoBehaviour
         float dist = 0f;
         Vector2 dirToTarget = Vector2.zero;
 
-        // 👇👇👇【终极防穿模：双向 Hitbox 边缘距离计算】👇👇👇
         if (targetCollider != null && myHitboxCollider != null)
         {
-            // Unity 物理引擎神技：直接计算两个碰撞箱边缘的最短距离！
             ColliderDistance2D colDist = Physics2D.Distance(myHitboxCollider, targetCollider);
-
-            // 如果贴上了或者穿插了，距离视为 0
             dist = Mathf.Max(0f, colDist.distance);
-
-            // 移动方向依然指向目标中心，保证走位顺滑不抽搐
             dirToTarget = (targetCollider.bounds.center - myHitboxCollider.bounds.center).normalized;
         }
         else
         {
-            // 兜底逻辑：万一没找到碰撞箱，退化为中心点计算
             dist = Vector3.Distance(transform.position, currentTarget.position);
             dirToTarget = (currentTarget.position - transform.position).normalized;
         }
-        // 👆👆👆==========================================👆👆👆
 
         float currentSpeed = MyData.GetStat(StatType.MoveSpeed) * speedMult;
         Vector2 targetVelocity = Vector2.zero;
-            // --- 三大兵种 AI 意图判定 ---
-            if (MyData.MovementLogic == EnemyMovementStrategy.Swarm)
+
+        if (MyData.MovementLogic == EnemyMovementStrategy.Swarm)
         {
             targetVelocity = dirToTarget * currentSpeed;
             TryRollAndFireSkills(dist, dirToTarget, distMult);
@@ -221,14 +204,8 @@ public class EnemyBrain : MonoBehaviour
                 float maxR = currentIntent.SkillData.MaxRange * distMult;
                 float minR = currentIntent.SkillData.MinRange * distMult;
 
-                if (dist > maxR)
-                {
-                    targetVelocity = dirToTarget * currentSpeed;
-                }
-                else if (dist < minR)
-                {
-                    targetVelocity = -dirToTarget * currentSpeed;
-                }
+                if (dist > maxR) targetVelocity = dirToTarget * currentSpeed;
+                else if (dist < minR) targetVelocity = -dirToTarget * currentSpeed;
                 else
                 {
                     targetVelocity = Vector2.zero;
@@ -236,23 +213,29 @@ public class EnemyBrain : MonoBehaviour
                     currentIntent = null;
                 }
             }
-            else
-            {
-                targetVelocity = dirToTarget * (currentSpeed * 0.5f);
-            }
+            else targetVelocity = dirToTarget * (currentSpeed * 0.5f);
         }
-        if (dist <= 0.01f && Vector2.Dot(targetVelocity, dirToTarget) > 0)
-        {
-            targetVelocity = Vector2.zero;
-        }
-        // 👆👆👆==========================================👆👆👆
 
-        // 把大脑算出的期望速度，交给底层的四种步态去执行
+        // 防追尾紧急手刹
+        if (dist <= 0.01f && Vector2.Dot(targetVelocity, dirToTarget) > 0) targetVelocity = Vector2.zero;
+
         ExecutePhysicalMovement(targetVelocity, distMult);
     }
 
     private void ExecutePhysicalMovement(Vector2 desiredVelocity, float distMult)
     {
+        // 👇【引擎接管拦截】：如果是 Staggered 状态，直接没收大脑的控制权！
+        if (currentMoveState == MoveExecutionState.Staggered)
+        {
+            moveStateTimer -= Time.deltaTime;
+            if (moveStateTimer <= 0)
+            {
+                currentMoveState = MoveExecutionState.Ready;
+                rb.drag = 0f; // 恢复正常摩擦力
+            }
+            return;
+        }
+
         if (MyData.MoveType == EnemyMoveType.Stationary)
         {
             rb.velocity = Vector2.zero;
@@ -391,6 +374,27 @@ public class EnemyBrain : MonoBehaviour
         if (actions == null || actions.Count == 0) return;
         ECAContext context = new ECAContext { ImpactPoint = this.transform.position, PrimaryTarget = target, BaseDamage = 0f, SourceWeapon = dummyWeapon };
         foreach (var action in actions) if (action != null) action.Execute(context);
+    }
+
+    // 👇【全新机制】：物理冲击接收器
+    public void ApplyImpulse(Vector2 dir, float impulse)
+    {
+        if (isDead) return;
+
+        float mass = MyData != null ? Mathf.Max(MyData.GetStat(StatType.Mass), 0.5f) : 1f;
+        float deltaV = impulse / mass;
+
+        if (deltaV < 1.0f) return;
+
+        float stunTime = deltaV * 0.05f;
+        if (stunTime < 0.1f) stunTime = 0.1f;
+
+        currentMoveState = MoveExecutionState.Staggered;
+        moveStateTimer = stunTime;
+
+        rb.drag = 5f;
+        rb.velocity = Vector2.zero;
+        rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
 
     private void OnDrawGizmos()

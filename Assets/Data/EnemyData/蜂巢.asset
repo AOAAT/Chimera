@@ -23,10 +23,17 @@ MonoBehaviour:
     Value: 100000
   - StatID: 17
     Value: 20
+  - StatID: 16
+    Value: 20
   TargetingLogic: 0
-  MovementLogic: 1
-  SafeDodgeDistance: 60
+  MovementLogic: 0
+  HoverDistance: 5
   MoveType: 0
+  MoveChargeTime: 1
+  MoveCooldown: 1.5
+  DashSpeedMultiplier: 4
+  DashDuration: 0.3
+  TeleportDistance: 30
   Skills:
   - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
   - {fileID: 11400000, guid: 2e75894cdf92071468eb62da5879122b, type: 2}

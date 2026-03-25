@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ChainsawCritMechanic", menuName = "Chimera/ECA Actions/Chainsaw Crit Mechanic (链锯暴击叠加)")]
+[CreateAssetMenu(fileName = "ChainsawCritMechanic", menuName = "Chimera Protocol/ECA Actions/Chainsaw Crit Mechanic (链锯暴击叠加)")]
 public class Action_ChainsawCritMechanic : ECAAction
 {
     [Tooltip("每次未暴击时增加的暴击率 (例如 0.02 代表 2%)")]
