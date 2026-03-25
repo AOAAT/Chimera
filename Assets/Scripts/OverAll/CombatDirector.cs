@@ -134,33 +134,49 @@ public class CombatDirector : MonoBehaviour
         Vector3 centerPos = ArenaCenter != null ? ArenaCenter.position : Vector3.zero;
 
         int noDeployLayer = LayerMask.NameToLayer("NoDeploy");
-        if (noDeployLayer == -1)
-        {
-            Debug.LogError("【致命错误】长官！你还没有在 Unity 里建一个叫 NoDeploy 的 Layer！拦截机制瘫痪！");
-        }
+        if (noDeployLayer == -1) Debug.LogError("【致命错误】长官！找不到 NoDeploy 图层！");
 
         foreach (var rect in CurrentLayout.ForbiddenZones)
         {
-            GameObject zoneObj = new GameObject("Zone_Blocker_Visible");
-            zoneObj.transform.SetParent(forbiddenZonesContainer.transform);
+            // ==========================================
+            // 🧱 1. 父物体：纯粹的物理层 (绝对不缩放！)
+            // ==========================================
+            GameObject zonePhysicsObj = new GameObject("Zone_Blocker_Physics");
+            zonePhysicsObj.transform.SetParent(forbiddenZonesContainer.transform);
 
             Vector3 zonePos = centerPos + new Vector3(rect.x + rect.width / 2f, rect.y - rect.height / 2f, 0f);
-            zoneObj.transform.position = zonePos;
+            zonePhysicsObj.transform.position = zonePos;
+            // 确保父物体的 Scale 永远是干净的 1:1:1
+            zonePhysicsObj.transform.localScale = Vector3.one;
 
-            BoxCollider2D col = zoneObj.AddComponent<BoxCollider2D>();
+            BoxCollider2D col = zonePhysicsObj.AddComponent<BoxCollider2D>();
             col.size = new Vector2(rect.width, rect.height);
             col.isTrigger = true;
 
-            if (noDeployLayer != -1) zoneObj.layer = noDeployLayer;
+            if (noDeployLayer != -1) zonePhysicsObj.layer = noDeployLayer;
 
-            // 铺设浅红色背景
+            // ==========================================
+            // 🎨 2. 子物体：纯粹的视觉层 (随便拉伸，不影响物理！)
+            // ==========================================
             if (WhitePixelSprite != null)
             {
-                SpriteRenderer sr = zoneObj.AddComponent<SpriteRenderer>();
+                GameObject visualObj = new GameObject("Zone_Visual");
+                visualObj.transform.SetParent(zonePhysicsObj.transform);
+                // 对齐父物体的中心点
+                visualObj.transform.localPosition = Vector3.zero;
+
+                SpriteRenderer sr = visualObj.AddComponent<SpriteRenderer>();
                 sr.sprite = WhitePixelSprite;
-                sr.transform.localScale = new Vector3(rect.width * 100f, rect.height * 100f, 1f);
+
+                Vector2 spriteSize = sr.sprite.bounds.size;
+                float scaleX = rect.width / spriteSize.x;
+                float scaleY = rect.height / spriteSize.y;
+
+                // 这里的拉伸只会影响 visualObj 这个子物体，物理碰撞箱安然无恙！
+                visualObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+
                 sr.color = new Color(1f, 0f, 0f, 0.2f);
-                sr.sortingOrder = 15;
+                sr.sortingOrder = -5;
             }
         }
     }
@@ -189,6 +205,15 @@ public class CombatDirector : MonoBehaviour
         if (NavHangarButton != null) NavHangarButton.interactable = false;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
         Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！");
+
+        // 👇👇👇【核心修复 2】：发令枪响时，瞬间隐藏所有红区！
+        // 这样做不仅能让红色贴图消失，还能顺便把安检门的物理探测器一起关掉，极大节省战斗时的 CPU 性能！
+        if (forbiddenZonesContainer != null)
+        {
+            forbiddenZonesContainer.SetActive(false);
+        }
+        // 👆👆👆==========================================👆👆👆
+
         IsCombatActive = true;
         isCheckingWinCondition = true;
     }

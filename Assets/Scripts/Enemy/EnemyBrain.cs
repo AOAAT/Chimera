@@ -47,54 +47,73 @@ public class EnemyBrain : MonoBehaviour
         myReceiver.Initialize(maxHP, 0f);
         myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
+        // 👇👇👇【终极物理塑形：100% 对齐 TestBench 完美逻辑！】👇👇👇
 
-        // 👇👇👇【终极物理塑形：全自动双碰撞箱与图层分配】👇👇👇
+        // 1. 净化根节点
+        transform.localScale = Vector3.one;
 
-        // 核心参数：获取怪物的贴图尺寸和缩放
+        // 2. 智能寻找视觉与受击节点 (完美兼容您预制体里的 VisualAndHitbox！)
         SpriteRenderer mainSr = GetComponentInChildren<SpriteRenderer>();
-        Vector2 spriteSize = mainSr != null && mainSr.sprite != null ?
-                             mainSr.sprite.bounds.size * MyData.VisualScaleMultiplier :
-                             new Vector2(1f, 1f);
+        GameObject visualHitboxNode;
 
-        // --- 物理肉体 (脚底板) ---
-        // 1. 设置物理图层 (请在 Unity 里建一个叫 Enemy_Body 的 Layer)
+        if (mainSr == null)
+        {
+            visualHitboxNode = new GameObject("VisualAndHitbox");
+            visualHitboxNode.transform.SetParent(this.transform, false);
+            visualHitboxNode.transform.localPosition = Vector3.zero;
+            mainSr = visualHitboxNode.AddComponent<SpriteRenderer>();
+        }
+        else
+        {
+            // 抓取到您截图里的那个 VisualAndHitbox！
+            visualHitboxNode = mainSr.gameObject;
+        }
+
+        // 3. 注入灵魂原画与层级
+        if (MyData.EnemySprite != null) mainSr.sprite = MyData.EnemySprite;
+        int hitboxLayer = LayerMask.NameToLayer("Enemy_Hitbox");
+        if (hitboxLayer != -1) visualHitboxNode.layer = hitboxLayer;
+
+        // 4. 视觉缩放 (直接应用图纸缩放，绝不干涉根节点)
+        visualHitboxNode.transform.localScale = Vector3.one * MyData.VisualScaleMultiplier;
+
+        // 5. 受击框 (Hitbox) - 挂在缩放后的视觉节点上
+        BoxCollider2D hitboxCol = visualHitboxNode.GetComponent<BoxCollider2D>();
+        if (hitboxCol == null) hitboxCol = visualHitboxNode.AddComponent<BoxCollider2D>();
+        hitboxCol.isTrigger = true;
+
+        // 【抄作业】：不再写死 size，Unity 会自动根据 SpriteRenderer 撑满它！
+        myHitboxCollider = hitboxCol;
+
+        // 6. 物理肉体 (脚底板) - 挂在根节点
         int bodyLayer = LayerMask.NameToLayer("Enemy_Body");
         if (bodyLayer != -1) gameObject.layer = bodyLayer;
 
-        // 2. 刚体配置
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.drag = 3f; // 同步测试台的手感
+        rb.mass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
 
-        // 3. 脚底板非触发器碰撞箱 (只占下半部分，用于阻挡和防穿模)
-        BoxCollider2D physicsCol = GetComponent<BoxCollider2D>();
-        if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
-        physicsCol.isTrigger = false;
-        physicsCol.size = new Vector2(spriteSize.x * 0.7f, spriteSize.y * 0.3f);
-        physicsCol.offset = new Vector2(0f, -(spriteSize.y / 2f) + (physicsCol.size.y / 2f));
+        // 7. 动态切削防穿模底盘
+        if (mainSr.sprite != null)
+        {
+            Vector2 realSize = mainSr.sprite.bounds.size * MyData.VisualScaleMultiplier;
 
+            BoxCollider2D physicsCol = GetComponent<BoxCollider2D>();
+            if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
+            physicsCol.isTrigger = false;
 
-        // --- 弱点 Hitbox (受击框) ---
-        // 4. 寻找或创建 Hitbox 子物体
-        Transform hitboxTrans = transform.Find("Enemy_Hitbox");
-        GameObject hitboxObj = hitboxTrans != null ? hitboxTrans.gameObject : new GameObject("Enemy_Hitbox");
-        if (hitboxTrans == null) hitboxObj.transform.SetParent(this.transform, false);
+            // 削肉剔骨：压缩到真实缩放后脚底的 30%！
+            physicsCol.size = new Vector2(realSize.x * 0.8f, realSize.y * 0.3f);
+            physicsCol.offset = new Vector2(0f, -(realSize.y / 2f) + (physicsCol.size.y / 2f));
 
-        // 5. 设置 Hitbox 图层 (请在 Unity 里建一个叫 Enemy_Hitbox 的 Layer)
-        int hitboxLayer = LayerMask.NameToLayer("Enemy_Hitbox");
-        if (hitboxLayer != -1) hitboxObj.layer = hitboxLayer;
-
-        // 6. Hitbox 触发器碰撞箱 (1:1 包裹全身，用于接子弹和索敌)
-        BoxCollider2D hitboxCol = hitboxObj.GetComponent<BoxCollider2D>();
-        if (hitboxCol == null) hitboxCol = hitboxObj.AddComponent<BoxCollider2D>();
-        hitboxCol.isTrigger = true;
-        hitboxCol.size = spriteSize;
-        hitboxCol.offset = Vector2.zero;
-
-        // 7. 缓存给防追尾雷达使用
-        myHitboxCollider = hitboxCol;
+            // 同步深度排序引擎
+            DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
+            if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
+            sorter.YOffset = -(realSize.y / 2f);
+        }
         // 👆👆👆==========================================👆👆👆
-
 
         // 解析怪物技能 (保持原样)
         foreach (var skillSO in MyData.Skills)

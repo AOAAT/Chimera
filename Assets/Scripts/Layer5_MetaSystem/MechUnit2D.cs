@@ -191,6 +191,7 @@ public class MechUnit2D : MonoBehaviour
         TintMech(Color.white);
         if (rb != null) rb.isKinematic = false;
 
+        // 如果鼠标松开时指在 UI 上 (比如机库界面)，就把机甲回收
         if (EventSystem.current.IsPointerOverGameObject())
         {
             if (physicsCol != null) physicsCol.enabled = true;
@@ -198,13 +199,49 @@ public class MechUnit2D : MonoBehaviour
             return;
         }
 
-        // 射线扫描判定是否在地块上
+        // ==========================================
+        // 🚨 安检门 1：检测体积是否触碰到“禁飞区 (楚河汉界)”！
+        // ==========================================
+        int noDeployLayerMask = LayerMask.GetMask("NoDeploy");
+
+        // 我们用一个 0.5f 半径的虚拟气泡进行扫描 (与 UI 拖拽时保持绝对一致)
+        Collider2D forbiddenHit = Physics2D.OverlapCircle(transform.position, 0.5f, noDeployLayerMask);
+
+        if (forbiddenHit != null)
+        {
+            Debug.LogWarning("【战术违规】指挥官！禁止将机甲转移至敌人区域！已强制退回原位！");
+
+            // 核心惩罚逻辑：瞬间把机甲弹回这次拖拽前的初始位置！
+            transform.position = dragStartPos;
+
+            // 别忘了恢复物理碰撞
+            if (physicsCol != null) physicsCol.enabled = true;
+            return;
+        }
+
+        // ==========================================
+        // ✅ 安检门 2：检测脚下是否有合法的 DeployZone (绿区地板)
+        // ==========================================
         Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
         bool isValidZone = false;
-        foreach (var hit in hits) if (hit.CompareTag("DeployZone")) { isValidZone = true; break; }
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("DeployZone"))
+            {
+                isValidZone = true;
+                break;
+            }
+        }
 
-        if (isValidZone) Debug.Log($"部署成功: {transform.position}");
-        else transform.position = dragStartPos;
+        if (isValidZone)
+        {
+            Debug.Log($"重新部署成功: {transform.position}");
+        }
+        else
+        {
+            Debug.LogWarning("【部署失败】目标坐标未铺设绿区地板，强制退回！");
+            transform.position = dragStartPos; // 如果没绿区地板，也弹回原位
+        }
 
         if (physicsCol != null) physicsCol.enabled = true; // 落地后恢复物理推挤
     }
