@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 运行时的技能状态追踪器
 public class RuntimeEnemySkill
 {
     public EnemySkillSO SkillData;
     public float CurrentCooldown;
-    public RuntimeWeapon DummyWeapon; // 专门用来兼容 ECA 积木的伪装层
+    public RuntimeWeapon DummyWeapon;
 }
 
 [RequireComponent(typeof(DamageReceiver))]
@@ -18,10 +17,21 @@ public class EnemyBrain : MonoBehaviour
 
     private DamageReceiver myReceiver;
     private Rigidbody2D rb;
-    private Transform currentTarget;
 
-    // 👇【新增】：怪物的内存技能库
+    // 👇【防穿模核心】：不仅记住目标是谁，还要缓存目标的“物理肉身”
+    private Transform currentTarget;
+    private Collider2D targetCollider;
+
+    private Collider2D myHitboxCollider;
+
     private List<RuntimeEnemySkill> runtimeSkills = new List<RuntimeEnemySkill>();
+    private RuntimeEnemySkill currentIntent = null;
+
+    // 👇 双腿运动执行器状态机
+    private enum MoveExecutionState { Ready, Charging, Dashing, Cooldown }
+    private MoveExecutionState currentMoveState = MoveExecutionState.Ready;
+    private float moveStateTimer = 0f;
+    private Vector2 lockedMoveDirection;
 
     private float lastFrameHP;
     private bool isDead = false;
@@ -34,13 +44,18 @@ public class EnemyBrain : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         lastFrameHP = myReceiver.CurrentHP;
 
-        // 👇 1. 把图纸里的技能，实例化到大脑内存里，并伪装成机甲武器供 ECA 使用！
+        Collider2D[] allCols = GetComponentsInChildren<Collider2D>();
+        foreach (var col in allCols)
+        {
+            if (col.isTrigger) { myHitboxCollider = col; break; }
+        }
+        if (myHitboxCollider == null) myHitboxCollider = GetComponent<Collider2D>(); // 兜底
+
         foreach (var skillSO in MyData.Skills)
         {
             if (skillSO == null) continue;
             var rSkill = new RuntimeEnemySkill { SkillData = skillSO, CurrentCooldown = 0f };
 
-            // 捏造伪装武器
             rSkill.DummyWeapon = new RuntimeWeapon
             {
                 WeaponName = skillSO.SkillName,
@@ -84,7 +99,6 @@ public class EnemyBrain : MonoBehaviour
             return;
         }
 
-        // 👇 2. 所有技能冷却时间转起来！
         foreach (var skill in runtimeSkills)
         {
             if (skill.CurrentCooldown > 0) skill.CurrentCooldown -= Time.deltaTime;
@@ -97,14 +111,40 @@ public class EnemyBrain : MonoBehaviour
     private void FindTarget()
     {
         var allPlayers = FindObjectsOfType<DamageReceiver>().Where(r => !r.isEnemy && r.CurrentHP > 0).ToList();
-        if (allPlayers.Count == 0) { currentTarget = null; return; }
+        if (allPlayers.Count == 0)
+        {
+            currentTarget = null;
+            targetCollider = null;
+            return;
+        }
 
         switch (MyData.TargetingLogic)
         {
-            case TargetingStrategy.Nearest: currentTarget = allPlayers.OrderBy(p => Vector3.Distance(transform.position, p.transform.position)).First().transform; break;
             case TargetingStrategy.MaxHPHighest: currentTarget = allPlayers.OrderByDescending(p => p.MaxHP).First().transform; break;
-            // (其他逻辑同理，此处省略以保持代码紧凑)
-            default: currentTarget = allPlayers.OrderBy(p => Vector3.Distance(transform.position, p.transform.position)).First().transform; break;
+            case TargetingStrategy.MaxHPLowest: currentTarget = allPlayers.OrderBy(p => p.MaxHP).First().transform; break;
+            case TargetingStrategy.CurrentHPHighest: currentTarget = allPlayers.OrderByDescending(p => p.CurrentHP).First().transform; break;
+            case TargetingStrategy.CurrentHPLowest: currentTarget = allPlayers.OrderBy(p => p.CurrentHP).First().transform; break;
+            case TargetingStrategy.Nearest:
+            default:
+                currentTarget = allPlayers.OrderBy(p => Vector3.Distance(transform.position, p.transform.position)).First().transform;
+                break;
+        }
+
+        // 👇【防穿模挂载】：顺藤摸瓜抓取目标身上真正的物理边框
+        if (currentTarget != null)
+        {
+            targetCollider = currentTarget.GetComponentInChildren<Collider2D>();
+        }
+
+        if (currentTarget != null)
+        {
+            // 👇【精准抓取目标肉体】：只找 isTrigger 的 Hitbox，不找脚底板
+            Collider2D[] targetCols = currentTarget.GetComponentsInChildren<Collider2D>();
+            foreach (var c in targetCols)
+            {
+                if (c.isTrigger) { targetCollider = c; break; }
+            }
+            if (targetCollider == null) targetCollider = currentTarget.GetComponentInChildren<Collider2D>();
         }
     }
 
@@ -112,60 +152,199 @@ public class EnemyBrain : MonoBehaviour
     {
         if (currentTarget == null || MyData.MoveType == EnemyMoveType.Stationary)
         {
-            rb.velocity = Vector2.zero;
+            ExecutePhysicalMovement(Vector2.zero, 1f);
             return;
         }
 
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
 
-        float dist = Vector3.Distance(transform.position, currentTarget.position);
-        Vector2 dirToTarget = (currentTarget.position - transform.position).normalized;
+        float dist = 0f;
+        Vector2 dirToTarget = Vector2.zero;
 
-        // 👇 3. 动态寻找最大交战距离 (为了让 AI 知道什么时候该停车)
-        float maxEngagementRange = 0f;
-        if (runtimeSkills.Count > 0) maxEngagementRange = runtimeSkills.Max(s => s.SkillData.MaxRange) * distMult;
+        // 👇👇👇【终极防穿模：双向 Hitbox 边缘距离计算】👇👇👇
+        if (targetCollider != null && myHitboxCollider != null)
+        {
+            // Unity 物理引擎神技：直接计算两个碰撞箱边缘的最短距离！
+            ColliderDistance2D colDist = Physics2D.Distance(myHitboxCollider, targetCollider);
 
-        bool isFleeing = false;
+            // 如果贴上了或者穿插了，距离视为 0
+            dist = Mathf.Max(0f, colDist.distance);
+
+            // 移动方向依然指向目标中心，保证走位顺滑不抽搐
+            dirToTarget = (targetCollider.bounds.center - myHitboxCollider.bounds.center).normalized;
+        }
+        else
+        {
+            // 兜底逻辑：万一没找到碰撞箱，退化为中心点计算
+            dist = Vector3.Distance(transform.position, currentTarget.position);
+            dirToTarget = (currentTarget.position - transform.position).normalized;
+        }
+        // 👆👆👆==========================================👆👆👆
+
+        float currentSpeed = MyData.GetStat(StatType.MoveSpeed) * speedMult;
         Vector2 targetVelocity = Vector2.zero;
-
-        if (MyData.MovementLogic == MovementStrategy.Dodge && dist < MyData.SafeDodgeDistance * distMult)
+            // --- 三大兵种 AI 意图判定 ---
+            if (MyData.MovementLogic == EnemyMovementStrategy.Swarm)
         {
-            isFleeing = true;
-            targetVelocity = -dirToTarget * (MyData.GetStat(StatType.MoveSpeed) * speedMult);
+            targetVelocity = dirToTarget * currentSpeed;
+            TryRollAndFireSkills(dist, dirToTarget, distMult);
         }
-        else if (dist > maxEngagementRange)
+        else if (MyData.MovementLogic == EnemyMovementStrategy.Artillery)
         {
-            // 还没进入任何一个技能的射程，继续冲！
-            targetVelocity = dirToTarget * (MyData.GetStat(StatType.MoveSpeed) * speedMult);
+            float hoverDist = MyData.HoverDistance * distMult;
+            if (dist > hoverDist + 0.5f) targetVelocity = dirToTarget * currentSpeed;
+            else if (dist < hoverDist - 0.5f) targetVelocity = -dirToTarget * currentSpeed;
+            else targetVelocity = Vector2.zero;
+
+            TryRollAndFireSkills(dist, dirToTarget, distMult);
         }
-
-        rb.velocity = targetVelocity;
-
-        // 👇 4. 终极轮盘赌：筛选出当前可以释放的技能！
-        if (!isFleeing)
+        else if (MyData.MovementLogic == EnemyMovementStrategy.IntentDriven)
         {
-            var availableSkills = runtimeSkills.Where(s =>
-                s.CurrentCooldown <= 0 &&
-                dist <= (s.SkillData.MaxRange * distMult) &&
-                dist >= (s.SkillData.MinRange * distMult)
-            ).ToList();
-
-            if (availableSkills.Count > 0)
+            if (currentIntent == null)
             {
-                // 根据权重进行抽卡！
-                float totalWeight = availableSkills.Sum(s => s.SkillData.SelectionWeight);
-                float roll = Random.Range(0, totalWeight);
-                RuntimeEnemySkill chosenSkill = null;
-
-                foreach (var skill in availableSkills)
+                var readySkills = runtimeSkills.Where(s => s.CurrentCooldown <= 0).ToList();
+                if (readySkills.Count > 0)
                 {
-                    roll -= skill.SkillData.SelectionWeight;
-                    if (roll <= 0) { chosenSkill = skill; break; }
+                    float totalWeight = readySkills.Sum(s => s.SkillData.SelectionWeight);
+                    float roll = Random.Range(0, totalWeight);
+                    foreach (var skill in readySkills)
+                    {
+                        roll -= skill.SkillData.SelectionWeight;
+                        if (roll <= 0) { currentIntent = skill; break; }
+                    }
                 }
-
-                if (chosenSkill != null) PerformAttack(chosenSkill, dirToTarget);
             }
+
+            if (currentIntent != null)
+            {
+                float maxR = currentIntent.SkillData.MaxRange * distMult;
+                float minR = currentIntent.SkillData.MinRange * distMult;
+
+                if (dist > maxR)
+                {
+                    targetVelocity = dirToTarget * currentSpeed;
+                }
+                else if (dist < minR)
+                {
+                    targetVelocity = -dirToTarget * currentSpeed;
+                }
+                else
+                {
+                    targetVelocity = Vector2.zero;
+                    PerformAttack(currentIntent, dirToTarget);
+                    currentIntent = null;
+                }
+            }
+            else
+            {
+                targetVelocity = dirToTarget * (currentSpeed * 0.5f);
+            }
+        }
+        if (dist <= 0.01f && Vector2.Dot(targetVelocity, dirToTarget) > 0)
+        {
+            targetVelocity = Vector2.zero;
+        }
+        // 👆👆👆==========================================👆👆👆
+
+        // 把大脑算出的期望速度，交给底层的四种步态去执行
+        ExecutePhysicalMovement(targetVelocity, distMult);
+    }
+
+    private void ExecutePhysicalMovement(Vector2 desiredVelocity, float distMult)
+    {
+        if (MyData.MoveType == EnemyMoveType.Stationary)
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+
+        if (MyData.MoveType == EnemyMoveType.Normal)
+        {
+            rb.velocity = desiredVelocity;
+            return;
+        }
+
+        if (currentMoveState == MoveExecutionState.Ready && desiredVelocity.sqrMagnitude < 0.01f)
+        {
+            rb.velocity = Vector2.zero;
+            return;
+        }
+
+        switch (currentMoveState)
+        {
+            case MoveExecutionState.Ready:
+                currentMoveState = MoveExecutionState.Charging;
+                moveStateTimer = MyData.MoveChargeTime;
+                rb.velocity = Vector2.zero;
+                break;
+
+            case MoveExecutionState.Charging:
+                rb.velocity = Vector2.zero;
+                moveStateTimer -= Time.deltaTime;
+                if (moveStateTimer <= 0)
+                {
+                    lockedMoveDirection = desiredVelocity.sqrMagnitude > 0.01f ? desiredVelocity.normalized : (Vector2)(currentTarget.position - transform.position).normalized;
+
+                    if (MyData.MoveType == EnemyMoveType.ChargeDash)
+                    {
+                        currentMoveState = MoveExecutionState.Dashing;
+                        moveStateTimer = MyData.DashDuration;
+                    }
+                    else if (MyData.MoveType == EnemyMoveType.Teleport)
+                    {
+                        Vector3 tpTarget = transform.position + (Vector3)(lockedMoveDirection * MyData.TeleportDistance * distMult);
+                        transform.position = tpTarget;
+                        currentMoveState = MoveExecutionState.Cooldown;
+                        moveStateTimer = MyData.MoveCooldown;
+                    }
+                }
+                break;
+
+            case MoveExecutionState.Dashing:
+                float baseSpeed = MyData.GetStat(StatType.MoveSpeed) * (CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f);
+                rb.velocity = lockedMoveDirection * baseSpeed * MyData.DashSpeedMultiplier;
+
+                moveStateTimer -= Time.deltaTime;
+                if (moveStateTimer <= 0)
+                {
+                    currentMoveState = MoveExecutionState.Cooldown;
+                    moveStateTimer = MyData.MoveCooldown;
+                }
+                break;
+
+            case MoveExecutionState.Cooldown:
+                rb.velocity = Vector2.zero;
+                moveStateTimer -= Time.deltaTime;
+                if (moveStateTimer <= 0)
+                {
+                    currentMoveState = MoveExecutionState.Ready;
+                }
+                break;
+        }
+    }
+
+    private void TryRollAndFireSkills(float dist, Vector2 dirToTarget, float distMult)
+    {
+        var availableSkills = runtimeSkills.Where(s =>
+            s.CurrentCooldown <= 0 &&
+            dist <= (s.SkillData.MaxRange * distMult) &&
+            dist >= (s.SkillData.MinRange * distMult)
+        ).ToList();
+
+        if (availableSkills.Count > 0)
+        {
+            float totalWeight = availableSkills.Sum(s => s.SkillData.SelectionWeight);
+            float roll = Random.Range(0, totalWeight);
+            RuntimeEnemySkill chosenSkill = null;
+
+            foreach (var skill in availableSkills)
+            {
+                roll -= skill.SkillData.SelectionWeight;
+                if (roll <= 0) { chosenSkill = skill; break; }
+            }
+
+            if (chosenSkill != null) PerformAttack(chosenSkill, dirToTarget);
         }
     }
 
@@ -181,9 +360,8 @@ public class EnemyBrain : MonoBehaviour
         bool isCrit = Random.value <= skillData.CriticalChance;
         if (isCrit) finalDmg *= 1.5f;
 
-        // 👇【新增评估日志】：敌人技能抽卡与开火详情
         string critLog = isCrit ? "<color=#FFD700><b>(暴击!)</b></color>" : "";
-        Debug.Log($"<color=#FF00FF>【敌人施法】</color> [{MyData.EnemyName}] 对 [{currentTarget.name}] 释放了 [{skillData.SkillName}]！| 判定伤害: {finalDmg:F1} {critLog}");
+        Debug.Log($"<color=#FF00FF>【敌人施法】</color> [{MyData.EnemyName}] 释放了 [{skillData.SkillName}]！| 判定伤害: {finalDmg:F1} {critLog}");
 
         ECAContext fireContext = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = currentTarget, BaseDamage = finalDmg, SourceWeapon = rSkill.DummyWeapon, IsCriticalHit = isCrit, IsEnemyFire = true };
         foreach (var action in skillData.OnFireActions) if (action != null) action.Execute(fireContext);
@@ -207,12 +385,14 @@ public class EnemyBrain : MonoBehaviour
             }
         }
     }
+
     private void ExecuteECAActions(List<ECAAction> actions, Transform target, RuntimeWeapon dummyWeapon)
     {
         if (actions == null || actions.Count == 0) return;
         ECAContext context = new ECAContext { ImpactPoint = this.transform.position, PrimaryTarget = target, BaseDamage = 0f, SourceWeapon = dummyWeapon };
         foreach (var action in actions) if (action != null) action.Execute(context);
     }
+
     private void OnDrawGizmos()
     {
         if (MyData == null) return;
@@ -225,33 +405,27 @@ public class EnemyBrain : MonoBehaviour
 
         Vector3 center = transform.position;
 
-        // 1. 🟢 躲避型 AI 的安全风筝距离
-        if (MyData.MovementLogic == MovementStrategy.Dodge)
+        if (MyData.MovementLogic == EnemyMovementStrategy.Artillery)
         {
-            float safeDist = MyData.SafeDodgeDistance * distMult;
-            if (safeDist > 0)
+            float hoverDist = MyData.HoverDistance * distMult;
+            if (hoverDist > 0)
             {
                 Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
-                Gizmos.DrawWireSphere(center, safeDist);
+                Gizmos.DrawWireSphere(center, hoverDist);
             }
         }
 
-        // 2. 🔮 遍历绘制所有技能池的射程圈！
         if (MyData.Skills != null && MyData.Skills.Count > 0)
         {
             foreach (var skill in MyData.Skills)
             {
                 if (skill == null) continue;
-
-                // 最大射程 (蓝色半透明：可开火区)
                 float maxRange = skill.MaxRange * distMult;
                 if (maxRange > 0)
                 {
-                    Gizmos.color = new Color(0f, 0.5f, 1f, 0.15f); // 淡蓝色，多技能重叠时不刺眼
+                    Gizmos.color = new Color(0f, 0.5f, 1f, 0.15f);
                     Gizmos.DrawWireSphere(center, maxRange);
                 }
-
-                // 最小盲区 (红色半透明：贴脸无效区)
                 float minRange = skill.MinRange * distMult;
                 if (minRange > 0)
                 {

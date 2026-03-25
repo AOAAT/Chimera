@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+// 保留咱们定义好的物理运动表现
 public enum EnemyMoveType { Normal, ChargeDash, Teleport, Stationary }
 
 [CreateAssetMenu(fileName = "NewEnemyData", menuName = "Chimera Protocol/Enemy Data")]
@@ -18,15 +19,32 @@ public class EnemyDataSO : ScriptableObject
     [Header("=== 核心数值池 (仅放生存数值) ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
 
-    [Header("=== 战斗 AI 与移动逻辑 ===")]
+    [Header("=== 战斗 AI 与移动逻辑 (去哪) ===")]
     public TargetingStrategy TargetingLogic = TargetingStrategy.Nearest;
-    public MovementStrategy MovementLogic = MovementStrategy.Active_Firepower;
-    public float SafeDodgeDistance = 8f;
+    public EnemyMovementStrategy MovementLogic = EnemyMovementStrategy.Swarm;
+    [Tooltip("仅当 AI 为 Artillery(炮台) 时生效，怪物会试图保持这个距离")]
+    public float HoverDistance = 5f;
+
+    // 👇👇👇 【核心扩建】：极其详尽的物理运动表现配置 👇👇👇
+    [Header("=== 物理运动表现 (怎么去) ===")]
     public EnemyMoveType MoveType = EnemyMoveType.Normal;
 
-    // 👇👇👇 【神级进化：怪物技能卡池！】 👇👇👇
+    [Tooltip("【传送/冲刺】起步前的蓄力前摇时间 (秒)")]
+    public float MoveChargeTime = 1.0f;
+
+    [Tooltip("【传送/冲刺】动作结束后的疲劳僵直时间 (秒)")]
+    public float MoveCooldown = 1.5f;
+
+    [Tooltip("【仅冲刺有效】冲刺期间的速度倍率 (基于基础移速)")]
+    [Range(1f, 10f)] public float DashSpeedMultiplier = 4.0f;
+
+    [Tooltip("【仅冲刺有效】冲刺动作的持续时间 (秒)")]
+    public float DashDuration = 0.3f;
+
+    [Tooltip("【仅传送有效】单次传送的最大距离")]
+    public float TeleportDistance = 5.0f;
+
     [Header("=== 技能池 (Skill Pool) ===")]
-    [Tooltip("把做好的 EnemySkillSO 拖进来，怪物会自动根据射程和冷却随机抽卡释放！")]
     public List<EnemySkillSO> Skills = new List<EnemySkillSO>();
 
     [Header("=== 全局 ECA: 生命周期触发 ===")]

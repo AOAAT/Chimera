@@ -28,3 +28,6 @@ public enum WeaponDeliveryType { Melee, Ranged }
 public enum ComponentTag { None, Factory, Flesh, Tech }
 public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest }
 public enum MovementStrategy { Active_Firepower, Active_Survival, Dodge }
+
+// 👇【全新独立】：这是专门为怪物AI开辟的兵种本能枚举！
+public enum EnemyMovementStrategy { Swarm, Artillery, IntentDriven }
