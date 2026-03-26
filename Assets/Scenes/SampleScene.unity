@@ -3601,10 +3601,9 @@ MonoBehaviour:
   SettlementPanel: {fileID: 1306027755}
   SettlementTitleText: {fileID: 1807006403}
   ReturnToMapButton: {fileID: 995130643}
-  ArenaCenter: {fileID: 1181035856}
+  ArenaReference: {fileID: 989152001}
   BaseEnemyPrefab: {fileID: 6389588871143762209, guid: 8dd8ed2a30fb161449e99fbc12a1fb18, type: 3}
   WhitePixelSprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  ArenaSize: {x: 24, y: 14}
   BoundaryThickness: 2
   CurrentLayout: {fileID: 0}
 --- !u!114 &610811985
@@ -6691,6 +6690,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 979557895}
   m_CullTransparentMesh: 1
+--- !u!1 &989152001 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+  m_PrefabInstance: {fileID: 704089790691060775}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &995130641
 GameObject:
   m_ObjectHideFlags: 0
@@ -9633,7 +9637,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9992756
+  m_Size: 0.99999887
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -10892,7 +10896,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 349.1551, y: 0.00048828125}
+  m_AnchoredPosition: {x: 349.1551, y: 0.00012207031}
   m_SizeDelta: {x: -697, y: -63}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1430235885
