@@ -72,6 +72,12 @@ public class RewardDirector : MonoBehaviour
 
     private void CloseSubPanels()
     {
+        // 👇【核心修复】：在关闭任何子面板时，强制清理物品详情悬浮窗
+        if (ItemDetailPanelUI.Instance != null)
+        {
+            ItemDetailPanelUI.Instance.HidePanel();
+        }
+
         if (SinglePanel != null) SinglePanel.SetActive(false);
         if (DraftPanel != null) DraftPanel.SetActive(false);
         activeRewardIndex = -1;
@@ -122,7 +128,6 @@ public class RewardDirector : MonoBehaviour
 
             if (reward.Config.Category == RewardCategory.Resource)
             {
-                // 👇【彻底修复】：调用 ResourceType
                 title = $"获取资源: {reward.Config.ResourceType}";
                 desc = $"数量: {reward.Config.ResourceAmount}";
             }
@@ -150,7 +155,6 @@ public class RewardDirector : MonoBehaviour
 
         if (reward.Config.Category == RewardCategory.Resource)
         {
-            // 👇【彻底修复】：调用 ResourceType
             Debug.Log($"<color=#FFD700>【资源获取】</color> 获得了 {reward.Config.ResourceAmount} 点 {reward.Config.ResourceType}！");
             reward.IsClaimed = true;
             RefreshHubUI();

@@ -3604,6 +3604,8 @@ MonoBehaviour:
   ArenaCenter: {fileID: 1181035856}
   BaseEnemyPrefab: {fileID: 6389588871143762209, guid: 8dd8ed2a30fb161449e99fbc12a1fb18, type: 3}
   WhitePixelSprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  ArenaSize: {x: 24, y: 14}
+  BoundaryThickness: 2
   CurrentLayout: {fileID: 0}
 --- !u!114 &610811985
 MonoBehaviour:
@@ -9631,7 +9633,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9992756
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -10890,7 +10892,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 349.1551, y: 0}
+  m_AnchoredPosition: {x: 349.1551, y: 0.00048828125}
   m_SizeDelta: {x: -697, y: -63}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1430235885

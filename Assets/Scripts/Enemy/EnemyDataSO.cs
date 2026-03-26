@@ -29,6 +29,10 @@ public class EnemyDataSO : ScriptableObject
     [Header("=== 物理运动表现 (怎么去) ===")]
     public EnemyMoveType MoveType = EnemyMoveType.Normal;
 
+    // 👇【主程新增】：蜂群怪物的接敌刹车距离（表面到表面的距离）
+    [Tooltip("【仅蜂群有效】距离目标多远时停止推挤 (0表示死死贴住)")]
+    public float StopDistance = 0.5f;
+
     [Tooltip("【传送/冲刺】起步前的蓄力前摇时间 (秒)")]
     public float MoveChargeTime = 1.0f;
 

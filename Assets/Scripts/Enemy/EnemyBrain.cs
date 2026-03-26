@@ -25,7 +25,6 @@ public class EnemyBrain : MonoBehaviour
     private List<RuntimeEnemySkill> runtimeSkills = new List<RuntimeEnemySkill>();
     private RuntimeEnemySkill currentIntent = null;
 
-    // 👇【修复：加入了 Staggered 状态！】
     private enum MoveExecutionState { Ready, Charging, Dashing, Cooldown, Staggered }
     private MoveExecutionState currentMoveState = MoveExecutionState.Ready;
     private float moveStateTimer = 0f;
@@ -41,18 +40,14 @@ public class EnemyBrain : MonoBehaviour
         myReceiver = GetComponent<DamageReceiver>();
         rb = GetComponent<Rigidbody2D>();
 
-        // 1. 从图纸中读取最大生命值，兜底 100 血
         float maxHP = MyData.GetStat(StatType.HP);
         if (maxHP <= 0) maxHP = 100f;
         myReceiver.Initialize(maxHP, 0f);
         myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
-        // 👇👇👇【终极物理塑形：100% 对齐 TestBench 完美逻辑！】👇👇👇
 
-        // 1. 净化根节点
         transform.localScale = Vector3.one;
 
-        // 2. 智能寻找视觉与受击节点 (完美兼容您预制体里的 VisualAndHitbox！)
         SpriteRenderer mainSr = GetComponentInChildren<SpriteRenderer>();
         GameObject visualHitboxNode;
 
@@ -65,46 +60,34 @@ public class EnemyBrain : MonoBehaviour
         }
         else
         {
-            // 抓取到您截图里的那个 VisualAndHitbox！
             visualHitboxNode = mainSr.gameObject;
         }
 
-        // 3. 注入灵魂原画与层级
         if (MyData.EnemySprite != null) mainSr.sprite = MyData.EnemySprite;
         int hitboxLayer = LayerMask.NameToLayer("Enemy_Hitbox");
         if (hitboxLayer != -1) visualHitboxNode.layer = hitboxLayer;
 
-        // 4. 视觉缩放 (直接应用图纸缩放，绝不干涉根节点)
         visualHitboxNode.transform.localScale = Vector3.one * MyData.VisualScaleMultiplier;
 
-        // 5. 受击框 (Hitbox) - 挂在缩放后的视觉节点上
         BoxCollider2D hitboxCol = visualHitboxNode.GetComponent<BoxCollider2D>();
         if (hitboxCol == null) hitboxCol = visualHitboxNode.AddComponent<BoxCollider2D>();
         hitboxCol.isTrigger = true;
 
-        // 👇【核心修复：暴力重塑受击框！】
-        // 绝不相信 Unity 的自动大小！每次生成怪物，只要贴图存在，直接读取贴图的原始物理边框，强行赋值！
-        // 因为 visualHitboxNode 已经应用了缩放比例，所以这里的 size 不需要再乘 multiplier，Transform 会自动把它放大！
         if (mainSr.sprite != null)
         {
             hitboxCol.size = mainSr.sprite.bounds.size;
-
-            // 贴图默认居中，确保碰撞体偏移归零
             hitboxCol.offset = Vector2.zero;
         }
 
-
-        // 6. 物理肉体 (脚底板) - 挂在根节点
         int bodyLayer = LayerMask.NameToLayer("Enemy_Body");
         if (bodyLayer != -1) gameObject.layer = bodyLayer;
 
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        rb.drag = 3f; // 同步测试台的手感
+        rb.drag = 3f;
         rb.mass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
 
-        // 7. 动态切削防穿模底盘
         if (mainSr.sprite != null)
         {
             Vector2 realSize = mainSr.sprite.bounds.size * MyData.VisualScaleMultiplier;
@@ -113,18 +96,14 @@ public class EnemyBrain : MonoBehaviour
             if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
             physicsCol.isTrigger = false;
 
-            // 削肉剔骨：压缩到真实缩放后脚底的 30%！
             physicsCol.size = new Vector2(realSize.x * 0.8f, realSize.y * 0.3f);
             physicsCol.offset = new Vector2(0f, -(realSize.y / 2f) + (physicsCol.size.y / 2f));
 
-            // 同步深度排序引擎
             DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
             if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
             sorter.YOffset = -(realSize.y / 2f);
         }
-        // 👆👆👆==========================================👆👆👆
 
-        // 解析怪物技能 (保持原样)
         foreach (var skillSO in MyData.Skills)
         {
             if (skillSO == null) continue;
@@ -229,11 +208,26 @@ public class EnemyBrain : MonoBehaviour
         float dist = 0f;
         Vector2 dirToTarget = Vector2.zero;
 
-        if (targetCollider != null && myHitboxCollider != null)
+        // 👇【核心修改：将“边缘到边缘”改为“中心到边缘”】
+        if (targetCollider != null)
         {
-            ColliderDistance2D colDist = Physics2D.Distance(myHitboxCollider, targetCollider);
-            dist = Mathf.Max(0f, colDist.distance);
-            dirToTarget = (targetCollider.bounds.center - myHitboxCollider.bounds.center).normalized;
+            // 1. 确定怪物自己的“绝对中心点”
+            Vector2 myCenter = myHitboxCollider != null ? (Vector2)myHitboxCollider.bounds.center : (Vector2)transform.position;
+
+            // 2. 寻找玩家 Hitbox 外壳上，距离怪物中心最近的那个点（命中点）
+            Vector2 targetEdgePoint = targetCollider.ClosestPoint(myCenter);
+
+            // 3. 距离 = 怪物中心 到 玩家外壳 的物理距离！
+            dist = Vector2.Distance(myCenter, targetEdgePoint);
+
+            // 4. 方向也改为指向玩家的外壳受击点，而不是玩家的中心
+            dirToTarget = (targetEdgePoint - myCenter).normalized;
+
+            // 兜底：如果怪物正好和玩家的边缘完美重合（距离为0），给一个默认方向
+            if (dirToTarget == Vector2.zero)
+            {
+                dirToTarget = (currentTarget.position - transform.position).normalized;
+            }
         }
         else
         {
@@ -246,7 +240,17 @@ public class EnemyBrain : MonoBehaviour
 
         if (MyData.MovementLogic == EnemyMovementStrategy.Swarm)
         {
-            targetVelocity = dirToTarget * currentSpeed;
+            float stopDist = MyData.StopDistance * distMult;
+
+            if (dist > stopDist)
+            {
+                targetVelocity = dirToTarget * currentSpeed;
+            }
+            else
+            {
+                targetVelocity = Vector2.zero;
+            }
+
             TryRollAndFireSkills(dist, dirToTarget, distMult);
         }
         else if (MyData.MovementLogic == EnemyMovementStrategy.Artillery)
@@ -292,7 +296,6 @@ public class EnemyBrain : MonoBehaviour
             else targetVelocity = dirToTarget * (currentSpeed * 0.5f);
         }
 
-        // 防追尾紧急手刹
         if (dist <= 0.01f && Vector2.Dot(targetVelocity, dirToTarget) > 0) targetVelocity = Vector2.zero;
 
         ExecutePhysicalMovement(targetVelocity, distMult);
@@ -300,14 +303,13 @@ public class EnemyBrain : MonoBehaviour
 
     private void ExecutePhysicalMovement(Vector2 desiredVelocity, float distMult)
     {
-        // 👇【引擎接管拦截】：如果是 Staggered 状态，直接没收大脑的控制权！
         if (currentMoveState == MoveExecutionState.Staggered)
         {
             moveStateTimer -= Time.deltaTime;
             if (moveStateTimer <= 0)
             {
                 currentMoveState = MoveExecutionState.Ready;
-                rb.drag = 0f; // 恢复正常摩擦力
+                rb.drag = 0f;
             }
             return;
         }
@@ -452,7 +454,6 @@ public class EnemyBrain : MonoBehaviour
         foreach (var action in actions) if (action != null) action.Execute(context);
     }
 
-    // 👇【全新机制】：物理冲击接收器
     public void ApplyImpulse(Vector2 dir, float impulse)
     {
         if (isDead) return;
@@ -513,6 +514,34 @@ public class EnemyBrain : MonoBehaviour
                     Gizmos.DrawWireSphere(center, minRange);
                 }
             }
+        }
+    }
+
+    private void LateUpdate()
+    {
+        EnforceArenaBounds();
+    }
+
+    private void EnforceArenaBounds()
+    {
+        if (CombatDirector.Instance == null || CombatDirector.Instance.CurrentArenaSize.x == 0) return;
+
+        Vector2 center = CombatDirector.Instance.CurrentArenaCenter;
+        Vector2 size = CombatDirector.Instance.CurrentArenaSize;
+
+        float minX = center.x - size.x / 2f;
+        float maxX = center.x + size.x / 2f;
+        float minY = center.y - size.y / 2f;
+        float maxY = center.y + size.y / 2f;
+
+        Vector3 currentPos = transform.position;
+        float clampedX = Mathf.Clamp(currentPos.x, minX, maxX);
+        float clampedY = Mathf.Clamp(currentPos.y, minY, maxY);
+
+        if (currentPos.x != clampedX || currentPos.y != clampedY)
+        {
+            transform.position = new Vector3(clampedX, clampedY, currentPos.z);
+            if (rb != null) rb.velocity = Vector2.zero;
         }
     }
 }

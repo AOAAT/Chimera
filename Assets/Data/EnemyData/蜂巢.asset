@@ -20,15 +20,16 @@ MonoBehaviour:
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
   - StatID: 14
-    Value: 100
+    Value: 10000
   - StatID: 17
     Value: 20
   - StatID: 16
-    Value: 1000
+    Value: 20
   TargetingLogic: 0
   MovementLogic: 0
   HoverDistance: 5
   MoveType: 0
+  StopDistance: 30
   MoveChargeTime: 1
   MoveCooldown: 1.5
   DashSpeedMultiplier: 4

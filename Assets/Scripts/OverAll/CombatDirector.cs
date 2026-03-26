@@ -8,9 +8,9 @@ public class CombatDirector : MonoBehaviour
     public static CombatDirector Instance { get; private set; }
 
     public bool IsCombatActive { get; private set; }
-
-    // 👇【核心防呆锁】：向外界（特别是 HangarSlotUI）暴露当前是否允许拖拽机甲
     public bool IsDeploymentPhase { get; private set; }
+
+    private bool wallsGenerated = false;
 
     [Header("=== UI 引用：战前部署 ===")]
     public GameObject CombatUIPanel;
@@ -26,13 +26,22 @@ public class CombatDirector : MonoBehaviour
     public Button ReturnToMapButton;
 
     [Header("=== 真实世界引用 ===")]
-    [Tooltip("战场正中心点")]
-    public Transform ArenaCenter;
+    [Tooltip("拖入场景中的战斗场地预制体节点！系统会自动读取它的 BoxCollider2D 作为绝对物理边界")]
+    public GameObject ArenaReference;
+
     [Tooltip("怪物的通用空壳预制体 (必须挂载 EnemyBrain)")]
     public GameObject BaseEnemyPrefab;
 
     [Tooltip("一张纯白色的 1x1 像素贴图，用于可视化红区")]
     public Sprite WhitePixelSprite;
+
+   
+    public Vector3 CurrentArenaCenter { get; private set; }
+    public Vector2 CurrentArenaSize { get; private set; }
+    [Header("=== 战场边界防护 (空气墙) ===")]
+    public float BoundaryThickness = 2f;
+    private GameObject boundariesContainer;
+    private GameObject activeEnemiesContainer;
 
     [Header("=== 运行时状态监视 (只读) ===")]
     public EncounterLayoutSO CurrentLayout;
@@ -66,10 +75,7 @@ public class CombatDirector : MonoBehaviour
     public void EnterCombatPhase(MapNodeData nodeData)
     {
         IsCombatActive = false;
-
-        // 👇【核心修复】：进入战斗场景时，正式开启部署权限！
         IsDeploymentPhase = true;
-
         isCheckingWinCondition = false;
         currentNodeData = nodeData;
 
@@ -102,19 +108,18 @@ public class CombatDirector : MonoBehaviour
 
     private void SpawnEnemiesFromLayout()
     {
-        if (ArenaCenter != null)
-        {
-            foreach (Transform child in ArenaCenter) Destroy(child.gameObject);
-        }
+        if (activeEnemiesContainer != null) Destroy(activeEnemiesContainer);
+        activeEnemiesContainer = new GameObject("[Active Enemies]");
+        activeEnemiesContainer.transform.SetParent(this.transform);
 
-        Vector3 centerPos = ArenaCenter != null ? ArenaCenter.position : Vector3.zero;
+        Vector3 centerPos = CurrentArenaCenter;
 
         foreach (var spawnData in CurrentLayout.Enemies)
         {
             if (spawnData.EnemyType == null) continue;
 
             Vector3 spawnPos = centerPos + new Vector3(spawnData.LocalPosition.x, spawnData.LocalPosition.y, 0f);
-            GameObject enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, ArenaCenter);
+            GameObject enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, activeEnemiesContainer.transform);
             enemyObj.name = $"[Enemy] {spawnData.EnemyType.EnemyName}";
 
             EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
@@ -134,7 +139,7 @@ public class CombatDirector : MonoBehaviour
         forbiddenZonesContainer = new GameObject("[Forbidden Zones]");
         forbiddenZonesContainer.transform.SetParent(this.transform);
 
-        Vector3 centerPos = ArenaCenter != null ? ArenaCenter.position : Vector3.zero;
+        Vector3 centerPos = CurrentArenaCenter;
 
         int noDeployLayer = LayerMask.NameToLayer("NoDeploy");
         if (noDeployLayer == -1) Debug.LogError("【致命错误】长官！找不到 NoDeploy 图层！");
@@ -175,6 +180,61 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
+    private void GenerateArenaBoundaries()
+    {
+        CurrentArenaCenter = ArenaReference.transform.position;
+        CurrentArenaSize = new Vector2(24f, 14f); // 兜底大小
+
+        BoxCollider2D arenaCol = ArenaReference.GetComponent<BoxCollider2D>();
+        if (arenaCol != null)
+        {
+            CurrentArenaCenter = ArenaReference.transform.TransformPoint(arenaCol.offset);
+            CurrentArenaSize = new Vector2(
+                arenaCol.size.x * ArenaReference.transform.lossyScale.x,
+                arenaCol.size.y * ArenaReference.transform.lossyScale.y
+            );
+            Debug.Log($"【空气墙测绘】成功获取场地数据！真实中心:{CurrentArenaCenter}, 真实尺寸:{CurrentArenaSize}");
+        }
+        else
+        {
+            Debug.LogWarning("【空气墙警告】ArenaReference 没有挂载 BoxCollider2D！将使用默认 24x14 尺寸！");
+        }
+
+        float thickness = 20f; // 20米厚的防爆墙
+        Vector2 size = CurrentArenaSize;
+        Vector3 center = CurrentArenaCenter;
+
+        if (boundariesContainer != null) Destroy(boundariesContainer);
+        boundariesContainer = new GameObject("[Arena Boundaries]");
+        boundariesContainer.transform.SetParent(this.transform);
+
+        CreateWall("AirWall_Top", center + new Vector3(0, size.y / 2 + thickness / 2, 0), new Vector2(size.x + thickness * 2, thickness));
+        CreateWall("AirWall_Bottom", center + new Vector3(0, -size.y / 2 - thickness / 2, 0), new Vector2(size.x + thickness * 2, thickness));
+        CreateWall("AirWall_Left", center + new Vector3(-size.x / 2 - thickness / 2, 0, 0), new Vector2(thickness, size.y));
+        CreateWall("AirWall_Right", center + new Vector3(size.x / 2 + thickness / 2, 0, 0), new Vector2(thickness, size.y));
+    }
+
+    private void CreateWall(string wallName, Vector3 pos, Vector2 size)
+    {
+        GameObject wall = new GameObject(wallName);
+        wall.transform.SetParent(boundariesContainer.transform);
+        wall.transform.position = pos;
+        wall.layer = LayerMask.NameToLayer("Default");
+
+        wall.transform.localScale = new Vector3(size.x, size.y, 1f);
+
+        BoxCollider2D col = wall.AddComponent<BoxCollider2D>();
+        col.size = Vector2.one;
+        col.isTrigger = false;
+
+        SpriteRenderer sr = wall.AddComponent<SpriteRenderer>();
+        if (WhitePixelSprite != null)
+        {
+            sr.sprite = WhitePixelSprite;
+            sr.color = new Color(1f, 0f, 0f, 0.15f);
+        }
+    }
+
     // ==========================================
     // 阶段 2：正式开战 
     // ==========================================
@@ -208,10 +268,7 @@ public class CombatDirector : MonoBehaviour
         }
 
         IsCombatActive = true;
-
-        // 👇【核心修复】：发令枪响，彻底收回部署权限！现在任何人都不能再从机库往下拖机甲了！
         IsDeploymentPhase = false;
-
         isCheckingWinCondition = true;
     }
 
@@ -220,6 +277,17 @@ public class CombatDirector : MonoBehaviour
     // ==========================================
     private void Update()
     {
+        if (!wallsGenerated)
+        {
+            if (ArenaReference == null)
+            {
+                if (Time.frameCount % 120 == 0) Debug.LogError("【空气墙探针】包工头罢工了！CombatDirector 上的 ArenaReference 是空的！");
+                return;
+            }
+            GenerateArenaBoundaries();
+            wallsGenerated = true;
+        }
+
         if (!IsCombatActive || !isCheckingWinCondition) return;
 
         bool allEnemiesDead = true;
@@ -251,8 +319,6 @@ public class CombatDirector : MonoBehaviour
     {
         IsCombatActive = false;
         isCheckingWinCondition = false;
-
-        // 👇【防呆保险】：防止战斗结束后、回到地图前这个真空期，玩家还能拖拽机甲
         IsDeploymentPhase = false;
 
         Debug.Log(isVictory ? "【战斗结束】大获全胜！" : "【战斗结束】全军覆没...");
@@ -273,7 +339,6 @@ public class CombatDirector : MonoBehaviour
     // ==========================================
     private void OnReturnToMapClicked()
     {
-        // 1. 打扫战场与数据回填 (无论输赢都要执行)
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
         foreach (var mech in allMechs)
         {
@@ -290,21 +355,19 @@ public class CombatDirector : MonoBehaviour
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
 
-        // 2. 收起所有的战时/结算UI
+        if (boundariesContainer != null) Destroy(boundariesContainer);
+
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
 
-        // 解锁外围导航栏
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        // 重置玩家机甲的部署状态
         foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
         {
             if (profile != null) profile.IsDeployed = false;
         }
 
-        // 3. 👇【核心拦截流】：赢了去抽卡，输了直接滚！
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
@@ -333,12 +396,24 @@ public class CombatDirector : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (ArenaCenter != null)
+        if (ArenaReference != null)
         {
+            Vector3 center = ArenaReference.transform.position;
+            Vector2 size = new Vector2(24f, 14f);
+            BoxCollider2D col = ArenaReference.GetComponent<BoxCollider2D>();
+            if (col != null)
+            {
+                center = ArenaReference.transform.TransformPoint(col.offset);
+                size = new Vector2(col.size.x * ArenaReference.transform.lossyScale.x, col.size.y * ArenaReference.transform.lossyScale.y);
+            }
+
             Gizmos.color = new Color(1f, 1f, 0f, 0.5f);
-            Gizmos.DrawLine(ArenaCenter.position + Vector3.up * 2, ArenaCenter.position + Vector3.down * 2);
-            Gizmos.DrawLine(ArenaCenter.position + Vector3.left * 2, ArenaCenter.position + Vector3.right * 2);
-            Gizmos.DrawWireSphere(ArenaCenter.position, 0.5f);
+            Gizmos.DrawLine(center + Vector3.up * 2, center + Vector3.down * 2);
+            Gizmos.DrawLine(center + Vector3.left * 2, center + Vector3.right * 2);
+            Gizmos.DrawWireSphere(center, 0.5f);
+
+            Gizmos.color = new Color(0f, 1f, 1f, 0.2f);
+            Gizmos.DrawWireCube(center, new Vector3(size.x, size.y, 0));
         }
     }
 }
