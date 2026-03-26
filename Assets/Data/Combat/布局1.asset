@@ -22,3 +22,4 @@ MonoBehaviour:
     y: 2.5
     width: 5
     height: 5
+  NodeLootTable: {fileID: 11400000, guid: d0956ee1ba4c27b4988b3a453ffa1b7a, type: 2}

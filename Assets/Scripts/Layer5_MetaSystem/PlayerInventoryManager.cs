@@ -117,7 +117,26 @@ public class PlayerInventoryManager : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
 
-        // 👇 【新增】：开机时，直接用水泥浇筑 8 个空车位！
+        // 👇👇👇 【防坑补丁：为 Inspector 手动添加的测试黑户补办身份证！】
+        foreach (var c in ChassisInventory)
+        {
+            if (string.IsNullOrEmpty(c.InstanceID))
+            {
+                c.InstanceID = Guid.NewGuid().ToString();
+                c.EquippedUnitID = string.Empty;
+            }
+        }
+
+        foreach (var c in ComponentInventory)
+        {
+            if (string.IsNullOrEmpty(c.InstanceID))
+            {
+                c.InstanceID = Guid.NewGuid().ToString();
+                c.EquippedUnitID = string.Empty;
+            }
+        }
+        // 👆👆👆 =================================================
+
         HangarUnits = new SavedUnitProfile[MaxUnitSlots];
     }
     private void Update()

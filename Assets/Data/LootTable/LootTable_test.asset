@@ -16,7 +16,7 @@ MonoBehaviour:
   - Category: 1
     ResourceType: 0
     ResourceAmount: 0
-    TargetType: 0
+    TargetType: 2
     Weight_Chassis: 50
     Weight_Component: 50
     Weight_Common: 0
@@ -27,7 +27,7 @@ MonoBehaviour:
   - Category: 2
     ResourceType: 0
     ResourceAmount: 0
-    TargetType: 2
+    TargetType: 0
     Weight_Chassis: 30
     Weight_Component: 70
     Weight_Common: 0
