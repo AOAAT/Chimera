@@ -99,6 +99,16 @@ public class PlayerInventoryManager : MonoBehaviour
     public List<InstancedChassis> ChassisInventory = new List<InstancedChassis>(); // 【这就是为你补上的底盘仓库】
     public List<InstancedComponent> ComponentInventory = new List<InstancedComponent>(); // 玩家拥有的所有散件实体
 
+    // 👇👇👇 【抽卡系统急需：全图鉴大百科！】 👇👇👇
+    [Header("=== 游戏全局图纸库 (抽卡池 Database) ===")]
+    [Tooltip("请把游戏里【所有允许掉落】的底盘图纸全拖进来！")]
+    public List<ChassisDataSO> AllChassisDatabase = new List<ChassisDataSO>();
+
+    [Tooltip("请把游戏里【所有允许掉落】的零件图纸全拖进来！")]
+    public List<ComponentDataSO> AllComponentDatabase = new List<ComponentDataSO>();
+    // 👆👆👆 ==================================== 👆👆👆
+
+
     [Header("=== 测试作弊专用 (一键进货包) ===")]
     public ChassisDataSO DebugChassisBlueprint; // 底盘测试槽保留
     public List<ComponentDataSO> DebugComponentBundle = new List<ComponentDataSO>(); // 【全家桶套餐】改成列表！
