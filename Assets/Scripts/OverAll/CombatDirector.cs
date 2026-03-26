@@ -9,6 +9,9 @@ public class CombatDirector : MonoBehaviour
 
     public bool IsCombatActive { get; private set; }
 
+    // 👇【核心防呆锁】：向外界（特别是 HangarSlotUI）暴露当前是否允许拖拽机甲
+    public bool IsDeploymentPhase { get; private set; }
+
     [Header("=== UI 引用：战前部署 ===")]
     public GameObject CombatUIPanel;
     public Button StartBattleButton;
@@ -63,6 +66,10 @@ public class CombatDirector : MonoBehaviour
     public void EnterCombatPhase(MapNodeData nodeData)
     {
         IsCombatActive = false;
+
+        // 👇【核心修复】：进入战斗场景时，正式开启部署权限！
+        IsDeploymentPhase = true;
+
         isCheckingWinCondition = false;
         currentNodeData = nodeData;
 
@@ -201,6 +208,10 @@ public class CombatDirector : MonoBehaviour
         }
 
         IsCombatActive = true;
+
+        // 👇【核心修复】：发令枪响，彻底收回部署权限！现在任何人都不能再从机库往下拖机甲了！
+        IsDeploymentPhase = false;
+
         isCheckingWinCondition = true;
     }
 
@@ -240,6 +251,10 @@ public class CombatDirector : MonoBehaviour
     {
         IsCombatActive = false;
         isCheckingWinCondition = false;
+
+        // 👇【防呆保险】：防止战斗结束后、回到地图前这个真空期，玩家还能拖拽机甲
+        IsDeploymentPhase = false;
+
         Debug.Log(isVictory ? "【战斗结束】大获全胜！" : "【战斗结束】全军覆没...");
 
         if (SettlementPanel != null)
@@ -293,7 +308,6 @@ public class CombatDirector : MonoBehaviour
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
-            // 如果挂载了战利品导演，并且当前节点配了掉落表，触发三选一 UI！
             if (RewardDirector.Instance != null && CurrentLayout != null && CurrentLayout.NodeLootTable != null)
             {
                 Debug.Log("<color=#FFD700>【战利品拦截】</color> 呼叫战利品导演！请玩家抽卡！");
@@ -301,7 +315,6 @@ public class CombatDirector : MonoBehaviour
             }
             else
             {
-                // 如果没有配置掉落表（比如测试关），直接回地图！
                 Debug.LogWarning("【战利品跳过】没有配置掉落表或找不到 RewardDirector，直接返回大地图。");
                 ExecuteReturnToMap();
             }
@@ -309,11 +322,9 @@ public class CombatDirector : MonoBehaviour
         else
         {
             Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请大侠重新来过！");
-            // 这里暂未实现 Game Over 回主界面的逻辑，只能呆在这
         }
     }
 
-    // 👇【全新公有接口】：供 RewardDirector 抽完卡、关掉界面后调用，真正返回大地图！
     public void ExecuteReturnToMap()
     {
         Debug.Log("【战斗导演】系统交接完毕，将指挥权交还给大地图...");

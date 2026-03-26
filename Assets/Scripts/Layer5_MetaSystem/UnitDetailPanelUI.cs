@@ -147,6 +147,8 @@ public class UnitDetailPanelUI : MonoBehaviour
         HangarMenuUI.Instance.gameObject.SetActive(false);
         // 👇 【核心修复】：把 currentSlotIndex 传给车间！
         AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(currentSlotIndex, currentProfile);
+
+
     }
 
     // ==========================================

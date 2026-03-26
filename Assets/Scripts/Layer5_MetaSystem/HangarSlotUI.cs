@@ -24,7 +24,7 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
     [Header("=== 战场部署设置 ===")]
     [Tooltip("把挂载了 MechUnit2D 脚本的 2D 机甲预制体拖到这里")]
-    public GameObject MechPrefab; // 【新增】用来生成 3D/2D 肉体的图纸
+    public GameObject MechPrefab;
 
     private SavedUnitProfile bindedProfile;
     public int mySlotIndex = -1;
@@ -42,7 +42,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         mySlotIndex = index;
         bindedProfile = profile;
 
-        // 👇【主程防坑】：不但要防 profile 本身为 null，还要防 Unity 自动生成的没有 ChassisData 的空壳！
         if (profile == null || profile.ChassisData == null)
         {
             EmptyStateObj.SetActive(true);
@@ -54,7 +53,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             EmptyStateObj.SetActive(false);
             OccupiedStateObj.SetActive(true);
 
-            // 👇【核心修复】：给格子也加上当场计算 MaxHP 的逻辑！
             float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
             foreach (string compID in profile.EquippedComponentIDs)
             {
@@ -64,7 +62,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             }
 
             UnitNameText.text = profile.UnitName;
-            // 👇 统一为当前血量 / 最大血量
             HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
             APText.text = $"AP: {profile.CurrentAP}";
             PowerText.text = $"耗电: {CalculateTotalPowerCost(profile)}";
@@ -72,7 +69,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             BuildUnitVisual(profile);
 
             bool isDeployed = profile.IsDeployed;
-
             CanvasGroup group = GetComponent<CanvasGroup>();
             if (group == null) group = gameObject.AddComponent<CanvasGroup>();
             group.alpha = isDeployed ? 0.5f : 1.0f;
@@ -83,12 +79,10 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
     private float CalculateTotalPowerCost(SavedUnitProfile profile)
     {
-        // 👇【双保险拦截】：如果没有底盘图纸，直接返回 0，绝不往下走！
         if (profile == null || profile.ChassisData == null) return 0f;
 
         float power = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.PowerCost);
 
-        // 👇【防呆拦截 2】：如果在测试时 PlayerInventoryManager 还没准备好，也安全退出
         if (PlayerInventoryManager.Instance == null) return power;
 
         foreach (string compID in profile.EquippedComponentIDs)
@@ -156,30 +150,28 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             return;
         }
 
-        // 👇【核心修复】：将判断标准对齐 RefreshSlot！
-        // 只有当档案不为空，且档案里确实装载了底盘 (ChassisData) 时，才算真正“有车”！
         bool isEmptySlot = (bindedProfile == null || bindedProfile.ChassisData == null);
 
         if (isEmptySlot)
         {
             Debug.Log($"【机库流转】{mySlotIndex} 号车位为空，已引导长官前往【组装车间】！");
-            // 是空车，正确跳转至新建组装页
             HangarMenuUI.Instance.TriggerCreateNewUnit(mySlotIndex);
         }
         else
         {
             Debug.Log($"【机库流转】{mySlotIndex} 号车位已停放机甲，正在打开【详情档案】！");
-            // 有货，跳转至详情页
             HangarMenuUI.Instance.TriggerOpenUnitDetail(mySlotIndex, bindedProfile);
         }
     }
 
     // ==========================================
-    // 拖拽系统核心
+    // 拖拽系统核心 (已彻底重构净化)
     // ==========================================
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (bindedProfile == null || bindedProfile.IsDeployed || eventData.button != PointerEventData.InputButton.Left) return;
+        // 只要有车，且不是部署状态，且是左键点击，就可以拖拽（方便换位）
+        if (bindedProfile == null || bindedProfile.ChassisData == null || bindedProfile.IsDeployed) return;
+        if (eventData.button != PointerEventData.InputButton.Left) return;
 
         if (rootCanvas == null) rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
 
@@ -197,109 +189,111 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         CanvasGroup group = dragGhost.AddComponent<CanvasGroup>();
         group.alpha = 0.6f;
-        group.blocksRaycasts = false;
+        group.blocksRaycasts = false; // 必须关掉射线阻挡，否则松手时检测不到底下的格子
 
         UpdateGhostPosition(eventData);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (dragGhost != null) UpdateGhostPosition(eventData);
+        if (dragGhost != null)
+        {
+            UpdateGhostPosition(eventData);
+        }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (dragGhost != null)
+        if (dragGhost != null) Destroy(dragGhost);
+        if (bindedProfile == null || bindedProfile.ChassisData == null || bindedProfile.IsDeployed) return;
+
+        // ==========================================
+        // 逻辑 A：UI 内部换位 (扫描鼠标下方的其他 UI 格子)
+        // ==========================================
+        GameObject droppedObj = eventData.pointerCurrentRaycast.gameObject;
+        if (droppedObj != null)
         {
-            Destroy(dragGhost);
-            dragGhost = null;
-
-            // 情况 A：UI 雷达扫描（仓库内部换位）
-            GameObject droppedObj = eventData.pointerCurrentRaycast.gameObject;
-            if (droppedObj != null)
+            HangarSlotUI targetSlot = droppedObj.GetComponentInParent<HangarSlotUI>();
+            if (targetSlot != null && targetSlot != this)
             {
-                HangarSlotUI targetSlot = droppedObj.GetComponentInParent<HangarSlotUI>();
-                if (targetSlot != null && targetSlot != this)
+                int sourceIndex = this.mySlotIndex;
+                int targetIndex = targetSlot.mySlotIndex;
+                var inventory = PlayerInventoryManager.Instance.HangarUnits;
+
+                if (inventory[targetIndex] != null && inventory[targetIndex].IsDeployed)
                 {
-                    int sourceIndex = this.mySlotIndex;
-                    int targetIndex = targetSlot.mySlotIndex;
-                    var inventory = PlayerInventoryManager.Instance.HangarUnits;
-
-                    if (inventory[targetIndex] != null && inventory[targetIndex].IsDeployed)
-                    {
-                        Debug.LogWarning("【防撞预警】目标车位上的机甲正在前线交战，底盘锁死，无法挪车！");
-                        return;
-                    }
-
-                    SavedUnitProfile temp = inventory[sourceIndex];
-                    inventory[sourceIndex] = inventory[targetIndex];
-                    inventory[targetIndex] = temp;
-
-                    Debug.Log($"【换位成功】长官，{sourceIndex} 号车位与 {targetIndex} 号车位的资产已互换！");
-                    HangarMenuUI.Instance.RefreshHangar();
+                    Debug.LogWarning("【防撞预警】目标车位上的机甲正在前线交战，无法挪车！");
                     return;
                 }
-            }
 
-            // 👇👇👇 情况 B：【纯 2D 坐标系天降正义！】 👇👇👇
-            if (MechPrefab == null)
-            {
-                Debug.LogError("【防呆警告】长官！你还没有在 HangarSlotUI 预制体里挂载 MechPrefab！");
-                return;
-            }
+                SavedUnitProfile temp = inventory[sourceIndex];
+                inventory[sourceIndex] = inventory[targetIndex];
+                inventory[targetIndex] = temp;
 
-            // 1. 屏幕坐标转 2D 世界坐标
-            Vector3 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
-            Vector2 dropPos2D = new Vector2(worldPoint.x, worldPoint.y);
-
-            // ==========================================
-            // 🚨 安检门 1：升级严苛的【体积检测】机制！
-            // ==========================================
-            int noDeployLayerMask = LayerMask.GetMask("NoDeploy");
-
-            // 👇【核心修改】：从细针检测升级为气泡检测！
-            // 假设机甲的标准物理体积半径是 0.5 米
-            // 我们生成一个 0.5 米的圆形气泡探测器，扫描红区图层
-            Collider2D forbiddenHit = Physics2D.OverlapCircle(dropPos2D, 0.5f, noDeployLayerMask);
-
-            if (forbiddenHit != null)
-            {
-                // 只要气泡边缘碰到一点点红线，就会触发拦截！
-                Debug.LogWarning("【空投驳回】指挥官！该体积范围内有敌人禁区，强制禁止部署！");
-                return;
-            }
-
-            // ==========================================
-            // ✅ 安检门 2：如果没有红区，再检测是不是合法的绿区！
-            // (这里可以保持原来宽松的“中心点在绿区就行”)
-            // ==========================================
-            Collider2D[] allHits = Physics2D.OverlapPointAll(dropPos2D);
-            bool isValidDeployZone = false;
-            foreach (var hit in allHits)
-            {
-                if (hit.CompareTag("DeployZone"))
-                {
-                    isValidDeployZone = true;
-                    break;
-                }
-            }
-            if (isValidDeployZone)
-            {
-                bindedProfile.IsDeployed = true;
-                Vector3 spawnPos = new Vector3(dropPos2D.x, dropPos2D.y, 0f);
-                GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
-                MechUnit2D mechScript = newMech.GetComponent<MechUnit2D>();
-                if (mechScript != null)
-                {
-                    mechScript.InitUnitData(bindedProfile);
-                }
-                Debug.Log($"【天降正义】[{bindedProfile.UnitName}] 已成功部署到战场坐标: {spawnPos}");
+                Debug.Log($"【换位成功】长官，{sourceIndex} 号车位与 {targetIndex} 号车位的资产已互换！");
                 HangarMenuUI.Instance.RefreshHangar();
+                return; // 换位成功，直接结束
             }
-            else
+        }
+
+        // ==========================================
+        // 逻辑 B：向世界空投 (判断总监状态与物理红绿区)
+        // ==========================================
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase)
+        {
+            Debug.LogWarning("【部署拒绝】当前不在战前部署阶段！只能在机库内调整机甲位置！");
+            return;
+        }
+
+        if (MechPrefab == null)
+        {
+            Debug.LogError("【防呆警告】长官！你还没有在 HangarSlotUI 预制体里挂载 MechPrefab！");
+            return;
+        }
+
+        Vector3 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
+        Vector2 dropPos2D = new Vector2(worldPoint.x, worldPoint.y);
+
+        // 1. 气泡红区检测
+        int noDeployLayerMask = LayerMask.GetMask("NoDeploy");
+        Collider2D forbiddenHit = Physics2D.OverlapCircle(dropPos2D, 0.5f, noDeployLayerMask);
+        if (forbiddenHit != null)
+        {
+            Debug.LogWarning("【空投驳回】指挥官！该体积范围内有敌人禁区，强制禁止部署！");
+            return;
+        }
+
+        // 2. 绿区合法性检测
+        Collider2D[] allHits = Physics2D.OverlapPointAll(dropPos2D);
+        bool isValidDeployZone = false;
+        foreach (var hit in allHits)
+        {
+            if (hit.CompareTag("DeployZone"))
             {
-                Debug.LogWarning("【空投失败】长官，该坐标没有铺设 DeployZone 地板，或者扔到了虚空里！");
+                isValidDeployZone = true;
+                break;
             }
+        }
+
+        // 3. 执行下兵
+        if (isValidDeployZone)
+        {
+            bindedProfile.IsDeployed = true;
+            Vector3 spawnPos = new Vector3(dropPos2D.x, dropPos2D.y, 0f);
+            GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
+
+            MechUnit2D mechScript = newMech.GetComponent<MechUnit2D>();
+            if (mechScript != null)
+            {
+                mechScript.InitUnitData(bindedProfile);
+            }
+
+            Debug.Log($"【天降正义】[{bindedProfile.UnitName}] 已成功部署到战场坐标: {spawnPos}");
+            HangarMenuUI.Instance.RefreshHangar();
+        }
+        else
+        {
+            Debug.LogWarning("【空投失败】长官，该坐标没有铺设 DeployZone 地板，或者扔到了虚空里！");
         }
     }
 

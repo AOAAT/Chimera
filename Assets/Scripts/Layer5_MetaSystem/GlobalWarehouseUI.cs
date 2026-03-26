@@ -174,7 +174,6 @@ public class GlobalWarehouseUI : MonoBehaviour
                 slotObj.ItemNameText.color = Color.white;
 
                 // 如果零件被装备了，可以给它贴个半透明或者加个红字，这里我先简单处理
-                if (comp.IsEquipped) slotObj.ItemNameText.text += " (已装备)";
 
                 slotObj.SetupComponent(comp, null);
                 displayCount++;

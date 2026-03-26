@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -16,6 +17,10 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     private InstancedChassis cachedChassis;
     private InstancedComponent cachedComponent;
     private bool isUnequipSlot = false;
+
+    [Header("=== 占用状态表现 ===")]
+    public GameObject EquippedOverlay;   // 一个半透明黑底的遮罩面板
+    public TMP_Text EquippedStatusText;  // 显示 "已搭载于: 狂怒号"
 
     // 👇【新增：高亮开关】
     public void SetHighlight(bool isOn)
@@ -38,16 +43,45 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             ItemNameText.text = chassis.BaseData.ChassisName;
         }
 
-        onClickCallback = () => onSelected?.Invoke(chassis);
+        // 状态可视化
+        bool isEquipped = chassis != null && chassis.IsEquipped;
+        if (EquippedOverlay != null) EquippedOverlay.SetActive(isEquipped);
+
+        // 【核心修复 2】：将变量声明在外部，解决作用域找不到的问题
+        string mechName = "未知机甲";
+
+        if (isEquipped)
+        {
+            // 【核心修复 1】：HangarUnits 是数组，必须用 System.Array.Find 或 Linq
+            var ownerMech = System.Array.Find(PlayerInventoryManager.Instance.HangarUnits, u => u != null && u.UnitID == chassis.EquippedUnitID);
+            if (ownerMech != null) mechName = ownerMech.UnitName;
+
+            if (EquippedStatusText != null)
+            {
+                EquippedStatusText.text = $"已搭载于\n<color=#FFD700>{mechName}</color>";
+            }
+        }
+
+        // 绑定点击事件，加入防呆拦截
+        onClickCallback = () => {
+            if (isEquipped)
+            {
+                Debug.LogWarning($"【操作拒绝】该底盘已被 [{mechName}] 占用，请先去机库将其卸下！");
+            }
+            else
+            {
+                onSelected?.Invoke(chassis);
+            }
+        };
     }
 
     // ==========================================
-    // 渲染零件数据
+    // 渲染组件数据
     // ==========================================
     public void SetupComponent(InstancedComponent component, Action<InstancedComponent> onSelected)
     {
-        cachedComponent = component;
         cachedChassis = null;
+        cachedComponent = component;
         isUnequipSlot = false;
 
         if (component != null && component.BaseData != null)
@@ -56,15 +90,49 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             ItemNameText.text = component.BaseData.ComponentName;
         }
 
-        onClickCallback = () => onSelected?.Invoke(component);
+        // 状态可视化
+        bool isEquipped = component != null && component.IsEquipped;
+        if (EquippedOverlay != null) EquippedOverlay.SetActive(isEquipped);
+
+        // 【核心修复 2】：将变量声明在外部
+        string mechName = "未知机甲";
+
+        if (isEquipped)
+        {
+            // 【核心修复 1】：修复数组查询报错
+            var ownerMech = System.Array.Find(PlayerInventoryManager.Instance.HangarUnits, u => u != null && u.UnitID == component.EquippedUnitID);
+            if (ownerMech != null) mechName = ownerMech.UnitName;
+
+            if (EquippedStatusText != null)
+            {
+                EquippedStatusText.text = $"已搭载于\n<color=#FFD700>{mechName}</color>";
+            }
+        }
+
+        // 绑定点击事件，加入防呆拦截
+        onClickCallback = () => {
+            if (isEquipped)
+            {
+                Debug.LogWarning($"【操作拒绝】该组件已被 [{mechName}] 占用，请先去机库将其卸下！");
+            }
+            else
+            {
+                onSelected?.Invoke(component);
+            }
+        };
     }
 
     // ==========================================
-    // 渲染卸载按钮
+    // 渲染卸载槽位 (特殊用)
     // ==========================================
     public void SetupUnequip(Action onSelected)
     {
+        cachedChassis = null;
+        cachedComponent = null;
         isUnequipSlot = true;
+
+        if (EquippedOverlay != null) EquippedOverlay.SetActive(false); // 卸载槽不需要遮罩
+
         ItemIcon.color = new Color(1, 1, 1, 0); // 隐藏图标
         ItemNameText.text = "【 卸载当前组件 】";
         ItemNameText.color = Color.red;
@@ -85,7 +153,7 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             // 极其干净的单次回调
             onClickCallback?.Invoke();
 
-            // 只有当不是卸载按钮时，才去关详情页（看你需求，如果觉得没必要可以删掉这行）
+            // 只有当不是卸载按钮时，才去关详情页
             if (!isUnequipSlot) ItemDetailPanelUI.Instance?.HidePanel();
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
@@ -96,16 +164,20 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (isUnequipSlot) return;
+        if (isUnequipSlot) return; // 卸载槽不弹详情页
 
-        if (cachedChassis != null)
-            ItemDetailPanelUI.Instance?.ShowChassisDetail(cachedChassis.BaseData);
-        else if (cachedComponent != null)
+        if (cachedComponent != null && cachedComponent.BaseData != null)
+        {
             ItemDetailPanelUI.Instance?.ShowComponentDetail(cachedComponent.BaseData);
+        }
+        else if (cachedChassis != null && cachedChassis.BaseData != null)
+        {
+            ItemDetailPanelUI.Instance?.ShowChassisDetail(cachedChassis.BaseData);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        ItemDetailPanelUI.Instance?.HidePanel();
+        // 建议保留此处为空，让玩家点击其他地方或点击自身时再关闭面板
     }
 }
