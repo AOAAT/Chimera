@@ -17,6 +17,8 @@ public class ComponentDataSO : ScriptableObject
     [Header("基础识别信息")]
     public string ComponentID = "WPN_000";
     public string ComponentName = "新组件";
+    public ItemRarity Rarity = ItemRarity.Common;
+
     [TextArea]
     public string Description = "组件风味描述...";
     public Sprite ComponentIcon;

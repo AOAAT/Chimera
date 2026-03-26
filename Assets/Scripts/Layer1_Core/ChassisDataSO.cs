@@ -7,7 +7,10 @@ public class ChassisDataSO : ScriptableObject
     [Header("底盘基础信息")]
     public string ChassisID = "CH_000";
     public string ChassisName = "新底盘";
-    public Sprite ChassisSprite; // 底盘的主贴图
+    public ItemRarity Rarity = ItemRarity.Common;
+    public Sprite ChassisSprite;
+
+
 
     [Header("=== 文本与世界观 ===")]
     [TextArea] public string Description = "底盘的风味描述";

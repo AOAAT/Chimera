@@ -28,7 +28,6 @@ public class CombatDirector : MonoBehaviour
     [Tooltip("怪物的通用空壳预制体 (必须挂载 EnemyBrain)")]
     public GameObject BaseEnemyPrefab;
 
-    // 👇视觉红区的白色像素贴图引用
     [Tooltip("一张纯白色的 1x1 像素贴图，用于可视化红区")]
     public Sprite WhitePixelSprite;
 
@@ -85,7 +84,7 @@ public class CombatDirector : MonoBehaviour
         CurrentLayout = RunManager.Instance.GetNextEncounterForCurrentNode();
         if (CurrentLayout != null)
         {
-            SpawnEnemiesFromLayout(); // 恢复了！
+            SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
         }
         else
@@ -94,7 +93,6 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
-    // 👇【这就是刚才被我弄丢的刷怪代码！】
     private void SpawnEnemiesFromLayout()
     {
         if (ArenaCenter != null)
@@ -119,12 +117,10 @@ public class CombatDirector : MonoBehaviour
             if (sr != null && spawnData.EnemyType.EnemySprite != null)
             {
                 sr.sprite = spawnData.EnemyType.EnemySprite;
-                enemyObj.transform.localScale = Vector3.one * spawnData.EnemyType.VisualScaleMultiplier;
             }
         }
     }
 
-    // 👇 生成浅红色禁飞区 (楚河汉界)
     private void GenerateForbiddenZones()
     {
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
@@ -138,15 +134,11 @@ public class CombatDirector : MonoBehaviour
 
         foreach (var rect in CurrentLayout.ForbiddenZones)
         {
-            // ==========================================
-            // 🧱 1. 父物体：纯粹的物理层 (绝对不缩放！)
-            // ==========================================
             GameObject zonePhysicsObj = new GameObject("Zone_Blocker_Physics");
             zonePhysicsObj.transform.SetParent(forbiddenZonesContainer.transform);
 
             Vector3 zonePos = centerPos + new Vector3(rect.x + rect.width / 2f, rect.y - rect.height / 2f, 0f);
             zonePhysicsObj.transform.position = zonePos;
-            // 确保父物体的 Scale 永远是干净的 1:1:1
             zonePhysicsObj.transform.localScale = Vector3.one;
 
             BoxCollider2D col = zonePhysicsObj.AddComponent<BoxCollider2D>();
@@ -155,14 +147,10 @@ public class CombatDirector : MonoBehaviour
 
             if (noDeployLayer != -1) zonePhysicsObj.layer = noDeployLayer;
 
-            // ==========================================
-            // 🎨 2. 子物体：纯粹的视觉层 (随便拉伸，不影响物理！)
-            // ==========================================
             if (WhitePixelSprite != null)
             {
                 GameObject visualObj = new GameObject("Zone_Visual");
                 visualObj.transform.SetParent(zonePhysicsObj.transform);
-                // 对齐父物体的中心点
                 visualObj.transform.localPosition = Vector3.zero;
 
                 SpriteRenderer sr = visualObj.AddComponent<SpriteRenderer>();
@@ -172,7 +160,6 @@ public class CombatDirector : MonoBehaviour
                 float scaleX = rect.width / spriteSize.x;
                 float scaleY = rect.height / spriteSize.y;
 
-                // 这里的拉伸只会影响 visualObj 这个子物体，物理碰撞箱安然无恙！
                 visualObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
                 sr.color = new Color(1f, 0f, 0f, 0.2f);
@@ -199,20 +186,19 @@ public class CombatDirector : MonoBehaviour
             Debug.LogWarning("【系统警告】长官，您还没有向战场空投任何机甲，禁止开战！");
             return;
         }
+
         if (StartBattleButton != null) StartBattleButton.interactable = false;
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
         if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
         if (NavHangarButton != null) NavHangarButton.interactable = false;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
-        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！");
 
-        // 👇👇👇【核心修复 2】：发令枪响时，瞬间隐藏所有红区！
-        // 这样做不仅能让红色贴图消失，还能顺便把安检门的物理探测器一起关掉，极大节省战斗时的 CPU 性能！
+        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！机库与物品库的大门连同钥匙已全部销毁！");
+
         if (forbiddenZonesContainer != null)
         {
             forbiddenZonesContainer.SetActive(false);
         }
-        // 👆👆👆==========================================👆👆👆
 
         IsCombatActive = true;
         isCheckingWinCondition = true;
@@ -224,6 +210,7 @@ public class CombatDirector : MonoBehaviour
     private void Update()
     {
         if (!IsCombatActive || !isCheckingWinCondition) return;
+
         bool allEnemiesDead = true;
         foreach (var e in activeEnemies)
         {
@@ -234,6 +221,7 @@ public class CombatDirector : MonoBehaviour
             TriggerSettlement(true);
             return;
         }
+
         bool allPlayersDead = true;
         foreach (var p in activePlayerUnits)
         {
@@ -253,6 +241,7 @@ public class CombatDirector : MonoBehaviour
         IsCombatActive = false;
         isCheckingWinCondition = false;
         Debug.Log(isVictory ? "【战斗结束】大获全胜！" : "【战斗结束】全军覆没...");
+
         if (SettlementPanel != null)
         {
             SettlementPanel.SetActive(true);
@@ -265,12 +254,11 @@ public class CombatDirector : MonoBehaviour
     }
 
     // ==========================================
-    // 阶段 4：打扫战场
+    // 阶段 4：打扫战场，拦截结算，班师回朝
     // ==========================================
     private void OnReturnToMapClicked()
     {
-        if (SettlementPanel != null) SettlementPanel.SetActive(false);
-        if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
+        // 1. 打扫战场与数据回填 (无论输赢都要执行)
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
         foreach (var mech in allMechs)
         {
@@ -287,23 +275,49 @@ public class CombatDirector : MonoBehaviour
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
 
+        // 2. 收起所有的战时/结算UI
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
+
+        // 解锁外围导航栏
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
+
+        // 重置玩家机甲的部署状态
         foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
         {
             if (profile != null) profile.IsDeployed = false;
         }
-        bool isVictory = SettlementTitleText.text.Contains("胜 利");
+
+        // 3. 👇【核心拦截流】：赢了去抽卡，输了直接滚！
+        bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
-            MapManager.Instance.OnCombatVictory(currentNodeData);
+            // 如果挂载了战利品导演，并且当前节点配了掉落表，触发三选一 UI！
+            if (RewardDirector.Instance != null && CurrentLayout != null && CurrentLayout.NodeLootTable != null)
+            {
+                Debug.Log("<color=#FFD700>【战利品拦截】</color> 呼叫战利品导演！请玩家抽卡！");
+                RewardDirector.Instance.GenerateAndShowRewards(CurrentLayout.NodeLootTable);
+            }
+            else
+            {
+                // 如果没有配置掉落表（比如测试关），直接回地图！
+                Debug.LogWarning("【战利品跳过】没有配置掉落表或找不到 RewardDirector，直接返回大地图。");
+                ExecuteReturnToMap();
+            }
         }
         else
         {
             Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请大侠重新来过！");
+            // 这里暂未实现 Game Over 回主界面的逻辑，只能呆在这
         }
+    }
+
+    // 👇【全新公有接口】：供 RewardDirector 抽完卡、关掉界面后调用，真正返回大地图！
+    public void ExecuteReturnToMap()
+    {
+        Debug.Log("【战斗导演】系统交接完毕，将指挥权交还给大地图...");
+        MapManager.Instance.OnCombatVictory(currentNodeData);
     }
 
     private void OnDrawGizmos()

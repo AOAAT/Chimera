@@ -1,21 +1,27 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems; // 【新增】引入事件系统
+using UnityEngine.EventSystems;
 using TMPro;
 
-// 【修改】继承三个物理射线的事件接口
 public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     public Image ItemIcon;
     public TMP_Text ItemNameText;
+    private float lastClickTime = 0f;
+    // 👇【给三选一高亮预留的神器】
+    public GameObject HighlightFrame;
 
     private Action onClickCallback;
-
-    // 缓存数据，用于悬停时传给详情页
     private InstancedChassis cachedChassis;
     private InstancedComponent cachedComponent;
     private bool isUnequipSlot = false;
+
+    // 👇【新增：高亮开关】
+    public void SetHighlight(bool isOn)
+    {
+        if (HighlightFrame != null) HighlightFrame.SetActive(isOn);
+    }
 
     // ==========================================
     // 渲染底盘数据
@@ -26,8 +32,12 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         cachedComponent = null;
         isUnequipSlot = false;
 
-        ItemIcon.sprite = chassis.BaseData.ChassisSprite;
-        ItemNameText.text = chassis.BaseData.ChassisName;
+        if (chassis != null && chassis.BaseData != null)
+        {
+            ItemIcon.sprite = chassis.BaseData.ChassisSprite;
+            ItemNameText.text = chassis.BaseData.ChassisName;
+        }
+
         onClickCallback = () => onSelected?.Invoke(chassis);
     }
 
@@ -40,48 +50,54 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         cachedChassis = null;
         isUnequipSlot = false;
 
-        ItemIcon.sprite = component.BaseData.ComponentIcon;
-        ItemNameText.text = component.BaseData.ComponentName;
+        if (component != null && component.BaseData != null)
+        {
+            ItemIcon.sprite = component.BaseData.ComponentIcon;
+            ItemNameText.text = component.BaseData.ComponentName;
+        }
+
         onClickCallback = () => onSelected?.Invoke(component);
     }
 
+    // ==========================================
+    // 渲染卸载按钮
+    // ==========================================
     public void SetupUnequip(Action onSelected)
     {
         isUnequipSlot = true;
-        ItemIcon.color = new Color(1, 1, 1, 0);
+        ItemIcon.color = new Color(1, 1, 1, 0); // 隐藏图标
         ItemNameText.text = "【 卸载当前组件 】";
         ItemNameText.color = Color.red;
         onClickCallback = () => onSelected?.Invoke();
     }
 
     // ==========================================
-    // 【全新机制】：物理射线事件拦截
-    // ==========================================
-// ==========================================
-    // 【全新机制】：左右键分离的物理射线事件拦截
+    // 物理射线事件拦截
     // ==========================================
     public void OnPointerClick(PointerEventData eventData)
     {
-        // 1. 玩家按下了【鼠标左键】 (或触屏点击)
+        // 👇【核心防抖】：如果 0.2 秒内连续触发了两次点击，直接拦截第二次！
+        if (Time.time - lastClickTime < 0.2f) return;
+        lastClickTime = Time.time;
+
         if (eventData.button == PointerEventData.InputButton.Left)
         {
+            // 极其干净的单次回调
             onClickCallback?.Invoke();
-            // 注意：全局仓库里左键只是看详情，不一定要关详情页，具体看你需求
-            ItemDetailPanelUI.Instance?.HidePanel(); 
+
+            // 只有当不是卸载按钮时，才去关详情页（看你需求，如果觉得没必要可以删掉这行）
+            if (!isUnequipSlot) ItemDetailPanelUI.Instance?.HidePanel();
         }
-        // 2. 玩家按下了【鼠标右键】
         else if (eventData.button == PointerEventData.InputButton.Right)
         {
             Debug.Log($"【系统提示】你右键点击了 [{ItemNameText.text}]！此处预留给未来的【分解/强化】功能！");
-            // TODO: 未来在这里写右键菜单的呼出逻辑
         }
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (isUnequipSlot) return; // 卸载按钮不弹详情页
+        if (isUnequipSlot) return;
 
-        // 鼠标悬停时，召唤全局详情页！
         if (cachedChassis != null)
             ItemDetailPanelUI.Instance?.ShowChassisDetail(cachedChassis.BaseData);
         else if (cachedComponent != null)
@@ -90,7 +106,6 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        // 鼠标移开时，隐藏详情页
         ItemDetailPanelUI.Instance?.HidePanel();
     }
 }

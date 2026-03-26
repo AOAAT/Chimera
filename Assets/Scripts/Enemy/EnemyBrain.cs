@@ -82,8 +82,17 @@ public class EnemyBrain : MonoBehaviour
         if (hitboxCol == null) hitboxCol = visualHitboxNode.AddComponent<BoxCollider2D>();
         hitboxCol.isTrigger = true;
 
-        // 【抄作业】：不再写死 size，Unity 会自动根据 SpriteRenderer 撑满它！
-        myHitboxCollider = hitboxCol;
+        // 👇【核心修复：暴力重塑受击框！】
+        // 绝不相信 Unity 的自动大小！每次生成怪物，只要贴图存在，直接读取贴图的原始物理边框，强行赋值！
+        // 因为 visualHitboxNode 已经应用了缩放比例，所以这里的 size 不需要再乘 multiplier，Transform 会自动把它放大！
+        if (mainSr.sprite != null)
+        {
+            hitboxCol.size = mainSr.sprite.bounds.size;
+
+            // 贴图默认居中，确保碰撞体偏移归零
+            hitboxCol.offset = Vector2.zero;
+        }
+
 
         // 6. 物理肉体 (脚底板) - 挂在根节点
         int bodyLayer = LayerMask.NameToLayer("Enemy_Body");
