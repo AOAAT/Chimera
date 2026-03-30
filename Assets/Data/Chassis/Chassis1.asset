@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChassisID: CH_000
   ChassisName: "\u5E95\u76D81"
+  Rarity: 0
   ChassisSprite: {fileID: 21300000, guid: 9b9bee1be361e0341a8579b7661a10b2, type: 3}
   Description: "\u5E95\u76D8\u7684\u98CE\u5473\u63CF\u8FF0"
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"

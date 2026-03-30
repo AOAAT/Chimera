@@ -4707,7 +4707,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 33.390625, y: -6.359375}
+  m_AnchoredPosition: {x: 60.33008, y: 7.630005}
   m_SizeDelta: {x: 187.6292, y: 114.4857}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &702674079
@@ -9637,7 +9637,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99999887
+  m_Size: 0.9987488
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -10896,7 +10896,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 349.1551, y: 0.00012207031}
+  m_AnchoredPosition: {x: 349.1551, y: 0.00061035156}
   m_SizeDelta: {x: -697, y: -63}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1430235885
@@ -12551,7 +12551,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1417487726}
         m_TargetAssemblyTypeName: UnitDetailPanelUI, Assembly-CSharp
-        m_MethodName: OnClickClose
+        m_MethodName: CloseDetail
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -13603,7 +13603,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2061521696}
@@ -13649,7 +13649,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: c29dcea383f5cbf408940d584b0168af, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -16360,13 +16360,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: "\u6218\u6597\u573A\u5730Battle"
       objectReference: {fileID: 0}
+    - target: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 9.94283
+      objectReference: {fileID: 0}
     - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2.4231
       objectReference: {fileID: 0}
     - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.0251
+      value: -0.0064
       objectReference: {fileID: 0}
     - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_LocalPosition.z

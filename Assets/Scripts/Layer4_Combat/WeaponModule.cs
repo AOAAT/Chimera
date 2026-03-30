@@ -68,6 +68,21 @@ public class WeaponModule : MonoBehaviour
         }
     }
 
+    // 👇【主程新增】：计算一个包围盒（Bounds）距离中心点的最远物理距离
+    private float GetMaxDistanceFromBounds(Vector2 center, Bounds bounds)
+    {
+        Vector2 min = bounds.min;
+        Vector2 max = bounds.max;
+
+        // 计算四个角的距离平方，取最大值
+        float d1 = Vector2.SqrMagnitude(center - new Vector2(min.x, min.y));
+        float d2 = Vector2.SqrMagnitude(center - new Vector2(max.x, min.y));
+        float d3 = Vector2.SqrMagnitude(center - new Vector2(min.x, max.y));
+        float d4 = Vector2.SqrMagnitude(center - new Vector2(max.x, max.y));
+
+        return Mathf.Sqrt(Mathf.Max(d1, Mathf.Max(d2, Mathf.Max(d3, d4))));
+    }
+
     private void FindTarget()
     {
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
@@ -96,15 +111,16 @@ public class WeaponModule : MonoBehaviour
             })
             .Where(x => x.Receiver != null && x.Receiver.CurrentHP > 0)
             .Where(x => {
-                // 精准剔除在“最小射程盲区”内的目标
-                Vector2 closestPoint = x.Collider.ClosestPoint(center);
-                float d = Vector2.Distance(center, closestPoint);
-                return d >= minRange;
+                // 👇【核心修复】：从“查鼻尖”改为“查包围盒最远点”！
+                // 只要怪物的最远端还在红圈外（距离 >= 最小射程），就说明它没有完全钻进盲区，依然可以攻击！
+                float distToFurthest = GetMaxDistanceFromBounds(center, x.Collider.bounds);
+                return distToFurthest >= minRange;
             })
             // 👇 因为同一个怪物可能有多个零件/Hitbox被扫到，必须去重！
             .GroupBy(x => x.Receiver)
             .Select(group => group.First()) // 每个怪物只取离中心最近的那个 Hitbox
             .OrderBy(x => {
+                // 排序依然保留“查鼻尖”逻辑，确保炮口永远优先攻击物理上离自己最近的敌人
                 Vector2 closestPoint = x.Collider.ClosestPoint(center);
                 return Vector2.Distance(center, closestPoint);
             })
