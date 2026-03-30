@@ -14,19 +14,19 @@ public class ItemDetailPanelUI : MonoBehaviour
     public TMP_Text DescriptionText;
 
     [Header("=== 右侧动态区 ===")]
-    public TMP_Text StatsText;         // 属性加成
-    public TMP_Text SpecialMechanicText; // 特殊机制
-    public TMP_Text SocketsText;       // 接口种类 (仅底盘用)
-    public GameObject SocketsGroup;    // 接口显示的整个父节点 (组件不显示这个)
+    public TMP_Text StatsText;
+    public TMP_Text SpecialMechanicText;
+    public TMP_Text SocketsText;
+    public GameObject SocketsGroup;
 
     [Header("=== 顶部标签系统 (流式布局) ===")]
-    public Transform TagsContainer;    // 挂载了 Horizontal Layout Group 的节点
-    public GameObject TagPrefab;       // 预制体：一个带有 Text 和 Image 背景的小方块
+    public Transform TagsContainer;
+    public GameObject TagPrefab;
 
     private void Awake()
     {
         Instance = this;
-        HidePanel(); // 默认隐藏
+        HidePanel();
     }
 
     public void HidePanel()
@@ -34,71 +34,64 @@ public class ItemDetailPanelUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // ==========================================
-    // 显示【组件】详情
-    // ==========================================
     public void ShowComponentDetail(ComponentDataSO data)
     {
         gameObject.SetActive(true);
 
-        // 1. 基础信息
         IconImage.sprite = data.ComponentIcon;
         IconImage.SetNativeSize();
         NameText.text = data.ComponentName;
         DescriptionText.text = data.Description;
 
-        // 2. 右侧动态数据
-        SocketsGroup.SetActive(false); // 组件没有插槽，隐藏这一块
-        SpecialMechanicText.text = data.SpecialMechanicDesc;
+        SocketsGroup.SetActive(false);
 
-        // 拼装属性字符串
+        // 👇【核心修复 1】：由于组件数值改成了矩阵，这里为了UI展示，默认读取第一级的数据展示！
+        var lv1Data = data.GetLevelData(1);
+        SpecialMechanicText.text = lv1Data != null ? lv1Data.SpecialMechanicDesc : "无特殊机制";
+
         string stats = "";
-        foreach (var stat in data.BaseStats)
+        if (lv1Data != null)
         {
-            stats += $"[{TranslateStat(stat.StatID)}] : +{stat.Value}\n";
+            foreach (var stat in lv1Data.Stats)
+            {
+                stats += $"[{TranslateStat(stat.StatID)}] : +{stat.Value}\n";
+            }
         }
         StatsText.text = string.IsNullOrEmpty(stats) ? "无基础属性加成" : stats;
 
-        // 3. 生成顶部流式标签
         ClearTags();
-        GenerateTag("组件", new Color(0.3f, 0.3f, 0.3f)); // 一级分类
-        GenerateTag(TranslateComponentType(data.Type), new Color(0.2f, 0.5f, 0.8f)); // 二级分类
-        foreach (var tag in data.Tags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag)); // 三级分类
+        GenerateTag("组件", new Color(0.3f, 0.3f, 0.3f));
+        GenerateTag(TranslateComponentType(data.Type), new Color(0.2f, 0.5f, 0.8f));
+
+        // 👇【核心修复 2】：Tags 变成了 BaseSubTags
+        foreach (var tag in data.BaseSubTags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag));
     }
 
-    // ==========================================
-    // 显示【底盘】详情
-    // ==========================================
     public void ShowChassisDetail(ChassisDataSO data)
     {
         gameObject.SetActive(true);
 
-        // 1. 基础信息
         IconImage.sprite = data.ChassisSprite;
         IconImage.SetNativeSize();
         NameText.text = data.ChassisName;
         DescriptionText.text = data.Description;
 
-        // 2. 右侧动态数据
-        SocketsGroup.SetActive(true); // 底盘必须显示插槽统计
+        SocketsGroup.SetActive(true);
         SpecialMechanicText.text = data.SpecialMechanicDesc;
 
         string stats = "";
         foreach (var stat in data.BaseStats) stats += $"[{TranslateStat(stat.StatID)}] : {stat.Value}\n";
         StatsText.text = string.IsNullOrEmpty(stats) ? "无基础属性加成" : stats;
 
-        // 【极度核心】：智能翻译并合并万能接口
         SocketsText.text = GenerateSocketsReport(data.Sockets);
 
-        // 3. 生成顶部流式标签 (底盘没有二级分类，直接接三级)
         ClearTags();
-        GenerateTag("底盘", new Color(0.8f, 0.6f, 0.1f)); // 一级分类
-        foreach (var tag in data.Tags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag)); // 无缝接三级分类
+        GenerateTag("底盘", new Color(0.8f, 0.6f, 0.1f));
+
+        // 👇【核心修复 3】：Tags 变成了 SubTags
+        foreach (var tag in data.SubTags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag));
     }
 
-    // ==========================================
-    // 万能接口智能统计算法
-    // ==========================================
     private string GenerateSocketsReport(List<SlotDefinition> sockets)
     {
         Dictionary<string, int> socketCounts = new Dictionary<string, int>();
@@ -110,18 +103,10 @@ public class ItemDetailPanelUI : MonoBehaviour
 
             if (allowedCount == 0) continue;
 
-            // 判断是否是终极万能槽 (假设当前有5种基本类型)
-            if (allowedCount >= 4)
-            {
-                labelName = "万能接口";
-            }
-            else if (allowedCount == 1)
-            {
-                labelName = TranslateComponentType(slot.AllowedTypes[0]);
-            }
+            if (allowedCount >= 4) labelName = "万能接口";
+            else if (allowedCount == 1) labelName = TranslateComponentType(slot.AllowedTypes[0]);
             else
             {
-                // 复合槽位，比如 "武器/辅助"
                 var names = slot.AllowedTypes.Select(t => TranslateComponentType(t));
                 labelName = string.Join("/", names) + " (通用)";
             }
@@ -135,9 +120,6 @@ public class ItemDetailPanelUI : MonoBehaviour
         return string.IsNullOrEmpty(report) ? "无可用接口" : report;
     }
 
-    // ==========================================
-    // 标签 UI 生成器
-    // ==========================================
     private void ClearTags()
     {
         foreach (Transform child in TagsContainer) Destroy(child.gameObject);
@@ -152,9 +134,6 @@ public class ItemDetailPanelUI : MonoBehaviour
         tagObj.GetComponentInChildren<TMP_Text>().text = text;
     }
 
-    // ==========================================
-    // 翻译字典 (把英文变中文)
-    // ==========================================
     private string TranslateComponentType(ComponentType type)
     {
         switch (type)
@@ -168,24 +147,35 @@ public class ItemDetailPanelUI : MonoBehaviour
         }
     }
 
-    private string TranslateFactionTag(ComponentTag tag)
+    private string TranslateFactionTag(SubTag tag)
     {
         switch (tag)
         {
-            case ComponentTag.Factory: return "工厂";
-            case ComponentTag.Tech: return "科技";
-            case ComponentTag.Flesh: return "血肉";
-            default: return "无";
+            case SubTag.Mutation: return "突变";
+            case SubTag.Parasite: return "寄生";
+            case SubTag.Acid: return "强酸";
+            case SubTag.Ballistic: return "实弹";
+            case SubTag.Energy: return "能量";
+            case SubTag.Shield: return "护盾";
+            case SubTag.Curse: return "诅咒";
+            case SubTag.Economy: return "经济";
+            case SubTag.Heavy: return "重型";
+            default: return tag.ToString();
         }
     }
 
-    private Color GetFactionColor(ComponentTag tag)
+    private Color GetFactionColor(SubTag tag)
     {
         switch (tag)
         {
-            case ComponentTag.Flesh: return new Color(0.6f, 0.1f, 0.1f); // 暗红
-            case ComponentTag.Tech: return new Color(0.1f, 0.6f, 0.8f);  // 赛博蓝
-            case ComponentTag.Factory: return new Color(0.7f, 0.4f, 0.1f); // 铁锈橙
+            case SubTag.Mutation:
+            case SubTag.Parasite:
+            case SubTag.Acid: return new Color(0.6f, 0.1f, 0.1f); // 血肉系暗红
+            case SubTag.Ballistic:
+            case SubTag.Energy:
+            case SubTag.Shield: return new Color(0.1f, 0.6f, 0.8f); // 科技系赛博蓝
+            case SubTag.Curse:
+            case SubTag.Summon: return new Color(0.5f, 0.1f, 0.8f); // 魔法系深紫
             default: return Color.gray;
         }
     }
@@ -197,7 +187,10 @@ public class ItemDetailPanelUI : MonoBehaviour
             case StatType.AddedHP: return "耐久";
             case StatType.AddedAP: return "装甲";
             case StatType.PowerCost: return "耗电";
-            // TODO: 你可以在这里把所有词条补齐
+            case StatType.MaxDamage: return "最高伤害";
+            case StatType.MinDamage: return "基础伤害";
+            case StatType.AttackSpeed: return "攻击速度";
+            case StatType.MaxRange: return "最大射程";
             default: return stat.ToString();
         }
     }

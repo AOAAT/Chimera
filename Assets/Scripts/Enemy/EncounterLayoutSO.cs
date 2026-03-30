@@ -23,6 +23,6 @@ public class EncounterLayoutSO : ScriptableObject
     [Tooltip("相对于场地中心的绝对物理坐标 (X,Y 为区域左上角)")]
     public List<Rect> ForbiddenZones = new List<Rect>();
 
-    [Header("=== 战利品掉落池 ===")]
-    public LootTableSO NodeLootTable;
+
+
 }

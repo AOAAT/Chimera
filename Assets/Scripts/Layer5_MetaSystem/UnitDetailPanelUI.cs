@@ -42,7 +42,11 @@ public class UnitDetailPanelUI : MonoBehaviour
         {
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
-                maxHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
+            {
+                // 👇【核心修复 3】：从等级数据中读血量
+                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                if (lvData != null) maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
+            }
         }
         HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
 
@@ -51,7 +55,11 @@ public class UnitDetailPanelUI : MonoBehaviour
         {
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
-                totalPower += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.PowerCost);
+            {
+                // 👇【核心修复 4】：从等级数据中读耗电
+                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                if (lvData != null) totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
+            }
         }
         PowerText.text = $"耗电量: {totalPower}";
 
@@ -60,10 +68,7 @@ public class UnitDetailPanelUI : MonoBehaviour
 
     private void BuildUnitVisual(SavedUnitProfile profile)
     {
-        foreach (Transform child in UnitVisualContainer)
-        {
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in UnitVisualContainer) Destroy(child.gameObject);
 
         UnitVisualContainer.localScale = Vector3.one * PreviewScale;
 
@@ -99,7 +104,6 @@ public class UnitDetailPanelUI : MonoBehaviour
             Image compImg = visObj.AddComponent<Image>();
             compImg.sprite = comp.BaseData.ComponentIcon;
             compImg.SetNativeSize();
-
             compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
 
             Button compBtn = visObj.AddComponent<Button>();
@@ -113,19 +117,14 @@ public class UnitDetailPanelUI : MonoBehaviour
 
     public void OnClickRefit()
     {
-        // 👇【核心修复 1】：同步关闭悬浮详情
         if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
-
         gameObject.SetActive(false);
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.gameObject.SetActive(false);
-
-        // 👇【核心修复 2】：方法名对齐 OpenWorkshopWithUnit
         AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(currentSlotIndex, currentProfile);
     }
 
     public void CloseDetail()
     {
-        // 👇【核心修复】：点击返回按钮时也要清理
         if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
         gameObject.SetActive(false);
     }

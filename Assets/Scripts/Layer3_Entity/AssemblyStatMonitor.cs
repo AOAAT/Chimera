@@ -42,9 +42,7 @@ public class AssemblyStatMonitor : MonoBehaviour
         {
             setupHelper.UpdateVisuals();
 
-            // 👇👇👇 【神级修复：测试台实体化，向实战机甲(MechUnit2D)完全看齐！】 👇👇👇
-
-            // 1. 刚体与物理推挤层 (Player_Body)
+            // 1. 刚体与物理推挤层
             gameObject.layer = LayerMask.NameToLayer("Player_Body");
             Rigidbody2D rb = GetComponent<Rigidbody2D>();
             if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
@@ -52,7 +50,7 @@ public class AssemblyStatMonitor : MonoBehaviour
             rb.freezeRotation = true;
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
-            // 2. 脚底板物理碰撞体 (非 Trigger，负责挡路)
+            // 2. 脚底板物理碰撞体
             BoxCollider2D physicsCol = GetComponent<BoxCollider2D>();
             if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
             physicsCol.isTrigger = false;
@@ -60,30 +58,27 @@ public class AssemblyStatMonitor : MonoBehaviour
             SpriteRenderer mainSr = GetComponent<SpriteRenderer>();
             if (mainSr != null && mainSr.sprite != null)
             {
-                // 精准削切：只保留脚底板 30% 作为物理体积
                 Vector2 size = mainSr.sprite.bounds.size * setupHelper.GlobalVisualScale;
                 physicsCol.size = new Vector2(size.x * 0.7f, size.y * 0.25f);
                 physicsCol.offset = new Vector2(0f, -(size.y / 2f) + (physicsCol.size.y / 2f));
             }
 
-            // 3. 全身受击 Hitbox (专属图层 Player_Hitbox，必须是 Trigger！)
+            // 3. 全身受击 Hitbox
             Transform hitboxTrans = transform.Find("Player_Visual_Hitbox");
             GameObject hitboxObj = hitboxTrans != null ? hitboxTrans.gameObject : new GameObject("Player_Visual_Hitbox");
             if (hitboxTrans == null) hitboxObj.transform.SetParent(this.transform, false);
 
-            hitboxObj.layer = LayerMask.NameToLayer("Player_Hitbox"); // 敌人雷达的唯一指定目标！
+            hitboxObj.layer = LayerMask.NameToLayer("Player_Hitbox");
             BoxCollider2D hitboxCol = hitboxObj.GetComponent<BoxCollider2D>();
             if (hitboxCol == null) hitboxCol = hitboxObj.AddComponent<BoxCollider2D>();
             hitboxCol.isTrigger = true;
 
             if (mainSr != null && mainSr.sprite != null)
             {
-                // 1:1 完美覆盖全图
                 Vector2 size = mainSr.sprite.bounds.size * setupHelper.GlobalVisualScale;
                 hitboxCol.size = size;
                 hitboxCol.offset = Vector2.zero;
             }
-            // 👆👆👆 ========================================== 👆👆👆
 
             CalculateTotalLoad();
 
@@ -125,7 +120,17 @@ public class AssemblyStatMonitor : MonoBehaviour
 
     private void CalculateTotalLoad()
     {
-        runtimeData.Assemble(setupHelper.TargetChassis, setupHelper.EquippedComponents);
+        // 👇【核心修复 2】：为了兼容测试台的 SO 数组，我们在外层包一个 1级的 Instance 壳！
+        InstancedComponent[] tempInstances = new InstancedComponent[setupHelper.EquippedComponents.Length];
+        for (int i = 0; i < setupHelper.EquippedComponents.Length; i++)
+        {
+            if (setupHelper.EquippedComponents[i] != null)
+            {
+                tempInstances[i] = new InstancedComponent(setupHelper.EquippedComponents[i], 1);
+            }
+        }
+
+        runtimeData.Assemble(setupHelper.TargetChassis, tempInstances);
 
         UnitName = runtimeData.UnitName;
         Final_MaxHP = runtimeData.MaxHP;

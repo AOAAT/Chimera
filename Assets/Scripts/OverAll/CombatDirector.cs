@@ -35,7 +35,6 @@ public class CombatDirector : MonoBehaviour
     [Tooltip("一张纯白色的 1x1 像素贴图，用于可视化红区")]
     public Sprite WhitePixelSprite;
 
-   
     public Vector3 CurrentArenaCenter { get; private set; }
     public Vector2 CurrentArenaSize { get; private set; }
     [Header("=== 战场边界防护 (空气墙) ===")]
@@ -69,9 +68,6 @@ public class CombatDirector : MonoBehaviour
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
     }
 
-    // ==========================================
-    // 阶段 1：进入备战部署阶段
-    // ==========================================
     public void EnterCombatPhase(MapNodeData nodeData)
     {
         IsCombatActive = false;
@@ -193,11 +189,6 @@ public class CombatDirector : MonoBehaviour
                 arenaCol.size.x * ArenaReference.transform.lossyScale.x,
                 arenaCol.size.y * ArenaReference.transform.lossyScale.y
             );
-            Debug.Log($"【空气墙测绘】成功获取场地数据！真实中心:{CurrentArenaCenter}, 真实尺寸:{CurrentArenaSize}");
-        }
-        else
-        {
-            Debug.LogWarning("【空气墙警告】ArenaReference 没有挂载 BoxCollider2D！将使用默认 24x14 尺寸！");
         }
 
         float thickness = 20f; // 20米厚的防爆墙
@@ -235,9 +226,6 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 阶段 2：正式开战 
-    // ==========================================
     private void OnBattleStartClicked()
     {
         activeEnemies.Clear();
@@ -272,18 +260,11 @@ public class CombatDirector : MonoBehaviour
         isCheckingWinCondition = true;
     }
 
-    // ==========================================
-    // 阶段 2.5：裁判时刻
-    // ==========================================
     private void Update()
     {
         if (!wallsGenerated)
         {
-            if (ArenaReference == null)
-            {
-                if (Time.frameCount % 120 == 0) Debug.LogError("【空气墙探针】包工头罢工了！CombatDirector 上的 ArenaReference 是空的！");
-                return;
-            }
+            if (ArenaReference == null) return;
             GenerateArenaBoundaries();
             wallsGenerated = true;
         }
@@ -312,9 +293,6 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 阶段 3：吹哨停战
-    // ==========================================
     private void TriggerSettlement(bool isVictory)
     {
         IsCombatActive = false;
@@ -334,9 +312,6 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 阶段 4：打扫战场，拦截结算，班师回朝
-    // ==========================================
     private void OnReturnToMapClicked()
     {
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
@@ -354,7 +329,6 @@ public class CombatDirector : MonoBehaviour
         foreach (var b in allBullets) Destroy(b.gameObject);
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
-
         if (boundariesContainer != null) Destroy(boundariesContainer);
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
@@ -371,16 +345,11 @@ public class CombatDirector : MonoBehaviour
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
-            if (RewardDirector.Instance != null && CurrentLayout != null && CurrentLayout.NodeLootTable != null)
-            {
-                Debug.Log("<color=#FFD700>【战利品拦截】</color> 呼叫战利品导演！请玩家抽卡！");
-                RewardDirector.Instance.GenerateAndShowRewards(CurrentLayout.NodeLootTable);
-            }
-            else
-            {
-                Debug.LogWarning("【战利品跳过】没有配置掉落表或找不到 RewardDirector，直接返回大地图。");
-                ExecuteReturnToMap();
-            }
+            // 👇【核心拦截】：这里预留了接口，我们马上就会在这里接上大巴扎的 UI！
+            Debug.Log("<color=#FFD700>【战利品预留口】</color> 准备呼叫新的 SalvageDirector (两段式打捞系统)！");
+
+            // TODO: 未来在这里接入 SalvageDirector.Instance.OpenSalvageUI(...);
+            ExecuteReturnToMap();
         }
         else
         {

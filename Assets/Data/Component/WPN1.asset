@@ -12,44 +12,150 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
   m_Name: WPN1
   m_EditorClassIdentifier: 
-  ComponentID: WPN_001
+  ComponentBaseID: WPN_001
   ComponentName: "\u94BB\u5934"
-  Rarity: 0
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: bcb966f9ac22c334a883e1ad14a23796, type: 3}
-  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   Type: 1
-  Tags: 01000000
-  BaseStats:
-  - StatID: 9
-    Value: 100
-  - StatID: 2
-    Value: 10
-  - StatID: 5
-    Value: 50
-  - StatID: 6
-    Value: 0
-  - StatID: 7
-    Value: 70
-  - StatID: 8
-    Value: 30
-  - StatID: 13
-    Value: 50
-  - StatID: 12
-    Value: 1
-  ECA_Mechanics: []
+  MacroCategory: 0
+  BaseSubTags: 
+  MinDropLevel: 1
+  LevelMatrix:
+  - Level: 1
+    Stats:
+    - StatID: 5
+      Value: 50
+    - StatID: 6
+      Value: 20
+    - StatID: 7
+      Value: 60
+    - StatID: 8
+      Value: 30
+    - StatID: 9
+      Value: 100
+    - StatID: 13
+      Value: 100
+    - StatID: 10
+      Value: 50
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 2
+    Stats:
+    - StatID: 5
+      Value: 50
+    - StatID: 6
+      Value: 20
+    - StatID: 7
+      Value: 60
+    - StatID: 8
+      Value: 30
+    - StatID: 9
+      Value: 100
+    - StatID: 13
+      Value: 100
+    - StatID: 10
+      Value: 50
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 3
+    Stats:
+    - StatID: 5
+      Value: 50
+    - StatID: 6
+      Value: 20
+    - StatID: 7
+      Value: 60
+    - StatID: 8
+      Value: 30
+    - StatID: 9
+      Value: 100
+    - StatID: 13
+      Value: 100
+    - StatID: 10
+      Value: 50
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 4
+    Stats:
+    - StatID: 5
+      Value: 50
+    - StatID: 6
+      Value: 20
+    - StatID: 7
+      Value: 60
+    - StatID: 8
+      Value: 30
+    - StatID: 9
+      Value: 100
+    - StatID: 13
+      Value: 100
+    - StatID: 10
+      Value: 50
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 0
+    Stats:
+    - StatID: 5
+      Value: 50
+    - StatID: 6
+      Value: 20
+    - StatID: 7
+      Value: 60
+    - StatID: 8
+      Value: 30
+    - StatID: 9
+      Value: 100
+    - StatID: 13
+      Value: 100
+    - StatID: 10
+      Value: 50
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   AnchorOffset: {x: -0.7829679, y: 0.088736415}
   BaseRotationOffset: 103
   VisualScaleMultiplier: 0.9
-  DeliveryType: 1
-  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
-  OnFireActions: []
-  OnHitActions:
-  - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
-  - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
-  - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
-  - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
-  OnAssembleActions: []
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

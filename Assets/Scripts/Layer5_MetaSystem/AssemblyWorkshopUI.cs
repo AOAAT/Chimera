@@ -18,7 +18,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private List<string> snapshot_EquippedComponentIDs = new List<string>();
     private float snapshot_HP;
     private float snapshot_AP;
-    private float snapshot_DamageTaken = 0f; // 记录进车间时到底受了多少“真实伤害”
+    private float snapshot_DamageTaken = 0f;
 
     [Header("=== 左右分层 UI 面板 ===")]
     public GameObject LeftStatsPanel;
@@ -53,7 +53,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
         snapshot_SlotIndices.Clear();
         snapshot_EquippedComponentIDs.Clear();
-        snapshot_DamageTaken = 0f; // 新车没受过伤
+        snapshot_DamageTaken = 0f;
 
         RefreshWorkshopState();
     }
@@ -70,12 +70,16 @@ public class AssemblyWorkshopUI : MonoBehaviour
         snapshot_HP = unitProfile.CurrentHP;
         snapshot_AP = unitProfile.CurrentAP;
 
-        // 计算这台老机甲进门时的“真实受损量”
         float initialMaxHP = PlayerInventoryManager.GetStatValue(unitProfile.ChassisData.BaseStats, StatType.AddedHP);
         foreach (string compID in unitProfile.EquippedComponentIDs)
         {
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (comp != null) initialMaxHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
+            if (comp != null && comp.BaseData != null)
+            {
+                // 👇【核心修复 1】：从当前等级的数据块中读取血量
+                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                if (lvData != null) initialMaxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
+            }
         }
         snapshot_DamageTaken = initialMaxHP - unitProfile.CurrentHP;
 
@@ -90,7 +94,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
         {
             GhostChassisPrompt.SetActive(true);
             ChassisVisualRoot.gameObject.SetActive(false);
-
             HPText.text = "HP: -- / --";
             APText.text = "AP: -- / --";
             PowerText.text = "耗电: --";
@@ -111,9 +114,14 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null && comp.BaseData != null)
                 {
-                    maxHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
-                    maxAP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedAP);
-                    totalPower += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.PowerCost);
+                    // 👇【核心修复 2】：从当前等级的数据块中读取面板属性
+                    var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                    if (lvData != null)
+                    {
+                        maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
+                        maxAP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedAP);
+                        totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
+                    }
                 }
             }
 
@@ -124,9 +132,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
             }
             else
             {
-                // 【恒定战损流】：当前血量 = 换装后的新上限 - 历史总受伤量！
                 currentEditingProfile.CurrentHP = Mathf.Max(1f, maxHP - snapshot_DamageTaken);
-                currentEditingProfile.CurrentAP = maxAP; // 护甲在安全区永远回满
+                currentEditingProfile.CurrentAP = maxAP;
             }
 
             HPText.text = $"HP: {currentEditingProfile.CurrentHP} / {maxHP}";
@@ -233,7 +240,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
             oldComp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == oldCompID);
         }
 
-        // 【极其核心的防爆体拦截！】
         if (!isCreatingNew)
         {
             if (!PlayerInventoryManager.Instance.ValidateHPBeforeUnequip(currentEditingProfile, oldComp, selectedComp))
@@ -308,12 +314,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
         if (isCreatingNew)
         {
             PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
-            Debug.Log($"【保存成功】新机甲 [{currentEditingProfile.UnitName}] 正式入驻 {targetHangarSlotIndex} 号机库！");
         }
         else
         {
             PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
-            Debug.Log($"【保存成功】老机甲 [{currentEditingProfile.UnitName}] 改装覆盖完毕！");
         }
 
         ExitToHangar();
@@ -323,7 +327,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
     {
         if (currentEditingProfile == null)
         {
-            Debug.Log("【撤销】空车间直接退出。");
             ExitToHangar(); return;
         }
 
@@ -337,7 +340,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null) comp.EquippedUnitID = string.Empty;
             }
-            Debug.Log("【撤销成功】新机甲生产取消，所有物资已退回仓库！");
         }
         else
         {
@@ -349,8 +351,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
             currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
             currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
-
-            // 【核心】：时光倒流时，把进门时的血量还回去！
             currentEditingProfile.CurrentHP = snapshot_HP;
             currentEditingProfile.CurrentAP = snapshot_AP;
 
@@ -359,7 +359,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null) comp.EquippedUnitID = currentEditingProfile.UnitID;
             }
-            Debug.Log("【撤销成功】改装已取消，机甲已恢复到进车间前的状态！");
         }
 
         ExitToHangar();

@@ -12,24 +12,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
   m_Name: SUP1
   m_EditorClassIdentifier: 
-  ComponentID: SUP_001
+  ComponentBaseID: sup_001
   ComponentName: "\u8F85\u52A91"
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: d90bfac6071d040478b1a20594229c7f, type: 3}
   Type: 2
-  Tags: 
-  BaseStats: []
-  ECA_Mechanics: []
+  MacroCategory: 0
+  BaseSubTags: 
+  MinDropLevel: 1
+  LevelMatrix:
+  - Level: 1
+    Stats: []
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 2
+    Stats: []
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 3
+    Stats: []
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 4
+    Stats: []
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 0}
   AnchorOffset: {x: 0.008905717, y: -0.0427356}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
-  DeliveryType: 1
-  ProjectilePrefab: {fileID: 0}
-  OnFireActions: []
-  OnHitActions: []
-  OnAssembleActions:
-  - {fileID: 11400000, guid: bef97419f58f91442b940e8a148c74f0, type: 2}
-  - {fileID: 11400000, guid: 682796eb9c7a5fd42baebdde25a42d67, type: 2}
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

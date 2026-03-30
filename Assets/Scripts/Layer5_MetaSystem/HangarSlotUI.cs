@@ -23,7 +23,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     public float WorldToUIMultiplier = 100f;
 
     [Header("=== 战场部署设置 ===")]
-    [Tooltip("把挂载了 MechUnit2D 脚本的 2D 机甲预制体拖到这里")]
     public GameObject MechPrefab;
 
     private SavedUnitProfile bindedProfile;
@@ -34,9 +33,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     private RectTransform ghostRect;
     private Canvas rootCanvas;
 
-    // ==========================================
-    // 刷新格子显示 
-    // ==========================================
     public void RefreshSlot(int index, SavedUnitProfile profile)
     {
         mySlotIndex = index;
@@ -58,7 +54,11 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             {
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null && comp.BaseData != null)
-                    maxHP += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.AddedHP);
+                {
+                    // 👇【核心修复 5】：读取等级数据里的 HP
+                    var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                    if (lvData != null) maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
+                }
             }
 
             UnitNameText.text = profile.UnitName;
@@ -90,7 +90,9 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                power += PlayerInventoryManager.GetStatValue(comp.BaseData.BaseStats, StatType.PowerCost);
+                // 👇【核心修复 6】：读取等级数据里的耗电
+                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                if (lvData != null) power += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
             }
         }
         return power;
@@ -98,10 +100,7 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
     private void BuildUnitVisual(SavedUnitProfile profile)
     {
-        foreach (Transform child in UnitVisualContainer)
-        {
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in UnitVisualContainer) Destroy(child.gameObject);
 
         UnitVisualContainer.localScale = Vector3.one * PreviewScale;
 
@@ -137,7 +136,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             Image compImg = visObj.AddComponent<Image>();
             compImg.sprite = comp.BaseData.ComponentIcon;
             compImg.SetNativeSize();
-
             compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
         }
     }
@@ -152,24 +150,12 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         bool isEmptySlot = (bindedProfile == null || bindedProfile.ChassisData == null);
 
-        if (isEmptySlot)
-        {
-            Debug.Log($"【机库流转】{mySlotIndex} 号车位为空，已引导长官前往【组装车间】！");
-            HangarMenuUI.Instance.TriggerCreateNewUnit(mySlotIndex);
-        }
-        else
-        {
-            Debug.Log($"【机库流转】{mySlotIndex} 号车位已停放机甲，正在打开【详情档案】！");
-            HangarMenuUI.Instance.TriggerOpenUnitDetail(mySlotIndex, bindedProfile);
-        }
+        if (isEmptySlot) HangarMenuUI.Instance.TriggerCreateNewUnit(mySlotIndex);
+        else HangarMenuUI.Instance.TriggerOpenUnitDetail(mySlotIndex, bindedProfile);
     }
 
-    // ==========================================
-    // 拖拽系统核心 (已彻底重构净化)
-    // ==========================================
     public void OnBeginDrag(PointerEventData eventData)
     {
-        // 只要有车，且不是部署状态，且是左键点击，就可以拖拽（方便换位）
         if (bindedProfile == null || bindedProfile.ChassisData == null || bindedProfile.IsDeployed) return;
         if (eventData.button != PointerEventData.InputButton.Left) return;
 
@@ -189,17 +175,14 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         CanvasGroup group = dragGhost.AddComponent<CanvasGroup>();
         group.alpha = 0.6f;
-        group.blocksRaycasts = false; // 必须关掉射线阻挡，否则松手时检测不到底下的格子
+        group.blocksRaycasts = false;
 
         UpdateGhostPosition(eventData);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (dragGhost != null)
-        {
-            UpdateGhostPosition(eventData);
-        }
+        if (dragGhost != null) UpdateGhostPosition(eventData);
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -207,9 +190,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         if (dragGhost != null) Destroy(dragGhost);
         if (bindedProfile == null || bindedProfile.ChassisData == null || bindedProfile.IsDeployed) return;
 
-        // ==========================================
-        // 逻辑 A：UI 内部换位 (扫描鼠标下方的其他 UI 格子)
-        // ==========================================
         GameObject droppedObj = eventData.pointerCurrentRaycast.gameObject;
         if (droppedObj != null)
         {
@@ -229,41 +209,26 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
                 SavedUnitProfile temp = inventory[sourceIndex];
                 inventory[sourceIndex] = inventory[targetIndex];
                 inventory[targetIndex] = temp;
-
-                Debug.Log($"【换位成功】长官，{sourceIndex} 号车位与 {targetIndex} 号车位的资产已互换！");
                 HangarMenuUI.Instance.RefreshHangar();
-                return; // 换位成功，直接结束
+                return;
             }
         }
 
-        // ==========================================
-        // 逻辑 B：向世界空投 (判断总监状态与物理红绿区)
-        // ==========================================
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase)
         {
-            Debug.LogWarning("【部署拒绝】当前不在战前部署阶段！只能在机库内调整机甲位置！");
+            Debug.LogWarning("【部署拒绝】当前不在战前部署阶段！");
             return;
         }
 
-        if (MechPrefab == null)
-        {
-            Debug.LogError("【防呆警告】长官！你还没有在 HangarSlotUI 预制体里挂载 MechPrefab！");
-            return;
-        }
+        if (MechPrefab == null) return;
 
         Vector3 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
         Vector2 dropPos2D = new Vector2(worldPoint.x, worldPoint.y);
 
-        // 1. 气泡红区检测
         int noDeployLayerMask = LayerMask.GetMask("NoDeploy");
         Collider2D forbiddenHit = Physics2D.OverlapCircle(dropPos2D, 0.5f, noDeployLayerMask);
-        if (forbiddenHit != null)
-        {
-            Debug.LogWarning("【空投驳回】指挥官！该体积范围内有敌人禁区，强制禁止部署！");
-            return;
-        }
+        if (forbiddenHit != null) return;
 
-        // 2. 绿区合法性检测
         Collider2D[] allHits = Physics2D.OverlapPointAll(dropPos2D);
         bool isValidDeployZone = false;
         foreach (var hit in allHits)
@@ -275,7 +240,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             }
         }
 
-        // 3. 执行下兵
         if (isValidDeployZone)
         {
             bindedProfile.IsDeployed = true;
@@ -283,17 +247,9 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
 
             MechUnit2D mechScript = newMech.GetComponent<MechUnit2D>();
-            if (mechScript != null)
-            {
-                mechScript.InitUnitData(bindedProfile);
-            }
+            if (mechScript != null) mechScript.InitUnitData(bindedProfile);
 
-            Debug.Log($"【天降正义】[{bindedProfile.UnitName}] 已成功部署到战场坐标: {spawnPos}");
             HangarMenuUI.Instance.RefreshHangar();
-        }
-        else
-        {
-            Debug.LogWarning("【空投失败】长官，该坐标没有铺设 DeployZone 地板，或者扔到了虚空里！");
         }
     }
 

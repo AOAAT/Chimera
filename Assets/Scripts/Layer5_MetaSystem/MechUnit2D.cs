@@ -13,10 +13,8 @@ public class MechUnit2D : MonoBehaviour
     [Header("=== 核心引用 ===")]
     public Transform VisualRoot;
 
-    [Header("=== 2D 排序层控制 (方案一强制修正) ===")]
-    [Tooltip("机甲整体所在的排序层名称，强制建议设为 Entities")]
+    [Header("=== 2D 排序层控制 ===")]
     public string SortingLayerName = "Entities";
-    [Tooltip("底盘的排序号")]
     public int BaseSortingOrder = 0;
 
     [Header("=== 战场视觉与物理缩放 ===")]
@@ -24,7 +22,7 @@ public class MechUnit2D : MonoBehaviour
     public float GlobalBattleScale = 1.0f;
 
     private Rigidbody2D rb;
-    private Collider2D physicsCol; // 脚底板物理碰撞体
+    private Collider2D physicsCol;
     private bool isDragging = false;
     private Vector3 dragStartPos;
 
@@ -49,11 +47,9 @@ public class MechUnit2D : MonoBehaviour
 
         foreach (Transform child in VisualRoot) Destroy(child.gameObject);
 
-        // 1. 物理坐标修正：Z轴稍微向前推一点点 (-0.01)，确保在3D空间也绝对靠前
         transform.position = new Vector3(transform.position.x, transform.position.y, -0.01f);
         transform.localScale = Vector3.one * GlobalBattleScale;
 
-        // --- 2. 根节点注入：刚体与【脚底板软碰撞】 ---
         gameObject.layer = LayerMask.NameToLayer("Player_Body");
 
         if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
@@ -64,7 +60,6 @@ public class MechUnit2D : MonoBehaviour
         if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
         ((BoxCollider2D)physicsCol).isTrigger = false;
 
-        // --- 3. 生成底盘基座与【全身受击判定】 ---
         GameObject chassisObj = new GameObject("Visual_ChassisBase");
         chassisObj.transform.SetParent(VisualRoot, false);
         chassisObj.layer = LayerMask.NameToLayer("Player_Hitbox");
@@ -87,7 +82,6 @@ public class MechUnit2D : MonoBehaviour
         if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
         sorter.YOffset = -(spriteSize.y / 2f);
 
-        // --- 5. 拼装零件 (遗传图层逻辑) ---
         for (int i = 0; i < data.SlotIndices.Count; i++)
         {
             int slotIdx = data.SlotIndices[i];
@@ -124,14 +118,24 @@ public class MechUnit2D : MonoBehaviour
     private void ActivateCombatBrains(SavedUnitProfile data)
     {
         RuntimeChimeraData combatData = new RuntimeChimeraData();
-        List<ComponentDataSO> compBlueprints = new List<ComponentDataSO>();
-        foreach (string compID in data.EquippedComponentIDs)
+
+        // 👇【修复 1：防呆补丁】强制纠正任何因为老存档导致的 Level = 0 的情况
+        InstancedComponent[] tempInstances = new InstancedComponent[data.ChassisData.Sockets.Count];
+        for (int i = 0; i < data.SlotIndices.Count; i++)
         {
+            int slotIdx = data.SlotIndices[i];
+            string compID = data.EquippedComponentIDs[i];
             var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (compInstance != null) compBlueprints.Add(compInstance.BaseData);
+
+            if (compInstance != null)
+            {
+                if (compInstance.CurrentLevel <= 0) compInstance.CurrentLevel = 1; // 强制保底！
+                tempInstances[slotIdx] = compInstance;
+            }
         }
 
-        combatData.Assemble(data.ChassisData, compBlueprints.ToArray());
+        // 把包含空位的完整数组传给 Assemble，让内部逻辑完全对齐！
+        combatData.Assemble(data.ChassisData, tempInstances);
 
         DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
         receiver.isEnemy = false;
@@ -140,37 +144,45 @@ public class MechUnit2D : MonoBehaviour
         ChimeraAIController aiController = GetComponent<ChimeraAIController>() ?? gameObject.AddComponent<ChimeraAIController>();
         aiController.Initialize(combatData);
 
+        // 👇【修复 2：彻底安全的武器挂载逻辑】
         int weaponDataIndex = 0;
-        for (int i = 0; i < data.SlotIndices.Count; i++)
+        for (int i = 0; i < tempInstances.Length; i++)
         {
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == data.EquippedComponentIDs[i]);
+            var compInstance = tempInstances[i];
             if (compInstance != null && compInstance.BaseData.Type == ComponentType.Weapon)
             {
-                var slotDef = data.ChassisData.Sockets[data.SlotIndices[i]];
+                // 确保数据对齐不越界
+                if (weaponDataIndex >= combatData.EquippedWeapons.Count)
+                {
+                    Debug.LogError($"【越界保护】武器挂载错位！尝试挂载第 {weaponDataIndex} 个武器，但黑盒里只有 {combatData.EquippedWeapons.Count} 把枪！");
+                    break;
+                }
+
+                var slotDef = data.ChassisData.Sockets[i];
                 Transform socketTrans = VisualRoot.FindRecursive($"Socket_{slotDef.SlotName}");
 
                 if (socketTrans != null)
                 {
                     WeaponModule weaponScript = socketTrans.gameObject.AddComponent<WeaponModule>();
+                    // 精准对应到那把枪的数据！
                     weaponScript.Initialize(combatData.EquippedWeapons[weaponDataIndex], combatData.LogicCenterOffset, this.transform);
-                    weaponDataIndex++;
                 }
+
+                // 只有成功挂载了武器，才移动指针！
+                weaponDataIndex++;
             }
         }
     }
 
     private void OnMouseDown()
     {
-        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase)
-        {
-            return; // 战斗中或结算中？直接无视鼠标点击！
-        }
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase) return;
 
         isDragging = true;
         dragStartPos = transform.position;
         TintMech(new Color(1f, 1f, 1f, 0.5f));
         if (rb != null) rb.isKinematic = true;
-        if (physicsCol != null) physicsCol.enabled = false; // 拖拽时暂时取消物理体积，防止穿墙/撞队友
+        if (physicsCol != null) physicsCol.enabled = false;
     }
 
     private void OnMouseDrag()
@@ -199,7 +211,6 @@ public class MechUnit2D : MonoBehaviour
 
         if (forbiddenHit != null)
         {
-            Debug.LogWarning("【战术违规】指挥官！禁止将机甲转移至敌人区域！已强制退回原位！");
             transform.position = dragStartPos;
             if (physicsCol != null) physicsCol.enabled = true;
             return;
@@ -216,15 +227,7 @@ public class MechUnit2D : MonoBehaviour
             }
         }
 
-        if (isValidZone)
-        {
-            Debug.Log($"重新部署成功: {transform.position}");
-        }
-        else
-        {
-            Debug.LogWarning("【部署失败】目标坐标未铺设绿区地板，强制退回！");
-            transform.position = dragStartPos;
-        }
+        if (!isValidZone) transform.position = dragStartPos;
 
         if (physicsCol != null) physicsCol.enabled = true;
     }
@@ -251,7 +254,6 @@ public class MechUnit2D : MonoBehaviour
         {
             bindedData.CurrentHP = Mathf.Max(0, receiver.CurrentHP);
             bindedData.CurrentAP = receiver.MaxAP;
-            Debug.Log($"【数据同步】机甲 [{bindedData.UnitName}] 战损已回传机库！当前 HP: {bindedData.CurrentHP}, 护甲已重置为: {bindedData.CurrentAP}");
         }
     }
 
