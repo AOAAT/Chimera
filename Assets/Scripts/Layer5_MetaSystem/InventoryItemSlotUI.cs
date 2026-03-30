@@ -112,10 +112,17 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
         {
-            Debug.Log($"【系统提示】你右键点击了 [{ItemNameText.text}]！预留给未来的【分解/强化】功能！");
+            // 👇【核心交互接入】：如果是组件（不是底盘），则在鼠标位置弹出右键强化菜单！
+            if (cachedComponent != null)
+            {
+                ItemContextMenuUI.Instance.ShowMenu(cachedComponent, Input.mousePosition);
+            }
+            else
+            {
+                Debug.Log("底盘无法强化。");
+            }
         }
     }
-
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (isUnequipSlot) return;

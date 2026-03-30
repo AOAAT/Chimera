@@ -231,4 +231,9 @@ public class PlayerInventoryManager : MonoBehaviour
         OnInventoryChanged?.Invoke();
         return upgradedItem;
     }
+
+    public void ForceTriggerInventoryEvent()
+    {
+        OnInventoryChanged?.Invoke();
+    }
 }
