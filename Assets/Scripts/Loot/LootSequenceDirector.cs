@@ -58,7 +58,8 @@ public class LootSequenceDirector : MonoBehaviour
         {
             case LootDropMode.MacroCategorySingle:
                 var macros1 = GetTargetMacrosForTask(task.Config);
-                loot = GenerateLoot(c => macros1.Contains(c.MacroCategory), 0f, currentDepthContext);
+                // 👇【修复点】：传入 task.Config 供底层读取权重
+                loot = GenerateLoot(c => macros1.Contains(c.MacroCategory), task.Config, currentDepthContext);
                 break;
 
             case LootDropMode.SystemAssignedTag:
@@ -66,7 +67,8 @@ public class LootSequenceDirector : MonoBehaviour
                 if (pool2.Count > 0)
                 {
                     SubTag sysTag = pool2.OrderBy(x => Guid.NewGuid()).First();
-                    loot = GenerateLoot(c => c.BaseSubTags.Contains(sysTag), task.Config.TripleChoiceProbability, currentDepthContext);
+                    // 👇【修复点】：传入 task.Config
+                    loot = GenerateLoot(c => c.BaseSubTags.Contains(sysTag), task.Config, currentDepthContext);
                 }
                 break;
 
@@ -74,7 +76,8 @@ public class LootSequenceDirector : MonoBehaviour
                 // 注意：走到这里时，玩家一定已经选好了标签，并存在了 LockedTag 里！
                 if (task.LockedTag.HasValue)
                 {
-                    loot = GenerateLoot(c => c.BaseSubTags.Contains(task.LockedTag.Value), task.Config.TripleChoiceProbability, currentDepthContext);
+                    // 👇【修复点】：传入 task.Config
+                    loot = GenerateLoot(c => c.BaseSubTags.Contains(task.LockedTag.Value), task.Config, currentDepthContext);
                 }
                 break;
 
@@ -115,13 +118,17 @@ public class LootSequenceDirector : MonoBehaviour
         return new List<MacroCategory> { currentMacroContext };
     }
 
-    private List<InstancedComponent> GenerateLoot(Func<ComponentDataSO, bool> filter, float tripleProb, int depth)
+    // 👇 接收 task 参数，读取策划配的等级权重
+    private List<InstancedComponent> GenerateLoot(Func<ComponentDataSO, bool> filter, LootTaskConfig task, int depth)
     {
         var validBps = PlayerInventoryManager.Instance.AllComponentDatabase.Where(filter).ToList();
         if (validBps.Count == 0) return new List<InstancedComponent>();
-        int targetCount = UnityEngine.Random.value <= tripleProb ? 3 : 1;
+
+        int targetCount = UnityEngine.Random.value <= task.TripleChoiceProbability ? 3 : 1;
         var drawn = validBps.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
-        return drawn.Select(bp => new InstancedComponent(bp, RollLevel(bp, depth))).ToList();
+
+        // 调用 RollLevel 时，把 task 传进去读权重
+        return drawn.Select(bp => new InstancedComponent(bp, RollLevel(bp, task))).ToList();
     }
 
     private List<InstancedComponent> GenerateCustomLoot(List<CustomDropEntry> customPool, float tripleProb)
@@ -132,5 +139,26 @@ public class LootSequenceDirector : MonoBehaviour
         return drawn.Select(entry => new InstancedComponent(entry.Blueprint, entry.Level)).ToList();
     }
 
-    private int RollLevel(ComponentDataSO bp, int depth) { return bp.MinDropLevel; }
+    // 核心：完全读取策划配置的等级权重！
+    private int RollLevel(ComponentDataSO bp, LootTaskConfig task)
+    {
+        int w1 = task.Weight_Lv1;
+        int w2 = task.Weight_Lv2;
+        int w3 = task.Weight_Lv3;
+        int w4 = task.Weight_Lv4;
+
+        // 图纸防污染保护 (如果该图纸最低爆2级，清空1级权重)
+        if (bp.MinDropLevel > 1) w1 = 0;
+        if (bp.MinDropLevel > 2) w2 = 0;
+        if (bp.MinDropLevel > 3) w3 = 0;
+
+        int totalW = w1 + w2 + w3 + w4;
+        if (totalW <= 0) return bp.MinDropLevel; // 兜底
+
+        int roll = UnityEngine.Random.Range(0, totalW);
+        if (roll < w1) return 1;
+        if (roll < w1 + w2) return 2;
+        if (roll < w1 + w2 + w3) return 3;
+        return 4;
+    }
 }

@@ -49,21 +49,28 @@ public class MapManager : MonoBehaviour
 
         if (targetData.NodeState != MapNodeState.Selectable) return;
 
-        // 👇【核心修改】：切入战斗流！
-        if (targetData.NodeType == MapNodeType.Enemy || targetData.NodeType == MapNodeType.Elite || targetData.NodeType == MapNodeType.Boss)
+        // 👇【核心修复】：调用下面的辅助方法，判断是不是战斗节点
+        if (IsCombatNode(targetData.NodeType))
         {
-            // 1. 隐藏地图界面的皮囊
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
-
-            // 2. 呼叫战斗导演，接管比赛！
             CombatDirector.Instance.EnterCombatPhase(targetData);
         }
         else if (targetData.NodeType == MapNodeType.Event || targetData.NodeType == MapNodeType.Workshop)
         {
-            // TODO: 类似地，呼叫 EventDirector 或 WorkshopDirector
             Debug.Log("【地图管控】进入和平节点，即将弹出事件面板...");
-            MoveToNode(targetData); // 目前测试先直接踩上去
+            MoveToNode(targetData);
         }
+    }
+
+    // 👇【新增辅助方法】：判断这个类型是不是“打架”的节点
+    private bool IsCombatNode(MapNodeType type)
+    {
+        return type == MapNodeType.Enemy_Tech ||
+               type == MapNodeType.Enemy_Flesh ||
+               type == MapNodeType.Enemy_Magic ||
+               type == MapNodeType.Enemy_Mixed ||
+               type == MapNodeType.Elite ||
+               type == MapNodeType.Boss;
     }
 
     // 👇【新增】：打赢了回来，继续地图结算
@@ -137,17 +144,17 @@ public class MapManager : MonoBehaviour
 
     // 🗑️ 注意：原来那个单独的 private void LockUnselectedSiblings() 方法可以彻底删掉了！
 
-    private void LockUnselectedSiblings()
-    {
-        // 遍历所有节点，如果它和我在同一层，但不是我刚才选的那个，就把它彻底锁死
-        foreach (var node in mapGenerator.GeneratedMap.Values)
-        {
-            if (node.LayerIndex == CurrentLayer && node.NodeID != CurrentNodeID)
-            {
-                node.NodeState = MapNodeState.Locked;
-            }
-        }
-    }
+    //private void LockUnselectedSiblings()
+    //{
+    //    // 遍历所有节点，如果它和我在同一层，但不是我刚才选的那个，就把它彻底锁死
+    //    foreach (var node in mapGenerator.GeneratedMap.Values)
+    //    {
+    //        if (node.LayerIndex == CurrentLayer && node.NodeID != CurrentNodeID)
+    //        {
+    //            node.NodeState = MapNodeState.Locked;
+    //        }
+    //    }
+    //}
 
 
 }

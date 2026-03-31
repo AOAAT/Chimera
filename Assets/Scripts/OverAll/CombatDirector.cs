@@ -90,7 +90,12 @@ public class CombatDirector : MonoBehaviour
             return;
         }
 
-        CurrentLayout = RunManager.Instance.GetNextEncounterForCurrentNode();
+        // 👇【核心修复】：呼叫发牌官时，现在只需要传 3 个参数了！去掉了 Theme！
+        int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
+        int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+
+        CurrentLayout = RunManager.Instance.GetNextEncounter(currentStage, currentLayer, nodeData.NodeType);
+
         if (CurrentLayout != null)
         {
             SpawnEnemiesFromLayout();
@@ -110,6 +115,7 @@ public class CombatDirector : MonoBehaviour
 
         Vector3 centerPos = CurrentArenaCenter;
 
+        // 【回归初心】：严格按照策划在 EncounterLayoutSO 里的配置刷怪！
         foreach (var spawnData in CurrentLayout.Enemies)
         {
             if (spawnData.EnemyType == null) continue;
@@ -345,19 +351,19 @@ public class CombatDirector : MonoBehaviour
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
-            Debug.Log("<color=#FFD700>【战斗胜利】</color> 呼叫战利品导演，启动大巴扎集散中心！");
-
-            // 来源 A：当前微观遭遇战的掉落配置
+            // 来源 A：遭遇战的特定掉落
             LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
 
-            // 来源 B：当前宏观大地图节点的全局补偿配置
-            LootSequenceSO nodeLoot = currentNodeData != null ? currentNodeData.NodeLoot : null;
+            // 来源 B：👇向全新的全局节点大脑要掉落补偿！
+            int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
+            int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+            MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
 
-            MacroCategory currentMacro = currentNodeData != null ? GetMacroForNodeType(currentNodeData.NodeType) : MacroCategory.Tech;
-            int currentDepth = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+            LootSequenceSO nodeLoot = NodeLootManager.Instance != null ? NodeLootManager.Instance.GetLootForNode(currentStage, currentLayer, currentType) : null;
 
-            // 双源合流，开门迎客！
-            LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentDepth);
+            MacroCategory currentMacro = GetMacroForNodeType(currentType);
+
+            LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer);
         }
         else
         {
@@ -365,11 +371,20 @@ public class CombatDirector : MonoBehaviour
             // TODO: 未来接 Game Over 界面
         }
     }
+    // 👇【核心修复】：精准地把新的节点类型，翻译成战利品大巴扎的大类！
     private MacroCategory GetMacroForNodeType(MapNodeType type)
     {
-        if (type == MapNodeType.Elite) return MacroCategory.Flesh; // 比如精英怪固定掉血肉
-        if (type == MapNodeType.Boss) return MacroCategory.Magic;  // Boss 固定掉魔法
-        return MacroCategory.Tech; // 普通怪掉科技
+        switch (type)
+        {
+            case MapNodeType.Enemy_Flesh:
+                return MacroCategory.Flesh;
+            case MapNodeType.Enemy_Magic:
+                return MacroCategory.Magic;
+            case MapNodeType.Enemy_Tech:
+            case MapNodeType.Enemy_Mixed:
+            default:
+                return MacroCategory.Tech; // 兜底给科技
+        }
     }
 
     public void ExecuteReturnToMap()

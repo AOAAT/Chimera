@@ -1,40 +1,59 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 public class RunManager : MonoBehaviour
 {
     public static RunManager Instance { get; private set; }
 
-    [Header("=== 测试期的兜底敌人池 ===")]
-    public EncounterPoolSO TestPool;
+    [Header("=== 全局遭遇战牌库大合集 ===")]
+    public List<EncounterPoolSO> GlobalPools = new List<EncounterPoolSO>();
 
-    [Header("=== 运行时进度状态 (预留) ===")]
+    [Header("=== 运行时进度状态 ===")]
     public int CurrentStage = 1;
-    public int CurrentNodeDepth = 1;
 
     private void Awake()
     {
         if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
         else { Destroy(gameObject); return; }
-
-        // 游戏启动时，初始化洗牌
-        if (TestPool != null) TestPool.InitializePool();
     }
 
-    // 战斗导演 (CombatDirector) 只需要无脑调用这个接口，根本不用管里面怎么算的！
-    public EncounterLayoutSO GetNextEncounterForCurrentNode()
+    // 👇【去掉了 Theme 参数】
+    public EncounterLayoutSO GetNextEncounter(int stage, int layer, MapNodeType type)
     {
-        // ==========================================
-        // 🚀 未来的大地图逻辑扩展区：
-        // if (CurrentStage == 1 && CurrentNodeDepth == 5) return Stage1_BossPool.GetNextEncounter();
-        // else if (CurrentStage == 2) return Stage2_Pool.GetNextEncounter();
-        // ==========================================
+        var validPools = GlobalPools.Where(pool => IsPoolValid(pool, stage, layer, type)).ToList();
 
-        // 当前测试期的兜底逻辑：永远从测试池里抽卡
-        if (TestPool != null)
+        if (validPools.Count == 0)
         {
-            return TestPool.GetNextEncounter();
+            Debug.LogError($"【发牌错误】找不到匹配 Stage:{stage} | Layer:{layer} | Type:{type} 的遭遇战牌库！");
+            return null;
         }
 
-        return null;
+        var selectedPool = PickPoolByWeight(validPools);
+        return selectedPool.GetNextEncounter();
+    }
+
+    // 👇【过滤逻辑极简】
+    private bool IsPoolValid(EncounterPoolSO pool, int stage, int layer, MapNodeType type)
+    {
+        if (pool.TargetStage != stage) return false;
+        if (layer < pool.MinDepth || layer > pool.MaxDepth) return false;
+
+        // 只要节点类型在允许列表里，就通过！
+        if (!pool.AllowedNodeTypes.Contains(type)) return false;
+
+        return true;
+    }
+
+    private EncounterPoolSO PickPoolByWeight(List<EncounterPoolSO> pools)
+    {
+        float totalWeight = pools.Sum(p => p.PoolWeight);
+        float roll = UnityEngine.Random.Range(0, totalWeight);
+        foreach (var pool in pools)
+        {
+            if (roll < pool.PoolWeight) return pool;
+            roll -= pool.PoolWeight;
+        }
+        return pools.Last();
     }
 }

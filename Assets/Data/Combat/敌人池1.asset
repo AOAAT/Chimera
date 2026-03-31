@@ -9,8 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7f7921edd489184884c1d59db98a0ea, type: 3}
+  m_Script: {fileID: 11500000, guid: 9be51b72b0aee6b40ac17c0f112631ad, type: 3}
   m_Name: "\u654C\u4EBA\u6C601"
   m_EditorClassIdentifier: 
+  PoolWeight: 10
+  TargetStage: 1
+  MinDepth: 0
+  MaxDepth: 15
+  AllowedNodeTypes: 01000000
+  AllowedThemes: 02000000
   LayoutList:
   - {fileID: 11400000, guid: 4a80c51a73cb00e4d805205a667beea5, type: 2}

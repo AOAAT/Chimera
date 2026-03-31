@@ -5,58 +5,58 @@ using UnityEngine;
 public class MapGenerator : MonoBehaviour
 {
     [Header("=== 地图生成参数 ===")]
-    public int TotalLayers = 15;        // 包含起点和Boss的总层数
-    public int MinNodesPerLayer = 2;    // 每层最少节点数
-    public int MaxNodesPerLayer = 4;    // 每层最多节点数
+    public int TotalLayers = 15;
+    public int MinNodesPerLayer = 2;
+    public int MaxNodesPerLayer = 4;
 
-    [Header("=== 节点类型权重 (总和随意) ===")]
-    public float EnemyWeight = 60f;
+    [Header("=== 大类权重 (是否生成普通战斗) ===")]
+    public float NormalEnemyWeight = 60f;
     public float EventWeight = 25f;
     public float EliteWeight = 10f;
     public float WorkshopWeight = 5f;
 
+    [Header("=== 普通战斗内部均衡 (防扎堆) ===")]
+    [Range(0f, 1f)] public float BufferFactor = 0.2f;
+    public float TechBaseWeight = 10f;
+    public float FleshBaseWeight = 10f;
+    public float MagicBaseWeight = 10f;
+    public float MixedBaseWeight = 2f;
 
-    // 👇【新增】：有机浮动参数 (数值越大，地图越扭曲)
-    [Header("=== 有机浮动 (Organic Jitter) ===")]
-    [Range(0f, 1f)] public float JitterX = 0.6f; // 横向最大偏移量
-    [Range(0f, 0.5f)] public float JitterY = 0.2f; // 纵向最大偏移量 (不宜过大，防止层级颠倒)
+    [Header("=== 有机浮动 ===")]
+    [Range(0f, 1f)] public float JitterX = 0.6f;
+    [Range(0f, 0.5f)] public float JitterY = 0.2f;
 
-    // 内存中的完整地图字典：Key 为 NodeID
     public Dictionary<string, MapNodeData> GeneratedMap { get; private set; }
+    private Dictionary<MapNodeType, int> missCounts;
 
-    // 暴露出生成接口
     public void GenerateNewMap()
     {
         GeneratedMap = new Dictionary<string, MapNodeData>();
         List<List<MapNodeData>> layers = new List<List<MapNodeData>>();
 
-        // --- 1. 生成所有节点实体 ---
+        missCounts = new Dictionary<MapNodeType, int>
+        {
+            { MapNodeType.Enemy_Tech, 0 }, { MapNodeType.Enemy_Flesh, 0 },
+            { MapNodeType.Enemy_Magic, 0 }, { MapNodeType.Enemy_Mixed, 0 }
+        };
+
         for (int i = 0; i < TotalLayers; i++)
         {
             List<MapNodeData> currentLayerNodes = new List<MapNodeData>();
-
-            // 起点(第0层)和终点(最后一层)固定只有1个节点
             int nodeCount = (i == 0 || i == TotalLayers - 1) ? 1 : Random.Range(MinNodesPerLayer, MaxNodesPerLayer + 1);
 
             for (int j = 0; j < nodeCount; j++)
             {
-                MapNodeType type = DetermineNodeType(i);
-                NodeTheme theme = DetermineNodeTheme(type);
-                MapNodeData newNode = new MapNodeData(i, j, type, theme);
+                MapNodeType finalType = DetermineNodeType(i);
+                MapNodeData newNode = new MapNodeData(i, j, finalType);
 
-                // 1. 计算绝对标准的网格坐标
                 float base_X = (j - (nodeCount - 1) / 2f) * 2f;
                 float base_Y = i;
-
-                // 2. 👇【核心注入】：有机扰动偏移！
-                // 保护机制：起点 (第0层) 和 Boss点 (最后一层) 绝对居中，不加偏移，稳住地图大局
                 if (i > 0 && i < TotalLayers - 1)
                 {
                     base_X += Random.Range(-JitterX, JitterX);
                     base_Y += Random.Range(-JitterY, JitterY);
                 }
-
-                // 3. 赋值给节点
                 newNode.LogicalPosition = new Vector2(base_X, base_Y);
 
                 currentLayerNodes.Add(newNode);
@@ -64,8 +64,51 @@ public class MapGenerator : MonoBehaviour
             }
             layers.Add(currentLayerNodes);
         }
+        ExecuteZipperConnection(layers);
+    }
 
-        // --- 2. 编织树状连线 (防交叉核心算法) ---
+    private MapNodeType DetermineNodeType(int layerIndex)
+    {
+        if (layerIndex == 0) return MapNodeType.Start;
+        if (layerIndex == TotalLayers - 1) return MapNodeType.Boss;
+
+        float totalMacroW = NormalEnemyWeight + EventWeight + EliteWeight + WorkshopWeight;
+        float roll = Random.Range(0, totalMacroW);
+
+        if (roll < NormalEnemyWeight) return RollBalancedNormalEnemy();
+        roll -= NormalEnemyWeight;
+        if (roll < EventWeight) return MapNodeType.Event;
+        roll -= EventWeight;
+        if (roll < EliteWeight) return MapNodeType.Elite;
+        return MapNodeType.Workshop;
+    }
+
+    private MapNodeType RollBalancedNormalEnemy()
+    {
+        float wTech = TechBaseWeight * (1f + missCounts[MapNodeType.Enemy_Tech] * BufferFactor);
+        float wFlesh = FleshBaseWeight * (1f + missCounts[MapNodeType.Enemy_Flesh] * BufferFactor);
+        float wMagic = MagicBaseWeight * (1f + missCounts[MapNodeType.Enemy_Magic] * BufferFactor);
+        float wMixed = MixedBaseWeight * (1f + missCounts[MapNodeType.Enemy_Mixed] * BufferFactor);
+
+        float totalW = wTech + wFlesh + wMagic + wMixed;
+        float roll = Random.Range(0, totalW);
+        MapNodeType selectedType = MapNodeType.Enemy_Tech;
+
+        if (roll < wTech) selectedType = MapNodeType.Enemy_Tech;
+        else if (roll < wTech + wFlesh) selectedType = MapNodeType.Enemy_Flesh;
+        else if (roll < wTech + wFlesh + wMagic) selectedType = MapNodeType.Enemy_Magic;
+        else selectedType = MapNodeType.Enemy_Mixed;
+
+        missCounts[MapNodeType.Enemy_Tech]++;
+        missCounts[MapNodeType.Enemy_Flesh]++;
+        missCounts[MapNodeType.Enemy_Magic]++;
+        missCounts[MapNodeType.Enemy_Mixed]++;
+        missCounts[selectedType] = 0;
+        return selectedType;
+    }
+
+        private void ExecuteZipperConnection(List<List<MapNodeData>> layers)
+    {
         for (int i = 0; i < TotalLayers - 1; i++)
         {
             List<MapNodeData> currLayer = layers[i];
@@ -115,48 +158,11 @@ public class MapGenerator : MonoBehaviour
                 }
             }
         }
-
-        Debug.Log($"【地图大脑】系统自检完毕：成功生成了 {GeneratedMap.Count} 个探索节点！");
     }
 
     private void ConnectNodes(MapNodeData from, MapNodeData to)
     {
         if (!from.NextNodeIDs.Contains(to.NodeID)) from.NextNodeIDs.Add(to.NodeID);
         if (!to.PrevNodeIDs.Contains(from.NodeID)) to.PrevNodeIDs.Add(from.NodeID);
-    }
-
-    private MapNodeType DetermineNodeType(int layerIndex)
-    {
-        if (layerIndex == 0) return MapNodeType.Start;
-        if (layerIndex == TotalLayers - 1) return MapNodeType.Boss;
-        // 可以在中后期强制刷一个车间让玩家喘口气
-        //if (layerIndex == TotalLayers / 2) return MapNodeType.Workshop;
-
-        float totalWeight = EnemyWeight + EventWeight + EliteWeight + WorkshopWeight;
-        float roll = Random.Range(0, totalWeight);
-
-        if (roll < EnemyWeight) return MapNodeType.Enemy;
-        roll -= EnemyWeight;
-        if (roll < EventWeight) return MapNodeType.Event;
-        roll -= EventWeight;
-        if (roll < EliteWeight) return MapNodeType.Elite;
-        return MapNodeType.Workshop;
-    }
-
-    private NodeTheme DetermineNodeTheme(MapNodeType type)
-    {
-        // 非战斗节点不需要主题
-        if (type == MapNodeType.Start || type == MapNodeType.Workshop || type == MapNodeType.Event)
-            return NodeTheme.None;
-
-        // Boss节点可以固定为 Mixed 或者 None（由策划在怪物池里写死）
-        if (type == MapNodeType.Boss)
-            return NodeTheme.Mixed;
-
-        // 普通和精英怪，随机赋予主题！(这里可以根据你的世界观调整权重)
-        float roll = Random.value;
-        if (roll < 0.4f) return NodeTheme.Tech;
-        else if (roll < 0.8f) return NodeTheme.Flesh;
-        else return NodeTheme.Magic;
     }
 }
