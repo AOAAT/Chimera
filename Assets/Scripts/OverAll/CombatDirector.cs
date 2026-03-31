@@ -343,26 +343,21 @@ public class CombatDirector : MonoBehaviour
         }
 
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
-
         if (isVictory)
         {
-            // 👇【核心枢纽接管】：赢了！把当前节点的掉落表传给战利品导演！
-            if (CurrentLayout != null && CurrentLayout.NodeLootSequence != null)
-            {
-                Debug.Log("<color=#FFD700>【战斗胜利】</color> 呼叫战利品导演，启动大巴扎打捞程序！");
+            Debug.Log("<color=#FFD700>【战斗胜利】</color> 呼叫战利品导演，启动大巴扎集散中心！");
 
-                // 获取当前地图节点的宏观大类（如果是随机测试，这里默认传 Tech）
-                MacroCategory currentMacro = currentNodeData != null ? GetMacroForNodeType(currentNodeData.NodeType) : MacroCategory.Tech;
-                int currentDepth = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+            // 来源 A：当前微观遭遇战的掉落配置
+            LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
 
-                // 启动异步打捞管线！(代码跑到这里后，战利品 UI 就会接管屏幕)
-                LootSequenceDirector.Instance.StartLootSequence(CurrentLayout.NodeLootSequence, currentMacro, currentDepth);
-            }
-            else
-            {
-                Debug.LogWarning("【战利品跳过】当前节点没有配置 LootSequenceSO，直接返回大地图！");
-                ExecuteReturnToMap();
-            }
+            // 来源 B：当前宏观大地图节点的全局补偿配置
+            LootSequenceSO nodeLoot = currentNodeData != null ? currentNodeData.NodeLoot : null;
+
+            MacroCategory currentMacro = currentNodeData != null ? GetMacroForNodeType(currentNodeData.NodeType) : MacroCategory.Tech;
+            int currentDepth = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+
+            // 双源合流，开门迎客！
+            LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentDepth);
         }
         else
         {

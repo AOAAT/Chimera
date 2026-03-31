@@ -18,7 +18,7 @@ MonoBehaviour:
   ComponentIcon: {fileID: 21300000, guid: c169f21742889604ca515a0c6473a5b3, type: 3}
   Type: 1
   MacroCategory: 0
-  BaseSubTags: 
+  BaseSubTags: 0b000000
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1

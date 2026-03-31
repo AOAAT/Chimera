@@ -1,106 +1,136 @@
-﻿// --- START OF FILE LootSequenceDirector.cs ---
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
 
 public class LootSequenceDirector : MonoBehaviour
 {
     public static LootSequenceDirector Instance;
 
+    private MacroCategory currentMacroContext;
+    private int currentDepthContext;
+
     private void Awake() { if (Instance == null) Instance = this; }
 
-    public async void StartLootSequence(LootSequenceSO lootConfig, MacroCategory macro, int mapDepth)
+    // ==========================================
+    // 全新入口：双源合流与集散中心启动
+    // ==========================================
+    public void StartLootHub(LootSequenceSO encounterLoot, LootSequenceSO nodeLoot, MacroCategory macro, int mapDepth)
     {
-        Debug.Log("<color=#FFD700>【打捞管线启动】</color> 开始执行战利品任务链...");
+        currentMacroContext = macro;
+        currentDepthContext = mapDepth;
 
-        // 1. 等待玩家把所有的选牌任务做完
-        foreach (var task in lootConfig.Tasks)
+        Debug.Log("<color=#FFD700>【打捞管线启动】</color> 正在合并双源战利品并重排优先级...");
+
+        // 1. 熔炉合并 (将微观遭遇战和宏观节点补偿合并)
+        List<LootTaskConfig> combinedConfigs = new List<LootTaskConfig>();
+        if (encounterLoot != null) combinedConfigs.AddRange(encounterLoot.Tasks);
+        if (nodeLoot != null) combinedConfigs.AddRange(nodeLoot.Tasks);
+
+        // 2. 同类排序 (优先级：保底单抽 -> 盲盒 -> 自选标签 -> 定制极品)
+        // 巧妙利用 Enum 的底层 int 值 (0,1,2,3) 进行自然排序！
+        combinedConfigs = combinedConfigs.OrderBy(t => (int)t.Mode).ToList();
+
+        // 3. 包装成运行时状态机
+        List<ActiveLootTask> activeTasks = combinedConfigs.Select(t => new ActiveLootTask { Config = t }).ToList();
+
+        if (activeTasks.Count == 0)
         {
-            await ProcessSingleTask(task, macro, mapDepth);
+            Debug.LogWarning("【打捞警告】双源掉落池均为空，直接返回地图！");
+            CombatDirector.Instance.ExecuteReturnToMap();
+            return;
         }
 
-        // 2. 👇【完美闭环】：所有 UI 选完了，大巴扎关门，返回大地图！
-        Debug.Log("<color=#00FF00>【打捞管线结束】</color> 战利品发放完毕！准备返回大地图。");
-
-        // 呼叫战斗导演，让他执行“撤掉战斗背景、显示地图卷轴”的操作
-        CombatDirector.Instance.ExecuteReturnToMap();
+        // 4. 呼叫 UI 展开集散大厅！
+        LootUIManager.Instance.OpenHub(activeTasks);
     }
-    private async Task ProcessSingleTask(LootTaskConfig task, MacroCategory macro, int depth)
-    {
-        List<InstancedComponent> generatedLoot = new List<InstancedComponent>();
 
-        switch (task.Mode)
+    // ==========================================
+    // 核心算法：为指定的任务“开盲盒” (锁死数据)
+    // ==========================================
+    public void RollItemsForTask(ActiveLootTask task)
+    {
+        if (task.IsBoxOpened) return; // 已经开过光了，绝对不能再 Roll！
+
+        List<InstancedComponent> loot = new List<InstancedComponent>();
+
+        switch (task.Config.Mode)
         {
             case LootDropMode.MacroCategorySingle:
-                generatedLoot = GenerateLoot(c => c.MacroCategory == macro, 0f, depth);
+                var macros1 = GetTargetMacrosForTask(task.Config);
+                loot = GenerateLoot(c => macros1.Contains(c.MacroCategory), 0f, currentDepthContext);
                 break;
 
             case LootDropMode.SystemAssignedTag:
-                SubTag sysTag = GetRandomSubTagFromPool(macro, 1)[0];
-                generatedLoot = GenerateLoot(c => c.BaseSubTags.Contains(sysTag), task.TripleChoiceProbability, depth);
+                var pool2 = GetTagPoolForTask(task.Config);
+                if (pool2.Count > 0)
+                {
+                    SubTag sysTag = pool2.OrderBy(x => Guid.NewGuid()).First();
+                    loot = GenerateLoot(c => c.BaseSubTags.Contains(sysTag), task.Config.TripleChoiceProbability, currentDepthContext);
+                }
                 break;
 
             case LootDropMode.PlayerDrivenFilter:
-                List<SubTag> tagChoices = GetRandomSubTagFromPool(macro, 3);
-                // 👇【异步等待UI】：呼叫 UI 弹窗，代码在此处挂起，直到玩家点完按钮！
-                SubTag playerChosenTag = await LootUIManager.Instance.RequestTagSelection(tagChoices);
-                generatedLoot = GenerateLoot(c => c.BaseSubTags.Contains(playerChosenTag), task.TripleChoiceProbability, depth);
+                // 注意：走到这里时，玩家一定已经选好了标签，并存在了 LockedTag 里！
+                if (task.LockedTag.HasValue)
+                {
+                    loot = GenerateLoot(c => c.BaseSubTags.Contains(task.LockedTag.Value), task.Config.TripleChoiceProbability, currentDepthContext);
+                }
                 break;
 
             case LootDropMode.CustomPoolDrop:
-                // 👇【新增】：完全无视动态算法，直接从策划配好的池子里捞！
-                generatedLoot = GenerateCustomLoot(task.CustomPool, task.TripleChoiceProbability);
+                loot = GenerateCustomLoot(task.Config.CustomPool, task.Config.TripleChoiceProbability);
                 break;
         }
 
-        if (generatedLoot != null && generatedLoot.Count > 0)
-        {
-            // 👇【异步等待UI】：呼叫 UI 展出物品，代码挂起，等待玩家挑选带走！
-            InstancedComponent claimedItem = await LootUIManager.Instance.RequestItemSelection(generatedLoot);
-
-            if (claimedItem != null)
-            {
-                PlayerInventoryManager.Instance.ComponentInventory.Add(claimedItem);
-                PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
-                Debug.Log($"【入库成功】获得 Lv.{claimedItem.CurrentLevel} [{claimedItem.BaseData.ComponentName}]");
-            }
-        }
+        // 锁死数据！
+        task.GeneratedItems = loot;
+        task.IsBoxOpened = true;
+        Debug.Log($"【盲盒开启】生成了 {loot.Count} 个装备，数据已锁死！");
     }
 
-    // --- 标准掉落算法 (根据深度自动定等级) ---
+    // ==========================================
+    // 辅助工具：提取候选标签池供 UI 展示
+    // ==========================================
+    public List<SubTag> GetTagChoicesForTask(ActiveLootTask task, int count)
+    {
+        var pool = GetTagPoolForTask(task.Config);
+        return pool.OrderBy(x => Guid.NewGuid()).Take(count).ToList();
+    }
+
+    // (以下是从旧代码复用的底层算法，保持不变)
+    private List<SubTag> GetTagPoolForTask(LootTaskConfig task)
+    {
+        if (task.PoolSource == TagPoolSource.CustomSubTags) return task.CustomSubTagMix.Distinct().ToList();
+        var targetMacros = GetTargetMacrosForTask(task);
+        var validComps = PlayerInventoryManager.Instance.AllComponentDatabase.Where(c => targetMacros.Contains(c.MacroCategory)).ToList();
+        HashSet<SubTag> pool = new HashSet<SubTag>();
+        foreach (var c in validComps) foreach (var t in c.BaseSubTags) pool.Add(t);
+        return pool.ToList();
+    }
+
+    private List<MacroCategory> GetTargetMacrosForTask(LootTaskConfig task)
+    {
+        if (task.PoolSource == TagPoolSource.CustomMacros && task.CustomMacroMix.Count > 0) return task.CustomMacroMix.Distinct().ToList();
+        return new List<MacroCategory> { currentMacroContext };
+    }
+
     private List<InstancedComponent> GenerateLoot(Func<ComponentDataSO, bool> filter, float tripleProb, int depth)
     {
         var validBps = PlayerInventoryManager.Instance.AllComponentDatabase.Where(filter).ToList();
         if (validBps.Count == 0) return new List<InstancedComponent>();
-
         int targetCount = UnityEngine.Random.value <= tripleProb ? 3 : 1;
         var drawn = validBps.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
-
         return drawn.Select(bp => new InstancedComponent(bp, RollLevel(bp, depth))).ToList();
     }
 
-    // --- 定制掉落算法 (完全听从策划配置) ---
     private List<InstancedComponent> GenerateCustomLoot(List<CustomDropEntry> customPool, float tripleProb)
     {
         if (customPool == null || customPool.Count == 0) return new List<InstancedComponent>();
-
         int targetCount = UnityEngine.Random.value <= tripleProb ? 3 : 1;
-
-        // 随机抽，但直接读取策划配好的 Level！
         var drawn = customPool.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
-
         return drawn.Select(entry => new InstancedComponent(entry.Blueprint, entry.Level)).ToList();
     }
 
-    private int RollLevel(ComponentDataSO bp, int depth) { return bp.MinDropLevel; /* 简化版，可接你之前的权重逻辑 */ }
-
-    private List<SubTag> GetRandomSubTagFromPool(MacroCategory macro, int count)
-    {
-        var validComps = PlayerInventoryManager.Instance.AllComponentDatabase.Where(c => c.MacroCategory == macro).ToList();
-        HashSet<SubTag> pool = new HashSet<SubTag>();
-        foreach (var c in validComps) foreach (var t in c.BaseSubTags) pool.Add(t);
-        return pool.OrderBy(x => Guid.NewGuid()).Take(count).ToList();
-    }
+    private int RollLevel(ComponentDataSO bp, int depth) { return bp.MinDropLevel; }
 }

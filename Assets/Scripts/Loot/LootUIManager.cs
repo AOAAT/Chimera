@@ -1,6 +1,4 @@
-﻿// --- START OF FILE LootUIManager.cs ---
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -9,126 +7,234 @@ public class LootUIManager : MonoBehaviour
 {
     public static LootUIManager Instance;
 
-    [Header("=== 阶段 1：标签选择面板 ===")]
+    [Header("=== 阶段 0：集散大厅 (The Hub) ===")]
+    public GameObject HubPanel;
+    public Transform HubListRoot;
+    public GameObject HubEntryPrefab;  // 大厅里的条目按钮预制体
+    public Button LeaveHubButton;      // 全部拿完后离开的按钮
+
+    [Header("=== 阶段 1：标签选择 (Tag Panel) ===")]
     public GameObject TagPanel;
-    public Transform TagButtonRoot;    // 挂载 HorizontalLayoutGroup
-    public GameObject TagButtonPrefab; // 预制体 (带 Button 和 Text)
+    public Transform TagButtonRoot;
+    public GameObject TagButtonPrefab;
 
-    [Header("=== 阶段 2：物品选择面板 ===")]
+    [Header("=== 阶段 2：物品获取 (Item Panel) ===")]
     public GameObject ItemPanel;
-    public Transform ItemSlotRoot;     // 挂载 HorizontalLayoutGroup
-    public InventoryItemSlotUI ItemSlotPrefab; // 直接复用我们做好的格子！
-    public Button ConfirmButton;
-    public Button SalvageButton;       // 粉碎放弃按钮
+    public Transform ItemSlotRoot;
+    public InventoryItemSlotUI ItemSlotPrefab;
+    public Button ConfirmButton;       // 收下
+    public Button SalvageButton;       // 粉碎
+    public Button ReturnButton;        // 👇【新增】：返回大厅 (不改变状态)
 
-    // 异步控制阀门！
-    private TaskCompletionSource<SubTag> tagTcs;
-    private TaskCompletionSource<InstancedComponent> itemTcs;
-
-    private InstancedComponent currentlySelectedItem;
+    private List<ActiveLootTask> currentTasks;
+    private ActiveLootTask activeTask; // 玩家当前正在交互的那个包裹
+    private InstancedComponent selectedItem;
     private List<InventoryItemSlotUI> spawnedItemSlots = new List<InventoryItemSlotUI>();
 
     private void Awake() { if (Instance == null) Instance = this; }
 
     private void Start()
     {
+        LeaveHubButton.onClick.AddListener(OnLeaveHubClicked);
         ConfirmButton.onClick.AddListener(OnConfirmClicked);
         SalvageButton.onClick.AddListener(OnSalvageClicked);
+        ReturnButton.onClick.AddListener(OnReturnClicked); // 绑定返回按钮
+
+        CloseAllPanels();
+    }
+
+    private void CloseAllPanels()
+    {
+        HubPanel.SetActive(false);
         TagPanel.SetActive(false);
         ItemPanel.SetActive(false);
     }
 
     // ==========================================
-    // UI 入口 A：呼出标签选择 (返回一个 Task 供后台等待)
+    // 渲染总集散大厅
     // ==========================================
-    public Task<SubTag> RequestTagSelection(List<SubTag> tags)
+    public void OpenHub(List<ActiveLootTask> tasks)
     {
-        tagTcs = new TaskCompletionSource<SubTag>(); // 制造一个“路障”
-        TagPanel.SetActive(true);
+        currentTasks = tasks;
+        RefreshHubUI();
+        HubPanel.SetActive(true);
+    }
 
-        // 清理旧按钮
+    private void RefreshHubUI()
+    {
+        foreach (Transform child in HubListRoot) Destroy(child.gameObject);
+
+        bool allClaimed = true;
+
+        foreach (var task in currentTasks)
+        {
+            if (!task.IsClaimed) allClaimed = false;
+
+            GameObject entryObj = Instantiate(HubEntryPrefab, HubListRoot);
+            Button btn = entryObj.GetComponent<Button>();
+            TMP_Text txt = entryObj.GetComponentInChildren<TMP_Text>();
+
+            // 状态机 UI 渲染逻辑
+            if (task.IsClaimed)
+            {
+                txt.text = "<s>[已处理] 资源已入库</s>";
+                txt.color = Color.gray;
+                btn.interactable = false;
+            }
+            else if (task.IsBoxOpened)
+            {
+                // 已经开箱了，或者是单选盲盒直接就绪了
+                txt.text = "<color=#00FFFF>【已开封的残骸】点击查看</color>";
+                btn.onClick.AddListener(() => OnHubEntryClicked(task));
+            }
+            else
+            {
+                // 还没开箱的处女地
+                if (task.Config.Mode == LootDropMode.PlayerDrivenFilter)
+                    txt.text = "<color=#FFD700>【深度查找】选择打捞方向</color>";
+                else
+                    txt.text = "【未知的机械盲盒】点击开启";
+
+                btn.onClick.AddListener(() => OnHubEntryClicked(task));
+            }
+        }
+
+        // 如果全部搞定，离开按钮变绿！
+        LeaveHubButton.interactable = allClaimed;
+        LeaveHubButton.GetComponentInChildren<TMP_Text>().text = allClaimed ? "离开废墟" : "还有未处理的战利品";
+    }
+
+    // ==========================================
+    // 处理大厅条目点击的“岔路口”
+    // ==========================================
+    private void OnHubEntryClicked(ActiveLootTask task)
+    {
+        activeTask = task;
+
+        // 情景 A：这是“深度查找”，且还没选标签
+        if (task.Config.Mode == LootDropMode.PlayerDrivenFilter && !task.IsBoxOpened && !task.LockedTag.HasValue)
+        {
+            HubPanel.SetActive(false);
+            OpenTagPanel();
+        }
+        // 情景 B：单抽盲盒 / 或者已经选完标签锁死后的包裹
+        else
+        {
+            if (!task.IsBoxOpened)
+            {
+                // 让导演后台 Roll 出装备并锁死！
+                LootSequenceDirector.Instance.RollItemsForTask(task);
+            }
+            HubPanel.SetActive(false);
+            OpenItemPanel();
+        }
+    }
+
+    // ==========================================
+    // 标签选择面板
+    // ==========================================
+    private void OpenTagPanel()
+    {
+        TagPanel.SetActive(true);
         foreach (Transform child in TagButtonRoot) Destroy(child.gameObject);
 
-        // 生成新按钮
-        foreach (var tag in tags)
+        var choices = LootSequenceDirector.Instance.GetTagChoicesForTask(activeTask, 3);
+
+        foreach (var tag in choices)
         {
             GameObject btnObj = Instantiate(TagButtonPrefab, TagButtonRoot);
             btnObj.GetComponentInChildren<TMP_Text>().text = TranslateTag(tag);
 
-            SubTag capturedTag = tag; // 闭包捕获
+            SubTag capturedTag = tag;
             btnObj.GetComponent<Button>().onClick.AddListener(() =>
             {
+                // 选定标签，锁死！
+                activeTask.LockedTag = capturedTag;
                 TagPanel.SetActive(false);
-                tagTcs.TrySetResult(capturedTag); // 玩家点击后，挪开“路障”！代码继续跑！
+
+                // 顺畅过渡：让系统根据这个锁死的标签 Roll 装备，然后直接打开物品面板
+                LootSequenceDirector.Instance.RollItemsForTask(activeTask);
+                OpenItemPanel();
             });
         }
-
-        return tagTcs.Task;
     }
 
     // ==========================================
-    // UI 入口 B：呼出物品获取 (返回一个 Task 供后台等待)
+    // 物品展示面板 (带有返回按钮)
     // ==========================================
-    public Task<InstancedComponent> RequestItemSelection(List<InstancedComponent> items)
+    private void OpenItemPanel()
     {
-        itemTcs = new TaskCompletionSource<InstancedComponent>(); // 制造路障
         ItemPanel.SetActive(true);
-        ConfirmButton.interactable = false; // 还没选东西，不准点确认
-        currentlySelectedItem = null;
+        ConfirmButton.interactable = false;
+        selectedItem = null;
 
         foreach (Transform child in ItemSlotRoot) Destroy(child.gameObject);
         spawnedItemSlots.Clear();
 
+        // 此时，GeneratedItems 绝对不可能为空，因为它在 Open 之前一定被 Roll 过并锁死了
+        var items = activeTask.GeneratedItems;
+
         for (int i = 0; i < items.Count; i++)
         {
-            int captureIndex = i;
+            int index = i;
             var item = items[i];
 
             var slot = Instantiate(ItemSlotPrefab, ItemSlotRoot);
-            slot.SetupComponent(item, (_) => OnItemSlotClicked(captureIndex, item));
+            slot.SetupComponent(item, (_) => OnItemSlotClicked(index, item));
             slot.SetHighlight(false);
             spawnedItemSlots.Add(slot);
         }
-
-        return itemTcs.Task;
     }
 
     private void OnItemSlotClicked(int index, InstancedComponent item)
     {
-        currentlySelectedItem = item;
+        selectedItem = item;
         ConfirmButton.interactable = true;
-
-        // UI 高亮排他
-        for (int i = 0; i < spawnedItemSlots.Count; i++)
-        {
-            spawnedItemSlots[i].SetHighlight(i == index);
-        }
+        for (int i = 0; i < spawnedItemSlots.Count; i++) spawnedItemSlots[i].SetHighlight(i == index);
     }
 
     private void OnConfirmClicked()
     {
-        if (currentlySelectedItem != null)
+        if (selectedItem != null)
         {
-            ItemPanel.SetActive(false);
-            itemTcs.TrySetResult(currentlySelectedItem); // 放行：玩家拿走了这件装备
+            PlayerInventoryManager.Instance.ComponentInventory.Add(selectedItem);
+            PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
+            Debug.Log($"【打捞成功】获得了 Lv.{selectedItem.CurrentLevel} [{selectedItem.BaseData.ComponentName}]");
+
+            ConcludeTask();
         }
     }
 
     private void OnSalvageClicked()
     {
-        // 放弃拿取，直接粉碎为通用资源 (目前传 null 代表什么都没拿)
+        Debug.Log("【粉碎资源】残骸已粉碎，获得了通用废料。(未实装数值)");
+        ConcludeTask();
+    }
+
+    // 👇【核心功能】：后悔药按钮！什么都不改，直接切回大厅！
+    private void OnReturnClicked()
+    {
         ItemPanel.SetActive(false);
-        itemTcs.TrySetResult(null); // 放行：玩家什么都没拿
+        HubPanel.SetActive(true);
+        RefreshHubUI(); // 回去重新渲染大厅
+    }
+
+    private void ConcludeTask()
+    {
+        activeTask.IsClaimed = true; // 标记处理完毕
+        ItemPanel.SetActive(false);
+        HubPanel.SetActive(true);
+        RefreshHubUI(); // 回去重新渲染，此时这个条目会变灰打勾！
+    }
+
+    private void OnLeaveHubClicked()
+    {
+        CloseAllPanels();
+        CombatDirector.Instance.ExecuteReturnToMap();
     }
 
     private string TranslateTag(SubTag tag)
     {
-        switch (tag)
-        {
-            case SubTag.Ballistic: return "实弹武装";
-            case SubTag.Mutation: return "血肉突变";
-            case SubTag.Heavy: return "重型挂载";
-            default: return tag.ToString();
-        }
+        switch (tag) { case SubTag.Ballistic: return "实弹"; case SubTag.Mutation: return "突变"; default: return tag.ToString(); }
     }
 }

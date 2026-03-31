@@ -41,7 +41,8 @@ public class MapGenerator : MonoBehaviour
             for (int j = 0; j < nodeCount; j++)
             {
                 MapNodeType type = DetermineNodeType(i);
-                MapNodeData newNode = new MapNodeData(i, j, type);
+                NodeTheme theme = DetermineNodeTheme(type);
+                MapNodeData newNode = new MapNodeData(i, j, type, theme);
 
                 // 1. 计算绝对标准的网格坐标
                 float base_X = (j - (nodeCount - 1) / 2f) * 2f;
@@ -140,5 +141,22 @@ public class MapGenerator : MonoBehaviour
         roll -= EventWeight;
         if (roll < EliteWeight) return MapNodeType.Elite;
         return MapNodeType.Workshop;
+    }
+
+    private NodeTheme DetermineNodeTheme(MapNodeType type)
+    {
+        // 非战斗节点不需要主题
+        if (type == MapNodeType.Start || type == MapNodeType.Workshop || type == MapNodeType.Event)
+            return NodeTheme.None;
+
+        // Boss节点可以固定为 Mixed 或者 None（由策划在怪物池里写死）
+        if (type == MapNodeType.Boss)
+            return NodeTheme.Mixed;
+
+        // 普通和精英怪，随机赋予主题！(这里可以根据你的世界观调整权重)
+        float roll = Random.value;
+        if (roll < 0.4f) return NodeTheme.Tech;
+        else if (roll < 0.8f) return NodeTheme.Flesh;
+        else return NodeTheme.Magic;
     }
 }
