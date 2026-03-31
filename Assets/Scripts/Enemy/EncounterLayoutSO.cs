@@ -23,6 +23,8 @@ public class EncounterLayoutSO : ScriptableObject
     [Tooltip("相对于场地中心的绝对物理坐标 (X,Y 为区域左上角)")]
     public List<Rect> ForbiddenZones = new List<Rect>();
 
-
+    // 👇【终极接管】：这就是你刚刚配好的那张带有“模式4(自定义)”或“模式3(三选一)”的大巴扎掉落表！
+    [Header("=== 战利品掉落序列 (The Bazaar Loot) ===")]
+    public LootSequenceSO NodeLootSequence;
 
 }

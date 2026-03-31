@@ -34,7 +34,11 @@ MonoBehaviour:
     BonusTags: 
     SpecialMechanicDesc: 
   - Level: 2
-    Stats: []
+    Stats:
+    - StatID: 0
+      Value: 0
+    - StatID: 1
+      Value: 0
     Mechanics: []
     OnFireActions: []
     OnHitActions: []

@@ -343,18 +343,38 @@ public class CombatDirector : MonoBehaviour
         }
 
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
+
         if (isVictory)
         {
-            // 👇【核心拦截】：这里预留了接口，我们马上就会在这里接上大巴扎的 UI！
-            Debug.Log("<color=#FFD700>【战利品预留口】</color> 准备呼叫新的 SalvageDirector (两段式打捞系统)！");
+            // 👇【核心枢纽接管】：赢了！把当前节点的掉落表传给战利品导演！
+            if (CurrentLayout != null && CurrentLayout.NodeLootSequence != null)
+            {
+                Debug.Log("<color=#FFD700>【战斗胜利】</color> 呼叫战利品导演，启动大巴扎打捞程序！");
 
-            // TODO: 未来在这里接入 SalvageDirector.Instance.OpenSalvageUI(...);
-            ExecuteReturnToMap();
+                // 获取当前地图节点的宏观大类（如果是随机测试，这里默认传 Tech）
+                MacroCategory currentMacro = currentNodeData != null ? GetMacroForNodeType(currentNodeData.NodeType) : MacroCategory.Tech;
+                int currentDepth = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+
+                // 启动异步打捞管线！(代码跑到这里后，战利品 UI 就会接管屏幕)
+                LootSequenceDirector.Instance.StartLootSequence(CurrentLayout.NodeLootSequence, currentMacro, currentDepth);
+            }
+            else
+            {
+                Debug.LogWarning("【战利品跳过】当前节点没有配置 LootSequenceSO，直接返回大地图！");
+                ExecuteReturnToMap();
+            }
         }
         else
         {
-            Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请大侠重新来过！");
+            Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请重新来过！");
+            // TODO: 未来接 Game Over 界面
         }
+    }
+    private MacroCategory GetMacroForNodeType(MapNodeType type)
+    {
+        if (type == MapNodeType.Elite) return MacroCategory.Flesh; // 比如精英怪固定掉血肉
+        if (type == MapNodeType.Boss) return MacroCategory.Magic;  // Boss 固定掉魔法
+        return MacroCategory.Tech; // 普通怪掉科技
     }
 
     public void ExecuteReturnToMap()
