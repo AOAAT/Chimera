@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// --- START OF FILE ItemDetailPanelUI.cs ---
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,25 +35,30 @@ public class ItemDetailPanelUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void ShowComponentDetail(ComponentDataSO data)
+    // 👇【核心修复 1】：参数从 ComponentDataSO 变成了 InstancedComponent 实体！
+    public void ShowComponentDetail(InstancedComponent instance)
     {
+        if (instance == null || instance.BaseData == null) return;
+
         gameObject.SetActive(true);
+        var data = instance.BaseData;
 
         IconImage.sprite = data.ComponentIcon;
         IconImage.SetNativeSize();
-        NameText.text = data.ComponentName;
+        // 👇【体验升级】：在详情页标题也加上当前的星级！
+        NameText.text = $"<color=#00FFFF>Lv.{instance.CurrentLevel}</color> {data.ComponentName}";
         DescriptionText.text = data.Description;
 
         SocketsGroup.SetActive(false);
 
-        // 👇【核心修复 1】：由于组件数值改成了矩阵，这里为了UI展示，默认读取第一级的数据展示！
-        var lv1Data = data.GetLevelData(1);
-        SpecialMechanicText.text = lv1Data != null ? lv1Data.SpecialMechanicDesc : "无特殊机制";
+        // 👇【核心修复 2】：精准读取实体当前的真实星级数据！
+        var currentLvData = data.GetLevelData(instance.CurrentLevel);
+        SpecialMechanicText.text = currentLvData != null ? currentLvData.SpecialMechanicDesc : "无特殊机制";
 
         string stats = "";
-        if (lv1Data != null)
+        if (currentLvData != null)
         {
-            foreach (var stat in lv1Data.Stats)
+            foreach (var stat in currentLvData.Stats)
             {
                 stats += $"[{TranslateStat(stat.StatID)}] : +{stat.Value}\n";
             }
@@ -62,13 +68,13 @@ public class ItemDetailPanelUI : MonoBehaviour
         ClearTags();
         GenerateTag("组件", new Color(0.3f, 0.3f, 0.3f));
         GenerateTag(TranslateComponentType(data.Type), new Color(0.2f, 0.5f, 0.8f));
-
-        // 👇【核心修复 2】：Tags 变成了 BaseSubTags
         foreach (var tag in data.BaseSubTags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag));
     }
 
+    // 底盘没有等级，依然传图纸即可
     public void ShowChassisDetail(ChassisDataSO data)
     {
+        if (data == null) return;
         gameObject.SetActive(true);
 
         IconImage.sprite = data.ChassisSprite;
@@ -87,8 +93,6 @@ public class ItemDetailPanelUI : MonoBehaviour
 
         ClearTags();
         GenerateTag("底盘", new Color(0.8f, 0.6f, 0.1f));
-
-        // 👇【核心修复 3】：Tags 变成了 SubTags
         foreach (var tag in data.SubTags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag));
     }
 
@@ -128,7 +132,6 @@ public class ItemDetailPanelUI : MonoBehaviour
     private void GenerateTag(string text, Color bgColor)
     {
         if (string.IsNullOrEmpty(text) || text == "无") return;
-
         GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
         tagObj.GetComponent<Image>().color = bgColor;
         tagObj.GetComponentInChildren<TMP_Text>().text = text;
@@ -170,12 +173,12 @@ public class ItemDetailPanelUI : MonoBehaviour
         {
             case SubTag.Mutation:
             case SubTag.Parasite:
-            case SubTag.Acid: return new Color(0.6f, 0.1f, 0.1f); // 血肉系暗红
+            case SubTag.Acid: return new Color(0.6f, 0.1f, 0.1f);
             case SubTag.Ballistic:
             case SubTag.Energy:
-            case SubTag.Shield: return new Color(0.1f, 0.6f, 0.8f); // 科技系赛博蓝
+            case SubTag.Shield: return new Color(0.1f, 0.6f, 0.8f);
             case SubTag.Curse:
-            case SubTag.Summon: return new Color(0.5f, 0.1f, 0.8f); // 魔法系深紫
+            case SubTag.Summon: return new Color(0.5f, 0.1f, 0.8f);
             default: return Color.gray;
         }
     }

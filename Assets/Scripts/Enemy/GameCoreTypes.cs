@@ -58,6 +58,8 @@ public class ComponentLevelData
 {
     public int Level = 1; // 1, 2, 3, 4
 
+    public int ScrapValue = 10;
+
     [Header("本级绝对数值 (非乘区)")]
     public List<StatEntry> Stats = new List<StatEntry>();
 

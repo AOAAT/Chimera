@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class CombatDirector : MonoBehaviour
 {
@@ -314,6 +315,44 @@ public class CombatDirector : MonoBehaviour
             {
                 SettlementTitleText.text = isVictory ? "战 斗 胜 利" : "任 务 失 败";
                 SettlementTitleText.color = isVictory ? Color.green : Color.red;
+            }
+        }
+
+        // 👇【核心新增】：如果是战败，结算全局扣血 (SAN)！
+        if (!isVictory)
+        {
+            int totalSanLoss = 0;
+            foreach (var enemy in activeEnemies)
+            {
+                if (enemy != null && enemy.CurrentHP > 0)
+                {
+                    float hpPercent = enemy.CurrentHP / enemy.MaxHP;
+                    EnemyBrain brain = enemy.GetComponent<EnemyBrain>();
+
+                    if (brain != null && brain.MyData != null && brain.MyData.SanPenalties != null)
+                    {
+                        // 将阶梯按血量从高到低排序，找到第一个符合区间的惩罚
+                        var sortedTiers = brain.MyData.SanPenalties.OrderByDescending(t => t.HpThreshold).ToList();
+                        int currentLoss = 0;
+
+                        foreach (var tier in sortedTiers)
+                        {
+                            if (hpPercent >= tier.HpThreshold)
+                            {
+                                currentLoss = tier.SanDeduction;
+                                break;
+                            }
+                        }
+                        totalSanLoss += currentLoss;
+                        Debug.Log($"【战败清算】[{brain.MyData.EnemyName}] 剩余血量 {hpPercent:P0}，导致玩家扣除 {currentLoss} 点 SAN。");
+                    }
+                }
+            }
+
+            Debug.Log($"<color=#FF0000>【系统结算】本次战役总计损失 {totalSanLoss} 点 SAN 值！</color>");
+            if (GlobalResourceManager.Instance != null)
+            {
+                GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
             }
         }
     }

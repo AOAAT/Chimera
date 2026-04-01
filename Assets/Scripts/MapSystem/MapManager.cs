@@ -16,8 +16,8 @@ public class MapManager : MonoBehaviour
     public int CurrentLayer;
 
     // 您大纲里提到的全局资源，未来会接管这部分
-    public int CurrentSAN = 100;
-    public int CurrentPower = 50;
+    //public int CurrentSAN = 100;
+    //public int CurrentPower = 50;
 
     private void Awake()
     {
@@ -55,9 +55,16 @@ public class MapManager : MonoBehaviour
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
             CombatDirector.Instance.EnterCombatPhase(targetData);
         }
-        else if (targetData.NodeType == MapNodeType.Event || targetData.NodeType == MapNodeType.Workshop)
+        else if (targetData.NodeType == MapNodeType.Event) // 👇 专门处理事件节点
         {
-            Debug.Log("【地图管控】进入和平节点，即将弹出事件面板...");
+            if (MapUIPanel != null) MapUIPanel.SetActive(false);
+            Debug.Log("【地图管控】进入事件节点，启动文字冒险...");
+            // 呼叫事件导演接管！
+            EventDirector.Instance.EnterEventPhase(targetData);
+        }
+        else if (targetData.NodeType == MapNodeType.Workshop)
+        {
+            // TODO: 未来实现铁匠铺/商店
             MoveToNode(targetData);
         }
     }
@@ -140,21 +147,25 @@ public class MapManager : MonoBehaviour
         }
 
         Debug.Log($"【状态更新】已到达第 {CurrentLayer} 层。前方有 {newNode.NextNodeIDs.Count} 条路线可供选择！同层其他路线已截断！");
+        if (GlobalResourceManager.Instance != null)
+        {
+            GlobalResourceManager.Instance.AdvanceDay();
+        }
     }
 
-    // 🗑️ 注意：原来那个单独的 private void LockUnselectedSiblings() 方法可以彻底删掉了！
+     //🗑️ 注意：原来那个单独的 private void LockUnselectedSiblings() 方法可以彻底删掉了！
 
-    //private void LockUnselectedSiblings()
-    //{
-    //    // 遍历所有节点，如果它和我在同一层，但不是我刚才选的那个，就把它彻底锁死
-    //    foreach (var node in mapGenerator.GeneratedMap.Values)
-    //    {
-    //        if (node.LayerIndex == CurrentLayer && node.NodeID != CurrentNodeID)
-    //        {
-    //            node.NodeState = MapNodeState.Locked;
-    //        }
-    //    }
-    //}
+    private void LockUnselectedSiblings()
+    {
+        // 遍历所有节点，如果它和我在同一层，但不是我刚才选的那个，就把它彻底锁死
+        foreach (var node in mapGenerator.GeneratedMap.Values)
+        {
+            if (node.LayerIndex == CurrentLayer && node.NodeID != CurrentNodeID)
+            {
+                node.NodeState = MapNodeState.Locked;
+            }
+        }
+    }
 
 
 }

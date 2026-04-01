@@ -17,6 +17,7 @@ public class ChassisDataSO : ScriptableObject
 
     [Header("=== 底盘自身属性加成 ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
+    public int ScrapValue = 50;
 
     [Header("=== 战斗逻辑心脏 (Logic Center) ===")]
     public Vector2 LogicCenterOffset = Vector2.zero;

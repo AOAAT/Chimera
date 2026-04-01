@@ -207,8 +207,25 @@ public class LootUIManager : MonoBehaviour
 
     private void OnSalvageClicked()
     {
-        Debug.Log("【粉碎资源】残骸已粉碎，获得了通用废料。(未实装数值)");
-        ConcludeTask();
+        // 👇【核心修复】：把 currentlySelectedItem 统一改成 selectedItem
+        if (selectedItem != null)
+        {
+            var blueprint = selectedItem.BaseData;
+            var lvData = blueprint.GetLevelData(selectedItem.CurrentLevel);
+            int scrapVal = lvData != null ? lvData.ScrapValue : 5; // 兜底给5块钱
+
+            if (GlobalResourceManager.Instance != null)
+            {
+                GlobalResourceManager.Instance.ModifyMaterials(scrapVal);
+            }
+
+            Debug.Log($"【粉碎资源】残骸已粉碎，获得了 {scrapVal} 点废料！");
+            ConcludeTask();
+        }
+        else
+        {
+            Debug.LogWarning("请先选择一个物品再粉碎！");
+        }
     }
 
     // 👇【核心功能】：后悔药按钮！什么都不改，直接切回大厅！

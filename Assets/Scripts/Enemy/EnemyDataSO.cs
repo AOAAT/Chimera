@@ -1,6 +1,15 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public struct SanPenaltyTier
+{
+    [Tooltip("残血百分比阈值 (例如 0.8 代表血量在 80%~100% 之间)")]
+    [Range(0f, 1f)] public float HpThreshold;
+    [Tooltip("在这个血量区间，玩家战败时会扣除多少 SAN 值")]
+    public int SanDeduction;
+}
+
 // 保留咱们定义好的物理运动表现
 public enum EnemyMoveType { Normal, ChargeDash, Teleport, Stationary }
 
@@ -18,6 +27,10 @@ public class EnemyDataSO : ScriptableObject
 
     [Header("=== 核心数值池 (仅放生存数值) ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
+
+    [Header("=== 战败惩罚 (Defeat Penalty) ===")]
+    [Tooltip("请从高血量往低血量配置，例如：1.0扣3点，0.5扣1点。")]
+    public List<SanPenaltyTier> SanPenalties = new List<SanPenaltyTier>();
 
     [Header("=== 战斗 AI 与移动逻辑 (去哪) ===")]
     public TargetingStrategy TargetingLogic = TargetingStrategy.Nearest;

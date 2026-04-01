@@ -22,6 +22,20 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 100
+    - StatID: 1
+      Value: 100
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+  - Level: 2
+    ScrapValue: 10
     Stats:
     - StatID: 0
       Value: 200
@@ -33,20 +47,13 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
-  - Level: 2
+  - Level: 3
+    ScrapValue: 10
     Stats:
     - StatID: 0
-      Value: 0
+      Value: 22
     - StatID: 1
-      Value: 0
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
-  - Level: 3
-    Stats: []
+      Value: 11
     Mechanics: []
     OnFireActions: []
     OnHitActions: []
@@ -54,6 +61,7 @@ MonoBehaviour:
     BonusTags: 
     SpecialMechanicDesc: 
   - Level: 4
+    ScrapValue: 10
     Stats: []
     Mechanics: []
     OnFireActions: []

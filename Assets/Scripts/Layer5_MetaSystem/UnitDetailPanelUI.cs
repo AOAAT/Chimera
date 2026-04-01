@@ -43,7 +43,6 @@ public class UnitDetailPanelUI : MonoBehaviour
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                // 👇【核心修复 3】：从等级数据中读血量
                 var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
                 if (lvData != null) maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
             }
@@ -56,7 +55,6 @@ public class UnitDetailPanelUI : MonoBehaviour
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                // 👇【核心修复 4】：从等级数据中读耗电
                 var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
                 if (lvData != null) totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
             }
@@ -107,10 +105,14 @@ public class UnitDetailPanelUI : MonoBehaviour
             compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
 
             Button compBtn = visObj.AddComponent<Button>();
-            ComponentDataSO targetData = comp.BaseData;
+
+            // 👇【核心修复】：闭包捕获实体对象！
+            InstancedComponent targetInstance = comp;
+
             compBtn.onClick.AddListener(() =>
             {
-                ItemDetailPanelUI.Instance.ShowComponentDetail(targetData);
+                // 👇【核心修复】：现在传给详情页的是整个带有等级的实体！
+                ItemDetailPanelUI.Instance.ShowComponentDetail(targetInstance);
             });
         }
     }

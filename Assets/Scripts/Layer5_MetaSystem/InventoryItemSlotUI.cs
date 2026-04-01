@@ -112,14 +112,16 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
         {
-            // 👇【核心交互接入】：如果是组件（不是底盘），则在鼠标位置弹出右键强化菜单！
+            if (isUnequipSlot) return; // 卸载槽位没有右键功能
+
+            // 👇【核心交互】：无论是组件还是底盘，右键统统呼叫菜单！
             if (cachedComponent != null)
             {
-                ItemContextMenuUI.Instance.ShowMenu(cachedComponent, Input.mousePosition);
+                ItemContextMenuUI.Instance.ShowMenu(cachedComponent, null, Input.mousePosition);
             }
-            else
+            else if (cachedChassis != null)
             {
-                Debug.Log("底盘无法强化。");
+                ItemContextMenuUI.Instance.ShowMenu(null, cachedChassis, Input.mousePosition);
             }
         }
     }
@@ -129,7 +131,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
 
         if (cachedComponent != null && cachedComponent.BaseData != null)
         {
-            ItemDetailPanelUI.Instance?.ShowComponentDetail(cachedComponent.BaseData);
+            // 👇【核心修复 3】：直接把整个 cachedComponent 实体扔给详情页！
+            ItemDetailPanelUI.Instance?.ShowComponentDetail(cachedComponent);
         }
         else if (cachedChassis != null && cachedChassis.BaseData != null)
         {
