@@ -140,5 +140,10 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         }
     }
 
-    public void OnPointerExit(PointerEventData eventData) { }
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        // 👇【核心修复】：鼠标一旦移出装备格子，立刻隐藏详情面板！
+        // 这样无论是在大仓库、商店、还是组装车间的右侧列表，详情页都会像正常的 Tooltip 一样丝滑呼出和消失！
+        ItemDetailPanelUI.Instance?.HidePanel();
+    }
 }

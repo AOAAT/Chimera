@@ -366,6 +366,12 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     private void ExitToHangar()
     {
+        // 👇【兜底保险】：退出车间时，强制把有可能还在显示的详情页给关了！
+        if (ItemDetailPanelUI.Instance != null)
+        {
+            ItemDetailPanelUI.Instance.HidePanel();
+        }
+
         currentEditingProfile = null;
         gameObject.SetActive(false);
         HangarMenuUI.Instance.gameObject.SetActive(true);
