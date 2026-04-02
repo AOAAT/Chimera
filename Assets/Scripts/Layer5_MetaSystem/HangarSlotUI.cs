@@ -242,6 +242,24 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         if (isValidDeployZone)
         {
+            // 1. 算一下这台待空投的机甲要吃多少电
+            int thisMechPower = GlobalResourceManager.Instance.CalculateUnitPowerCost(bindedProfile);
+
+            // 2. 算一下战场上其他的机甲已经占了多少电
+            int currentlyUsed = GlobalResourceManager.Instance.GetTotalUsedPower();
+
+            // 3. 算总账：如果加上这台就爆闸了！
+            if (currentlyUsed + thisMechPower > GlobalResourceManager.Instance.MaxPowerCapacity)
+            {
+                Debug.LogWarning($"【空投驳回】电网超载！这台机甲需要 {thisMechPower} 电量，剩余可用电量仅 {GlobalResourceManager.Instance.MaxPowerCapacity - currentlyUsed}！");
+
+                // (未来这里可以接一个屏幕红字飘字的错误提示)
+                return; // 直接拦截！跳出，机甲弹回原位！
+            }
+
+            // ==========================================
+            // 安检通过，正式空投！
+            // ==========================================
             bindedProfile.IsDeployed = true;
             Vector3 spawnPos = new Vector3(dropPos2D.x, dropPos2D.y, 0f);
             GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
@@ -250,6 +268,9 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             if (mechScript != null) mechScript.InitUnitData(bindedProfile);
 
             HangarMenuUI.Instance.RefreshHangar();
+
+            // 强行刷新全局顶部资源栏的电量刻度！
+            PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
         }
     }
 
