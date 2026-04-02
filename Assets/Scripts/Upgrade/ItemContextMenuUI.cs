@@ -37,6 +37,19 @@ public class ItemContextMenuUI : MonoBehaviour
 
         // 动态显示：只有组件可以强化！底盘点右键，强化按钮会直接隐藏
         UpgradeButton.gameObject.SetActive(currentComponent != null);
+
+        int scrapVal = 0;
+        if (comp != null)
+        {
+            var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+            scrapVal = lvData != null ? lvData.ScrapValue : 5;
+        }
+        else if (chassis != null)
+        {
+            scrapVal = chassis.BaseData.ScrapValue;
+        }
+
+        DismantleButton.GetComponentInChildren<TMP_Text>().text = $"就地拆解 (+{scrapVal}废料)";
     }
 
     public void HideMenu()

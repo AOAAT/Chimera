@@ -17,6 +17,12 @@ public class ChassisDataSO : ScriptableObject
 
     [Header("=== 底盘自身属性加成 ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
+
+    [Header("=== 经济价值 ===")]
+    [Tooltip("这件底盘在商店里的基础售价")]
+    public int BasePrice = 200; // 👇【核心新增】：商店标价！
+
+    [Tooltip("拆解这件底盘能获得的废料")]
     public int ScrapValue = 50;
 
     [Header("=== 战斗逻辑心脏 (Logic Center) ===")]

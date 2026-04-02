@@ -49,10 +49,16 @@ public class ItemDetailPanelUI : MonoBehaviour
         NameText.text = $"<color=#00FFFF>Lv.{instance.CurrentLevel}</color> {data.ComponentName}";
         DescriptionText.text = data.Description;
 
+
+
         SocketsGroup.SetActive(false);
 
         // 👇【核心修复 2】：精准读取实体当前的真实星级数据！
         var currentLvData = data.GetLevelData(instance.CurrentLevel);
+        if (currentLvData != null)
+        {
+            DescriptionText.text += $"\n\n<color=#888888>[拆解估值] : {currentLvData.ScrapValue} 废料</color>";
+        }
         SpecialMechanicText.text = currentLvData != null ? currentLvData.SpecialMechanicDesc : "无特殊机制";
 
         string stats = "";
@@ -81,6 +87,8 @@ public class ItemDetailPanelUI : MonoBehaviour
         IconImage.SetNativeSize();
         NameText.text = data.ChassisName;
         DescriptionText.text = data.Description;
+
+        DescriptionText.text += $"\n\n<color=#888888>[拆解估值] : {data.ScrapValue} 废料</color>";
 
         SocketsGroup.SetActive(true);
         SpecialMechanicText.text = data.SpecialMechanicDesc;

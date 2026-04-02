@@ -58,6 +58,9 @@ public class ComponentLevelData
 {
     public int Level = 1; // 1, 2, 3, 4
 
+    [Tooltip("这件物品在商店里的基础售价")]
+    public int BasePrice = 100; // 👇【核心新增】：商店标价！
+
     public int ScrapValue = 10;
 
     [Header("本级绝对数值 (非乘区)")]

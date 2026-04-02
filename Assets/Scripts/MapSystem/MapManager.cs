@@ -62,10 +62,12 @@ public class MapManager : MonoBehaviour
             // 呼叫事件导演接管！
             EventDirector.Instance.EnterEventPhase(targetData);
         }
-        else if (targetData.NodeType == MapNodeType.Workshop)
+        else if (targetData.NodeType == MapNodeType.Workshop) // 👇 商店节点
         {
-            // TODO: 未来实现铁匠铺/商店
-            MoveToNode(targetData);
+            if (MapUIPanel != null) MapUIPanel.SetActive(false);
+            Debug.Log("【地图管控】进入黑市商店，启动大巴扎引擎...");
+            // 呼叫商店导演接管！
+            ShopDirector.Instance.EnterShopPhase(targetData);
         }
     }
 
