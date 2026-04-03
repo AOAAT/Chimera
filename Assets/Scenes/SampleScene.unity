@@ -1411,7 +1411,7 @@ MonoBehaviour:
   m_CellSize: {x: 180, y: 240}
   m_Spacing: {x: 20, y: 20}
   m_Constraint: 1
-  m_ConstraintCount: 4
+  m_ConstraintCount: 2
 --- !u!1 &300370178
 GameObject:
   m_ObjectHideFlags: 0
@@ -4862,6 +4862,7 @@ GameObject:
   - component: {fileID: 610811988}
   - component: {fileID: 610811991}
   - component: {fileID: 610811992}
+  - component: {fileID: 610811993}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -4973,7 +4974,7 @@ MonoBehaviour:
   NormalEnemyWeight: 1
   EventWeight: 0
   EliteWeight: 0
-  WorkshopWeight: 1
+  WorkshopWeight: 0
   BufferFactor: 0.2
   TechBaseWeight: 10
   FleshBaseWeight: 0
@@ -5130,6 +5131,19 @@ MonoBehaviour:
   ShelfGridRoot: {fileID: 1474277328}
   ShopItemWidgetPrefab: {fileID: 5735758956520956622, guid: 2c37adf5cdd0a064b824d9d5b7a09be8, type: 3}
   LeaveShopButton: {fileID: 1297391825}
+--- !u!114 &610811993
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 610811979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edca37e1a4e562f459b87d5801feda05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PopupPrefab: {fileID: 1530561204203370263, guid: 6e0c9fa6a24ef2b46a37879a8be710cd, type: 3}
 --- !u!1 &615706837
 GameObject:
   m_ObjectHideFlags: 0
@@ -12495,7 +12509,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99999565
+  m_Size: 0.99999404
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -13893,7 +13907,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 349.15503, y: 0.00024414062}
+  m_AnchoredPosition: {x: 349.15503, y: 0.00012207031}
   m_SizeDelta: {x: -697, y: -63}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1430235885

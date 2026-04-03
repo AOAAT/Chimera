@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// --- START OF FILE UnitDetailPanelUI.cs ---
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -15,9 +16,10 @@ public class UnitDetailPanelUI : MonoBehaviour
     [Header("=== 机甲预览图 UI 绑定 ===")]
     public RectTransform UnitVisualContainer;
 
+    // 👇【核心修复】：锁死底层换算率，统一暴露 PreviewScale
     [Range(0.1f, 5f)]
     public float PreviewScale = 1.5f;
-    public float WorldToUIMultiplier = 100f;
+    private const float WorldToUIMultiplier = 100f; // 锁死
 
     private SavedUnitProfile currentProfile;
     private int currentSlotIndex = -1;
@@ -68,6 +70,7 @@ public class UnitDetailPanelUI : MonoBehaviour
     {
         foreach (Transform child in UnitVisualContainer) Destroy(child.gameObject);
 
+        // PreviewScale 的缩放魔法！
         UnitVisualContainer.localScale = Vector3.one * PreviewScale;
 
         GameObject chassisObj = new GameObject("UI_ChassisBase");
@@ -105,13 +108,10 @@ public class UnitDetailPanelUI : MonoBehaviour
             compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
 
             Button compBtn = visObj.AddComponent<Button>();
-
-            // 👇【核心修复】：闭包捕获实体对象！
             InstancedComponent targetInstance = comp;
 
             compBtn.onClick.AddListener(() =>
             {
-                // 👇【核心修复】：现在传给详情页的是整个带有等级的实体！
                 ItemDetailPanelUI.Instance.ShowComponentDetail(targetInstance);
             });
         }

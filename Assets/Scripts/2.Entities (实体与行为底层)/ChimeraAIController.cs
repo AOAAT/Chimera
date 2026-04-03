@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿// --- START OF FILE ChimeraAIController.cs ---
+using System.Linq;
 using UnityEngine;
 
 public class ChimeraAIController : MonoBehaviour
@@ -15,12 +16,10 @@ public class ChimeraAIController : MonoBehaviour
     public bool IsExhausted = false;
     private float exhaustionTimer = 0f;
 
-    // 👇【新增】：物理失控态
     [Header("=== 物理状态 ===")]
     public bool isStaggered = false;
     private float staggerTimer = 0f;
 
-    // 缓存武器射程数据
     private float maxWeaponRange = 0f;
     private float minWeaponRange = 0f;
 
@@ -28,18 +27,10 @@ public class ChimeraAIController : MonoBehaviour
     {
         runtimeData = data;
 
-        float speedMult = 1f;
-        float distMult = 1f;
-        if (CombatSandbox.Instance != null)
-        {
-            speedMult = CombatSandbox.Instance.SpeedMultiplier;
-            distMult = CombatSandbox.Instance.DistanceMultiplier;
-        }
+        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
 
-        // 👇【重构】：接入全局移动速度公式
         CurrentSpeed = GameFormulas.CalcMoveSpeed(runtimeData.TotalEnginePower, runtimeData.TotalMass, speedMult);
-
-        // 👇【重构】：接入全局体力上限公式
         MaxStamina = GameFormulas.CalcMaxStamina(runtimeData.TotalEnginePower, runtimeData.TotalPowerCost);
         CurrentStamina = MaxStamina;
 
@@ -52,29 +43,37 @@ public class ChimeraAIController : MonoBehaviour
             if (maxR > maxWeaponRange) maxWeaponRange = maxR;
             if (minR < minWeaponRange) minWeaponRange = minR;
         }
-        if (minWeaponRange == float.MaxValue) minWeaponRange = 0f;
-    }
 
-   
+        // 👇【防排斥灾难 1】：强制保留至少 1.5 米的接敌距离，绝对不准机甲钻进敌人体内！
+        if (minWeaponRange == float.MaxValue) minWeaponRange = 1.5f * distMult;
+        else if (minWeaponRange < 1.5f * distMult) minWeaponRange = 1.5f * distMult;
+
+        if (maxWeaponRange < minWeaponRange) maxWeaponRange = minWeaponRange;
+
+        rb = GetComponent<Rigidbody2D>();
+        myCollider = GetComponent<Collider2D>();
+
+        // 👇【防排斥灾难 2】：强制给机甲上 5 的物理摩擦力（阻力），让机甲变得稳如泰山！
+        if (rb != null) rb.drag = 5f;
+    }
 
     private void Update()
     {
         if (runtimeData == null) return;
-
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
             if (rb != null) rb.velocity = Vector2.zero;
             return;
         }
 
-        // 👇【物理引擎强制接管】：挨打硬直期间，大脑断电！
         if (isStaggered)
         {
             staggerTimer -= Time.deltaTime;
             if (staggerTimer <= 0)
             {
                 isStaggered = false;
-                rb.drag = 0f; // 恢复正常摩擦力
+                // 👇【物理修复 3】：硬直恢复后，必须恢复 5 点摩擦力，绝对不能设回 0！
+                rb.drag = 5f;
             }
             return;
         }
@@ -82,20 +81,11 @@ public class ChimeraAIController : MonoBehaviour
         if (IsExhausted)
         {
             if (rb != null) rb.velocity = Vector2.zero;
-
             exhaustionTimer -= Time.deltaTime;
             CurrentStamina += (MaxStamina * 0.2f) * Time.deltaTime;
-            TintMech(new Color(1f, 0.5f, 0.5f));
-
-            if (exhaustionTimer <= 0)
-            {
-                IsExhausted = false;
-                TintMech(Color.white);
-            }
+            if (exhaustionTimer <= 0) IsExhausted = false;
             return;
         }
-
-        TintMech(Color.white);
 
         FindTarget();
         HandleMovementAndStamina();
@@ -165,12 +155,7 @@ public class ChimeraAIController : MonoBehaviour
         if (isMoving)
         {
             CurrentStamina -= 5f * Time.deltaTime;
-            if (CurrentStamina <= 0)
-            {
-                CurrentStamina = 0;
-                IsExhausted = true;
-                exhaustionTimer = 3f;
-            }
+            if (CurrentStamina <= 0) { CurrentStamina = 0; IsExhausted = true; exhaustionTimer = 3f; }
         }
         else
         {
@@ -178,41 +163,18 @@ public class ChimeraAIController : MonoBehaviour
         }
     }
 
-    // 👇【全新机制】：物理冲击接收器
-    // 👇【全新机制】：物理冲击接收器
     public void ApplyImpulse(Vector2 dir, float impulse)
     {
         float mass = runtimeData != null ? runtimeData.TotalMass : 10f;
-
-        // 👇【重构】：接入全局硬直时间解算公式
         float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
 
-        // 如果公式返回 0，说明冲击力太小被免疫了，直接跳出
         if (stunTime <= 0f) return;
 
         isStaggered = true;
         staggerTimer = stunTime;
 
-        rb.drag = 5f; // 摩擦力飙升，模拟地上摩擦
+        rb.drag = 5f;
         rb.velocity = Vector2.zero;
         rb.AddForce(dir * impulse, ForceMode2D.Impulse);
-    }
-    private void OnDrawGizmos()
-    {
-        if (Application.isPlaying && runtimeData != null)
-        {
-            if (runtimeData.MovementLogic == MovementStrategy.Dodge)
-            {
-                Gizmos.color = Color.green;
-                Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
-                Gizmos.DrawWireSphere(logicCenter, runtimeData.SafeDodgeDistance);
-            }
-        }
-    }
-
-    private void TintMech(Color targetColor)
-    {
-        SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
-        foreach (var sr in allRenderers) sr.color = targetColor;
     }
 }

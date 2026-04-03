@@ -8,14 +8,16 @@ public class Projectile : MonoBehaviour
     private float speed;
 
     private bool isEnemyFire;
+    private bool isCritical; // 👇【核心修复】：子弹现在会记住自己是不是暴击！
     private bool hasHit = false; // 👇【新增】：防连击锁，保证一颗子弹绝对只炸一次！
 
-    public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy = false)
+    public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy, bool isCrit)
     {
         this.target = target;
         this.damage = damage;
         this.weaponData = data;
         this.isEnemyFire = isEnemy;
+        this.isCritical = isCrit; // 保存暴击状态
 
         this.speed = data.GetStat(StatType.ProjectileSpeed);
         if (this.speed <= 0) this.speed = 10f;
@@ -61,7 +63,8 @@ public class Projectile : MonoBehaviour
             PrimaryTarget = target,
             BaseDamage = damage,
             SourceWeapon = weaponData,
-            IsEnemyFire = this.isEnemyFire // 传递阵营
+            IsEnemyFire = this.isEnemyFire, // 传递阵营
+            IsCriticalHit = this.isCritical // 👇【核心修复】：把暴击状态交还给 ECA 总线！
         };
 
         if (weaponData != null && weaponData.OnHitActions != null)

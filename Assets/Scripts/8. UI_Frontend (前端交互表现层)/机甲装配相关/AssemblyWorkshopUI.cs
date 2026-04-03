@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// --- START OF FILE AssemblyWorkshopUI.cs ---
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -35,8 +36,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text PowerText;
     public TMP_InputField UnitNameInput;
 
+    // 👇【核心修复】：暴露统一的滑动条，锁死底层的像素转换率
     [Header("=== 视觉与排版控制 ===")]
-    public float WorldToUIMultiplier = 100f;
+    [Range(0.1f, 5f)]
+    public float PreviewScale = 1.0f;
+    private const float WorldToUIMultiplier = 100f; // 1米 = 100像素，严禁修改
 
     private void Awake()
     {
@@ -76,7 +80,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                // 👇【核心修复 1】：从当前等级的数据块中读取血量
                 var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
                 if (lvData != null) initialMaxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
             }
@@ -114,7 +117,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null && comp.BaseData != null)
                 {
-                    // 👇【核心修复 2】：从当前等级的数据块中读取面板属性
                     var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
                     if (lvData != null)
                     {
@@ -167,8 +169,13 @@ public class AssemblyWorkshopUI : MonoBehaviour
     {
         foreach (Transform child in ChassisVisualRoot) Destroy(child.gameObject);
 
+        // 👇【神级修复】：建一个缩放根节点，把 PreviewScale 挂在它身上！
+        GameObject scalerObj = new GameObject("UI_ScalerRoot");
+        scalerObj.transform.SetParent(ChassisVisualRoot, false);
+        scalerObj.transform.localScale = Vector3.one * PreviewScale; // <--- 缩放魔法在这里发生！
+
         GameObject chassisObj = new GameObject("UI_ChassisBase");
-        chassisObj.transform.SetParent(ChassisVisualRoot, false);
+        chassisObj.transform.SetParent(scalerObj.transform, false); // 挂在缩放节点下
         Image chassisImg = chassisObj.AddComponent<Image>();
         chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
         chassisImg.SetNativeSize();
@@ -184,6 +191,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
             Image slotImg = slotObj.AddComponent<Image>();
             slotImg.color = new Color(1f, 1f, 1f, 0.3f);
             slotImg.rectTransform.sizeDelta = new Vector2(60, 60);
+
+            // 内部坐标永远用 100f 换算，保证原始比例完美对齐
             slotImg.rectTransform.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
             slotImg.rectTransform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
 
@@ -210,6 +219,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
                     Image compImg = compVisObj.AddComponent<Image>();
                     compImg.sprite = comp.BaseData.ComponentIcon;
                     compImg.SetNativeSize();
+
                     compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
                 }
             }
@@ -366,7 +376,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     private void ExitToHangar()
     {
-        // 👇【兜底保险】：退出车间时，强制把有可能还在显示的详情页给关了！
         if (ItemDetailPanelUI.Instance != null)
         {
             ItemDetailPanelUI.Instance.HidePanel();

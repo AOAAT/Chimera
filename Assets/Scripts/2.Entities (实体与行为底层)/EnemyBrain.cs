@@ -40,9 +40,12 @@ public class EnemyBrain : MonoBehaviour
         myReceiver = GetComponent<DamageReceiver>();
         rb = GetComponent<Rigidbody2D>();
 
+        // 👇【核心修复 1：读取真正的 HP 和 AP！】
         float maxHP = MyData.GetStat(StatType.HP);
+        float maxAP = MyData.GetStat(StatType.AP); // 读取你配的护甲
         if (maxHP <= 0) maxHP = 100f;
-        myReceiver.Initialize(maxHP, 0f);
+
+        myReceiver.Initialize(maxHP, maxAP);
         myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
 
@@ -240,7 +243,8 @@ public class EnemyBrain : MonoBehaviour
 
         if (MyData.MovementLogic == EnemyMovementStrategy.Swarm)
         {
-            float stopDist = MyData.StopDistance * distMult;
+            // 👇【防排斥灾难 3】：强制敌人距离玩家至少 0.8 米就得踩刹车！绝对不能硬撞！
+            float stopDist = Mathf.Max(MyData.StopDistance * distMult, 0.8f);
 
             if (dist > stopDist)
             {
@@ -432,7 +436,7 @@ public class EnemyBrain : MonoBehaviour
             float angle = Mathf.Atan2(attackDirection.y, attackDirection.x) * Mathf.Rad2Deg;
             GameObject projObj = Instantiate(skillData.ProjectilePrefab, transform.position, Quaternion.AngleAxis(angle, Vector3.forward));
             Projectile projectile = projObj.GetComponent<Projectile>();
-            projectile.Fire(currentTarget, finalDmg, rSkill.DummyWeapon, isEnemy: true);
+            projectile.Fire(currentTarget, finalDmg, rSkill.DummyWeapon, true, isCrit);
         }
         else if (skillData.DeliveryType == WeaponDeliveryType.Melee)
         {

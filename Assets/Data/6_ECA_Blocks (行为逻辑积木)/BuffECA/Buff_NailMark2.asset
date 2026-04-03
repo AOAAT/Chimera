@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
-  m_Name: Buff_NailMark
+  m_Name: Buff_NailMark2
   m_EditorClassIdentifier: 
-  BuffID: BUFF_001
+  BuffID: BUFF_002
   BuffName: "\u65B0\u72B6\u6001"
-  BuffIcon: {fileID: 21300000, guid: 705514f90ed8a7b4282ddd10ca6992c0, type: 3}
+  BuffIcon: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
   ParticleColor: {r: 1, g: 1, b: 1, a: 1}
   DurationType: 1
   BaseDuration: 5
   StackType: 2
-  MaxStacks: 2
+  MaxStacks: 10
   StatModifiers: []
   OnApplyActions: []
   OnTickActions: []

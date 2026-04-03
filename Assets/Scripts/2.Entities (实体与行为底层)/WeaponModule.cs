@@ -182,7 +182,7 @@ public class WeaponModule : MonoBehaviour
                 GameObject projObj = Instantiate(weaponData.ProjectilePrefab, spawnPos, bulletRot);
                 Projectile projectile = projObj.GetComponent<Projectile>();
                 // 👇【核心对接】：告诉子弹这是玩家发射的！
-                projectile.Fire(target, finalDmg, weaponData, isEnemy: false);
+                projectile.Fire(target, finalDmg, weaponData, false, isCrit);
             }
         }
     }

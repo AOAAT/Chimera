@@ -19,8 +19,10 @@ MonoBehaviour:
   VisualScaleMultiplier: 3
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
+  - StatID: 15
+    Value: 1000
   - StatID: 14
-    Value: 100
+    Value: 5000
   - StatID: 17
     Value: 20
   - StatID: 16

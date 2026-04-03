@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 5490219133989091266}
   - component: {fileID: 556235709985020323}
   - component: {fileID: 2600424341289285006}
+  - component: {fileID: 8506675233772399302}
+  - component: {fileID: 8347130010029006461}
   m_Layer: 0
   m_Name: BaseEnemyPrefab
   m_TagString: Untagged
@@ -136,6 +138,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MyData: {fileID: 0}
+--- !u!114 &8506675233772399302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6389588871143762209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4330bca4812ac654f9c1b79efd1a5706, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8347130010029006461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6389588871143762209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7927fccb372b98c49866cf8f942345d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HUDPrefab: {fileID: 9060266526716898274, guid: b67194a9620802f4d9500dff1822707d, type: 3}
+  Offset: {x: 0, y: 1.5, z: 0}
 --- !u!1 &6991406654251859085
 GameObject:
   m_ObjectHideFlags: 0

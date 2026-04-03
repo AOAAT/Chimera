@@ -17,10 +17,11 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     public TMP_Text APText;
     public TMP_Text PowerText;
 
+    // 👇【核心修复】：锁死底层换算率，统一暴露 PreviewScale
     [Header("=== 视觉缩放与排版控制 ===")]
     [Range(0.1f, 3f)]
     public float PreviewScale = 1.0f;
-    public float WorldToUIMultiplier = 100f;
+    private const float WorldToUIMultiplier = 100f; // 锁死
 
     [Header("=== 战场部署设置 ===")]
     public GameObject MechPrefab;
@@ -55,7 +56,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null && comp.BaseData != null)
                 {
-                    // 👇【核心修复 5】：读取等级数据里的 HP
                     var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
                     if (lvData != null) maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
                 }
@@ -90,7 +90,6 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                // 👇【核心修复 6】：读取等级数据里的耗电
                 var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
                 if (lvData != null) power += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
             }
@@ -102,6 +101,7 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     {
         foreach (Transform child in UnitVisualContainer) Destroy(child.gameObject);
 
+        // PreviewScale 缩放！
         UnitVisualContainer.localScale = Vector3.one * PreviewScale;
 
         GameObject chassisObj = new GameObject("UI_ChassisBase");
