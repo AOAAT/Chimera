@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4923148941261226031}
   - component: {fileID: 7225761150544584164}
   m_Layer: 7
-  m_Name: UnitPrefab
+  m_Name: MechUnit
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
