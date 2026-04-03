@@ -82,15 +82,22 @@ public class AssemblyStatMonitor : MonoBehaviour
 
             CalculateTotalLoad();
 
+            // 👇【核心修复 1】：自动挂载躯壳，并给予 100 点兜底生命值！
             DamageReceiver receiver = GetComponent<DamageReceiver>();
-            if (receiver != null) receiver.Initialize(Final_MaxHP, Final_MaxAP);
+            if (receiver == null) receiver = gameObject.AddComponent<DamageReceiver>();
+            receiver.isEnemy = false; // 明确声明为玩家阵营
+            float safeHP = Final_MaxHP > 0 ? Final_MaxHP : 100f; // 防止空配装导致血量为 0 瞬间暴毙
+            receiver.Initialize(safeHP, Final_MaxAP);
 
+            // 👇【核心修复 2】：为测试台动态注入 Buff 容器，以便测试状态积木！
+            BuffManager buffMgr = GetComponent<BuffManager>();
+            if (buffMgr == null) buffMgr = gameObject.AddComponent<BuffManager>();
+
+            // 自动挂载大脑
             ChimeraAIController aiController = GetComponent<ChimeraAIController>();
-            if (aiController != null)
-            {
-                aiController.Initialize(runtimeData);
-                Debug.Log($"【系统自检】测试台机甲大脑已通电！当前移速: {aiController.CurrentSpeed}");
-            }
+            if (aiController == null) aiController = gameObject.AddComponent<ChimeraAIController>();
+            aiController.Initialize(runtimeData);
+            Debug.Log($"【系统自检】测试台机甲大脑已通电！当前移速: {aiController.CurrentSpeed}");
 
             int weaponDataIndex = 0;
             for (int i = 0; i < setupHelper.EquippedComponents.Length; i++)
@@ -120,7 +127,6 @@ public class AssemblyStatMonitor : MonoBehaviour
 
     private void CalculateTotalLoad()
     {
-        // 👇【核心修复 2】：为了兼容测试台的 SO 数组，我们在外层包一个 1级的 Instance 壳！
         InstancedComponent[] tempInstances = new InstancedComponent[setupHelper.EquippedComponents.Length];
         for (int i = 0; i < setupHelper.EquippedComponents.Length; i++)
         {

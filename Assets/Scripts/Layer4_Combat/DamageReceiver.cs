@@ -21,13 +21,23 @@ public class DamageReceiver : MonoBehaviour
 
     public void TakeDamage(float rawDamage, string sourceName, bool isTrueDamage = false)
     {
+ 
+     
         if (CurrentHP <= 0) return; // 已经死了，拒收伤害
 
         float oldHP = CurrentHP;
         float oldAP = CurrentAP;
         float finalDamage = rawDamage;
         float absorbed = 0f;
+        BuffManager buffMgr = GetComponent<BuffManager>();
 
+        if (buffMgr != null)
+        {
+            // 示例：如果 Buff 库里有“易伤(IncomingDamagePct)”或“减伤(DamageResist)”
+            // 这里我们可以读取 BuffStatModifiers 里的对应词条进行修正
+            // float resist = buffMgr.BuffStatModifiers.GetValueOrDefault(StatType.AddedAP, 0);
+            // finalDamage -= resist; 
+        }
         // 1. AP（护甲）承伤逻辑 —— 如果是真实伤害，直接跳过这一步！
         if (CurrentAP > 0 && !isTrueDamage)
         {

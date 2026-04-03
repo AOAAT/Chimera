@@ -128,6 +128,9 @@ public class EnemyTestBench : MonoBehaviour
         float maxHp = TargetEnemyData.GetStat(StatType.HP);
         receiver.Initialize(maxHp > 0 ? maxHp : 1f, TargetEnemyData.GetStat(StatType.AP), myRenderer);
 
+        BuffManager buffMgr = GetComponent<BuffManager>();
+        if (buffMgr == null) buffMgr = gameObject.AddComponent<BuffManager>();
+
         // 5. 注入灵魂大脑
         EnemyBrain brain = GetComponent<EnemyBrain>();
         if (brain == null) brain = gameObject.AddComponent<EnemyBrain>();

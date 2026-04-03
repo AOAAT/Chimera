@@ -113,6 +113,12 @@ public class MechUnit2D : MonoBehaviour
         }
 
         ActivateCombatBrains(data);
+
+        BuffManager buffMgr = GetComponent<BuffManager>();
+        if (buffMgr == null) buffMgr = gameObject.AddComponent<BuffManager>();
+
+        // 如果需要，可以在这里根据底盘特性挂载初始 Buff
+        Debug.Log($"<color=#00FFFF>【系统生产线】</color> 玩家机甲 {data.UnitName} 已挂载 Buff 管理器。");
     }
 
     private void ActivateCombatBrains(SavedUnitProfile data)

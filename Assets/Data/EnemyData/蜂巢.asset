@@ -20,11 +20,12 @@ MonoBehaviour:
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
   - StatID: 14
-    Value: 10
+    Value: 100
   - StatID: 17
     Value: 20
   - StatID: 16
     Value: 40
+  SanPenalties: []
   TargetingLogic: 0
   MovementLogic: 0
   HoverDistance: 5

@@ -133,7 +133,14 @@ public class CombatDirector : MonoBehaviour
             {
                 sr.sprite = spawnData.EnemyType.EnemySprite;
             }
+
+            // 👇【核心修复】：将 Buff 容器的注入移到 foreach 循环内部！
+            // 确保每一只从沙盘生产线上下来的怪物，都拥有自己独立的 Buff 状态机
+            BuffManager buffMgr = enemyObj.GetComponent<BuffManager>();
+            if (buffMgr == null) buffMgr = enemyObj.AddComponent<BuffManager>();
         }
+
+        Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线。");
     }
 
     private void GenerateForbiddenZones()

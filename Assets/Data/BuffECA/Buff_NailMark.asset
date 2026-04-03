@@ -19,10 +19,10 @@ MonoBehaviour:
   DurationType: 1
   BaseDuration: 5
   StackType: 2
-  MaxStacks: 3
+  MaxStacks: 1
   StatModifiers: []
   OnApplyActions: []
   OnTickActions: []
   OnRemoveActions: []
   OnMaxStacksActions:
-  - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+  - {fileID: 11400000, guid: ed1d9d65a839b9c41942022a3f66d66a, type: 2}
