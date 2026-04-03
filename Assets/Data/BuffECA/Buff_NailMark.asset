@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
+  m_Name: Buff_NailMark
+  m_EditorClassIdentifier: 
+  BuffID: BUFF_001
+  BuffName: "\u65B0\u72B6\u6001"
+  BuffIcon: {fileID: 21300000, guid: 705514f90ed8a7b4282ddd10ca6992c0, type: 3}
+  ParticleColor: {r: 1, g: 1, b: 1, a: 1}
+  DurationType: 1
+  BaseDuration: 5
+  StackType: 2
+  MaxStacks: 3
+  StatModifiers: []
+  OnApplyActions: []
+  OnTickActions: []
+  OnRemoveActions: []
+  OnMaxStacksActions:
+  - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
