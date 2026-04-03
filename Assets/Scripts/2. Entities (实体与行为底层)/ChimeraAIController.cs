@@ -36,24 +36,26 @@ public class ChimeraAIController : MonoBehaviour
             distMult = CombatSandbox.Instance.DistanceMultiplier;
         }
 
-        float mass = Mathf.Max(runtimeData.TotalMass, 0.5f);
-        CurrentSpeed = Mathf.Max(0.1f, (runtimeData.TotalEnginePower / mass) * speedMult);
+        // 👇【重构】：接入全局移动速度公式
+        CurrentSpeed = GameFormulas.CalcMoveSpeed(runtimeData.TotalEnginePower, runtimeData.TotalMass, speedMult);
 
-        float powerCost = Mathf.Max(runtimeData.TotalPowerCost, 1f);
-        MaxStamina = Mathf.Max(20f, (runtimeData.TotalEnginePower / powerCost) * 0.1f);
+        // 👇【重构】：接入全局体力上限公式
+        MaxStamina = GameFormulas.CalcMaxStamina(runtimeData.TotalEnginePower, runtimeData.TotalPowerCost);
         CurrentStamina = MaxStamina;
 
-        if (runtimeData.EquippedWeapons.Count > 0)
+        maxWeaponRange = 0f;
+        minWeaponRange = float.MaxValue;
+        foreach (var wpn in runtimeData.EquippedWeapons)
         {
-            maxWeaponRange = runtimeData.EquippedWeapons.Max(w => w.GetStat(StatType.MaxRange)) * distMult;
-            minWeaponRange = runtimeData.EquippedWeapons.Min(w => w.GetStat(StatType.MaxRange)) * distMult;
+            float maxR = wpn.GetStat(StatType.MaxRange) * distMult;
+            float minR = wpn.GetStat(StatType.MinRange) * distMult;
+            if (maxR > maxWeaponRange) maxWeaponRange = maxR;
+            if (minR < minWeaponRange) minWeaponRange = minR;
         }
-
-        runtimeData.SafeDodgeDistance *= distMult;
-
-        rb = GetComponent<Rigidbody2D>();
-        myCollider = GetComponent<Collider2D>();
+        if (minWeaponRange == float.MaxValue) minWeaponRange = 0f;
     }
+
+   
 
     private void Update()
     {
@@ -177,15 +179,16 @@ public class ChimeraAIController : MonoBehaviour
     }
 
     // 👇【全新机制】：物理冲击接收器
+    // 👇【全新机制】：物理冲击接收器
     public void ApplyImpulse(Vector2 dir, float impulse)
     {
-        float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
-        float deltaV = impulse / mass;
+        float mass = runtimeData != null ? runtimeData.TotalMass : 10f;
 
-        if (deltaV < 0.5f) return;
+        // 👇【重构】：接入全局硬直时间解算公式
+        float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
 
-        float stunTime = deltaV * 0.05f;
-        if (stunTime < 0.1f) stunTime = 0.1f;
+        // 如果公式返回 0，说明冲击力太小被免疫了，直接跳出
+        if (stunTime <= 0f) return;
 
         isStaggered = true;
         staggerTimer = stunTime;
@@ -194,7 +197,6 @@ public class ChimeraAIController : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
-
     private void OnDrawGizmos()
     {
         if (Application.isPlaying && runtimeData != null)
