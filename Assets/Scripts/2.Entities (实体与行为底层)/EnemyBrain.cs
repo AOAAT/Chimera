@@ -1,5 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class RuntimeEnemySkill
@@ -33,6 +34,8 @@ public class EnemyBrain : MonoBehaviour
     private float lastFrameHP;
     private bool isDead = false;
 
+    // --- 仅替换 EnemyBrain.cs 中的 Start() 方法 ---
+
     private void Start()
     {
         if (MyData == null) { enabled = false; return; }
@@ -40,9 +43,8 @@ public class EnemyBrain : MonoBehaviour
         myReceiver = GetComponent<DamageReceiver>();
         rb = GetComponent<Rigidbody2D>();
 
-        // 👇【核心修复 1：读取真正的 HP 和 AP！】
         float maxHP = MyData.GetStat(StatType.HP);
-        float maxAP = MyData.GetStat(StatType.AP); // 读取你配的护甲
+        float maxAP = MyData.GetStat(StatType.AP);
         if (maxHP <= 0) maxHP = 100f;
 
         myReceiver.Initialize(maxHP, maxAP);
@@ -129,11 +131,36 @@ public class EnemyBrain : MonoBehaviour
         }
 
         ExecuteECAActions(MyData.OnSpawnActions, this.transform, null);
+
+        myReceiver.OnEntityDeath += HandleDeathSequence;
+
+        // ==========================================
+        // 👇 修复区域：动画挂载逻辑分离
+        // ==========================================
+
+        // 1. 【真动画挂载】(变量名：realAnimator)
+        if (MyData.AnimController != null)
+        {
+            Animator realAnimator = mainSr.gameObject.AddComponent<Animator>();
+            realAnimator.runtimeAnimatorController = MyData.AnimController;
+        }
+
+        // 2. 【程序化动画挂载】(变量名：procAnim)
+        ProceduralAnimator2D procAnim = gameObject.AddComponent<ProceduralAnimator2D>();
+
+        procAnim.BreathSpeed = Random.Range(2.5f, 3.5f);
+        procAnim.BreathScaleY = 0.08f;
+        procAnim.WobbleAngle = 12f;
+        procAnim.BobbingHeight = 0.15f;
     }
 
     private void Update()
     {
         if (isDead) return;
+
+        Animator[] anims = GetComponentsInChildren<Animator>();
+        bool isMoving = rb.velocity.sqrMagnitude > 0.01f;
+        foreach (var anim in anims) anim.SetBool("Walk", isMoving);
 
         if (myReceiver.CurrentHP < lastFrameHP)
         {
@@ -547,5 +574,56 @@ public class EnemyBrain : MonoBehaviour
             transform.position = new Vector3(clampedX, clampedY, currentPos.z);
             if (rb != null) rb.velocity = Vector2.zero;
         }
+    }
+
+    private void HandleDeathSequence()
+    {
+        isDead = true;
+        rb.velocity = Vector2.zero;
+        rb.isKinematic = true; // 尸体不再受物理影响
+
+        // 1. 拦截所有碰撞，防止尸体挡子弹！
+        Collider2D[] colliders = GetComponentsInChildren<Collider2D>();
+        foreach (var col in colliders) col.enabled = false;
+
+        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
+        if (procAnim != null) procAnim.StopAnimation();
+
+        // 2. 广播死亡动画
+        Animator[] anims = GetComponentsInChildren<Animator>();
+        foreach (var anim in anims) anim.SetTrigger("Die");
+
+        // 3. 触发死亡 ECA (爆浆、掉血迹、掉落物品等)
+        ExecuteECAActions(MyData.OnDeathActions, this.transform, null);
+
+        // 4. 开启尸体滞留时间线
+        StartCoroutine(CorpseDecayRoutine());
+    }
+
+    private IEnumerator CorpseDecayRoutine()
+    {
+        // 尸体保留指定时间
+        yield return new WaitForSeconds(MyData.CorpseLingerTime);
+
+        // 开始逐渐化成灰 (Fade Out)
+        SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
+        float fadeTime = 2f;
+        float elapsed = 0f;
+
+        while (elapsed < fadeTime)
+        {
+            elapsed += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeTime);
+            foreach (var sr in srs)
+            {
+                Color c = sr.color;
+                c.a = alpha;
+                sr.color = c;
+            }
+            yield return null;
+        }
+
+        // 最终彻底销毁释放内存
+        Destroy(gameObject);
     }
 }

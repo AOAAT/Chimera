@@ -5,22 +5,26 @@ using UnityEngine;
 public class ComponentDataSO : ScriptableObject
 {
     [Header("=== 基础身份信息 (Identity) ===")]
-    [Tooltip("极其重要：必须唯一！这是合成时判断是否同源的唯一凭证！")]
     public string ComponentBaseID = "WPN_001";
     public string ComponentName = "新组件";
     [TextArea] public string Description = "组件风味描述...";
     public Sprite ComponentIcon;
     public ComponentType Type;
 
-    [Header("=== 标签驱动与产出控制 (Tag & Drop) ===")]
+    // 👇【新增】：动画与视觉配置
+    [Header("=== 视觉表现层 (动画与特效) ===")]
+    [Tooltip("如果不填，系统将默认使用静态帧图片")]
+    public RuntimeAnimatorController AnimController;
+
+    [Tooltip("仅武器有效：真实的枪口发射位置 (相对把手的偏移)")]
+    public Vector2 MuzzleOffset = Vector2.zero;
+
+    [Header("=== 标签驱动与产出控制 ===")]
     public MacroCategory MacroCategory = MacroCategory.Tech;
     public List<SubTag> BaseSubTags = new List<SubTag>();
-
-    [Tooltip("最小掉落等级。填2则战利品绝不掉落1级。")]
     [Range(1, 4)] public int MinDropLevel = 1;
 
     [Header("=== 等级矩阵 (Level Matrix 1~4) ===")]
-    [Tooltip("严格按照 1~4 级的顺序配置。没有配的等级代表无法升到该级。")]
     public List<ComponentLevelData> LevelMatrix = new List<ComponentLevelData>();
 
     [Header("=== 武器独有投递方式 ===")]
@@ -37,7 +41,6 @@ public class ComponentDataSO : ScriptableObject
     public MovementStrategy MovementLogic = MovementStrategy.Active_Firepower;
     public float SafeDodgeDistance = 8f;
 
-    // 获取特定等级的数据块 (带防呆降级)
     public ComponentLevelData GetLevelData(int level)
     {
         var data = LevelMatrix.Find(x => x.Level == level);
@@ -45,7 +48,6 @@ public class ComponentDataSO : ScriptableObject
         return data;
     }
 }
-
 [System.Serializable]
 public struct ECABlock
 {

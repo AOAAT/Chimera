@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// --- START OF FILE CombatDirector.cs ---
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -38,6 +39,7 @@ public class CombatDirector : MonoBehaviour
 
     public Vector3 CurrentArenaCenter { get; private set; }
     public Vector2 CurrentArenaSize { get; private set; }
+
     [Header("=== 战场边界防护 (空气墙) ===")]
     public float BoundaryThickness = 2f;
     private GameObject boundariesContainer;
@@ -67,6 +69,9 @@ public class CombatDirector : MonoBehaviour
             ReturnToMapButton.onClick.AddListener(OnReturnToMapClicked);
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
+
+        // 👇【核心新增】：游戏一开始，强制隐藏真实战场！
+        if (ArenaReference != null) ArenaReference.SetActive(false);
     }
 
     public void EnterCombatPhase(MapNodeData nodeData)
@@ -91,7 +96,6 @@ public class CombatDirector : MonoBehaviour
             return;
         }
 
-        // 👇【核心修复】：呼叫发牌官时，现在只需要传 3 个参数了！去掉了 Theme！
         int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
         int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
 
@@ -99,12 +103,38 @@ public class CombatDirector : MonoBehaviour
 
         if (CurrentLayout != null)
         {
+            // 👇【核心新增】：动态替换背景图，并揭开战场的幕布！
+            SetupArenaVisuals();
+
             SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
         }
         else
         {
             Debug.LogWarning("【警告】当前节点没有获取到遭遇战图纸！");
+        }
+    }
+
+    // 👇【核心新增】：自主配置背景贴图的逻辑枢纽
+    private void SetupArenaVisuals()
+    {
+        if (ArenaReference == null) return;
+
+        // 1. 揭开幕布，显示场地
+        ArenaReference.SetActive(true);
+
+        // 2. 读取图纸里策划配置的背景图 (如果有的话)
+        // 我们从 EncounterLayoutSO 里挖取场地预制体上的贴图！
+        if (CurrentLayout.ArenaReference != null)
+        {
+            SpriteRenderer targetSR = CurrentLayout.ArenaReference.GetComponent<SpriteRenderer>();
+            SpriteRenderer mySR = ArenaReference.GetComponent<SpriteRenderer>();
+
+            if (targetSR != null && mySR != null && targetSR.sprite != null)
+            {
+                mySR.sprite = targetSR.sprite;
+                mySR.color = targetSR.color;
+            }
         }
     }
 
@@ -116,7 +146,6 @@ public class CombatDirector : MonoBehaviour
 
         Vector3 centerPos = CurrentArenaCenter;
 
-        // 【回归初心】：严格按照策划在 EncounterLayoutSO 里的配置刷怪！
         foreach (var spawnData in CurrentLayout.Enemies)
         {
             if (spawnData.EnemyType == null) continue;
@@ -134,13 +163,21 @@ public class CombatDirector : MonoBehaviour
                 sr.sprite = spawnData.EnemyType.EnemySprite;
             }
 
-            // 👇【核心修复】：将 Buff 容器的注入移到 foreach 循环内部！
-            // 确保每一只从沙盘生产线上下来的怪物，都拥有自己独立的 Buff 状态机
             BuffManager buffMgr = enemyObj.GetComponent<BuffManager>();
             if (buffMgr == null) buffMgr = enemyObj.AddComponent<BuffManager>();
+
+            if (sr != null)
+            {
+                TrueOutline2D outline = enemyObj.GetComponent<TrueOutline2D>();
+                if (outline == null) outline = enemyObj.AddComponent<TrueOutline2D>();
+
+                outline.OutlineThickness = 0.05f;
+                outline.OutlineColor = new Color(1f, 0f, 0f, 1f);
+                outline.BuildOutline(sr.transform, "Entities", 0);
+            }
         }
 
-        Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线。");
+        Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线与外部轮廓扫描！");
     }
 
     private void GenerateForbiddenZones()
@@ -325,7 +362,6 @@ public class CombatDirector : MonoBehaviour
             }
         }
 
-        // 👇【核心新增】：如果是战败，结算全局扣血 (SAN)！
         if (!isVictory)
         {
             int totalSanLoss = 0;
@@ -338,7 +374,6 @@ public class CombatDirector : MonoBehaviour
 
                     if (brain != null && brain.MyData != null && brain.MyData.SanPenalties != null)
                     {
-                        // 将阶梯按血量从高到低排序，找到第一个符合区间的惩罚
                         var sortedTiers = brain.MyData.SanPenalties.OrderByDescending(t => t.HpThreshold).ToList();
                         int currentLoss = 0;
 
@@ -351,7 +386,6 @@ public class CombatDirector : MonoBehaviour
                             }
                         }
                         totalSanLoss += currentLoss;
-                        Debug.Log($"【战败清算】[{brain.MyData.EnemyName}] 剩余血量 {hpPercent:P0}，导致玩家扣除 {currentLoss} 点 SAN。");
                     }
                 }
             }
@@ -381,7 +415,9 @@ public class CombatDirector : MonoBehaviour
         foreach (var b in allBullets) Destroy(b.gameObject);
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
-        if (boundariesContainer != null) Destroy(boundariesContainer);
+
+        // 👇【核心新增】：结算完毕，拉上战场的幕布，眼不见心不烦！
+        if (ArenaReference != null) ArenaReference.SetActive(false);
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
@@ -397,10 +433,8 @@ public class CombatDirector : MonoBehaviour
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
-            // 来源 A：遭遇战的特定掉落
             LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
 
-            // 来源 B：👇向全新的全局节点大脑要掉落补偿！
             int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
             int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
             MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
@@ -414,22 +448,18 @@ public class CombatDirector : MonoBehaviour
         else
         {
             Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请重新来过！");
-            // TODO: 未来接 Game Over 界面
         }
     }
-    // 👇【核心修复】：精准地把新的节点类型，翻译成战利品大巴扎的大类！
+
     private MacroCategory GetMacroForNodeType(MapNodeType type)
     {
         switch (type)
         {
-            case MapNodeType.Enemy_Flesh:
-                return MacroCategory.Flesh;
-            case MapNodeType.Enemy_Magic:
-                return MacroCategory.Magic;
+            case MapNodeType.Enemy_Flesh: return MacroCategory.Flesh;
+            case MapNodeType.Enemy_Magic: return MacroCategory.Magic;
             case MapNodeType.Enemy_Tech:
             case MapNodeType.Enemy_Mixed:
-            default:
-                return MacroCategory.Tech; // 兜底给科技
+            default: return MacroCategory.Tech;
         }
     }
 

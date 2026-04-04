@@ -11,6 +11,11 @@ public class WeaponModule : MonoBehaviour
     private Vector2 logicCenterOffset;
     private Transform mechRoot;
 
+    // 👇 新增：真实的枪口节点和动画器
+    private Transform muzzlePoint;
+    private Animator myAnimator;
+
+
     [Header("调试信息")]
     public List<Transform> CurrentTargets = new List<Transform>();
 
@@ -19,24 +24,27 @@ public class WeaponModule : MonoBehaviour
         weaponData = data;
         logicCenterOffset = centerOffset;
         mechRoot = root;
+
+        Transform actualHinge = GetActualHinge();
+
+        // 1. 尝试获取动画器（如果在装配时挂载了的话）
+        if (actualHinge.childCount > 0)
+            myAnimator = actualHinge.GetChild(0).GetComponent<Animator>();
+
+        // 2. 实例化真实枪口节点
+        GameObject muzzleObj = new GameObject("MuzzlePoint");
+        muzzleObj.transform.SetParent(actualHinge, false);
+        // 枪口相对把手(Hinge)的偏移
+        muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset;
+        muzzlePoint = muzzleObj.transform;
     }
 
     // 获取绝对世界坐标下的逻辑心脏
-    public Vector3 GetLogicCenter()
-    {
-        if (mechRoot != null) return mechRoot.TransformPoint(logicCenterOffset);
-        return transform.position;
-    }
+    public Vector3 GetLogicCenter() => mechRoot != null ? mechRoot.TransformPoint(logicCenterOffset) : transform.position;
 
-    // 👇【神级防坑】：智能寻找真正的转轴，绝不去碰贴图(Sprite_Visual)！
     private Transform GetActualHinge()
     {
-        // 如果挂在了插槽 (Socket) 上，它的第一个子节点才是 Hinge
-        if (transform.name.StartsWith("Socket_") && transform.childCount > 0)
-        {
-            return transform.GetChild(0);
-        }
-        // 如果它自己就叫 Hinge (测试台的情况)，那它自己就是转轴！
+        if (transform.name.StartsWith("Socket_") && transform.childCount > 0) return transform.GetChild(0);
         return transform;
     }
 
@@ -137,33 +145,28 @@ public class WeaponModule : MonoBehaviour
 
         if (CurrentTargets.Count == 0) return;
 
+        // 👇【表现层：触发开火动画】
+        if (myAnimator != null) myAnimator.SetTrigger("Fire");
+
         float finalDmg = Random.Range(weaponData.GetStat(StatType.MinDamage), weaponData.GetStat(StatType.MaxDamage));
         float totalCritChance = weaponData.GetStat(StatType.CriticalChance) + weaponData.BonusCriticalChance;
         bool isCrit = Random.value <= totalCritChance;
         if (isCrit) finalDmg *= 1.5f;
 
-        // 👇【新增评估日志】：玩家武器开火详情
-        string critLog = isCrit ? "<color=#FFD700><b>(暴击!)</b></color>" : "";
-        Debug.Log($"<color=#00FFFF>【玩家开火】</color> 武器 [{weaponData.WeaponName}] 锁定了 [{CurrentTargets[0].name}] | 判定伤害: {finalDmg:F1} {critLog}");
-
-        // 触发开火动作，标记 IsEnemyFire = false
+        // 👇【核心分离】：火光和事件，全部发生在真实的枪口 (MuzzlePoint)！
         ECAContext fireContext = new ECAContext
         {
-            ImpactPoint = transform.position,
+            ImpactPoint = muzzlePoint.position, // <--- 这里！绝对精准！
             PrimaryTarget = CurrentTargets[0],
             BaseDamage = finalDmg,
             SourceWeapon = weaponData,
             IsCriticalHit = isCrit,
-            IsEnemyFire = false // 玩家开火！
+            IsEnemyFire = false
         };
 
         if (weaponData.OnFireActions != null)
             foreach (var action in weaponData.OnFireActions)
                 if (action != null) action.Execute(fireContext);
-
-        Vector3 logicCenter = GetLogicCenter();
-        Transform actualHinge = GetActualHinge();
-        Vector3 spawnPos = Vector3.Lerp(logicCenter, actualHinge.position, 0.3f);
 
         foreach (var target in CurrentTargets)
         {
@@ -171,23 +174,22 @@ public class WeaponModule : MonoBehaviour
             {
                 ECAContext hitContext = new ECAContext { ImpactPoint = target.position, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false };
                 if (weaponData.OnHitActions != null) foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(hitContext);
-                Debug.DrawLine(spawnPos, target.position, Color.yellow, 0.1f);
             }
             else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)
             {
-                Vector3 bulletDir = target.position - spawnPos;
+                // 子弹也从真实枪口飞出！
+                Vector3 bulletDir = target.position - muzzlePoint.position;
                 float bulletAngle = Mathf.Atan2(bulletDir.y, bulletDir.x) * Mathf.Rad2Deg;
                 Quaternion bulletRot = Quaternion.AngleAxis(bulletAngle, Vector3.forward);
 
-                GameObject projObj = Instantiate(weaponData.ProjectilePrefab, spawnPos, bulletRot);
+                GameObject projObj = Instantiate(weaponData.ProjectilePrefab, muzzlePoint.position, bulletRot);
                 Projectile projectile = projObj.GetComponent<Projectile>();
-                // 👇【核心对接】：告诉子弹这是玩家发射的！
                 projectile.Fire(target, finalDmg, weaponData, false, isCrit);
             }
         }
     }
 
-    private void OnDrawGizmos()
+private void OnDrawGizmos()
     {
         if (weaponData == null) return;
 

@@ -17,6 +17,8 @@ MonoBehaviour:
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: bcb966f9ac22c334a883e1ad14a23796, type: 3}
   Type: 1
+  AnimController: {fileID: 0}
+  MuzzleOffset: {x: 1.5, y: -0.3}
   MacroCategory: 0
   BaseSubTags: 00000000
   MinDropLevel: 1
@@ -38,18 +40,20 @@ MonoBehaviour:
     - StatID: 13
       Value: 100
     - StatID: 10
-      Value: 50
+      Value: 0.3
     Mechanics: []
-    OnFireActions: []
+    OnFireActions:
+    - {fileID: 11400000, guid: 00161864b7806334e91bfc22f62a19b4, type: 2}
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     - {fileID: 11400000, guid: 3f1edda23f6f568479ec457b2ecb68bc, type: 2}
+    - {fileID: 11400000, guid: 4efee5fa1b7107c4291bd544a51a1a83, type: 2}
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
   DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
-  AnchorOffset: {x: -0.7829679, y: 0.088736415}
+  AnchorOffset: {x: -0.782968, y: 0.07131676}
   BaseRotationOffset: 103
   VisualScaleMultiplier: 0.9
   TargetingLogic: 0

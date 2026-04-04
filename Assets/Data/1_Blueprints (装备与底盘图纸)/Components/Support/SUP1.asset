@@ -17,11 +17,15 @@ MonoBehaviour:
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: d90bfac6071d040478b1a20594229c7f, type: 3}
   Type: 2
+  AnimController: {fileID: 0}
+  MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
   BaseSubTags: 03000000
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
+    BasePrice: 100
+    ScrapValue: 10
     Stats: []
     Mechanics: []
     OnFireActions: []
@@ -30,6 +34,8 @@ MonoBehaviour:
     BonusTags: 
     SpecialMechanicDesc: 
   - Level: 2
+    BasePrice: 100
+    ScrapValue: 10
     Stats: []
     Mechanics: []
     OnFireActions: []
@@ -38,6 +44,8 @@ MonoBehaviour:
     BonusTags: 
     SpecialMechanicDesc: 
   - Level: 3
+    BasePrice: 100
+    ScrapValue: 10
     Stats: []
     Mechanics: []
     OnFireActions: []
@@ -46,6 +54,8 @@ MonoBehaviour:
     BonusTags: 
     SpecialMechanicDesc: 
   - Level: 4
+    BasePrice: 100
+    ScrapValue: 10
     Stats: []
     Mechanics: []
     OnFireActions: []
@@ -55,7 +65,7 @@ MonoBehaviour:
     SpecialMechanicDesc: 
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
-  AnchorOffset: {x: 0.008905717, y: -0.0427356}
+  AnchorOffset: {x: 0.008905817, y: -0.13181402}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
   TargetingLogic: 0

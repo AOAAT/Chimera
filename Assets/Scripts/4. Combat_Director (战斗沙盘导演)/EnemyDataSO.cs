@@ -22,6 +22,11 @@ public class EnemyDataSO : ScriptableObject
     [TextArea] public string Description = "敌人风味描述...";
     public Sprite EnemySprite;
 
+    [Header("=== 视觉表现层 (动画与尸体) ===")]
+    public RuntimeAnimatorController AnimController;
+    [Tooltip("死亡后，尸体在场景中保留的时间 (秒)")]
+    public float CorpseLingerTime = 5f;
+
     [Range(0.1f, 5f)] public float VisualScaleMultiplier = 1.0f;
     [TextArea] public string SpecialMechanicDesc = "特殊机制";
 

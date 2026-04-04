@@ -7,6 +7,8 @@ public class DamageReceiver : MonoBehaviour
     public bool isEnemy;
     public float MaxHP { get; private set; }
     public float MaxAP { get; private set; }
+
+    public event System.Action OnEntityDeath;
     [Header("实时状态")]
     public float CurrentHP;
     public float CurrentAP;
@@ -51,11 +53,12 @@ public class DamageReceiver : MonoBehaviour
 
     private void Die()
     {
-        SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
-        foreach (var sr in srs) sr.color = new Color(0.2f, 0.2f, 0.2f, 1f);
         this.enabled = false;
 
         EntityHUD hud = GetComponentInChildren<EntityHUD>();
         if (hud != null) hud.gameObject.SetActive(false);
+
+        // 呼叫大脑执行死亡剧本
+        OnEntityDeath?.Invoke();
     }
 }

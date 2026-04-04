@@ -119,6 +119,13 @@ public class MechUnit2D : MonoBehaviour
 
         // 如果需要，可以在这里根据底盘特性挂载初始 Buff
         Debug.Log($"<color=#00FFFF>【系统生产线】</color> 玩家机甲 {data.UnitName} 已挂载 Buff 管理器。");
+
+        TrueOutline2D outline = GetComponent<TrueOutline2D>() ?? gameObject.AddComponent<TrueOutline2D>();
+        // 这里填入你想要的厚度和颜色
+        outline.OutlineThickness = 0.05f;
+        outline.OutlineColor = new Color(0f, 1f, 1f, 1f); // 玩家用青蓝色描边
+                                                          // 记得把刚刚做的材质拖给机甲预制体上的这个脚本槽位！
+        outline.BuildOutline(VisualRoot, SortingLayerName, BaseSortingOrder);
     }
 
     private void ActivateCombatBrains(SavedUnitProfile data)

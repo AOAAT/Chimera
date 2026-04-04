@@ -162,6 +162,7 @@ public class ChassisSetupHelper : MonoBehaviour
         previewObjects.Clear();
     }
 
+    // --- 替换 ChassisSetupHelper.cs 中的 OnDrawGizmos ---
     private void OnDrawGizmos()
     {
         if (TargetChassis == null || TargetChassis.Sockets == null) return;
@@ -169,15 +170,30 @@ public class ChassisSetupHelper : MonoBehaviour
         for (int i = 0; i < TargetChassis.Sockets.Count; i++)
         {
             var slot = TargetChassis.Sockets[i];
-
-            // 检查这个插槽上有没有装东西
             bool isEquipped = (i < EquippedComponents.Length && EquippedComponents[i] != null);
-
             Vector3 worldPos = transform.TransformPoint(slot.LocalPosition);
 
-            // 如果装了组件，圆圈变绿；空着就是青色
+            // 1. 画插槽
             Gizmos.color = isEquipped ? Color.green : Color.cyan;
             Gizmos.DrawWireSphere(worldPos, 0.1f * GlobalVisualScale);
+
+            // 2. 👇【主策专属：画枪口十字星！】
+            if (isEquipped && EquippedComponents[i].Type == ComponentType.Weapon)
+            {
+                if (i < previewObjects.Count && previewObjects[i] != null)
+                {
+                    Transform hinge = previewObjects[i].transform;
+                    // 读取你在图纸里配置的枪口偏移，直接换算成世界坐标！
+                    Vector3 muzzlePos = hinge.TransformPoint(EquippedComponents[i].MuzzleOffset);
+
+                    Gizmos.color = Color.red; // 危险的红色准星
+                    Gizmos.DrawWireSphere(muzzlePos, 0.08f * GlobalVisualScale);
+                    // 画十字准星
+                    float crossSize = 0.2f * GlobalVisualScale;
+                    Gizmos.DrawLine(muzzlePos + Vector3.up * crossSize, muzzlePos + Vector3.down * crossSize);
+                    Gizmos.DrawLine(muzzlePos + Vector3.left * crossSize, muzzlePos + Vector3.right * crossSize);
+                }
+            }
 
 #if UNITY_EDITOR
             Vector3 direction = Quaternion.Euler(0, 0, slot.MountAngle) * Vector3.up;

@@ -135,5 +135,11 @@ public class EnemyTestBench : MonoBehaviour
         EnemyBrain brain = GetComponent<EnemyBrain>();
         if (brain == null) brain = gameObject.AddComponent<EnemyBrain>();
         brain.MyData = TargetEnemyData;
+
+        TrueOutline2D outline = GetComponent<TrueOutline2D>() ?? gameObject.AddComponent<TrueOutline2D>();
+        outline.OutlineThickness = 0.05f;
+        outline.OutlineColor = new Color(1f, 0f, 0f, 1f); // 敌人用红色描边
+        outline.BuildOutline(visualHitboxNode.transform, "Entities", 0);
     }
+
 }
