@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 300368719784555950}
   - component: {fileID: 2022197922188435539}
   - component: {fileID: 854132439492194696}
+  - component: {fileID: 2038896030842088896}
   m_Layer: 7
   m_Name: MechUnit
   m_TagString: Player
@@ -92,3 +93,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   HUDPrefab: {fileID: 9060266526716898274, guid: b67194a9620802f4d9500dff1822707d, type: 3}
   Offset: {x: 0, y: 1.5, z: 0}
+--- !u!114 &2038896030842088896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20fc4fe759dc638448326409f767e8fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AutoSyncWithVelocity: 1
+  WalkSpeedThreshold: 0.1
+  IsMoving: 0
+  EnableBreathing: 0
+  BreathSpeed: 2
+  BreathScaleY: 0.05
+  BreathScaleX: -0.02
+  EnableWobble: 1
+  WobbleSpeed: 10
+  WobbleAngle: 8
+  BobbingHeight: 0.1
+  EnableVibration: 1
+  VibrationSpeed: 40
+  VibrationIntensity: 0.03
+  SquashAmount: -0.3
+  SquashRecoverSpeed: 10

@@ -112,20 +112,22 @@ public class MechUnit2D : MonoBehaviour
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
 
+        // --- 放在 MechUnit2D.cs 的 InitUnitData 方法末尾 ---
+
         ActivateCombatBrains(data);
 
         BuffManager buffMgr = GetComponent<BuffManager>();
         if (buffMgr == null) buffMgr = gameObject.AddComponent<BuffManager>();
 
-        // 如果需要，可以在这里根据底盘特性挂载初始 Buff
         Debug.Log($"<color=#00FFFF>【系统生产线】</color> 玩家机甲 {data.UnitName} 已挂载 Buff 管理器。");
 
-        TrueOutline2D outline = GetComponent<TrueOutline2D>() ?? gameObject.AddComponent<TrueOutline2D>();
-        // 这里填入你想要的厚度和颜色
-        outline.OutlineThickness = 0.05f;
-        outline.OutlineColor = new Color(0f, 1f, 1f, 1f); // 玩家用青蓝色描边
-                                                          // 记得把刚刚做的材质拖给机甲预制体上的这个脚本槽位！
-        outline.BuildOutline(VisualRoot, SortingLayerName, BaseSortingOrder);
+        // 1. 获取（或添加）动画器，并让它锁定底盘进行摇晃！
+        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
+        if (procAnim == null) procAnim = gameObject.AddComponent<ProceduralAnimator2D>();
+        procAnim.SetTargetVisual(chassisObj.transform); // 极其关键：只摇底盘和武器，不摇带物理的根节点！
+        procAnim.RefreshBaseState(); // 刷新一下基础大小，防止乱缩放
+
+
     }
 
     private void ActivateCombatBrains(SavedUnitProfile data)

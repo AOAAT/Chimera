@@ -145,13 +145,30 @@ public class EnemyBrain : MonoBehaviour
             realAnimator.runtimeAnimatorController = MyData.AnimController;
         }
 
-        // 2. 【程序化动画挂载】(变量名：procAnim)
-        ProceduralAnimator2D procAnim = gameObject.AddComponent<ProceduralAnimator2D>();
+        // --- 放在 EnemyBrain.cs 的 Start() 方法的末尾 ---
 
-        procAnim.BreathSpeed = Random.Range(2.5f, 3.5f);
-        procAnim.BreathScaleY = 0.08f;
-        procAnim.WobbleAngle = 12f;
-        procAnim.BobbingHeight = 0.15f;
+        ExecuteECAActions(MyData.OnSpawnActions, this.transform, null);
+
+        myReceiver.OnEntityDeath += HandleDeathSequence;
+
+        // ==========================================
+        // 👇 动画挂载逻辑分离 (已彻底净化)
+        // ==========================================
+
+        // 1. 【真动画挂载】
+        if (MyData.AnimController != null)
+        {
+            Animator realAnimator = mainSr.gameObject.AddComponent<Animator>();
+            realAnimator.runtimeAnimatorController = MyData.AnimController;
+        }
+
+        // 2. 【程序化动画绑定与刷新】
+        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
+        if (procAnim != null)
+        {
+            procAnim.SetTargetVisual(visualHitboxNode.transform);
+            procAnim.RefreshBaseState(); // 强制刷新基础状态，保证呼吸和受击形变的完美比例！
+        }
     }
 
     private void Update()

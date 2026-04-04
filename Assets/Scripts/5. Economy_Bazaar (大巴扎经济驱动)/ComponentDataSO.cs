@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// --- 请替换 FILE ComponentDataSO.cs ---
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewComponent", menuName = "Chimera Protocol/Component Blueprint")]
@@ -7,16 +8,16 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== 基础身份信息 (Identity) ===")]
     public string ComponentBaseID = "WPN_001";
     public string ComponentName = "新组件";
-    [TextArea] public string Description = "组件风味描述...";
+    [TextArea(3, 5)] public string Description = "组件风味描述...";
     public Sprite ComponentIcon;
     public ComponentType Type;
 
-    // 👇【新增】：动画与视觉配置
-    [Header("=== 视觉表现层 (动画与特效) ===")]
-    [Tooltip("如果不填，系统将默认使用静态帧图片")]
-    public RuntimeAnimatorController AnimController;
+    // 👇【新增】：纯展示用的战术定位描述 (如：远程范围 / 持续单体 / 辅助光环)
+    [Header("=== 战术定位描述 (仅UI展示) ===")]
+    public string TacticalRoleDesc = "远程单体";
 
-    [Tooltip("仅武器有效：真实的枪口发射位置 (相对把手的偏移)")]
+    [Header("=== 视觉表现层 (动画与特效) ===")]
+    public RuntimeAnimatorController AnimController;
     public Vector2 MuzzleOffset = Vector2.zero;
 
     [Header("=== 标签驱动与产出控制 ===")]

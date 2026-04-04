@@ -70,7 +70,7 @@ public class CombatDirector : MonoBehaviour
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
 
-        // 👇【核心新增】：游戏一开始，强制隐藏真实战场！
+        // 👇【场景管理】：游戏一开始，强制隐藏真实战场，保持大地图的干净！
         if (ArenaReference != null) ArenaReference.SetActive(false);
     }
 
@@ -103,7 +103,7 @@ public class CombatDirector : MonoBehaviour
 
         if (CurrentLayout != null)
         {
-            // 👇【核心新增】：动态替换背景图，并揭开战场的幕布！
+            // 👇【场景管理】：动态替换背景图，并揭开战场的幕布！
             SetupArenaVisuals();
 
             SpawnEnemiesFromLayout();
@@ -115,7 +115,6 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
-    // 👇【核心新增】：自主配置背景贴图的逻辑枢纽
     private void SetupArenaVisuals()
     {
         if (ArenaReference == null) return;
@@ -123,8 +122,7 @@ public class CombatDirector : MonoBehaviour
         // 1. 揭开幕布，显示场地
         ArenaReference.SetActive(true);
 
-        // 2. 读取图纸里策划配置的背景图 (如果有的话)
-        // 我们从 EncounterLayoutSO 里挖取场地预制体上的贴图！
+        // 2. 读取图纸里策划配置的背景图并替换
         if (CurrentLayout.ArenaReference != null)
         {
             SpriteRenderer targetSR = CurrentLayout.ArenaReference.GetComponent<SpriteRenderer>();
@@ -166,15 +164,6 @@ public class CombatDirector : MonoBehaviour
             BuffManager buffMgr = enemyObj.GetComponent<BuffManager>();
             if (buffMgr == null) buffMgr = enemyObj.AddComponent<BuffManager>();
 
-            if (sr != null)
-            {
-                TrueOutline2D outline = enemyObj.GetComponent<TrueOutline2D>();
-                if (outline == null) outline = enemyObj.AddComponent<TrueOutline2D>();
-
-                outline.OutlineThickness = 0.05f;
-                outline.OutlineColor = new Color(1f, 0f, 0f, 1f);
-                outline.BuildOutline(sr.transform, "Entities", 0);
-            }
         }
 
         Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线与外部轮廓扫描！");
@@ -242,7 +231,7 @@ public class CombatDirector : MonoBehaviour
             );
         }
 
-        float thickness = 20f; // 20米厚的防爆墙
+        float thickness = 20f;
         Vector2 size = CurrentArenaSize;
         Vector3 center = CurrentArenaCenter;
 
@@ -416,7 +405,7 @@ public class CombatDirector : MonoBehaviour
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
 
-        // 👇【核心新增】：结算完毕，拉上战场的幕布，眼不见心不烦！
+        // 👇【场景管理】：结算完毕，拉上战场的幕布，眼不见心不烦！
         if (ArenaReference != null) ArenaReference.SetActive(false);
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
