@@ -8,6 +8,11 @@ public class ChassisDataSO : ScriptableObject
     public string ChassisID = "CH_000";
     public string ChassisName = "新底盘";
     public Sprite ChassisSprite;
+
+    // 👇【核心新增】：让每个底盘自带它的专属详情页背景框！
+    [Tooltip("在详情页展示时使用的底图 (比如带有专属插槽孔位的背景)")]
+    public Sprite DetailBackgroundSprite;
+
     [TextArea] public string Description = "底盘风味描述";
     [TextArea] public string SpecialMechanicDesc = "特殊机制";
 

@@ -9,140 +9,270 @@ public class ItemDetailPanelUI : MonoBehaviour
 {
     public static ItemDetailPanelUI Instance;
 
-    [Header("=== 左侧通用区 ===")]
+    [Header("=== 背景与层级 ===")]
+    public Image BackgroundImage;
+    public Sprite[] LevelBackgrounds = new Sprite[4];
+    // 注意：删除了写死的 ChassisBackground，因为现在由图纸自己决定了！
+
+    [Header("=== 左侧：基础图文区 ===")]
     public Image IconImage;
     public TMP_Text NameText;
+    public TMP_Text LevelText;
     public TMP_Text DescriptionText;
 
-    [Header("=== 右侧动态区 ===")]
-    public TMP_Text StatsText;
-    public TMP_Text SpecialMechanicText;
-    public TMP_Text SocketsText;
-    public GameObject SocketsGroup;
+    [System.Serializable]
+    public struct StatIconMapping
+    {
+        public StatType Type;
+        public Sprite Icon;
+    }
 
-    [Header("=== 顶部标签系统 (流式布局) ===")]
-    public Transform TagsContainer;
-    public GameObject TagPrefab;
+    [Header("=== 右侧：属性池配置 ===")]
+    public List<StatIconMapping> StatIcons;
+    public Transform StatsGridRoot;
+    public GameObject StatEntryPrefab;
+
+    [Header("=== 右侧：文本补充区 ===")]
+    public TMP_Text TacticalRoleText;
+    public TMP_Text SpecialMechanicText;
+
+    [Header("=== 底盘专属：分页控制 ===")]
+    public GameObject Panel_Stats;
+    public GameObject Panel_Sockets;
+    public Button ToggleSocketsButton;
+    private bool isShowingSockets = false;
+
+    [System.Serializable]
+    public struct SocketIconMapping
+    {
+        public ComponentType Type;
+        public Sprite Icon;
+    }
+    public List<SocketIconMapping> SocketIcons;
+    public Sprite GenericSocketIcon;
+
+    public Transform SocketsGridRoot;
+    public GameObject SocketEntryPrefab;
 
     private void Awake()
     {
         Instance = this;
+        if (ToggleSocketsButton != null) ToggleSocketsButton.onClick.AddListener(ToggleChassisTab);
         HidePanel();
     }
 
-    public void HidePanel()
-    {
-        gameObject.SetActive(false);
-    }
+    public void HidePanel() { gameObject.SetActive(false); }
 
-    // 👇【核心修复 1】：参数从 ComponentDataSO 变成了 InstancedComponent 实体！
     public void ShowComponentDetail(InstancedComponent instance)
     {
         if (instance == null || instance.BaseData == null) return;
-
         gameObject.SetActive(true);
+
         var data = instance.BaseData;
+        var currentLvData = data.GetLevelData(instance.CurrentLevel);
+
+        int bgIndex = Mathf.Clamp(instance.CurrentLevel - 1, 0, LevelBackgrounds.Length - 1);
+        if (BackgroundImage != null && LevelBackgrounds[bgIndex] != null)
+            BackgroundImage.sprite = LevelBackgrounds[bgIndex];
+
+        if (ToggleSocketsButton != null) ToggleSocketsButton.gameObject.SetActive(false);
+        if (Panel_Sockets != null) Panel_Sockets.SetActive(false);
+        if (Panel_Stats != null) Panel_Stats.SetActive(true);
 
         IconImage.sprite = data.ComponentIcon;
         IconImage.SetNativeSize();
-        // 👇【体验升级】：在详情页标题也加上当前的星级！
-        NameText.text = $"<color=#00FFFF>Lv.{instance.CurrentLevel}</color> {data.ComponentName}";
-        DescriptionText.text = data.Description;
+        NameText.text = data.ComponentName;
+        LevelText.text = $"Lv.{instance.CurrentLevel}";
 
+        int scrapVal = currentLvData != null ? currentLvData.ScrapValue : 5;
+        DescriptionText.text = $"{data.Description}\n\n<color=#888888>[回收估值] : {scrapVal} 废料</color>";
 
+        if (TacticalRoleText != null) TacticalRoleText.text = data.TacticalRoleDesc;
+        if (SpecialMechanicText != null) SpecialMechanicText.text = currentLvData != null ? currentLvData.SpecialMechanicDesc : "无特殊机制";
 
-        SocketsGroup.SetActive(false);
-
-        // 👇【核心修复 2】：精准读取实体当前的真实星级数据！
-        var currentLvData = data.GetLevelData(instance.CurrentLevel);
-        if (currentLvData != null)
-        {
-            DescriptionText.text += $"\n\n<color=#888888>[拆解估值] : {currentLvData.ScrapValue} 废料</color>";
-        }
-        SpecialMechanicText.text = currentLvData != null ? currentLvData.SpecialMechanicDesc : "无特殊机制";
-
-        string stats = "";
-        if (currentLvData != null)
-        {
-            foreach (var stat in currentLvData.Stats)
-            {
-                stats += $"[{TranslateStat(stat.StatID)}] : +{stat.Value}\n";
-            }
-        }
-        StatsText.text = string.IsNullOrEmpty(stats) ? "无基础属性加成" : stats;
-
-        ClearTags();
-        GenerateTag("组件", new Color(0.3f, 0.3f, 0.3f));
-        GenerateTag(TranslateComponentType(data.Type), new Color(0.2f, 0.5f, 0.8f));
-        foreach (var tag in data.BaseSubTags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag));
+        // 呼叫智能渲染管线！
+        RenderIntelligentStatsGrid(currentLvData != null ? currentLvData.Stats : new List<StatEntry>());
     }
 
-    // 底盘没有等级，依然传图纸即可
     public void ShowChassisDetail(ChassisDataSO data)
     {
         if (data == null) return;
         gameObject.SetActive(true);
 
+        // 👇【核心修复 2】：读取该底盘专属的背景图！
+        if (BackgroundImage != null && data.DetailBackgroundSprite != null)
+            BackgroundImage.sprite = data.DetailBackgroundSprite;
+
+        isShowingSockets = false;
+        if (ToggleSocketsButton != null) ToggleSocketsButton.gameObject.SetActive(true);
+        if (Panel_Stats != null) Panel_Stats.SetActive(true);
+        if (Panel_Sockets != null) Panel_Sockets.SetActive(false);
+
         IconImage.sprite = data.ChassisSprite;
         IconImage.SetNativeSize();
         NameText.text = data.ChassisName;
-        DescriptionText.text = data.Description;
+        LevelText.text = "";
 
-        DescriptionText.text += $"\n\n<color=#888888>[拆解估值] : {data.ScrapValue} 废料</color>";
+        DescriptionText.text = $"{data.Description}\n\n<color=#888888>[回收估值] : {data.ScrapValue} 废料</color>";
 
-        SocketsGroup.SetActive(true);
-        SpecialMechanicText.text = data.SpecialMechanicDesc;
+        if (TacticalRoleText != null) TacticalRoleText.text = "载具底盘";
+        if (SpecialMechanicText != null) SpecialMechanicText.text = data.SpecialMechanicDesc;
 
-        string stats = "";
-        foreach (var stat in data.BaseStats) stats += $"[{TranslateStat(stat.StatID)}] : {stat.Value}\n";
-        StatsText.text = string.IsNullOrEmpty(stats) ? "无基础属性加成" : stats;
-
-        SocketsText.text = GenerateSocketsReport(data.Sockets);
-
-        ClearTags();
-        GenerateTag("底盘", new Color(0.8f, 0.6f, 0.1f));
-        foreach (var tag in data.SubTags) GenerateTag(TranslateFactionTag(tag), GetFactionColor(tag));
+        // 呼叫智能渲染管线！
+        RenderIntelligentStatsGrid(data.BaseStats);
+        RenderSocketsGrid(data.Sockets);
     }
 
-    private string GenerateSocketsReport(List<SlotDefinition> sockets)
+    // ==========================================
+    // 🧠 核心修复 3：智能属性合并与剔除管线
+    // ==========================================
+    private void RenderIntelligentStatsGrid(List<StatEntry> stats)
     {
-        Dictionary<string, int> socketCounts = new Dictionary<string, int>();
+        if (StatsGridRoot == null || StatEntryPrefab == null) return;
+
+        foreach (Transform child in StatsGridRoot) Destroy(child.gameObject);
+
+        if (stats == null || stats.Count == 0) return;
+
+        // 1. 提取出所有需要合并的成对数据，并将其从常规列表中移除
+        float minDmg = 0, maxDmg = 0, minRng = 0, maxRng = 0;
+        bool hasDmg = false, hasRng = false;
+
+        var normalStats = new List<StatEntry>();
+
+        foreach (var stat in stats)
+        {
+            if (stat.Value == 0) continue; // 绝对过滤掉 0 值的无效属性！
+
+            if (stat.StatID == StatType.MinDamage) { minDmg = stat.Value; hasDmg = true; }
+            else if (stat.StatID == StatType.MaxDamage) { maxDmg = stat.Value; hasDmg = true; }
+            else if (stat.StatID == StatType.MinRange) { minRng = stat.Value; hasRng = true; }
+            else if (stat.StatID == StatType.MaxRange) { maxRng = stat.Value; hasRng = true; }
+            else
+            {
+                normalStats.Add(stat); // 其他属性原样保留
+            }
+        }
+
+        // 2. 渲染合并后的【伤害区间】
+        if (hasDmg)
+        {
+            string dmgText = (minDmg == maxDmg) ? $"{maxDmg}" : $"{minDmg} ~ {maxDmg}";
+            CreateStatEntry(StatType.MaxDamage, dmgText); // 用 MaxDamage 的图标代表“攻击力”
+        }
+
+        // 3. 渲染合并后的【射程区间】
+        if (hasRng)
+        {
+            string rngText = (minRng == 0) ? $"{maxRng}" : $"{minRng} ~ {maxRng}";
+            CreateStatEntry(StatType.MaxRange, rngText); // 用 MaxRange 的图标代表“射程”
+        }
+
+        // 4. 渲染剩余的常规单项属性 (如耗电、攻速、暴击)
+        foreach (var stat in normalStats)
+        {
+            string valText = "";
+            if (stat.StatID == StatType.CriticalChance) valText = $"+{stat.Value:P0}"; // 暴击转百分比
+            else if (stat.StatID == StatType.AttackSpeed) valText = $"{stat.Value}";  // 攻速不加 + 号
+            else valText = $"+{stat.Value}"; // 护甲、血量加 + 号
+
+            CreateStatEntry(stat.StatID, valText);
+        }
+    }
+
+    // 生成单个条目的辅助方法
+    private void CreateStatEntry(StatType type, string textValue)
+    {
+        GameObject entryObj = Instantiate(StatEntryPrefab, StatsGridRoot);
+        Image iconImg = entryObj.transform.Find("Icon").GetComponent<Image>();
+        TMP_Text valTxt = entryObj.transform.Find("Value").GetComponent<TMP_Text>();
+
+        // 映射图标
+        var mapping = StatIcons.FirstOrDefault(x => x.Type == type);
+        if (mapping.Icon != null)
+        {
+            iconImg.sprite = mapping.Icon;
+            iconImg.gameObject.SetActive(true);
+        }
+        else
+        {
+            iconImg.gameObject.SetActive(false);
+        }
+
+        valTxt.text = textValue;
+    }
+
+    // ==========================================
+    // 渲染工具：底盘专属接口列表
+    // ==========================================
+    private void RenderSocketsGrid(List<SlotDefinition> sockets)
+    {
+        if (SocketsGridRoot == null || SocketEntryPrefab == null) return;
+
+        foreach (Transform child in SocketsGridRoot) Destroy(child.gameObject);
+
+        // 如果底盘图纸里完全没配插槽，安全退出
+        if (sockets == null || sockets.Count == 0) return;
 
         foreach (var slot in sockets)
         {
-            string labelName = "";
-            int allowedCount = slot.AllowedTypes.Count;
+            if (slot == null) continue;
 
-            if (allowedCount == 0) continue;
+            GameObject entryObj = Instantiate(SocketEntryPrefab, SocketsGridRoot);
 
-            if (allowedCount >= 4) labelName = "万能接口";
-            else if (allowedCount == 1) labelName = TranslateComponentType(slot.AllowedTypes[0]);
-            else
+            // 1. 绝对安全的寻找 Icon 节点
+            Transform iconTrans = entryObj.transform.Find("Icon");
+            if (iconTrans == null)
             {
-                var names = slot.AllowedTypes.Select(t => TranslateComponentType(t));
-                labelName = string.Join("/", names) + " (通用)";
+                Debug.LogError("【UI 报错】SocketEntryPrefab 预制体下面找不到叫 'Icon' 的子节点！请检查预制体名字。");
+                continue;
+            }
+            Image iconImg = iconTrans.GetComponent<Image>();
+
+            // 2. 绝对安全的寻找 Name 节点
+            Transform nameTrans = entryObj.transform.Find("Name");
+            if (nameTrans == null)
+            {
+                Debug.LogError("【UI 报错】SocketEntryPrefab 预制体下面找不到叫 'Name' 的子节点！(注意首字母大写)");
+                continue;
+            }
+            TMP_Text nameTxt = nameTrans.GetComponent<TMP_Text>();
+
+            // 3. 绝对安全的读取图纸里的 AllowedTypes
+            if (slot.AllowedTypes == null)
+            {
+                Debug.LogWarning($"【数据警告】底盘插槽 [{slot.SlotName}] 没有配置任何 AllowedTypes！跳过显示。");
+                continue;
             }
 
-            if (socketCounts.ContainsKey(labelName)) socketCounts[labelName]++;
-            else socketCounts[labelName] = 1;
+            int allowedCount = slot.AllowedTypes.Count;
+            if (allowedCount == 0) continue;
+
+            // 4. 正常渲染图标与文本
+            if (allowedCount == 1)
+            {
+                // 如果在 Inspector 里没配 SocketIcons，或者没找到对应的，做个兜底
+                var mapping = SocketIcons != null ? SocketIcons.FirstOrDefault(x => x.Type == slot.AllowedTypes[0]) : default;
+
+                iconImg.sprite = mapping.Icon != null ? mapping.Icon : GenericSocketIcon;
+                nameTxt.text = TranslateComponentType(slot.AllowedTypes[0]);
+            }
+            else
+            {
+                iconImg.sprite = GenericSocketIcon;
+                nameTxt.text = "通用接口";
+            }
         }
-
-        string report = "";
-        foreach (var kvp in socketCounts) report += $"{kvp.Value}x {kvp.Key}\n";
-        return string.IsNullOrEmpty(report) ? "无可用接口" : report;
     }
 
-    private void ClearTags()
+    private void ToggleChassisTab()
     {
-        foreach (Transform child in TagsContainer) Destroy(child.gameObject);
-    }
+        isShowingSockets = !isShowingSockets;
+        Panel_Stats.SetActive(!isShowingSockets);
+        Panel_Sockets.SetActive(isShowingSockets);
 
-    private void GenerateTag(string text, Color bgColor)
-    {
-        if (string.IsNullOrEmpty(text) || text == "无") return;
-        GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
-        tagObj.GetComponent<Image>().color = bgColor;
-        tagObj.GetComponentInChildren<TMP_Text>().text = text;
+        TMP_Text btnTxt = ToggleSocketsButton.GetComponentInChildren<TMP_Text>();
+        if (btnTxt != null) btnTxt.text = isShowingSockets ? "查看机体属性" : "查看接口规格";
     }
 
     private string TranslateComponentType(ComponentType type)
@@ -151,58 +281,10 @@ public class ItemDetailPanelUI : MonoBehaviour
         {
             case ComponentType.Core: return "核心";
             case ComponentType.Weapon: return "武器";
-            case ComponentType.Support: return "辅助插件";
-            case ComponentType.Factory: return "工厂模块";
-            case ComponentType.Movement: return "移动装置";
-            default: return type.ToString();
-        }
-    }
-
-    private string TranslateFactionTag(SubTag tag)
-    {
-        switch (tag)
-        {
-            case SubTag.Mutation: return "突变";
-            case SubTag.Parasite: return "寄生";
-            case SubTag.Acid: return "强酸";
-            case SubTag.Ballistic: return "实弹";
-            case SubTag.Energy: return "能量";
-            case SubTag.Shield: return "护盾";
-            case SubTag.Curse: return "诅咒";
-            case SubTag.Economy: return "经济";
-            case SubTag.Heavy: return "重型";
-            default: return tag.ToString();
-        }
-    }
-
-    private Color GetFactionColor(SubTag tag)
-    {
-        switch (tag)
-        {
-            case SubTag.Mutation:
-            case SubTag.Parasite:
-            case SubTag.Acid: return new Color(0.6f, 0.1f, 0.1f);
-            case SubTag.Ballistic:
-            case SubTag.Energy:
-            case SubTag.Shield: return new Color(0.1f, 0.6f, 0.8f);
-            case SubTag.Curse:
-            case SubTag.Summon: return new Color(0.5f, 0.1f, 0.8f);
-            default: return Color.gray;
-        }
-    }
-
-    private string TranslateStat(StatType stat)
-    {
-        switch (stat)
-        {
-            case StatType.AddedHP: return "耐久";
-            case StatType.AddedAP: return "装甲";
-            case StatType.PowerCost: return "耗电";
-            case StatType.MaxDamage: return "最高伤害";
-            case StatType.MinDamage: return "基础伤害";
-            case StatType.AttackSpeed: return "攻击速度";
-            case StatType.MaxRange: return "最大射程";
-            default: return stat.ToString();
+            case ComponentType.Support: return "辅助";
+            case ComponentType.Factory: return "工厂";
+            case ComponentType.Movement: return "移动";
+            default: return "未知";
         }
     }
 }
