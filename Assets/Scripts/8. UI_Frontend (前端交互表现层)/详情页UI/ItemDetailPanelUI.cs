@@ -1,6 +1,5 @@
 ﻿// --- START OF FILE ItemDetailPanelUI.cs ---
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -9,38 +8,75 @@ public class ItemDetailPanelUI : MonoBehaviour
 {
     public static ItemDetailPanelUI Instance;
 
-    [Header("=== 背景与层级 ===")]
-    public Image BackgroundImage;
-    public Sprite[] LevelBackgrounds = new Sprite[4];
-    // 注意：删除了写死的 ChassisBackground，因为现在由图纸自己决定了！
+    // ==========================================
+    // 1. 核心控制器：面板显隐切换
+    // ==========================================
+    [Header("=== 面板开关控制 (Panel Toggles) ===")]
+    public GameObject Panel_Weapon;
+    public GameObject Panel_Core;
+    public GameObject Panel_Movement;
+    public GameObject Panel_Support;
+    public GameObject Panel_Chassis;
 
-    [Header("=== 左侧：基础图文区 ===")]
-    public Image IconImage;
-    public TMP_Text NameText;
-    public TMP_Text LevelText;
-    public TMP_Text DescriptionText;
+    // ==========================================
+    // 2. 动态背景库 (根据组件类型和 1~4 级切换)
+    // ==========================================
+    [Header("=== 动态背景库 (Backgrounds) ===")]
+    [Tooltip("数组长度必须为 4，分别对应 1、2、3、4 级的武器背景")]
+    public Sprite[] Bg_Weapon = new Sprite[4];
+    public Sprite[] Bg_Core = new Sprite[4];
+    public Sprite[] Bg_Movement = new Sprite[4];
+    public Sprite[] Bg_Support = new Sprite[4];
 
+    // ==========================================
+    // 3. 通用图文信息 (所有面板都有的公共部分)
+    // ==========================================
     [System.Serializable]
-    public struct StatIconMapping
+    public struct CommonUIElements
     {
-        public StatType Type;
-        public Sprite Icon;
+        public Image BackgroundImage;
+        public Image IconImage;
+        public TMP_Text NameText;
+        public TMP_Text LevelText;
+        public TMP_Text DescriptionText;
+        public TMP_Text TacticalRoleText;    // 战术定位
+        public TMP_Text SpecialMechanicText; // 机制描述
+        public TMP_Text ScrapValueText;      // 回收估值
     }
 
-    [Header("=== 右侧：属性池配置 ===")]
-    public List<StatIconMapping> StatIcons;
-    public Transform StatsGridRoot;
-    public GameObject StatEntryPrefab;
+    [Header("=== 武器面板专属绑定 ===")]
+    public CommonUIElements Weapon_Common;
+    public TMP_Text Weapon_DamageText;
+    public TMP_Text Weapon_AttackSpeedText;
+    public TMP_Text Weapon_RangeText;
+    public TMP_Text Weapon_CritText;
+    public TMP_Text Weapon_PowerCostText;
 
-    [Header("=== 右侧：文本补充区 ===")]
-    public TMP_Text TacticalRoleText;
-    public TMP_Text SpecialMechanicText;
+    [Header("=== 核心面板专属绑定 ===")]
+    public CommonUIElements Core_Common;
+    public TMP_Text Core_HPText;
+    public TMP_Text Core_APText;
+    public TMP_Text Core_PowerCostText;
 
-    [Header("=== 底盘专属：分页控制 ===")]
-    public GameObject Panel_Stats;
-    public GameObject Panel_Sockets;
-    public Button ToggleSocketsButton;
-    private bool isShowingSockets = false;
+    [Header("=== 移动面板专属绑定 ===")]
+    public CommonUIElements Movement_Common;
+    public TMP_Text Movement_SpeedText;
+    public TMP_Text Movement_HPText;
+    public TMP_Text Movement_PowerCostText;
+    public TMP_Text Movement_MassText;
+
+    [Header("=== 辅助面板专属绑定 ===")]
+    public CommonUIElements Support_Common;
+    public TMP_Text Support_PowerCostText;
+
+    [Header("=== 底盘面板专属绑定 ===")]
+    public CommonUIElements Chassis_Common;
+    public TMP_Text Chassis_HPText;
+    public TMP_Text Chassis_APText;
+    public TMP_Text Chassis_PowerCostText;
+
+    [Tooltip("如果你画了固定的接口图标槽位，请依次把它们拖进来 (最多支持的插槽数)")]
+    public Image[] Chassis_SocketIcons;
 
     [System.Serializable]
     public struct SocketIconMapping
@@ -48,243 +84,299 @@ public class ItemDetailPanelUI : MonoBehaviour
         public ComponentType Type;
         public Sprite Icon;
     }
-    public List<SocketIconMapping> SocketIcons;
+    [Header("=== 字典：底盘接口小图标 ===")]
+    public List<SocketIconMapping> SocketIconDict;
     public Sprite GenericSocketIcon;
-
-    public Transform SocketsGridRoot;
-    public GameObject SocketEntryPrefab;
+    public Sprite EmptySocketIcon;
 
     private void Awake()
     {
         Instance = this;
-        if (ToggleSocketsButton != null) ToggleSocketsButton.onClick.AddListener(ToggleChassisTab);
         HidePanel();
     }
 
-    public void HidePanel() { gameObject.SetActive(false); }
+    public void HidePanel()
+    {
+        gameObject.SetActive(false);
+        if (Panel_Weapon != null) Panel_Weapon.SetActive(false);
+        if (Panel_Core != null) Panel_Core.SetActive(false);
+        if (Panel_Movement != null) Panel_Movement.SetActive(false);
+        if (Panel_Support != null) Panel_Support.SetActive(false);
+        if (Panel_Chassis != null) Panel_Chassis.SetActive(false);
+    }
 
+    // ==========================================
+    // 5. 顶部标签系统
+    // ==========================================
+    [Header("=== 顶部标签流式布局 ===")]
+    public Transform TagsContainer;
+    public GameObject TagPrefab;
+
+    public Color TagColor_Tech = new Color(0.2f, 0.5f, 0.8f, 1f);
+    public Color TagColor_Flesh = new Color(0.8f, 0.2f, 0.2f, 1f);
+    public Color TagColor_Magic = new Color(0.6f, 0.2f, 0.8f, 1f);
+    public Color TagColor_Default = new Color(0.3f, 0.3f, 0.3f, 1f);
+
+    // ==========================================
+    // A. 路由中心：组件详情分发
+    // ==========================================
     public void ShowComponentDetail(InstancedComponent instance)
     {
         if (instance == null || instance.BaseData == null) return;
-        gameObject.SetActive(true);
 
         var data = instance.BaseData;
-        var currentLvData = data.GetLevelData(instance.CurrentLevel);
 
-        int bgIndex = Mathf.Clamp(instance.CurrentLevel - 1, 0, LevelBackgrounds.Length - 1);
-        if (BackgroundImage != null && LevelBackgrounds[bgIndex] != null)
-            BackgroundImage.sprite = LevelBackgrounds[bgIndex];
+        HidePanel();
+        gameObject.SetActive(true);
 
-        if (ToggleSocketsButton != null) ToggleSocketsButton.gameObject.SetActive(false);
-        if (Panel_Sockets != null) Panel_Sockets.SetActive(false);
-        if (Panel_Stats != null) Panel_Stats.SetActive(true);
+        ComponentType type = data.Type;
 
-        IconImage.sprite = data.ComponentIcon;
-        IconImage.SetNativeSize();
-        NameText.text = data.ComponentName;
-        LevelText.text = $"Lv.{instance.CurrentLevel}";
+        switch (type)
+        {
+            case ComponentType.Weapon:
+                Panel_Weapon.SetActive(true);
+                FillWeaponData(instance);
+                break;
+            case ComponentType.Core:
+                Panel_Core.SetActive(true);
+                FillCoreData(instance);
+                break;
+            case ComponentType.Movement:
+                Panel_Movement.SetActive(true);
+                FillMovementData(instance);
+                break;
+            case ComponentType.Support:
+            case ComponentType.Factory: // 👇 兼容底层枚举。如果枚举里还有Factory，直接按辅助面板显示！
+                Panel_Support.SetActive(true);
+                FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText);
+                break;
+        }
 
-        int scrapVal = currentLvData != null ? currentLvData.ScrapValue : 5;
-        DescriptionText.text = $"{data.Description}\n\n<color=#888888>[回收估值] : {scrapVal} 废料</color>";
-
-        if (TacticalRoleText != null) TacticalRoleText.text = data.TacticalRoleDesc;
-        if (SpecialMechanicText != null) SpecialMechanicText.text = currentLvData != null ? currentLvData.SpecialMechanicDesc : "无特殊机制";
-
-        // 呼叫智能渲染管线！
-        RenderIntelligentStatsGrid(currentLvData != null ? currentLvData.Stats : new List<StatEntry>());
+        RenderTags(data.MacroCategory, data.Type, data.BaseSubTags, instance.CurrentLevel);
     }
 
+    // ==========================================
+    // B. 路由中心：底盘详情专属
+    // ==========================================
     public void ShowChassisDetail(ChassisDataSO data)
     {
         if (data == null) return;
+        HidePanel();
         gameObject.SetActive(true);
 
-        // 👇【核心修复 2】：读取该底盘专属的背景图！
-        if (BackgroundImage != null && data.DetailBackgroundSprite != null)
-            BackgroundImage.sprite = data.DetailBackgroundSprite;
+        if (Panel_Chassis != null) Panel_Chassis.SetActive(true);
 
-        isShowingSockets = false;
-        if (ToggleSocketsButton != null) ToggleSocketsButton.gameObject.SetActive(true);
-        if (Panel_Stats != null) Panel_Stats.SetActive(true);
-        if (Panel_Sockets != null) Panel_Sockets.SetActive(false);
+        FillCommonData(Chassis_Common, data.ChassisName, "", data.ChassisSprite, data.Description, data.ScrapValue, "载具底盘", data.SpecialMechanicDesc);
 
-        IconImage.sprite = data.ChassisSprite;
-        IconImage.SetNativeSize();
-        NameText.text = data.ChassisName;
-        LevelText.text = "";
+        if (Chassis_Common.BackgroundImage != null && data.DetailBackgroundSprite != null)
+            Chassis_Common.BackgroundImage.sprite = data.DetailBackgroundSprite;
 
-        DescriptionText.text = $"{data.Description}\n\n<color=#888888>[回收估值] : {data.ScrapValue} 废料</color>";
+        if (Chassis_HPText != null) Chassis_HPText.text = $"+{GetStat(data.BaseStats, StatType.AddedHP)}";
+        if (Chassis_APText != null) Chassis_APText.text = $"+{GetStat(data.BaseStats, StatType.AddedAP)}";
+        if (Chassis_PowerCostText != null) Chassis_PowerCostText.text = $"{GetStat(data.BaseStats, StatType.PowerCost)}";
 
-        if (TacticalRoleText != null) TacticalRoleText.text = "载具底盘";
-        if (SpecialMechanicText != null) SpecialMechanicText.text = data.SpecialMechanicDesc;
+        if (Chassis_SocketIcons != null)
+        {
+            for (int i = 0; i < Chassis_SocketIcons.Length; i++)
+            {
+                if (i < data.Sockets.Count)
+                {
+                    var slot = data.Sockets[i];
+                    int allowedCount = slot.AllowedTypes.Count;
 
-        // 呼叫智能渲染管线！
-        RenderIntelligentStatsGrid(data.BaseStats);
-        RenderSocketsGrid(data.Sockets);
+                    if (allowedCount == 1)
+                    {
+                        var mapping = SocketIconDict.Find(x => x.Type == slot.AllowedTypes[0]);
+                        Chassis_SocketIcons[i].sprite = mapping.Icon != null ? mapping.Icon : GenericSocketIcon;
+                    }
+                    else if (allowedCount > 1)
+                    {
+                        Chassis_SocketIcons[i].sprite = GenericSocketIcon;
+                    }
+                    else
+                    {
+                        Chassis_SocketIcons[i].sprite = EmptySocketIcon;
+                    }
+                    Chassis_SocketIcons[i].gameObject.SetActive(true);
+                }
+                else
+                {
+                    Chassis_SocketIcons[i].sprite = EmptySocketIcon;
+                }
+            }
+        }
+        RenderTags(data.MacroCategory, null, data.SubTags, 0);
     }
 
     // ==========================================
-    // 🧠 核心修复 3：智能属性合并与剔除管线
+    // 数据灌入逻辑
     // ==========================================
-    private void RenderIntelligentStatsGrid(List<StatEntry> stats)
+
+    private void FillWeaponData(InstancedComponent instance)
     {
-        if (StatsGridRoot == null || StatEntryPrefab == null) return;
+        var data = instance.BaseData;
+        var lvData = data.GetLevelData(instance.CurrentLevel);
 
-        foreach (Transform child in StatsGridRoot) Destroy(child.gameObject);
+        FillCommonData(Weapon_Common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(Weapon_Common.BackgroundImage, Bg_Weapon, instance.CurrentLevel);
 
-        if (stats == null || stats.Count == 0) return;
+        float minDmg = GetStat(lvData.Stats, StatType.MinDamage);
+        float maxDmg = GetStat(lvData.Stats, StatType.MaxDamage);
+        float minRng = GetStat(lvData.Stats, StatType.MinRange);
+        float maxRng = GetStat(lvData.Stats, StatType.MaxRange);
+        float atkSpeed = GetStat(lvData.Stats, StatType.AttackSpeed);
+        float crit = GetStat(lvData.Stats, StatType.CriticalChance);
+        float pwr = GetStat(lvData.Stats, StatType.PowerCost);
 
-        // 1. 提取出所有需要合并的成对数据，并将其从常规列表中移除
-        float minDmg = 0, maxDmg = 0, minRng = 0, maxRng = 0;
-        bool hasDmg = false, hasRng = false;
-
-        var normalStats = new List<StatEntry>();
-
-        foreach (var stat in stats)
-        {
-            if (stat.Value == 0) continue; // 绝对过滤掉 0 值的无效属性！
-
-            if (stat.StatID == StatType.MinDamage) { minDmg = stat.Value; hasDmg = true; }
-            else if (stat.StatID == StatType.MaxDamage) { maxDmg = stat.Value; hasDmg = true; }
-            else if (stat.StatID == StatType.MinRange) { minRng = stat.Value; hasRng = true; }
-            else if (stat.StatID == StatType.MaxRange) { maxRng = stat.Value; hasRng = true; }
-            else
-            {
-                normalStats.Add(stat); // 其他属性原样保留
-            }
-        }
-
-        // 2. 渲染合并后的【伤害区间】
-        if (hasDmg)
-        {
-            string dmgText = (minDmg == maxDmg) ? $"{maxDmg}" : $"{minDmg} ~ {maxDmg}";
-            CreateStatEntry(StatType.MaxDamage, dmgText); // 用 MaxDamage 的图标代表“攻击力”
-        }
-
-        // 3. 渲染合并后的【射程区间】
-        if (hasRng)
-        {
-            string rngText = (minRng == 0) ? $"{maxRng}" : $"{minRng} ~ {maxRng}";
-            CreateStatEntry(StatType.MaxRange, rngText); // 用 MaxRange 的图标代表“射程”
-        }
-
-        // 4. 渲染剩余的常规单项属性 (如耗电、攻速、暴击)
-        foreach (var stat in normalStats)
-        {
-            string valText = "";
-            if (stat.StatID == StatType.CriticalChance) valText = $"+{stat.Value:P0}"; // 暴击转百分比
-            else if (stat.StatID == StatType.AttackSpeed) valText = $"{stat.Value}";  // 攻速不加 + 号
-            else valText = $"+{stat.Value}"; // 护甲、血量加 + 号
-
-            CreateStatEntry(stat.StatID, valText);
-        }
+        if (Weapon_DamageText != null) Weapon_DamageText.text = (minDmg == maxDmg) ? $"{maxDmg}" : $"{minDmg} ~ {maxDmg}";
+        if (Weapon_RangeText != null) Weapon_RangeText.text = (minRng == 0) ? $"{maxRng}" : $"{minRng} ~ {maxRng}";
+        if (Weapon_AttackSpeedText != null) Weapon_AttackSpeedText.text = $"{atkSpeed}";
+        if (Weapon_CritText != null) Weapon_CritText.text = $"+{crit:P0}";
+        if (Weapon_PowerCostText != null) Weapon_PowerCostText.text = $"{pwr}";
     }
 
-    // 生成单个条目的辅助方法
-    private void CreateStatEntry(StatType type, string textValue)
+    private void FillCoreData(InstancedComponent instance)
     {
-        GameObject entryObj = Instantiate(StatEntryPrefab, StatsGridRoot);
-        Image iconImg = entryObj.transform.Find("Icon").GetComponent<Image>();
-        TMP_Text valTxt = entryObj.transform.Find("Value").GetComponent<TMP_Text>();
+        var data = instance.BaseData;
+        var lvData = data.GetLevelData(instance.CurrentLevel);
 
-        // 映射图标
-        var mapping = StatIcons.FirstOrDefault(x => x.Type == type);
-        if (mapping.Icon != null)
-        {
-            iconImg.sprite = mapping.Icon;
-            iconImg.gameObject.SetActive(true);
-        }
-        else
-        {
-            iconImg.gameObject.SetActive(false);
-        }
+        FillCommonData(Core_Common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentLevel);
 
-        valTxt.text = textValue;
+        if (Core_HPText != null) Core_HPText.text = $"+{GetStat(lvData.Stats, StatType.AddedHP)}";
+        if (Core_APText != null) Core_APText.text = $"+{GetStat(lvData.Stats, StatType.AddedAP)}";
+        if (Core_PowerCostText != null) Core_PowerCostText.text = $"{GetStat(lvData.Stats, StatType.PowerCost)}";
+    }
+
+    private void FillMovementData(InstancedComponent instance)
+    {
+        var data = instance.BaseData;
+        var lvData = data.GetLevelData(instance.CurrentLevel);
+
+        FillCommonData(Movement_Common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentLevel);
+
+        if (Movement_SpeedText != null) Movement_SpeedText.text = $"+{GetStat(lvData.Stats, StatType.EnginePower)}";
+        if (Movement_HPText != null) Movement_HPText.text = $"+{GetStat(lvData.Stats, StatType.AddedHP)}";
+        if (Movement_MassText != null) Movement_MassText.text = $"+{GetStat(lvData.Stats, StatType.AddedMass)}";
+        if (Movement_PowerCostText != null) Movement_PowerCostText.text = $"{GetStat(lvData.Stats, StatType.PowerCost)}";
+    }
+
+    private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
+    {
+        var data = instance.BaseData;
+        var lvData = data.GetLevelData(instance.CurrentLevel);
+
+        FillCommonData(common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentLevel);
+
+        if (powerText != null) powerText.text = $"{GetStat(lvData.Stats, StatType.PowerCost)}";
     }
 
     // ==========================================
-    // 渲染工具：底盘专属接口列表
+    // 辅助工具方法
     // ==========================================
-    private void RenderSocketsGrid(List<SlotDefinition> sockets)
+
+    private void FillCommonData(CommonUIElements ui, string name, string lv, Sprite icon, string desc, int scrap, string role, string mechanic)
     {
-        if (SocketsGridRoot == null || SocketEntryPrefab == null) return;
+        if (ui.NameText != null) ui.NameText.text = name;
+        if (ui.LevelText != null) ui.LevelText.text = string.IsNullOrEmpty(lv) ? "" : $"Lv.{lv}";
+        if (ui.IconImage != null) { ui.IconImage.sprite = icon; ui.IconImage.SetNativeSize(); }
+        if (ui.DescriptionText != null) ui.DescriptionText.text = desc;
+        if (ui.ScrapValueText != null) ui.ScrapValueText.text = $"{scrap}";
+        if (ui.TacticalRoleText != null) ui.TacticalRoleText.text = role;
+        if (ui.SpecialMechanicText != null) ui.SpecialMechanicText.text = mechanic;
+    }
 
-        foreach (Transform child in SocketsGridRoot) Destroy(child.gameObject);
+    private void SetLevelBackground(Image img, Sprite[] bgArray, int level)
+    {
+        if (img == null || bgArray == null || bgArray.Length < 4) return;
+        int bgIndex = Mathf.Clamp(level - 1, 0, 3);
+        img.sprite = bgArray[bgIndex];
+    }
 
-        // 如果底盘图纸里完全没配插槽，安全退出
-        if (sockets == null || sockets.Count == 0) return;
+    private float GetStat(List<StatEntry> stats, StatType targetStat)
+    {
+        if (stats == null) return 0f;
+        var stat = stats.Find(s => s.StatID == targetStat);
+        return stat != null ? stat.Value : 0f;
+    }
 
-        foreach (var slot in sockets)
+    private void RenderTags(MacroCategory macro, ComponentType? compType, List<SubTag> subTags, int level)
+    {
+        if (TagsContainer == null || TagPrefab == null) return;
+
+        foreach (Transform child in TagsContainer) Destroy(child.gameObject);
+
+        string baseTag = compType.HasValue ? "机甲组件" : "载具底盘";
+        CreateTag(baseTag, TagColor_Default);
+
+        if (compType.HasValue)
         {
-            if (slot == null) continue;
+            CreateTag(TranslateComponentType(compType.Value), TagColor_Default);
+        }
 
-            GameObject entryObj = Instantiate(SocketEntryPrefab, SocketsGridRoot);
+        Color macroColor = TagColor_Default;
+        string macroName = "";
+        switch (macro)
+        {
+            case MacroCategory.Tech: macroName = "科技"; macroColor = TagColor_Tech; break;
+            case MacroCategory.Flesh: macroName = "血肉"; macroColor = TagColor_Flesh; break;
+            case MacroCategory.Magic: macroName = "魔法"; macroColor = TagColor_Magic; break;
+        }
+        CreateTag(macroName, macroColor);
 
-            // 1. 绝对安全的寻找 Icon 节点
-            Transform iconTrans = entryObj.transform.Find("Icon");
-            if (iconTrans == null)
+        if (subTags != null)
+        {
+            foreach (var tag in subTags)
             {
-                Debug.LogError("【UI 报错】SocketEntryPrefab 预制体下面找不到叫 'Icon' 的子节点！请检查预制体名字。");
-                continue;
-            }
-            Image iconImg = iconTrans.GetComponent<Image>();
-
-            // 2. 绝对安全的寻找 Name 节点
-            Transform nameTrans = entryObj.transform.Find("Name");
-            if (nameTrans == null)
-            {
-                Debug.LogError("【UI 报错】SocketEntryPrefab 预制体下面找不到叫 'Name' 的子节点！(注意首字母大写)");
-                continue;
-            }
-            TMP_Text nameTxt = nameTrans.GetComponent<TMP_Text>();
-
-            // 3. 绝对安全的读取图纸里的 AllowedTypes
-            if (slot.AllowedTypes == null)
-            {
-                Debug.LogWarning($"【数据警告】底盘插槽 [{slot.SlotName}] 没有配置任何 AllowedTypes！跳过显示。");
-                continue;
-            }
-
-            int allowedCount = slot.AllowedTypes.Count;
-            if (allowedCount == 0) continue;
-
-            // 4. 正常渲染图标与文本
-            if (allowedCount == 1)
-            {
-                // 如果在 Inspector 里没配 SocketIcons，或者没找到对应的，做个兜底
-                var mapping = SocketIcons != null ? SocketIcons.FirstOrDefault(x => x.Type == slot.AllowedTypes[0]) : default;
-
-                iconImg.sprite = mapping.Icon != null ? mapping.Icon : GenericSocketIcon;
-                nameTxt.text = TranslateComponentType(slot.AllowedTypes[0]);
-            }
-            else
-            {
-                iconImg.sprite = GenericSocketIcon;
-                nameTxt.text = "通用接口";
+                CreateTag(TranslateSubTag(tag), macroColor);
             }
         }
     }
 
-    private void ToggleChassisTab()
+    private void CreateTag(string text, Color bgColor)
     {
-        isShowingSockets = !isShowingSockets;
-        Panel_Stats.SetActive(!isShowingSockets);
-        Panel_Sockets.SetActive(isShowingSockets);
+        if (string.IsNullOrEmpty(text)) return;
 
-        TMP_Text btnTxt = ToggleSocketsButton.GetComponentInChildren<TMP_Text>();
-        if (btnTxt != null) btnTxt.text = isShowingSockets ? "查看机体属性" : "查看接口规格";
+        GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
+        Image bgImg = tagObj.GetComponent<Image>();
+        TMP_Text txt = tagObj.GetComponentInChildren<TMP_Text>();
+
+        if (bgImg != null) bgImg.color = bgColor;
+        if (txt != null) txt.text = text;
+    }
+
+    private string TranslateSubTag(SubTag tag)
+    {
+        switch (tag)
+        {
+            case SubTag.Ballistic: return "实弹";
+            case SubTag.Energy: return "能量";
+            case SubTag.Shield: return "护盾";
+            case SubTag.Drone: return "无人机";
+            case SubTag.Mutation: return "突变";
+            case SubTag.Parasite: return "寄生";
+            case SubTag.Acid: return "强酸";
+            case SubTag.Biomass: return "生物质";
+            case SubTag.Curse: return "诅咒";
+            case SubTag.Summon: return "召唤";
+            case SubTag.Economy: return "经济";
+            case SubTag.Heavy: return "重型";
+            default: return tag.ToString();
+        }
     }
 
     private string TranslateComponentType(ComponentType type)
     {
         switch (type)
         {
-            case ComponentType.Core: return "核心";
-            case ComponentType.Weapon: return "武器";
-            case ComponentType.Support: return "辅助";
-            case ComponentType.Factory: return "工厂";
-            case ComponentType.Movement: return "移动";
-            default: return "未知";
+            case ComponentType.Core: return "核心模块";
+            case ComponentType.Weapon: return "武器系统";
+            case ComponentType.Support: return "辅助插件";
+            case ComponentType.Movement: return "移动装置";
+            case ComponentType.Factory: return "辅助插件"; // 兼容旧枚举
+            default: return "未知组件";
         }
     }
 }
