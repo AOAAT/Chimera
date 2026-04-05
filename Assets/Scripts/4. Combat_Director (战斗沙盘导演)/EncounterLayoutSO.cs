@@ -9,7 +9,7 @@ public class EnemySpawnData
     public Vector2 LocalPosition; // 相对于战场中心的相对坐标
 }
 
-[CreateAssetMenu(fileName = "NewEncounterLayout", menuName = "Chimera Protocol/Combat/Encounter Layout (遭遇战布局)")]
+[CreateAssetMenu(fileName = "NewEncounterLayout", menuName = "Chimera Protocol/3. 宏观控制/战斗房间布局 (Encounter Layout)")]
 public class EncounterLayoutSO : ScriptableObject
 {
     [Header("=== 战场视觉参考 (沙盘 2.0 核心) ===")]

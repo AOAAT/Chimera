@@ -19,9 +19,10 @@ MonoBehaviour:
   DurationType: 1
   BaseDuration: 5
   StackType: 2
-  MaxStacks: 2
+  MaxStacks: 8
   StatModifiers: []
   OnApplyActions: []
+  TickInterval: 1
   OnTickActions: []
   OnRemoveActions: []
   OnMaxStacksActions:

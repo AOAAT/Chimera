@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "BoostDamageByPower", menuName = "Chimera Protocol/ECA Actions/Modifier: Boost Damage By Power (电能伤害增幅)")]
+[CreateAssetMenu(fileName = "BoostDamageByPower", menuName = "Chimera Protocol/2. ECA 机制积木/修饰 - 电能转化伤害 (Boost by Power)")]
 public class Action_BoostDamageByPower : ECAAction
 {
     [Tooltip("1点盈余电能转化为多少点额外伤害")]

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEnemySkill", menuName = "Chimera Protocol/Enemy Skill")]
+[CreateAssetMenu(fileName = "NewEnemySkill", menuName = "Chimera Protocol/1. 核心图纸库/敌人技能 (Enemy Skill)")]
 public class EnemySkillSO : ScriptableObject
 {
     [Header("=== 技能基础信息 ===")]

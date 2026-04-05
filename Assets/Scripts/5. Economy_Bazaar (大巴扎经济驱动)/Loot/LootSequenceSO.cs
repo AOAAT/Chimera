@@ -36,7 +36,7 @@ public class LootTaskConfig
     public List<CustomDropEntry> CustomPool = new List<CustomDropEntry>();
 }
 
-[CreateAssetMenu(fileName = "NewLootSequence", menuName = "Chimera Protocol/Economy/Loot Sequence Config")]
+[CreateAssetMenu(fileName = "NewLootSequence", menuName = "Chimera Protocol/3. 宏观控制/战利品掉落池 (Loot Sequence)")]
 public class LootSequenceSO : ScriptableObject
 {
     public List<LootTaskConfig> Tasks = new List<LootTaskConfig>();

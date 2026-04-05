@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ApplyImpulse", menuName = "Chimera Protocol/ECA Actions/Apply Impulse (动能击退)")]
+[CreateAssetMenu(fileName = "ApplyImpulse", menuName = "Chimera Protocol/2. ECA 机制积木/物理 - 动能击退 (Apply Impulse)")]
 public class Action_ApplyImpulse : ECAAction
 {
     [Header("=== 物理打击参数 ===")]

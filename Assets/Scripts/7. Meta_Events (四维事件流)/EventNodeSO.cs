@@ -23,7 +23,7 @@ public class EventOption
     public EventNodeSO NextEventNode;
 }
 
-[CreateAssetMenu(fileName = "NewEvent", menuName = "Chimera Protocol/Event Node (文字事件)")]
+[CreateAssetMenu(fileName = "NewEvent", menuName = "Chimera Protocol/3. 宏观控制/文字事件 (Event Node)")]
 public class EventNodeSO : ScriptableObject
 {
     public string EventTitle = "未知的无线电信号";

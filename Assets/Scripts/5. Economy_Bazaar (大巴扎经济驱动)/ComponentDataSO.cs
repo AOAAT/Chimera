@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewComponent", menuName = "Chimera Protocol/Component Blueprint")]
+[CreateAssetMenu(fileName = "NewComponent", menuName = "Chimera Protocol/1. 核心图纸库/机甲组件 (Component)")]
 public class ComponentDataSO : ScriptableObject
 {
     [Header("=== 基础身份信息 (Identity) ===")]

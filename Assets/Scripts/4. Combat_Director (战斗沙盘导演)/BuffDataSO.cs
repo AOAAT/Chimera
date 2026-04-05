@@ -17,7 +17,7 @@ public enum BuffStackType
     ThresholdTrigger// 阈值触发 (叠满 N 层瞬间引爆，然后清零/移除)
 }
 
-[CreateAssetMenu(fileName = "NewBuff", menuName = "Chimera Protocol/Combat/Buff Blueprint")]
+[CreateAssetMenu(fileName = "NewBuff", menuName = "Chimera Protocol/1. 核心图纸库/战斗状态 (Buff & Debuff)")]
 public class BuffDataSO : ScriptableObject
 {
     [Header("=== 基础识别 ===")]
@@ -41,7 +41,10 @@ public class BuffDataSO : ScriptableObject
     [Tooltip("挂载瞬间触发 (如：瞬间掉血)")]
     public List<ECAAction> OnApplyActions = new List<ECAAction>();
 
-    [Tooltip("每隔 1 秒触发一次 (如：毒药持续掉血)")]
+    [Tooltip("每隔几秒触发一次 OnTickActions？(默认 1.0 秒)")]
+    public float TickInterval = 1.0f; // 👇【新增】：暴露触发频率！
+
+    [Tooltip("每隔一定时间触发一次 (如：毒药持续掉血)")]
     public List<ECAAction> OnTickActions = new List<ECAAction>();
 
     [Tooltip("自然结束或被驱散时触发 (如：定时炸弹)")]

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public enum TargetFilterType { Self, ByTag, ByType, All }
 public enum StatOperation { Add, Multiply }
 
-[CreateAssetMenu(fileName = "ModifyComponentStat", menuName = "Chimera Protocol/ECA Actions/Modifier: Modify Component Stat (万能属性修饰器)")]
+[CreateAssetMenu(fileName = "ModifyComponentStat", menuName = "Chimera Protocol/2. ECA 机制积木/修饰 - 永久修改属性 (Modify Stat)")]
 public class Action_ModifyComponentStat : ECAAction
 {
     public TargetFilterType Filter;

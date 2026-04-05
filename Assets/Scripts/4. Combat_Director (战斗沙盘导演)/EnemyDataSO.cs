@@ -13,7 +13,7 @@ public struct SanPenaltyTier
 // 保留咱们定义好的物理运动表现
 public enum EnemyMoveType { Normal, ChargeDash, Teleport, Stationary }
 
-[CreateAssetMenu(fileName = "NewEnemyData", menuName = "Chimera Protocol/Enemy Data")]
+[CreateAssetMenu(fileName = "NewEnemyData", menuName = "Chimera Protocol/1. 核心图纸库/敌人本体 (Enemy)")]
 public class EnemyDataSO : ScriptableObject
 {
     [Header("=== 基础识别信息 ===")]

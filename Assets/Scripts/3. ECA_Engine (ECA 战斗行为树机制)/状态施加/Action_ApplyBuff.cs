@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ApplyBuff", menuName = "Chimera Protocol/ECA Actions/Combat: Apply Buff (施加状态)")]
+[CreateAssetMenu(fileName = "ApplyBuff", menuName = "Chimera Protocol/2. ECA 机制积木/状态 - 施加 Buff (Apply Buff)")]
 public class Action_ApplyBuff : ECAAction
 {
     [Tooltip("要给目标挂载的 Buff 图纸")]

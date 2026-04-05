@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEncounterPool", menuName = "Chimera Protocol/Combat/Encounter Pool (遭遇战牌库)")]
+[CreateAssetMenu(fileName = "NewEncounterPool", menuName = "Chimera Protocol/3. 宏观控制/战斗牌库 (Encounter Pool)")]
 public class EncounterPoolSO : ScriptableObject
 {
     [Header("=== 1. 牌库调度权重 ===")]

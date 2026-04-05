@@ -1,7 +1,7 @@
 ﻿// --- START OF FILE Action_DealDamage.cs ---
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Action_DealDamage", menuName = "Chimera Protocol/ECA Actions/Deal Damage (造成单体伤害)")]
+[CreateAssetMenu(fileName = "Action_DealDamage", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 造成单体伤害 (Deal Damage)")]
 public class Action_DealDamage : ECAAction
 {
     [Range(0f, 5f)] public float DamageMultiplier = 1.0f;

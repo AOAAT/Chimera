@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewChassis", menuName = "Chimera Protocol/Chassis Blueprint")]
+[CreateAssetMenu(fileName = "NewChassis", menuName = "Chimera Protocol/1. 核心图纸库/装甲底盘 (Chassis)")]
 public class ChassisDataSO : ScriptableObject
 {
     [Header("=== 基础信息 (底盘无等级、不参与合成) ===")]

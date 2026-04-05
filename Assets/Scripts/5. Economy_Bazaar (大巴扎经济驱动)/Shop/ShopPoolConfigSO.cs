@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewShopPool", menuName = "Chimera Protocol/Economy/Shop Pool Config")]
+[CreateAssetMenu(fileName = "NewShopPool", menuName = "Chimera Protocol/3. 宏观控制/商店进货单 (Shop Pool)")]
 public class ShopPoolConfigSO : ScriptableObject
 {
     [Header("=== 1. 基础权重 ===")]

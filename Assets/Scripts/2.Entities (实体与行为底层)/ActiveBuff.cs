@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// --- START OF FILE ActiveBuff.cs ---
+using UnityEngine;
 
 [System.Serializable]
 public class ActiveBuff
@@ -6,16 +7,18 @@ public class ActiveBuff
     public BuffDataSO Blueprint;
     public int CurrentStacks;
     public float RemainingTime;
-    private float tickTimer = 1f; // 记录 OnTick 触发的 1 秒间隔
+    private float tickTimer; // 动态计时器
 
     public ActiveBuff(BuffDataSO data)
     {
         Blueprint = data;
         CurrentStacks = 1;
         RemainingTime = data.BaseDuration;
+
+        // 👇【初始化】：初始倒数设为图纸配好的时间
+        tickTimer = data.TickInterval;
     }
 
-    // 处理每帧倒计时与 Tick 触发
     public void UpdateTimers(ECAContext context)
     {
         if (Blueprint.DurationType != BuffDurationType.Permanent)
@@ -28,9 +31,14 @@ public class ActiveBuff
             tickTimer -= Time.deltaTime;
             if (tickTimer <= 0f)
             {
-                tickTimer = 1f; // 重置 1 秒
-                // 每次 Tick 触发时，可以把当前层数作为一个乘区传给 Action (未来扩展)
-                foreach (var action in Blueprint.OnTickActions) if (action != null) action.Execute(context);
+                // 👇【核心】：未来这里可以接遗物加成！
+                // float bonusSpeed = GlobalResourceManager.Instance.DOTSpeedMultiplier;
+                // tickTimer = Blueprint.TickInterval * bonusSpeed;
+
+                tickTimer = Blueprint.TickInterval; // 重置为图纸时间
+
+                foreach (var action in Blueprint.OnTickActions)
+                    if (action != null) action.Execute(context);
             }
         }
     }

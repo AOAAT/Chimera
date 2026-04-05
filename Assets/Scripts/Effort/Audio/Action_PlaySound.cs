@@ -1,7 +1,7 @@
 ﻿// --- START OF FILE Action_PlaySound.cs ---
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlaySound", menuName = "Chimera Protocol/ECA Actions/Feedback: Play Sound (播放音效)")]
+[CreateAssetMenu(fileName = "PlaySound", menuName = "Chimera Protocol/2. ECA 机制积木/表现 - 播放音效 (Play Sound)")]
 public class Action_PlaySound : ECAAction
 {
     [Header("=== 音频资产 ===")]

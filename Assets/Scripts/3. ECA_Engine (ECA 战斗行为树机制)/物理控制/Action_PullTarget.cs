@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "PullTarget", menuName = "Chimera Protocol/ECA Actions/Pull Target (拉取敌人)")]
+[CreateAssetMenu(fileName = "PullTarget", menuName = "Chimera Protocol/2. ECA 机制积木/物理 - 引力拉取 (Pull Target)")]
 public class Action_PullTarget : ECAAction
 {
     [Header("物理参数")]

@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
-  m_Name: Buff_NailMark2
+  m_Name: Buff_Acid
   m_EditorClassIdentifier: 
-  BuffID: BUFF_002
-  BuffName: "\u65B0\u72B6\u6001"
-  BuffIcon: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
+  BuffID: BUFF_ACID_01
+  BuffName: "\u5F3A\u9178\u8150\u8680"
+  BuffIcon: {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
   ParticleColor: {r: 1, g: 1, b: 1, a: 1}
-  DurationType: 1
+  DurationType: 0
   BaseDuration: 5
-  StackType: 2
+  StackType: 1
   MaxStacks: 999
   StatModifiers: []
   OnApplyActions: []
   TickInterval: 1
-  OnTickActions: []
+  OnTickActions:
+  - {fileID: 11400000, guid: e91ffe5f5c8a48145aaca40a9efa80d6, type: 2}
   OnRemoveActions: []
-  OnMaxStacksActions:
-  - {fileID: 11400000, guid: ed1d9d65a839b9c41942022a3f66d66a, type: 2}
+  OnMaxStacksActions: []

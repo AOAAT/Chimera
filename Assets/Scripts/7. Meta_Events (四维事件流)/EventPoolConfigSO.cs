@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEventPool", menuName = "Chimera Protocol/Event System/Event Pool Config")]
+[CreateAssetMenu(fileName = "NewEventPool", menuName = "Chimera Protocol/3. 宏观控制/文字事件牌库 (Event Pool)")]
 public class EventPoolConfigSO : ScriptableObject
 {
     [Header("=== 1. 基础权重 ===")]

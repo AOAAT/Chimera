@@ -1,7 +1,7 @@
 ﻿// --- START OF FILE Action_PlayVFX.cs ---
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PlayVFX", menuName = "Chimera Protocol/ECA Actions/Feedback: Play VFX (播放粒子特效)")]
+[CreateAssetMenu(fileName = "PlayVFX", menuName = "Chimera Protocol/2. ECA 机制积木/表现 - 播放粒子特效 (Play VFX)")]
 public class Action_PlayVFX : ECAAction
 {
     [Header("=== 特效配置 ===")]

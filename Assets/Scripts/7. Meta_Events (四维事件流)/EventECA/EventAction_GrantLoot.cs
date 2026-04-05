@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "Act_GrantLoot", menuName = "Chimera Protocol/Event ECA/Action: Grant Loot (发放战利品)")]
+[CreateAssetMenu(fileName = "Act_GrantLoot", menuName = "Chimera Protocol/3. 宏观控制/事件 ECA - 发放奖励")]
 public class EventAction_GrantLoot : EventAction
 {
     [Tooltip("直接调用大巴扎掉落表发放奖励！")]

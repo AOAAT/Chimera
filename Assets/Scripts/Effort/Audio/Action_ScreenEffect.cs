@@ -8,7 +8,7 @@ public enum ScreenEffectTriggerCondition
     OnlyOnPlayerHit     // 仅在玩家受伤时触发 (适合怪物攻击)
 }
 
-[CreateAssetMenu(fileName = "ScreenEffect", menuName = "Chimera Protocol/ECA Actions/Feedback: Screen Effect (屏幕特效)")]
+[CreateAssetMenu(fileName = "ScreenEffect", menuName = "Chimera Protocol/2. ECA 机制积木/表现 - 屏幕震动与闪烁 (Screen Effect)")]
 public class Action_ScreenEffect : ECAAction
 {
     [Header("=== 触发条件 ===")]

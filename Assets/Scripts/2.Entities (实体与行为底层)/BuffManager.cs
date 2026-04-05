@@ -95,4 +95,11 @@ public class BuffManager : MonoBehaviour
         if (actions == null || actions.Count == 0) return;
         foreach (var action in actions) if (action != null) action.Execute(context);
     }
+
+    public int GetBuffStacks(string buffID)
+    {
+        ActiveBuff existingBuff = activeBuffs.Find(b => b.Blueprint.BuffID == buffID);
+        return existingBuff != null ? existingBuff.CurrentStacks : 0;
+    }
+
 }
