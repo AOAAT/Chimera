@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4269875722369545933}
   m_Layer: 6
   m_Name: meat1
-  m_TagString: Untagged
+  m_TagString: CombatDebris
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

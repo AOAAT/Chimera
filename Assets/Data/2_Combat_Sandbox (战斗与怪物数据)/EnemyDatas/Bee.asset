@@ -22,11 +22,11 @@ MonoBehaviour:
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
   - StatID: 15
-    Value: 200
+    Value: 1
   - StatID: 14
-    Value: 300
+    Value: 1
   - StatID: 17
-    Value: 20
+    Value: 0
   - StatID: 16
     Value: 40
   SanPenalties: []
@@ -44,5 +44,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
   - {fileID: 11400000, guid: 2e75894cdf92071468eb62da5879122b, type: 2}
   OnSpawnActions: []
-  OnDeathActions: []
+  OnDeathActions:
+  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
   OnTakeDamageActions: []

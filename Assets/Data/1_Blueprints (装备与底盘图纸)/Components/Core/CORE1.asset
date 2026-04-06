@@ -17,6 +17,7 @@ MonoBehaviour:
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: f1296da3eebda4543b6b4067c3308844, type: 3}
   Type: 0
+  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
@@ -81,5 +82,5 @@ MonoBehaviour:
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
   TargetingLogic: 0
-  MovementLogic: 0
+  MovementLogic: 1
   SafeDodgeDistance: 1

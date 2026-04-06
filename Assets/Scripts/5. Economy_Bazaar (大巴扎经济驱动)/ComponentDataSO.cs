@@ -1,4 +1,4 @@
-﻿// --- 请替换 FILE ComponentDataSO.cs ---
+﻿// --- START OF FILE ComponentDataSO.cs ---
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,7 +12,6 @@ public class ComponentDataSO : ScriptableObject
     public Sprite ComponentIcon;
     public ComponentType Type;
 
-    // 👇【新增】：纯展示用的战术定位描述 (如：远程范围 / 持续单体 / 辅助光环)
     [Header("=== 战术定位描述 (仅UI展示) ===")]
     public string TacticalRoleDesc = "远程单体";
 
@@ -28,8 +27,10 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== 等级矩阵 (Level Matrix 1~4) ===")]
     public List<ComponentLevelData> LevelMatrix = new List<ComponentLevelData>();
 
+    // 👇【核心净化】：回归最纯粹的二元分类。激光也是 Ranged！
     [Header("=== 武器独有投递方式 ===")]
     public WeaponDeliveryType DeliveryType = WeaponDeliveryType.Ranged;
+    [Tooltip("Ranged 武器的子弹实体 (激光请使用挂载了 TrailRenderer 的极速隐形子弹)")]
     public GameObject ProjectilePrefab;
 
     [Header("=== 视觉与对齐修正 ===")]

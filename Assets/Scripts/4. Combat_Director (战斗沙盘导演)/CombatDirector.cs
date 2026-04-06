@@ -28,13 +28,8 @@ public class CombatDirector : MonoBehaviour
     public Button ReturnToMapButton;
 
     [Header("=== 真实世界引用 ===")]
-    [Tooltip("拖入场景中的战斗场地预制体节点！系统会自动读取它的 BoxCollider2D 作为绝对物理边界")]
     public GameObject ArenaReference;
-
-    [Tooltip("怪物的通用空壳预制体 (必须挂载 EnemyBrain)")]
     public GameObject BaseEnemyPrefab;
-
-    [Tooltip("一张纯白色的 1x1 像素贴图，用于可视化红区")]
     public Sprite WhitePixelSprite;
 
     public Vector3 CurrentArenaCenter { get; private set; }
@@ -70,7 +65,6 @@ public class CombatDirector : MonoBehaviour
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
 
-        // 👇【场景管理】：游戏一开始，强制隐藏真实战场，保持大地图的干净！
         if (ArenaReference != null) ArenaReference.SetActive(false);
     }
 
@@ -99,13 +93,11 @@ public class CombatDirector : MonoBehaviour
         int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
         int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
 
-        CurrentLayout = RunManager.Instance.GetNextEncounter(currentStage, currentLayer, nodeData.NodeType);
+        CurrentLayout = RunManager.Instance.GetNextEncounter(currentStage, currentLayer, nodeData != null ? nodeData.NodeType : MapNodeType.Enemy_Tech);
 
         if (CurrentLayout != null)
         {
-            // 👇【场景管理】：动态替换背景图，并揭开战场的幕布！
             SetupArenaVisuals();
-
             SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
         }
@@ -118,12 +110,9 @@ public class CombatDirector : MonoBehaviour
     private void SetupArenaVisuals()
     {
         if (ArenaReference == null) return;
-
-        // 1. 揭开幕布，显示场地
         ArenaReference.SetActive(true);
 
-        // 2. 读取图纸里策划配置的背景图并替换
-        if (CurrentLayout.ArenaReference != null)
+        if (CurrentLayout != null && CurrentLayout.ArenaReference != null)
         {
             SpriteRenderer targetSR = CurrentLayout.ArenaReference.GetComponent<SpriteRenderer>();
             SpriteRenderer mySR = ArenaReference.GetComponent<SpriteRenderer>();
@@ -144,6 +133,8 @@ public class CombatDirector : MonoBehaviour
 
         Vector3 centerPos = CurrentArenaCenter;
 
+        if (CurrentLayout == null || CurrentLayout.Enemies == null) return;
+
         foreach (var spawnData in CurrentLayout.Enemies)
         {
             if (spawnData.EnemyType == null) continue;
@@ -163,10 +154,9 @@ public class CombatDirector : MonoBehaviour
 
             BuffManager buffMgr = enemyObj.GetComponent<BuffManager>();
             if (buffMgr == null) buffMgr = enemyObj.AddComponent<BuffManager>();
-
         }
 
-        Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线与外部轮廓扫描！");
+        Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线。");
     }
 
     private void GenerateForbiddenZones()
@@ -176,9 +166,9 @@ public class CombatDirector : MonoBehaviour
         forbiddenZonesContainer.transform.SetParent(this.transform);
 
         Vector3 centerPos = CurrentArenaCenter;
-
         int noDeployLayer = LayerMask.NameToLayer("NoDeploy");
-        if (noDeployLayer == -1) Debug.LogError("【致命错误】长官！找不到 NoDeploy 图层！");
+
+        if (CurrentLayout == null || CurrentLayout.ForbiddenZones == null) return;
 
         foreach (var rect in CurrentLayout.ForbiddenZones)
         {
@@ -209,7 +199,6 @@ public class CombatDirector : MonoBehaviour
                 float scaleY = rect.height / spriteSize.y;
 
                 visualObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
-
                 sr.color = new Color(1f, 0f, 0f, 0.2f);
                 sr.sortingOrder = -5;
             }
@@ -218,17 +207,20 @@ public class CombatDirector : MonoBehaviour
 
     private void GenerateArenaBoundaries()
     {
-        CurrentArenaCenter = ArenaReference.transform.position;
-        CurrentArenaSize = new Vector2(24f, 14f); // 兜底大小
+        CurrentArenaCenter = ArenaReference != null ? ArenaReference.transform.position : Vector3.zero;
+        CurrentArenaSize = new Vector2(24f, 14f);
 
-        BoxCollider2D arenaCol = ArenaReference.GetComponent<BoxCollider2D>();
-        if (arenaCol != null)
+        if (ArenaReference != null)
         {
-            CurrentArenaCenter = ArenaReference.transform.TransformPoint(arenaCol.offset);
-            CurrentArenaSize = new Vector2(
-                arenaCol.size.x * ArenaReference.transform.lossyScale.x,
-                arenaCol.size.y * ArenaReference.transform.lossyScale.y
-            );
+            BoxCollider2D arenaCol = ArenaReference.GetComponent<BoxCollider2D>();
+            if (arenaCol != null)
+            {
+                CurrentArenaCenter = ArenaReference.transform.TransformPoint(arenaCol.offset);
+                CurrentArenaSize = new Vector2(
+                    arenaCol.size.x * ArenaReference.transform.lossyScale.x,
+                    arenaCol.size.y * ArenaReference.transform.lossyScale.y
+                );
+            }
         }
 
         float thickness = 20f;
@@ -392,20 +384,33 @@ public class CombatDirector : MonoBehaviour
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
         foreach (var mech in allMechs)
         {
-            mech.SyncPostCombatState();
-            Destroy(mech.gameObject);
+            if (mech != null)
+            {
+                mech.SyncPostCombatState();
+                Destroy(mech.gameObject);
+            }
         }
+
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
         foreach (var r in allReceivers)
         {
-            if (r != null) Destroy(r.gameObject);
+            if (r != null && r.gameObject != null) Destroy(r.gameObject);
         }
+
         Projectile[] allBullets = FindObjectsOfType<Projectile>();
-        foreach (var b in allBullets) Destroy(b.gameObject);
+        foreach (var b in allBullets)
+        {
+            if (b != null && b.gameObject != null) Destroy(b.gameObject);
+        }
+
+        GameObject[] allDebris = GameObject.FindGameObjectsWithTag("CombatDebris");
+        foreach (var debris in allDebris)
+        {
+            if (debris != null) Destroy(debris);
+        }
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
 
-        // 👇【场景管理】：结算完毕，拉上战场的幕布，眼不见心不烦！
         if (ArenaReference != null) ArenaReference.SetActive(false);
 
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
@@ -414,14 +419,18 @@ public class CombatDirector : MonoBehaviour
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
+        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
         {
-            if (profile != null) profile.IsDeployed = false;
+            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
+            {
+                if (profile != null) profile.IsDeployed = false;
+            }
         }
 
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
+            // 👇【终极空指针防御】：哪怕大地图模块没加载，打捞页面也能安全弹出并结束！
             LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
 
             int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
@@ -429,10 +438,17 @@ public class CombatDirector : MonoBehaviour
             MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
 
             LootSequenceSO nodeLoot = NodeLootManager.Instance != null ? NodeLootManager.Instance.GetLootForNode(currentStage, currentLayer, currentType) : null;
-
             MacroCategory currentMacro = GetMacroForNodeType(currentType);
 
-            LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer);
+            if (LootSequenceDirector.Instance != null)
+            {
+                LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer);
+            }
+            else
+            {
+                Debug.LogWarning("【系统警告】找不到大巴扎导演(LootSequenceDirector)，无法进入打捞页面！直接执行返回地图！");
+                ExecuteReturnToMap();
+            }
         }
         else
         {
@@ -455,29 +471,13 @@ public class CombatDirector : MonoBehaviour
     public void ExecuteReturnToMap()
     {
         Debug.Log("【战斗导演】系统交接完毕，将指挥权交还给大地图...");
-        MapManager.Instance.OnCombatVictory(currentNodeData);
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (ArenaReference != null)
+        if (MapManager.Instance != null)
         {
-            Vector3 center = ArenaReference.transform.position;
-            Vector2 size = new Vector2(24f, 14f);
-            BoxCollider2D col = ArenaReference.GetComponent<BoxCollider2D>();
-            if (col != null)
-            {
-                center = ArenaReference.transform.TransformPoint(col.offset);
-                size = new Vector2(col.size.x * ArenaReference.transform.lossyScale.x, col.size.y * ArenaReference.transform.lossyScale.y);
-            }
-
-            Gizmos.color = new Color(1f, 1f, 0f, 0.5f);
-            Gizmos.DrawLine(center + Vector3.up * 2, center + Vector3.down * 2);
-            Gizmos.DrawLine(center + Vector3.left * 2, center + Vector3.right * 2);
-            Gizmos.DrawWireSphere(center, 0.5f);
-
-            Gizmos.color = new Color(0f, 1f, 1f, 0.2f);
-            Gizmos.DrawWireCube(center, new Vector3(size.x, size.y, 0));
+            MapManager.Instance.OnCombatVictory(currentNodeData);
+        }
+        else
+        {
+            Debug.LogWarning("【系统警告】找不到 MapManager！如果你在单独测试战斗场景，请忽略此报错。");
         }
     }
 }

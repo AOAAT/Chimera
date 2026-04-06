@@ -2263,9 +2263,9 @@ MonoBehaviour:
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
   NormalEnemyWeight: 60
-  EventWeight: 25
-  EliteWeight: 10
-  WorkshopWeight: 5
+  EventWeight: 0
+  EliteWeight: 0
+  WorkshopWeight: 0
   BufferFactor: 0.2
   TechBaseWeight: 10
   FleshBaseWeight: 0
@@ -10767,8 +10767,8 @@ MonoBehaviour:
   EquippedComponents:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
-  - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
-  - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
+  - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
+  - {fileID: 0}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
   previewObjects: []
 --- !u!212 &923019977
@@ -10832,7 +10832,7 @@ Transform:
   m_GameObject: {fileID: 923019975}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.465, y: -0.696, z: 0}
+  m_LocalPosition: {x: -6.05, y: -0.06, z: 0}
   m_LocalScale: {x: 0.6, y: 0.6, z: 0.6}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10858,13 +10858,13 @@ MonoBehaviour:
   Final_TotalMass: 0
   Final_TotalEnginePower: 10
   EquippedWeapons:
-  - WeaponName: "\u5C04\u9489\u67AA"
+  - WeaponName: "\u94BB\u5934"
     DeliveryType: 1
     Stats:
     - StatID: 5
-      Value: 1
+      Value: 50
     - StatID: 6
-      Value: 0
+      Value: 20
     - StatID: 7
       Value: 60
     - StatID: 8
@@ -10872,27 +10872,13 @@ MonoBehaviour:
     - StatID: 9
       Value: 100
     - StatID: 13
-      Value: 100
+      Value: 5000
     - StatID: 10
-      Value: 0.3
-  - WeaponName: "\u94FE\u952F"
-    DeliveryType: 0
-    Stats:
-    - StatID: 5
-      Value: 20
-    - StatID: 6
-      Value: 10
-    - StatID: 7
-      Value: 40
-    - StatID: 8
-      Value: 0
-    - StatID: 9
-      Value: 200
+      Value: 50
   DebugTags:
   - Ballistic
   - Drone
-  - Ballistic
-  - Heavy
+  - Summon
   - Energy
 --- !u!114 &923019980
 MonoBehaviour:
@@ -16466,7 +16452,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9999637
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -16526,7 +16512,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1306027756
 RectTransform:
   m_ObjectHideFlags: 0
@@ -18351,7 +18337,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 349.15503, y: 0.00012207031}
+  m_AnchoredPosition: {x: 349.15503, y: -0.00012207031}
   m_SizeDelta: {x: -697, y: -63}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1430235885
