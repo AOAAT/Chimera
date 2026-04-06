@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// --- START OF FILE Projectile.cs ---
+using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
@@ -8,8 +9,16 @@ public class Projectile : MonoBehaviour
     private float speed;
 
     private bool isEnemyFire;
-    private bool isCritical; // 👇【核心修复】：子弹现在会记住自己是不是暴击！
-    private bool hasHit = false; // 👇【新增】：防连击锁，保证一颗子弹绝对只炸一次！
+    private bool isCritical;
+    private bool hasHit = false;
+
+    // 👇【核心新增】：视觉穿透补偿！
+    [Header("=== 视觉穿透与延迟销毁 ===")]
+    [Tooltip("子弹命中后，是否允许它在视觉上继续往前飞一小段距离 (营造贯穿感)？")]
+    public bool EnableVisualPenetration = false;
+
+    [Tooltip("命中后，模型/拖尾继续存留的时间 (秒)。建议激光填 0.1~0.2")]
+    public float PostHitLingerTime = 0f;
 
     public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy, bool isCrit)
     {
@@ -17,13 +26,12 @@ public class Projectile : MonoBehaviour
         this.damage = damage;
         this.weaponData = data;
         this.isEnemyFire = isEnemy;
-        this.isCritical = isCrit; // 保存暴击状态
+        this.isCritical = isCrit;
 
         this.speed = data.GetStat(StatType.ProjectileSpeed);
         if (this.speed <= 0) this.speed = 10f;
         if (CombatSandbox.Instance != null) this.speed *= CombatSandbox.Instance.SpeedMultiplier;
 
-        // 👇【核心修复 1：绝对图层控制】：发车瞬间，强行注入 Projectile 图层，撕碎预制体的错误配置！
         gameObject.layer = LayerMask.NameToLayer("Projectile");
     }
 
@@ -31,6 +39,7 @@ public class Projectile : MonoBehaviour
     {
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.isKinematic = true; }
+
         Collider2D col = GetComponent<Collider2D>();
         if (col == null) { col = gameObject.AddComponent<CircleCollider2D>(); col.isTrigger = true; }
         else col.isTrigger = true;
@@ -38,15 +47,33 @@ public class Projectile : MonoBehaviour
 
     private void Update()
     {
-        // 如果已经炸了，或者目标蒸发了，直接销毁
-        if (hasHit) return;
-        if (target == null || !target.gameObject.activeInHierarchy) { Destroy(gameObject); return; }
+        // 👇 如果已经命中，且开启了穿透补偿，子弹不再追踪，而是顺着惯性继续飞！
+        if (hasHit)
+        {
+            if (EnableVisualPenetration)
+            {
+                // 顺着最后的方向继续飞，营造穿透肉体的视觉效果
+                transform.position += transform.right * speed * Time.deltaTime;
+            }
+            return;
+        }
 
-        // 巡航追踪
+        if (target == null || !target.gameObject.activeInHierarchy)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        // 正常巡航追踪
         transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
 
-        // 👇【核心修复 2：主程的神级兜底】：管你物理引擎碰没碰到，只要贴脸（距离 < 0.2f），强制执行引爆！
-        if (Vector3.Distance(transform.position, target.position) <= 0.2f)
+        // 👇【靶心修正】：现在不仅查距离，如果是激光这种极速武器，很容易一帧穿透！
+        // 如果我们离目标的【物理中心】非常近了，强制引爆！
+        Vector3 targetCenter = target.position;
+        Collider2D col = target.GetComponentInChildren<Collider2D>();
+        if (col != null) targetCenter = col.bounds.center;
+
+        if (Vector3.Distance(transform.position, targetCenter) <= 0.2f)
         {
             HitTarget();
         }
@@ -54,8 +81,8 @@ public class Projectile : MonoBehaviour
 
     private void HitTarget()
     {
-        if (hasHit) return; // 防连击
-        hasHit = true;      // 上锁！
+        if (hasHit) return;
+        hasHit = true;
 
         ECAContext context = new ECAContext
         {
@@ -63,8 +90,8 @@ public class Projectile : MonoBehaviour
             PrimaryTarget = target,
             BaseDamage = damage,
             SourceWeapon = weaponData,
-            IsEnemyFire = this.isEnemyFire, // 传递阵营
-            IsCriticalHit = this.isCritical // 👇【核心修复】：把暴击状态交还给 ECA 总线！
+            IsEnemyFire = this.isEnemyFire,
+            IsCriticalHit = this.isCritical
         };
 
         if (weaponData != null && weaponData.OnHitActions != null)
@@ -75,16 +102,25 @@ public class Projectile : MonoBehaviour
             }
         }
 
-        Destroy(gameObject);
+        // 👇【视觉补偿核心】：命中后，不立刻销毁！
+        // 如果配了延迟时间（比如激光），让它再飞一会儿，但关掉物理碰撞防止二次伤害！
+        if (PostHitLingerTime > 0f)
+        {
+            Collider2D col = GetComponent<Collider2D>();
+            if (col != null) col.enabled = false; // 关闭碰撞，它现在只是个幻影
+
+            Destroy(gameObject, PostHitLingerTime); // 延迟销毁
+        }
+        else
+        {
+            Destroy(gameObject); // 普通子弹，立刻销毁
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
-
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
-
-        // 阵营比对：必须是异一阵营，才能引爆！
         if (receiver != null && receiver.isEnemy != this.isEnemyFire)
         {
             this.target = receiver.transform;

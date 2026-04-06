@@ -1,4 +1,4 @@
-﻿// --- START OF FILE ComponentDataSO.cs ---
+﻿// --- 请替换 FILE ComponentDataSO.cs ---
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -27,11 +27,23 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== 等级矩阵 (Level Matrix 1~4) ===")]
     public List<ComponentLevelData> LevelMatrix = new List<ComponentLevelData>();
 
-    // 👇【核心净化】：回归最纯粹的二元分类。激光也是 Ranged！
     [Header("=== 武器独有投递方式 ===")]
     public WeaponDeliveryType DeliveryType = WeaponDeliveryType.Ranged;
-    [Tooltip("Ranged 武器的子弹实体 (激光请使用挂载了 TrailRenderer 的极速隐形子弹)")]
     public GameObject ProjectilePrefab;
+
+    // 👇【核心新增】：近战武器的三段式动作配置！
+    [Header("=== 近战动作配置 (仅 DeliveryType=Melee 生效) ===")]
+    [Tooltip("蓄力抬手角度 (负数代表向后拉)")]
+    public float WindupAngle = -45f;
+
+    [Tooltip("下劈砸中敌人的角度 (正数代表向前砸)")]
+    public float StrikeAngle = 60f;
+
+    [Tooltip("蓄力时间占总攻击间隔的百分比 (如 0.3 代表 30% 时间在抬手)")]
+    [Range(0.01f, 0.9f)] public float WindupTimeRatio = 0.3f;
+
+    [Tooltip("下劈时间占总攻击间隔的百分比 (如 0.1 代表 10% 时间砸下去)")]
+    [Range(0.01f, 0.9f)] public float StrikeTimeRatio = 0.1f;
 
     [Header("=== 视觉与对齐修正 ===")]
     public Vector2 AnchorOffset = Vector2.zero;
@@ -48,6 +60,19 @@ public class ComponentDataSO : ScriptableObject
         var data = LevelMatrix.Find(x => x.Level == level);
         if (data == null && LevelMatrix.Count > 0) return LevelMatrix[LevelMatrix.Count - 1];
         return data;
+    }
+
+    // 简单的数据校验，防止策划填错比例导致动画崩溃
+    private void OnValidate()
+    {
+        if (Type == ComponentType.Weapon && DeliveryType == WeaponDeliveryType.Melee)
+        {
+            if (WindupTimeRatio + StrikeTimeRatio >= 0.99f)
+            {
+                Debug.LogWarning($"[{ComponentName}] 的近战动作比例设置错误！Windup + Strike 不能超过 0.99，必须给 Recovery 留出时间！");
+                StrikeTimeRatio = 0.9f - WindupTimeRatio;
+            }
+        }
     }
 }
 [System.Serializable]

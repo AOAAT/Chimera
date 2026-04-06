@@ -5,12 +5,29 @@ using UnityEngine;
 
 public class WeaponModule : MonoBehaviour
 {
-    private RuntimeWeapon weaponData;
-    private float fireCooldown = 0f;
+    // ==========================================
+    // 状态机定义
+    // ==========================================
+    private enum WeaponState { Idle, Windup, Strike, Recovery }
+    private WeaponState currentState = WeaponState.Idle;
 
+    private RuntimeWeapon weaponData;
+
+    // 核心时间轴变量
+    private float totalCooldown = 0f; // 总攻击间隔
+    private float stateTimer = 0f;    // 当前状态的倒数计时
+
+    // 近战动作参数缓存
+    private float t_Windup, t_Strike, t_Recovery;
+    private Quaternion rot_Base, rot_Windup, rot_Strike;
+    private float aimAngle; // 锁定敌人时的基准瞄准角度
+
+    // 逻辑心脏数据
     private Vector2 logicCenterOffset;
     private Transform mechRoot;
 
+    // 视觉节点
+    private Transform actualHinge;
     private Transform muzzlePoint;
     private Animator myAnimator;
 
@@ -23,7 +40,7 @@ public class WeaponModule : MonoBehaviour
         logicCenterOffset = centerOffset;
         mechRoot = root;
 
-        Transform actualHinge = GetActualHinge();
+        actualHinge = GetActualHinge();
 
         if (actualHinge.childCount > 0)
             myAnimator = actualHinge.GetChild(0).GetComponent<Animator>();
@@ -32,6 +49,9 @@ public class WeaponModule : MonoBehaviour
         muzzleObj.transform.SetParent(actualHinge, false);
         muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset;
         muzzlePoint = muzzleObj.transform;
+
+        currentState = WeaponState.Idle;
+        stateTimer = 0f; // 开局可以直接开火
     }
 
     public Vector3 GetLogicCenter()
@@ -47,35 +67,6 @@ public class WeaponModule : MonoBehaviour
             return transform.GetChild(0);
         }
         return transform;
-    }
-
-    private void Update()
-    {
-        if (weaponData == null) return;
-
-        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
-
-        fireCooldown -= Time.deltaTime;
-        FindTarget();
-
-        if (CurrentTargets != null && CurrentTargets.Count > 0)
-        {
-            Transform primaryTarget = CurrentTargets[0];
-            if (primaryTarget != null)
-            {
-                // 👇【视觉优化】：枪管转动时，也死死盯住敌人的物理中心，而不是边缘点！
-                Transform actualHinge = GetActualHinge();
-                Vector3 targetCenter = primaryTarget.position;
-                Collider2D targetCol = primaryTarget.GetComponentInChildren<Collider2D>();
-                if (targetCol != null) targetCenter = targetCol.bounds.center;
-
-                Vector3 aimDir = targetCenter - actualHinge.position;
-                float angle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
-                actualHinge.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-            }
-
-            if (fireCooldown <= 0f) Fire();
-        }
     }
 
     private float GetMaxDistanceFromBounds(Vector2 center, Bounds bounds)
@@ -119,7 +110,6 @@ public class WeaponModule : MonoBehaviour
             .GroupBy(x => x.Receiver)
             .Select(group => group.First())
             .OrderBy(x => {
-                // 👇【逻辑不变】：雷达排序依然查边缘，保证优先打离自己最近的怪
                 Vector2 closestPoint = x.Collider.ClosestPoint(center);
                 return Vector2.Distance(center, closestPoint);
             })
@@ -128,15 +118,140 @@ public class WeaponModule : MonoBehaviour
             .ToList();
     }
 
-    private void Fire()
+    private void Update()
+    {
+        if (weaponData == null || actualHinge == null) return;
+
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
+
+        FindTarget();
+
+        // 获取或保持目标
+        Transform primaryTarget = (CurrentTargets.Count > 0) ? CurrentTargets[0] : null;
+
+        // ==========================================
+        // 核心状态机：基于时间的动作流转
+        // ==========================================
+        switch (currentState)
+        {
+            case WeaponState.Idle:
+                // 在 Idle 状态，武器死死盯住敌人
+                if (primaryTarget != null)
+                {
+                    Vector3 targetCenter = GetTargetCenter(primaryTarget);
+                    Vector3 aimDir = targetCenter - actualHinge.position;
+                    aimAngle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
+                    actualHinge.rotation = Quaternion.AngleAxis(aimAngle, Vector3.forward);
+
+                    // 如果冷却好了，开始攻击！
+                    if (stateTimer <= 0f)
+                    {
+                        InitiateAttack();
+                    }
+                }
+
+                // 冷却倒数 (即使没有敌人，冷却也在走)
+                if (stateTimer > 0f) stateTimer -= Time.deltaTime;
+                break;
+
+            case WeaponState.Windup:
+                // 蓄力抬手阶段
+                stateTimer -= Time.deltaTime;
+
+                // 插值计算当前角度 (从 Base 缓慢拉到 Windup)
+                float windupProgress = 1f - (stateTimer / t_Windup);
+                actualHinge.rotation = Quaternion.Slerp(rot_Base, rot_Windup, windupProgress);
+
+                if (stateTimer <= 0f)
+                {
+                    // 蓄力结束，进入下劈！
+                    currentState = WeaponState.Strike;
+                    stateTimer = t_Strike;
+                }
+                break;
+
+            case WeaponState.Strike:
+                // 下劈爆发阶段
+                stateTimer -= Time.deltaTime;
+
+                // 极速下砸！(从 Windup 瞬间砸到 Strike)
+                float strikeProgress = 1f - (stateTimer / t_Strike);
+                actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, strikeProgress);
+
+                if (stateTimer <= 0f)
+                {
+                    // 👇【终极奥义】：下砸到最低点的瞬间，触发伤害判定和特效！
+                    FirePayload();
+
+                    // 下劈结束，进入收招！
+                    currentState = WeaponState.Recovery;
+                    stateTimer = t_Recovery;
+                }
+                break;
+
+            case WeaponState.Recovery:
+                // 僵直收招阶段
+                stateTimer -= Time.deltaTime;
+
+                // 缓慢收回，回到瞄准状态 (从 Strike 回到 Base)
+                float recoveryProgress = 1f - (stateTimer / t_Recovery);
+                actualHinge.rotation = Quaternion.Slerp(rot_Strike, rot_Base, recoveryProgress);
+
+                if (stateTimer <= 0f)
+                {
+                    // 一个完整的攻击周期结束，回到 Idle 等待下一次开火
+                    currentState = WeaponState.Idle;
+                    stateTimer = 0f; // 理论上不需要等了，因为整个周期的时间就是总攻速
+                }
+                break;
+        }
+    }
+
+    // ==========================================
+    // 动作流转方法
+    // ==========================================
+
+    // 发起攻击 (计算各个阶段的时间和目标角度)
+    private void InitiateAttack()
     {
         float atkSpeed = weaponData.GetStat(StatType.AttackSpeed);
         if (atkSpeed <= 0) atkSpeed = 100f;
 
-        fireCooldown = GameFormulas.CalcCooldown(atkSpeed);
+        // 计算这一刀的总体时间 (受全局攻速公式影响)
+        totalCooldown = GameFormulas.CalcCooldown(atkSpeed);
 
+        // 如果是远程武器，或者根本没配动作比例，直接跳过动画进入 Fire
+        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
+        {
+            FirePayload();
+            stateTimer = totalCooldown; // 远程武器依然走传统的冷却
+            return;
+        }
+
+        // 👇【近战专属】：切分时间片与目标角度！
+        t_Windup = totalCooldown * weaponData.SourceSO.WindupTimeRatio;
+        t_Strike = totalCooldown * weaponData.SourceSO.StrikeTimeRatio;
+        t_Recovery = totalCooldown - t_Windup - t_Strike;
+
+        // 计算旋转四元数
+        rot_Base = Quaternion.AngleAxis(aimAngle, Vector3.forward);
+        rot_Windup = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.WindupAngle);
+        rot_Strike = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.StrikeAngle);
+
+        // 切换状态！开始蓄力！
+        currentState = WeaponState.Windup;
+        stateTimer = t_Windup;
+
+        // 如果有真实动画，也可以在这里 Trigger
+        if (myAnimator != null) myAnimator.SetTrigger("Windup");
+    }
+
+    // 真正执行伤害判定 (下砸到最低点时调用)
+    private void FirePayload()
+    {
         if (CurrentTargets.Count == 0) return;
 
+        // 依然保留真实的动画触发器，双重保障
         if (myAnimator != null) myAnimator.SetTrigger("Fire");
 
         float finalDmg = Random.Range(weaponData.GetStat(StatType.MinDamage), weaponData.GetStat(StatType.MaxDamage));
@@ -160,39 +275,39 @@ public class WeaponModule : MonoBehaviour
 
         foreach (var target in CurrentTargets)
         {
-            // 👇【视觉核心修复】：找到敌人的绝对包围盒中心点，把子弹/激光强行按在中心！
-            Vector3 visualTargetCenter = target.position;
-            Collider2D targetCol = target.GetComponentInChildren<Collider2D>();
-            if (targetCol != null) visualTargetCenter = targetCol.bounds.center;
+            Vector3 visualTargetCenter = GetTargetCenter(target);
 
             if (weaponData.DeliveryType == WeaponDeliveryType.Melee)
             {
                 ECAContext hitContext = new ECAContext { ImpactPoint = visualTargetCenter, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false };
                 if (weaponData.OnHitActions != null) foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(hitContext);
-
-                Debug.DrawLine(muzzlePoint.position, visualTargetCenter, Color.yellow, 0.1f);
             }
             else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)
             {
-                // 👇【投递修正】：子弹也向敌人的中心点飞去！
                 Vector3 bulletDir = visualTargetCenter - muzzlePoint.position;
                 float bulletAngle = Mathf.Atan2(bulletDir.y, bulletDir.x) * Mathf.Rad2Deg;
                 Quaternion bulletRot = Quaternion.AngleAxis(bulletAngle, Vector3.forward);
 
                 GameObject projObj = Instantiate(weaponData.ProjectilePrefab, muzzlePoint.position, bulletRot);
                 Projectile projectile = projObj.GetComponent<Projectile>();
-
-                // 【投递目标修正】：虽然它是追着 target(Transform) 飞的，但如果在贴脸距离，
-                // Projectile 会瞬间在 target.position 引爆。由于我们改了枪管朝向，激光看起来会完美穿透到敌人中心！
                 projectile.Fire(target, finalDmg, weaponData, false, isCrit);
             }
         }
     }
 
+    // 辅助方法：获取目标的物理中心
+    private Vector3 GetTargetCenter(Transform target)
+    {
+        if (target == null) return Vector3.zero;
+        Vector3 targetCenter = target.position;
+        Collider2D targetCol = target.GetComponentInChildren<Collider2D>();
+        if (targetCol != null) targetCenter = targetCol.bounds.center;
+        return targetCenter;
+    }
+
     private void OnDrawGizmos()
     {
         if (weaponData == null) return;
-
         float distanceMultiplier = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
         float maxRange = weaponData.GetStat(StatType.MaxRange) * distanceMultiplier;
         float minRange = weaponData.GetStat(StatType.MinRange) * distanceMultiplier;

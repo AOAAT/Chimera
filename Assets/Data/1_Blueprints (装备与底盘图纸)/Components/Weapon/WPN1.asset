@@ -39,15 +39,15 @@ MonoBehaviour:
     - StatID: 9
       Value: 100
     - StatID: 13
-      Value: 5000
+      Value: 100
     - StatID: 10
       Value: 50
     Mechanics: []
     OnFireActions: []
     OnHitActions:
     - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
-    - {fileID: 11400000, guid: ea2e888302baed5499f95e90761f5c78, type: 2}
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
     - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
     OnAssembleActions: []
     BonusTags: 
@@ -166,6 +166,10 @@ MonoBehaviour:
     SpecialMechanicDesc: 
   DeliveryType: 1
   ProjectilePrefab: {fileID: 8331610947043035701, guid: ca9d9eb2527daf442b4a26d151269e0a, type: 3}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
   AnchorOffset: {x: -0.7829679, y: 0.088736415}
   BaseRotationOffset: 103
   VisualScaleMultiplier: 0.9

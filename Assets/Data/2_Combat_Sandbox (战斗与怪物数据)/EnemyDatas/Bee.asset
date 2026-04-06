@@ -24,7 +24,7 @@ MonoBehaviour:
   - StatID: 15
     Value: 1
   - StatID: 14
-    Value: 1
+    Value: 500
   - StatID: 17
     Value: 0
   - StatID: 16

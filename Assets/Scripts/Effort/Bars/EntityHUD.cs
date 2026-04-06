@@ -12,6 +12,10 @@ public class EntityHUD : MonoBehaviour
     public Transform BuffGrid;
     public GameObject BuffIconPrefab;
 
+    [Header("=== 动态格栅 ===")]
+    public HealthBarGrid HPGrid;
+    public HealthBarGrid APGrid;
+
     private DamageReceiver targetReceiver;
     private BuffManager targetBuffMgr;
     private Transform canvasTrans;
@@ -60,6 +64,9 @@ public class EntityHUD : MonoBehaviour
         APBar.value = targetReceiver.CurrentAP;
 
         APBar.gameObject.SetActive(targetReceiver.CurrentAP > 0);
+
+        if (HPGrid != null) HPGrid.UpdateGrid(targetReceiver.MaxHP);
+        if (APGrid != null) APGrid.UpdateGrid(targetReceiver.MaxAP);
     }
 
     private void UpdateBuffs()

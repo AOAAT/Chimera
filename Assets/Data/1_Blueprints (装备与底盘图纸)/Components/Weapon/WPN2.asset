@@ -17,6 +17,7 @@ MonoBehaviour:
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: c169f21742889604ca515a0c6473a5b3, type: 3}
   Type: 1
+  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
@@ -109,6 +110,10 @@ MonoBehaviour:
     SpecialMechanicDesc: 
   DeliveryType: 0
   ProjectilePrefab: {fileID: 0}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.4
+  StrikeTimeRatio: 0.4
   AnchorOffset: {x: -0.692866, y: -0.055426136}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 0.9
