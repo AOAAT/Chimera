@@ -7,14 +7,9 @@ public class ChimeraAIController : MonoBehaviour
     private RuntimeChimeraData runtimeData;
     private Transform currentTarget;
     private Rigidbody2D rb;
-    private Collider2D myCollider;
 
     [Header("=== 动态物理计算结果 ===")]
     public float CurrentSpeed;
-    public float MaxStamina;
-    public float CurrentStamina;
-    public bool IsExhausted = false;
-    private float exhaustionTimer = 0f;
 
     [Header("=== 物理状态 ===")]
     public bool isStaggered = false;
@@ -30,12 +25,12 @@ public class ChimeraAIController : MonoBehaviour
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
 
+        // 核心速度公式：产电量越高、质量越轻，跑得越快！
         CurrentSpeed = GameFormulas.CalcMoveSpeed(runtimeData.TotalEnginePower, runtimeData.TotalMass, speedMult);
-        MaxStamina = GameFormulas.CalcMaxStamina(runtimeData.TotalEnginePower, runtimeData.TotalPowerCost);
-        CurrentStamina = MaxStamina;
 
         maxWeaponRange = 0f;
         minWeaponRange = float.MaxValue;
+
         foreach (var wpn in runtimeData.EquippedWeapons)
         {
             float maxR = wpn.GetStat(StatType.MaxRange) * distMult;
@@ -44,51 +39,41 @@ public class ChimeraAIController : MonoBehaviour
             if (minR < minWeaponRange) minWeaponRange = minR;
         }
 
-        // 👇【防排斥灾难 1】：强制保留至少 1.5 米的接敌距离，绝对不准机甲钻进敌人体内！
+        // 防重叠灾难：强制保留至少 1.5 米的接敌距离
         if (minWeaponRange == float.MaxValue) minWeaponRange = 1.5f * distMult;
         else if (minWeaponRange < 1.5f * distMult) minWeaponRange = 1.5f * distMult;
 
         if (maxWeaponRange < minWeaponRange) maxWeaponRange = minWeaponRange;
 
         rb = GetComponent<Rigidbody2D>();
-        myCollider = GetComponent<Collider2D>();
 
-        // 👇【防排斥灾难 2】：强制给机甲上 5 的物理摩擦力（阻力），让机甲变得稳如泰山！
-        if (rb != null) rb.drag = 5f;
+        if (rb != null) rb.drag = 5f; // 保持 5 的高摩擦力，防止被撞飞
     }
 
     private void Update()
     {
         if (runtimeData == null) return;
+
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
             if (rb != null) rb.velocity = Vector2.zero;
             return;
         }
 
+        // 挨打硬直处理
         if (isStaggered)
         {
             staggerTimer -= Time.deltaTime;
             if (staggerTimer <= 0)
             {
                 isStaggered = false;
-                // 👇【物理修复 3】：硬直恢复后，必须恢复 5 点摩擦力，绝对不能设回 0！
                 rb.drag = 5f;
             }
             return;
         }
 
-        if (IsExhausted)
-        {
-            if (rb != null) rb.velocity = Vector2.zero;
-            exhaustionTimer -= Time.deltaTime;
-            CurrentStamina += (MaxStamina * 0.2f) * Time.deltaTime;
-            if (exhaustionTimer <= 0) IsExhausted = false;
-            return;
-        }
-
         FindTarget();
-        HandleMovementAndStamina();
+        HandleMovement(); // 移除了 Stamina 处理
     }
 
     private void FindTarget()
@@ -106,16 +91,14 @@ public class ChimeraAIController : MonoBehaviour
         }
     }
 
-    private void HandleMovementAndStamina()
+    private void HandleMovement()
     {
         if (currentTarget == null)
         {
             if (rb != null) rb.velocity = Vector2.zero;
-            if (CurrentStamina < MaxStamina) CurrentStamina += 3f * Time.deltaTime;
             return;
         }
 
-        bool isMoving = false;
         Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
         Vector3 dirToTarget = (currentTarget.position - logicCenter).normalized;
         float dist = Vector3.Distance(logicCenter, currentTarget.position);
@@ -133,39 +116,26 @@ public class ChimeraAIController : MonoBehaviour
 
         Vector2 targetVelocity = Vector2.zero;
 
+        // 极度丝滑的永动机走位：要么风筝，要么突脸，要么边缘游走！
         if (runtimeData.MovementLogic == MovementStrategy.Dodge && dist < runtimeData.SafeDodgeDistance)
         {
             targetVelocity = -dirToTarget * CurrentSpeed;
-            isMoving = true;
         }
         else if (runtimeData.MovementLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
         {
             targetVelocity = dirToTarget * CurrentSpeed;
-            isMoving = true;
         }
         else if (runtimeData.MovementLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange)
         {
             targetVelocity = dirToTarget * CurrentSpeed;
-            isMoving = true;
         }
 
-        if (IsExhausted) targetVelocity = Vector2.zero;
         if (rb != null) rb.velocity = targetVelocity;
-
-        if (isMoving)
-        {
-            CurrentStamina -= 5f * Time.deltaTime;
-            if (CurrentStamina <= 0) { CurrentStamina = 0; IsExhausted = true; exhaustionTimer = 3f; }
-        }
-        else
-        {
-            if (CurrentStamina < MaxStamina) CurrentStamina += 3f * Time.deltaTime;
-        }
     }
 
     public void ApplyImpulse(Vector2 dir, float impulse)
     {
-        float mass = runtimeData != null ? runtimeData.TotalMass : 10f;
+        float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
         float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
 
         if (stunTime <= 0f) return;
@@ -173,8 +143,11 @@ public class ChimeraAIController : MonoBehaviour
         isStaggered = true;
         staggerTimer = stunTime;
 
+        float deltaV = impulse / mass;
+        float clampedDeltaV = Mathf.Clamp(deltaV, 0f, 20f);
+
         rb.drag = 5f;
         rb.velocity = Vector2.zero;
-        rb.AddForce(dir * impulse, ForceMode2D.Impulse);
+        rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse);
     }
 }

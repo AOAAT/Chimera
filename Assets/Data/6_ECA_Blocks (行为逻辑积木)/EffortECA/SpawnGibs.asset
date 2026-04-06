@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 356246b772e4c474da368038e57ae13f, type: 3}
+  m_Name: SpawnGibs
+  m_EditorClassIdentifier: 
+  GibPrefabs:
+  - {fileID: 1500765565750472605, guid: a7e7c2b48f8bdee46bc54ea21169f0a4, type: 3}
+  - {fileID: 2536461346163447890, guid: 408d9e9772238094e8225b5ac28e1388, type: 3}
+  - {fileID: 8366446270124421813, guid: 1800044700c3e654a90ff6dafc419ce6, type: 3}
+  MinGibCount: 4
+  MaxGibCount: 8
+  TriggerScreenBlood: 1
+  ScreenBloodColor: {r: 0.6, g: 0, b: 0, a: 0.7}

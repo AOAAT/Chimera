@@ -10922,9 +10922,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CurrentSpeed: 0
-  MaxStamina: 0
-  CurrentStamina: 0
-  IsExhausted: 0
   isStaggered: 0
 --- !u!61 &923019982
 BoxCollider2D:
@@ -16469,7 +16466,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9992026
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
