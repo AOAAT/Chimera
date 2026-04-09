@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// --- START OF FILE ECA_Core.cs ---
+using UnityEngine;
 
 public class ECAContext
 {
@@ -9,9 +10,11 @@ public class ECAContext
     public bool IsCriticalHit;
     public RuntimeChimeraData ChassisData;
     public ComponentDataSO SourceComponentSO;
-
-    // 👇【核心新增】：记录这发攻击是敌方发起的，还是玩家发起的！
     public bool IsEnemyFire;
+    public Transform SourceEntity;
+
+    // 👇【核心新增】：熔断开关！一旦有积木把它设为 true，后续积木立即停止！
+    public bool ExecutionAborted = false;
 }
 
 public abstract class ECAAction : ScriptableObject

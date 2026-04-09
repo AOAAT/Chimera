@@ -254,7 +254,10 @@ public class WeaponModule : MonoBehaviour
         // 依然保留真实的动画触发器，双重保障
         if (myAnimator != null) myAnimator.SetTrigger("Fire");
 
-        float finalDmg = Random.Range(weaponData.GetStat(StatType.MinDamage), weaponData.GetStat(StatType.MaxDamage));
+        float safeMinDmg = Mathf.Max(0f, weaponData.GetStat(StatType.MinDamage));
+        float safeMaxDmg = Mathf.Max(safeMinDmg, weaponData.GetStat(StatType.MaxDamage)); // 确保上限永远 >= 下限
+
+        float finalDmg = Random.Range(safeMinDmg, safeMaxDmg);
         float totalCritChance = weaponData.GetStat(StatType.CriticalChance) + weaponData.BonusCriticalChance;
         bool isCrit = Random.value <= totalCritChance;
         if (isCrit) finalDmg *= 1.5f;
@@ -266,12 +269,22 @@ public class WeaponModule : MonoBehaviour
             BaseDamage = finalDmg,
             SourceWeapon = weaponData,
             IsCriticalHit = isCrit,
-            IsEnemyFire = false
+            IsEnemyFire = false,
+            SourceEntity = mechRoot
         };
 
         if (weaponData.OnFireActions != null)
+        {
             foreach (var action in weaponData.OnFireActions)
-                if (action != null) action.Execute(fireContext);
+            {
+                if (action != null)
+                {
+                    action.Execute(fireContext);
+                    // 👇【熔断拦截】：如果刚才执行的积木（比如扣CP）失败并引发了熔断，直接停止开火！
+                    if (fireContext.ExecutionAborted) return;
+                }
+            }
+        }
 
         foreach (var target in CurrentTargets)
         {

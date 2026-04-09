@@ -15,7 +15,7 @@ MonoBehaviour:
   ComponentBaseID: WPN_001
   ComponentName: "\u94BB\u5934"
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
-  ComponentIcon: {fileID: 21300000, guid: bcb966f9ac22c334a883e1ad14a23796, type: 3}
+  ComponentIcon: {fileID: 21300000, guid: c4fbe7a267698794e818c84c8bc0571d, type: 3}
   Type: 1
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
@@ -170,8 +170,8 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
-  AnchorOffset: {x: -0.7829679, y: 0.088736415}
-  BaseRotationOffset: 103
+  AnchorOffset: {x: -0.17411691, y: -0.1602937}
+  BaseRotationOffset: 45
   VisualScaleMultiplier: 0.9
   TargetingLogic: 0
   MovementLogic: 0

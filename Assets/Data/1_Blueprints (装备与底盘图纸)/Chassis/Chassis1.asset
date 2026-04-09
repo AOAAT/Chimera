@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChassisID: CH_000
   ChassisName: "\u5E95\u76D81"
-  ChassisSprite: {fileID: 21300000, guid: 9b9bee1be361e0341a8579b7661a10b2, type: 3}
+  ChassisSprite: {fileID: 21300000, guid: e708e5238d832394a86b0b02c4a65149, type: 3}
+  DetailBackgroundSprite: {fileID: 0}
   Description: "\u5E95\u76D8\u7684\u98CE\u5473\u63CF\u8FF0"
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   MacroCategory: 0
@@ -32,26 +33,26 @@ MonoBehaviour:
   Sockets:
   - SlotName: "\u5934\u90E8"
     AllowedTypes: 00000000
-    LocalPosition: {x: -0.08, y: 0.75}
+    LocalPosition: {x: 0, y: 0.58}
     MountAngle: 1
     DefaultComponentScale: 1
   - SlotName: "\u8F85\u52A9"
     AllowedTypes: 02000000
-    LocalPosition: {x: 0, y: 0}
+    LocalPosition: {x: 0, y: -0.05}
     MountAngle: 0
     DefaultComponentScale: 1
   - SlotName: "\u53F3"
     AllowedTypes: 0100000002000000
-    LocalPosition: {x: 0.8, y: 0.22}
+    LocalPosition: {x: 0.63, y: 0.23}
     MountAngle: -90
     DefaultComponentScale: 1
   - SlotName: "\u5DE6"
     AllowedTypes: 0100000002000000
-    LocalPosition: {x: -0.8, y: 0.15}
+    LocalPosition: {x: -0.63, y: 0.23}
     MountAngle: 90
     DefaultComponentScale: 1
   - SlotName: "\u79FB\u52A8"
     AllowedTypes: 04000000
-    LocalPosition: {x: -0.03, y: -0.78}
+    LocalPosition: {x: 0, y: -0.58}
     MountAngle: 0
     DefaultComponentScale: 1
