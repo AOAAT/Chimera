@@ -165,7 +165,7 @@ MonoBehaviour:
     BonusTags: 
     SpecialMechanicDesc: 
   DeliveryType: 1
-  ProjectilePrefab: {fileID: 8331610947043035701, guid: ca9d9eb2527daf442b4a26d151269e0a, type: 3}
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   WindupAngle: -45
   StrikeAngle: 60
   WindupTimeRatio: 0.3

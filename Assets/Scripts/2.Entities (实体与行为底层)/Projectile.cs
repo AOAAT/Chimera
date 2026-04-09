@@ -12,13 +12,20 @@ public class Projectile : MonoBehaviour
     private bool isCritical;
     private bool hasHit = false;
 
-    // 👇【核心新增】：视觉穿透补偿！
     [Header("=== 视觉穿透与延迟销毁 ===")]
-    [Tooltip("子弹命中后，是否允许它在视觉上继续往前飞一小段距离 (营造贯穿感)？")]
     public bool EnableVisualPenetration = false;
-
-    [Tooltip("命中后，模型/拖尾继续存留的时间 (秒)。建议激光填 0.1~0.2")]
     public float PostHitLingerTime = 0f;
+
+    // 👇【核心新增】：平滑制导系统！
+    [Header("=== 弹道轨迹控制 ===")]
+    [Tooltip("是否开启平滑追踪？(如果不勾，就是生硬直线；勾了就是追踪导弹/平滑光束)")]
+    public bool EnableHoming = true;
+
+    [Tooltip("每秒最大转向角度 (决定了光束/导弹拐弯的圆润程度。推荐：光束2000，导弹300)")]
+    public float TurnSpeed = 1500f;
+
+    // 记录子弹当前的飞行方向 (单位向量)
+    private Vector2 currentDirection;
 
     public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy, bool isCrit)
     {
@@ -33,6 +40,9 @@ public class Projectile : MonoBehaviour
         if (CombatSandbox.Instance != null) this.speed *= CombatSandbox.Instance.SpeedMultiplier;
 
         gameObject.layer = LayerMask.NameToLayer("Projectile");
+
+        // 👇 记录初始发射方向 (就是生成时枪口的朝向)
+        currentDirection = transform.right;
     }
 
     private void Start()
@@ -47,13 +57,12 @@ public class Projectile : MonoBehaviour
 
     private void Update()
     {
-        // 👇 如果已经命中，且开启了穿透补偿，子弹不再追踪，而是顺着惯性继续飞！
         if (hasHit)
         {
             if (EnableVisualPenetration)
             {
-                // 顺着最后的方向继续飞，营造穿透肉体的视觉效果
-                transform.position += transform.right * speed * Time.deltaTime;
+                // 穿透时，顺着最后的惯性方向继续飞
+                transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
             }
             return;
         }
@@ -64,15 +73,46 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        // 正常巡航追踪
-        transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
-
-        // 👇【靶心修正】：现在不仅查距离，如果是激光这种极速武器，很容易一帧穿透！
-        // 如果我们离目标的【物理中心】非常近了，强制引爆！
         Vector3 targetCenter = target.position;
         Collider2D col = target.GetComponentInChildren<Collider2D>();
         if (col != null) targetCenter = col.bounds.center;
 
+        // ==========================================
+        // 🧠 核心修复：弹道飞行逻辑重构
+        // ==========================================
+
+        if (EnableHoming)
+        {
+            // 1. 算出指向敌人的理想向量
+            Vector2 directionToTarget = (targetCenter - transform.position).normalized;
+
+            // 2. 算出当前方向和理想方向的角度差
+            float rotateAmount = Vector3.Cross(currentDirection, directionToTarget).z;
+
+            // 3. 限制最大转向角速度，让它“平滑”地扭过去！
+            // 这里用了一个小技巧：RotateTowards 能完美控制最大旋转角度
+            currentDirection = Vector3.RotateTowards(
+                currentDirection,
+                directionToTarget,
+                TurnSpeed * Mathf.Deg2Rad * Time.deltaTime,
+                0f
+            ).normalized;
+
+            // 4. 更新子弹自身的旋转角度 (让贴图或长拖尾始终对准飞行方向)
+            float angle = Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+
+            // 5. 按照最终平滑过的方向向前飞行！
+            transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
+        }
+        else
+        {
+            // 如果不开启制导，就沿直线死板地飞 (适合普通机枪子弹)
+            currentDirection = (targetCenter - transform.position).normalized;
+            transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
+        }
+
+        // 碰撞判定保持不变
         if (Vector3.Distance(transform.position, targetCenter) <= 0.2f)
         {
             HitTarget();
@@ -102,18 +142,15 @@ public class Projectile : MonoBehaviour
             }
         }
 
-        // 👇【视觉补偿核心】：命中后，不立刻销毁！
-        // 如果配了延迟时间（比如激光），让它再飞一会儿，但关掉物理碰撞防止二次伤害！
         if (PostHitLingerTime > 0f)
         {
             Collider2D col = GetComponent<Collider2D>();
-            if (col != null) col.enabled = false; // 关闭碰撞，它现在只是个幻影
-
-            Destroy(gameObject, PostHitLingerTime); // 延迟销毁
+            if (col != null) col.enabled = false;
+            Destroy(gameObject, PostHitLingerTime);
         }
         else
         {
-            Destroy(gameObject); // 普通子弹，立刻销毁
+            Destroy(gameObject);
         }
     }
 

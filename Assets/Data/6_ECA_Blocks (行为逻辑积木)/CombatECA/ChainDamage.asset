@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: ChainDamage
   m_EditorClassIdentifier: 
   MaxTargets: 2
-  ChainRadius: 40
+  ChainRadius: 80
   DamageRatio: 0.5
-  IsTrueDamage: 0
+  IsTrueDamage: 1
   LightningPrefab: {fileID: 1356839212223178731, guid: 82f3607e2a0d86445aaf57a140c09e7c, type: 3}
   LightningDuration: 0.2
