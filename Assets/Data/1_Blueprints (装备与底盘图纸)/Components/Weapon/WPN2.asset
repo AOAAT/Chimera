@@ -45,69 +45,6 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
-  - Level: 2
-    BasePrice: 100
-    ScrapValue: 10
-    Stats:
-    - StatID: 5
-      Value: 20
-    - StatID: 6
-      Value: 10
-    - StatID: 7
-      Value: 40
-    - StatID: 8
-      Value: 0
-    - StatID: 9
-      Value: 200
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions:
-    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
-  - Level: 3
-    BasePrice: 100
-    ScrapValue: 10
-    Stats:
-    - StatID: 5
-      Value: 20
-    - StatID: 6
-      Value: 10
-    - StatID: 7
-      Value: 40
-    - StatID: 8
-      Value: 0
-    - StatID: 9
-      Value: 200
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions:
-    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
-  - Level: 4
-    BasePrice: 100
-    ScrapValue: 10
-    Stats:
-    - StatID: 5
-      Value: 20
-    - StatID: 6
-      Value: 10
-    - StatID: 7
-      Value: 40
-    - StatID: 8
-      Value: 0
-    - StatID: 9
-      Value: 200
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions:
-    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
   DeliveryType: 0
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45

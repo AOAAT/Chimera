@@ -38,46 +38,12 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
-  - Level: 2
-    BasePrice: 100
-    ScrapValue: 10
-    Stats:
-    - StatID: 0
-      Value: 200
-    - StatID: 1
-      Value: 100
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
-  - Level: 3
-    BasePrice: 100
-    ScrapValue: 10
-    Stats:
-    - StatID: 0
-      Value: 22
-    - StatID: 1
-      Value: 11
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
-  - Level: 4
-    BasePrice: 100
-    ScrapValue: 10
-    Stats: []
-    Mechanics: []
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
   AnchorOffset: {x: -0.14762358, y: -0.2720654}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
