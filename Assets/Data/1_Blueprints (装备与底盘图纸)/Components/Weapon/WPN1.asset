@@ -21,7 +21,7 @@ MonoBehaviour:
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
-  BaseSubTags: 09000000
+  BaseSubTags: 
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
@@ -172,7 +172,7 @@ MonoBehaviour:
   StrikeTimeRatio: 0.1
   AnchorOffset: {x: -0.17411691, y: -0.1602937}
   BaseRotationOffset: 45
-  VisualScaleMultiplier: 0.9
+  VisualScaleMultiplier: 1
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

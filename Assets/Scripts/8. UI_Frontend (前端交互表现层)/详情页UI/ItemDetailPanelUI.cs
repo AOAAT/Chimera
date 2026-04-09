@@ -277,15 +277,72 @@ public class ItemDetailPanelUI : MonoBehaviour
     // 辅助工具方法
     // ==========================================
 
+    // --- 请替换 ItemDetailPanelUI.cs 中的 FillCommonData 方法 ---
+
     private void FillCommonData(CommonUIElements ui, string name, string lv, Sprite icon, string desc, int scrap, string role, string mechanic)
     {
-        if (ui.NameText != null) ui.NameText.text = name;
-        if (ui.LevelText != null) ui.LevelText.text = string.IsNullOrEmpty(lv) ? "" : $"Lv.{lv}";
-        if (ui.IconImage != null) { ui.IconImage.sprite = icon; ui.IconImage.SetNativeSize(); }
-        if (ui.DescriptionText != null) ui.DescriptionText.text = desc;
+        // 1. 全局字体变黑 (如果你在 Prefab 里已经调黑了，这里就是双重保险)
+        Color defaultTextColor = Color.black;
+
+        if (ui.NameText != null)
+        {
+            ui.NameText.text = name;
+            ui.NameText.color = defaultTextColor;
+        }
+
+        if (ui.DescriptionText != null)
+        {
+            ui.DescriptionText.text = desc;
+            ui.DescriptionText.color = defaultTextColor;
+        }
+
+        if (ui.TacticalRoleText != null)
+        {
+            ui.TacticalRoleText.text = role;
+            ui.TacticalRoleText.color = defaultTextColor;
+        }
+
+        if (ui.SpecialMechanicText != null)
+        {
+            ui.SpecialMechanicText.text = mechanic;
+            ui.SpecialMechanicText.color = defaultTextColor;
+        }
+
+        // 注意：回收估值我们之前用的富文本 <color=#888888>，所以它不受影响，依然是灰色。
         if (ui.ScrapValueText != null) ui.ScrapValueText.text = $"{scrap}";
-        if (ui.TacticalRoleText != null) ui.TacticalRoleText.text = role;
-        if (ui.SpecialMechanicText != null) ui.SpecialMechanicText.text = mechanic;
+
+        if (ui.IconImage != null)
+        {
+            ui.IconImage.sprite = icon;
+            ui.IconImage.SetNativeSize();
+        }
+
+        // 2. 👇【核心新增】：等级专属颜色判定！
+        if (ui.LevelText != null)
+        {
+            if (string.IsNullOrEmpty(lv))
+            {
+                ui.LevelText.text = ""; // 底盘无等级
+            }
+            else
+            {
+                ui.LevelText.text = $"Lv.{lv}";
+
+                // 根据传入的字符串解析出等级数字
+                int levelNum = 1;
+                int.TryParse(lv, out levelNum);
+
+                // 经典稀有度颜色映射
+                switch (levelNum)
+                {
+                    case 1: ui.LevelText.color = Color.white; break;             // 1级：普通白
+                    case 2: ui.LevelText.color = new Color(0.2f, 0.6f, 1f, 1f); break; // 2级：稀有蓝
+                    case 3: ui.LevelText.color = new Color(0.7f, 0.2f, 0.9f, 1f); break; // 3级：史诗紫
+                    case 4: ui.LevelText.color = new Color(1f, 0.6f, 0f, 1f); break;   // 4级：传说橙
+                    default: ui.LevelText.color = Color.white; break;
+                }
+            }
+        }
     }
 
     private void SetLevelBackground(Image img, Sprite[] bgArray, int level)
