@@ -91,10 +91,16 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void Awake()
     {
+        // 👇【核心防冲突】：如果自己被嵌套在“强化预览界面”里，就乖乖做个子面板，绝不抢占全局单例！
+        if (GetComponentInParent<UpgradePreviewPanelUI>() != null)
+        {
+            return;
+        }
+
+        // 只有独立在外的那个全局 Tooltip 才有资格成为 Instance
         Instance = this;
         HidePanel();
     }
-
     public void HidePanel()
     {
         gameObject.SetActive(false);

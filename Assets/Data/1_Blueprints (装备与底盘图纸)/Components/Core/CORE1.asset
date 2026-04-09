@@ -38,6 +38,20 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+  - Level: 2
+    BasePrice: 100
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 100
+    - StatID: 1
+      Value: 100
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45
