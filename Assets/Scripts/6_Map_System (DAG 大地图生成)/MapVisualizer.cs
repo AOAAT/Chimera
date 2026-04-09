@@ -1,4 +1,5 @@
-﻿using System.Collections; // 【新增】用于协程
+﻿// --- START OF FILE MapVisualizer.cs ---
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,25 +14,28 @@ public class MapVisualizer : MonoBehaviour
     public float X_Spacing = 150f;
     public float Y_Spacing = 200f;
 
-    // 👇【新增 1】：定义一个映射结构体
+    // 👇【新增 1】：关联背景图的引用
+    [Header("=== 动态背景 ===")]
+    [Tooltip("将地图容器下的背景 Image 拖拽到这里，防止生成时被误删！")]
+    public RectTransform MapBackground;
+
     [System.Serializable]
     public struct NodeTypeIcon
     {
-        public MapNodeType Type;  // 节点类型 (如 Enemy, Elite, Boss)
-        public Sprite IconSprite; // 对应的贴图
+        public MapNodeType Type;
+        public Sprite IconSprite;
     }
 
     [Header("=== 节点图标配置 (Icon Dictionary) ===")]
-    public List<NodeTypeIcon> IconConfigs; // 暴露出给您拖拽贴图的列表
+    public List<NodeTypeIcon> IconConfigs;
 
-    // 👇【新增 2】：写一个小工具函数，根据类型找贴图
     public Sprite GetIconForType(MapNodeType type)
     {
         foreach (var config in IconConfigs)
         {
             if (config.Type == type) return config.IconSprite;
         }
-        return null; // 如果没配置，就返回空
+        return null;
     }
 
     private List<MapNodeUI> spawnedNodes = new List<MapNodeUI>();
@@ -53,7 +57,13 @@ public class MapVisualizer : MonoBehaviour
         float bottomPadding = 200f;
         float topPadding = 300f;
 
-        foreach (Transform child in transform) Destroy(child.gameObject);
+        // 👇【核心修复】：打扫战场时，保护背景图不被销毁！
+        foreach (Transform child in transform)
+        {
+            if (MapBackground != null && child == MapBackground) continue;
+            Destroy(child.gameObject);
+        }
+
         spawnedNodes.Clear();
         spawnedLines.Clear();
 
@@ -67,10 +77,9 @@ public class MapVisualizer : MonoBehaviour
             GameObject nodeObj = Instantiate(NodeUIPrefab, this.transform);
             RectTransform rect = nodeObj.GetComponent<RectTransform>();
 
-            // 👇【主程的终极绝杀】：不管预制体怎么设的，强行把坐标系原点按死在底部！
             rect.anchorMin = new Vector2(0.5f, 0f);
             rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot = new Vector2(0.5f, 0.5f); // 节点自己的轴心保持中心不变
+            rect.pivot = new Vector2(0.5f, 0.5f);
 
             float finalY = (data.LogicalPosition.y * Y_Spacing) + bottomPadding;
             rect.anchoredPosition = new Vector2(data.LogicalPosition.x * X_Spacing, finalY);
@@ -79,7 +88,7 @@ public class MapVisualizer : MonoBehaviour
 
             MapNodeUI uiScript = nodeObj.GetComponent<MapNodeUI>();
             Sprite myIcon = GetIconForType(data.NodeType);
-            uiScript.Initialize(data, myIcon); // 多传一个参数
+            uiScript.Initialize(data, myIcon);
             spawnedNodes.Add(uiScript);
         }
 
@@ -97,34 +106,59 @@ public class MapVisualizer : MonoBehaviour
                 GameObject lineObj = Instantiate(LineDrawerPrefab, this.transform);
                 RectTransform lineRect = lineObj.GetComponent<RectTransform>();
 
-                // 👇【连线容器也强制锁死在底部！】
                 lineRect.anchorMin = new Vector2(0.5f, 0f);
                 lineRect.anchorMax = new Vector2(0.5f, 0f);
                 lineRect.pivot = new Vector2(0.5f, 0f);
                 lineRect.anchoredPosition = Vector2.zero;
 
-                lineObj.transform.SetAsFirstSibling();
+                // 连线不垫底了，因为背景要垫底
+                // lineObj.transform.SetAsFirstSibling(); 
 
                 MapLineDrawer lineDrawer = lineObj.GetComponent<MapLineDrawer>();
                 lineDrawer.DrawCurve(fromData, toData, fromRect.anchoredPosition, toRect.anchoredPosition);
                 spawnedLines.Add(lineDrawer);
             }
         }
-
         float maxH = (MapManager.Instance.GetComponent<MapGenerator>().TotalLayers - 1) * Y_Spacing;
-        contentRect.sizeDelta = new Vector2(0, maxH + bottomPadding + topPadding);
+        float totalHeight = maxH + bottomPadding + topPadding;
+
+        // 设置 Content 容器的高度
+        contentRect.sizeDelta = new Vector2(contentRect.sizeDelta.x, totalHeight);
+
+        // 👇【为《杀戮尖塔》手绘羊皮卷量身定制】：完美等比例缩放！
+        if (MapBackground != null)
+        {
+            MapBackground.SetAsFirstSibling(); // 保证背景永远在最底层垫底
+
+            Image bgImg = MapBackground.GetComponent<Image>();
+            if (bgImg != null && bgImg.sprite != null)
+            {
+                // 1. 获取美术手绘图的原始长宽比 (宽 / 高)
+                float aspect = bgImg.sprite.rect.width / bgImg.sprite.rect.height;
+
+                // 2. 以代码算出来的地图总高度为基准，反推应该有多宽，保证画面绝不拉伸变形！
+                float targetWidth = totalHeight * aspect;
+
+                // 3. 完美锚定：将锚点和轴心全部钉死在底部中心
+                MapBackground.anchorMin = new Vector2(0.5f, 0f);
+                MapBackground.anchorMax = new Vector2(0.5f, 0f);
+                MapBackground.pivot = new Vector2(0.5f, 0f);
+
+                // 4. 赋予精准的物理尺寸
+                MapBackground.sizeDelta = new Vector2(targetWidth, totalHeight);
+                MapBackground.anchoredPosition = Vector2.zero;
+            }
+        }
 
         StartCoroutine(ScrollToBottom());
     }
+
     private IEnumerator ScrollToBottom()
     {
-        // 极其关键：必须等待当前帧的所有 UI 布局重算完毕
         yield return new WaitForEndOfFrame();
-
         ScrollRect scrollRect = GetComponentInParent<ScrollRect>();
         if (scrollRect != null)
         {
-            // 0 代表绝对底部，1 代表绝对顶部
             scrollRect.verticalNormalizedPosition = 0f;
         }
     }
