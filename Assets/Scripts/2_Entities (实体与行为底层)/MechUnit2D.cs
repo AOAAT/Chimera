@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
+﻿// --- START OF FILE MechUnit2D.cs ---
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.EventSystems;
 
-// ==========================================
-// 战场级机甲通用载体 (Battlefield Assembler)
-// ==========================================
 public class MechUnit2D : MonoBehaviour
 {
     private SavedUnitProfile bindedData;
@@ -112,32 +110,22 @@ public class MechUnit2D : MonoBehaviour
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
 
-        // --- 放在 MechUnit2D.cs 的 InitUnitData 方法末尾 ---
-
         ActivateCombatBrains(data);
 
         BuffManager buffMgr = GetComponent<BuffManager>();
         if (buffMgr == null) buffMgr = gameObject.AddComponent<BuffManager>();
 
-        Debug.Log($"<color=#00FFFF>【系统生产线】</color> 玩家机甲 {data.UnitName} 已挂载 Buff 管理器。");
-
-        // 1. 获取（或添加）动画器，并让它锁定底盘进行摇晃！
         ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
         if (procAnim == null) procAnim = gameObject.AddComponent<ProceduralAnimator2D>();
-        procAnim.SetTargetVisual(chassisObj.transform); // 极其关键：只摇底盘和武器，不摇带物理的根节点！
-        procAnim.RefreshBaseState(); // 刷新一下基础大小，防止乱缩放
-
-
+        procAnim.SetTargetVisual(chassisObj.transform);
+        procAnim.RefreshBaseState();
     }
 
     private void ActivateCombatBrains(SavedUnitProfile data)
     {
         RuntimeChimeraData combatData = new RuntimeChimeraData();
+        combatData.UnitID = data.UnitID;
 
-        MechSkillController skillCtrl = gameObject.AddComponent<MechSkillController>();
-        skillCtrl.Initialize(combatData);
-
-        // 👇【修复 1：防呆补丁】强制纠正任何因为老存档导致的 Level = 0 的情况
         InstancedComponent[] tempInstances = new InstancedComponent[data.ChassisData.Sockets.Count];
         for (int i = 0; i < data.SlotIndices.Count; i++)
         {
@@ -147,34 +135,40 @@ public class MechUnit2D : MonoBehaviour
 
             if (compInstance != null)
             {
-                if (compInstance.CurrentLevel <= 0) compInstance.CurrentLevel = 1; // 强制保底！
+                if (compInstance.CurrentLevel <= 0) compInstance.CurrentLevel = 1;
                 tempInstances[slotIdx] = compInstance;
             }
         }
 
-        // 把包含空位的完整数组传给 Assemble，让内部逻辑完全对齐！
+        // 调用黑盒装配，读入全部数据！
         combatData.Assemble(data.ChassisData, tempInstances);
 
         DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
         receiver.isEnemy = false;
-        receiver.Initialize(combatData.MaxHP, combatData.MaxAP);
+
+        // 防猝死安全锁
+        float safeMaxHP = combatData.MaxHP > 0 ? combatData.MaxHP : 100f;
+        float safeMaxAP = combatData.MaxAP > 0 ? combatData.MaxAP : 0f;
+        receiver.Initialize(safeMaxHP, safeMaxAP);
+
+        // 同步受损血量
+        if (data.CurrentHP > 0) receiver.CurrentHP = Mathf.Min(data.CurrentHP, safeMaxHP);
+        else receiver.CurrentHP = safeMaxHP;
 
         ChimeraAIController aiController = GetComponent<ChimeraAIController>() ?? gameObject.AddComponent<ChimeraAIController>();
         aiController.Initialize(combatData);
 
-        // 👇【修复 2：彻底安全的武器挂载逻辑】
+        // 挂载主动技能大脑
+        MechSkillController skillCtrl = GetComponent<MechSkillController>() ?? gameObject.AddComponent<MechSkillController>();
+        skillCtrl.Initialize(combatData);
+
         int weaponDataIndex = 0;
         for (int i = 0; i < tempInstances.Length; i++)
         {
             var compInstance = tempInstances[i];
             if (compInstance != null && compInstance.BaseData.Type == ComponentType.Weapon)
             {
-                // 确保数据对齐不越界
-                if (weaponDataIndex >= combatData.EquippedWeapons.Count)
-                {
-                    Debug.LogError($"【越界保护】武器挂载错位！尝试挂载第 {weaponDataIndex} 个武器，但黑盒里只有 {combatData.EquippedWeapons.Count} 把枪！");
-                    break;
-                }
+                if (weaponDataIndex >= combatData.EquippedWeapons.Count) break;
 
                 var slotDef = data.ChassisData.Sockets[i];
                 Transform socketTrans = VisualRoot.FindRecursive($"Socket_{slotDef.SlotName}");
@@ -182,11 +176,8 @@ public class MechUnit2D : MonoBehaviour
                 if (socketTrans != null)
                 {
                     WeaponModule weaponScript = socketTrans.gameObject.AddComponent<WeaponModule>();
-                    // 精准对应到那把枪的数据！
                     weaponScript.Initialize(combatData.EquippedWeapons[weaponDataIndex], combatData.LogicCenterOffset, this.transform);
                 }
-
-                // 只有成功挂载了武器，才移动指针！
                 weaponDataIndex++;
             }
         }
@@ -246,7 +237,6 @@ public class MechUnit2D : MonoBehaviour
         }
 
         if (!isValidZone) transform.position = dragStartPos;
-
         if (physicsCol != null) physicsCol.enabled = true;
     }
 
@@ -266,7 +256,6 @@ public class MechUnit2D : MonoBehaviour
     public void SyncPostCombatState()
     {
         if (bindedData == null) return;
-
         DamageReceiver receiver = GetComponent<DamageReceiver>();
         if (receiver != null)
         {

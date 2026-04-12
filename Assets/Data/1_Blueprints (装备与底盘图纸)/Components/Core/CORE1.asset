@@ -38,6 +38,14 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 1
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions:
+      - {fileID: 11400000, guid: cb5f9a86f5d450a41bcbad811983893d, type: 2}
   - Level: 2
     BasePrice: 100
     ScrapValue: 10
@@ -52,6 +60,58 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 1
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions:
+      - {fileID: 11400000, guid: cb5f9a86f5d450a41bcbad811983893d, type: 2}
+  - Level: 3
+    BasePrice: 100
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 100
+    - StatID: 1
+      Value: 100
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 1
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions:
+      - {fileID: 11400000, guid: cb5f9a86f5d450a41bcbad811983893d, type: 2}
+  - Level: 4
+    BasePrice: 100
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 100
+    - StatID: 1
+      Value: 100
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 1
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions:
+      - {fileID: 11400000, guid: cb5f9a86f5d450a41bcbad811983893d, type: 2}
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45

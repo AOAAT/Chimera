@@ -37,13 +37,31 @@ public class EntityHUD : MonoBehaviour
             if (hpFill != null) hpFill.color = receiver.isEnemy ? new Color(0.9f, 0.2f, 0.2f) : new Color(0.2f, 0.9f, 0.2f);
         }
 
+        // 👇【核心修复】：一初始化就处理名字！
+        if (MechNameText != null)
+        {
+            if (receiver.isEnemy)
+            {
+                // 如果是敌人，直接隐藏文字！
+                MechNameText.text = "";
+                MechNameText.gameObject.SetActive(false);
+            }
+            else
+            {
+                // 如果是玩家的机甲，初始化时先用默认的白色名字显示出来
+                // (等战斗开始，ActiveSkillUIManager 会用它专属的彩色名字将其覆盖)
+                MechNameText.gameObject.SetActive(true);
+                // 剔除 "[UNIT] " 前缀
+                MechNameText.text = receiver.gameObject.name.Replace("[UNIT] ", "");
+                MechNameText.color = Color.white;
+            }
+        }
+
         UpdateBars();
 
-        // 监听底层事件驱动 UI！
         if (targetReceiver != null) targetReceiver.OnStatsChanged += UpdateBars;
         if (targetBuffMgr != null) targetBuffMgr.OnBuffsChanged += UpdateBuffs;
     }
-
     private void OnDestroy()
     {
         if (targetReceiver != null) targetReceiver.OnStatsChanged -= UpdateBars;

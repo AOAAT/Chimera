@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿// --- START OF FILE RuntimeChimeraData.cs ---
+using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -23,6 +24,7 @@ public class RuntimeWeapon
 [System.Serializable]
 public class RuntimeChimeraData
 {
+    public string UnitID;
     public string UnitName;
 
     public float MaxHP { get; private set; }
@@ -37,18 +39,13 @@ public class RuntimeChimeraData
     public float SafeDodgeDistance;
 
     public Dictionary<StatType, float> GlobalStats = new Dictionary<StatType, float>();
-
     public List<SubTag> Tags = new List<SubTag>();
-
     public List<ECABlock> GlobalMechanics = new List<ECABlock>();
     public List<RuntimeWeapon> EquippedWeapons = new List<RuntimeWeapon>();
-
     public List<ComponentDataSO> AllEquippedSOs = new List<ComponentDataSO>();
 
-    public string UnitID; 
-    
-    public Color AssignedColor;
-
+    // 存储本台机甲的主动技能
+    public ActiveSkillConfig CoreActiveSkill;
 
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
     {
@@ -58,16 +55,18 @@ public class RuntimeChimeraData
         GlobalMechanics.Clear();
         EquippedWeapons.Clear();
         MaxHP = MaxAP = TotalPowerCost = TotalMass = TotalEnginePower = 0;
+        CoreActiveSkill = null; // 每次重装前清空
 
         if (chassis == null) return;
         UnitName = chassis.ChassisName;
         LogicCenterOffset = chassis.LogicCenterOffset;
 
+        // 1. 读取底盘属性
         ProcessStats(chassis.BaseStats, false, null);
 
+        // 2. 遍历所有组件
         foreach (var compInstance in components)
         {
-            // 👇【核心修复】：同步改回 BaseData
             if (compInstance == null || compInstance.BaseData == null) continue;
 
             var compSO = compInstance.BaseData;
@@ -100,27 +99,70 @@ public class RuntimeChimeraData
                     TargetingLogic = compSO.TargetingLogic;
                     MovementLogic = compSO.MovementLogic;
                     SafeDodgeDistance = compSO.SafeDodgeDistance;
+
+                    // 提取核心主动技能
+                    if (levelData.ActiveSkill == null)
+                    {
+                        Debug.LogWarning($"<color=#FFA500>[Assemble]</color> 核心 [{compSO.ComponentName}] 的 ActiveSkill 为空！");
+                    }
+                    else if (!levelData.ActiveSkill.HasActiveSkill)
+                    {
+                        Debug.LogWarning($"<color=#FFA500>[Assemble]</color> 核心 [{compSO.ComponentName}] (Lv.{compInstance.CurrentLevel}) 没有勾选 HasActiveSkill！");
+                    }
+                    else
+                    {
+                        CoreActiveSkill = levelData.ActiveSkill;
+                        Debug.Log($"<color=#00FFFF>[Assemble]</color> 成功提取主动技能: [{CoreActiveSkill.SkillName}]");
+                    }
                 }
+
                 if (levelData.Mechanics != null) GlobalMechanics.AddRange(levelData.Mechanics);
                 ProcessStats(levelData.Stats, false, null);
             }
         }
 
+        // 3. 统计最终面板
         MaxHP = GetGlobalStat(StatType.AddedHP);
         MaxAP = GetGlobalStat(StatType.AddedAP);
         TotalPowerCost = GetGlobalStat(StatType.PowerCost);
         TotalMass = GetGlobalStat(StatType.AddedMass);
         TotalEnginePower = GetGlobalStat(StatType.EnginePower);
 
+        // 4. 执行装配 ECA 机制
         foreach (var compInstance in components)
         {
             if (compInstance == null) continue;
-            // 👇【核心修复】：同步改回 BaseData
             var levelData = compInstance.BaseData.GetLevelData(compInstance.CurrentLevel);
             if (levelData != null && levelData.OnAssembleActions.Count > 0)
             {
                 ECAContext assembleContext = new ECAContext { ChassisData = this, SourceComponentSO = compInstance.BaseData };
                 foreach (var action in levelData.OnAssembleActions) if (action != null) action.Execute(assembleContext);
+            }
+        }
+    }
+
+    // ==========================================
+    // 极其关键的属性读取算法 (绝对不能省略！)
+    // ==========================================
+    private void ProcessStats(List<StatEntry> stats, bool isWeaponLocal, RuntimeWeapon weaponRef)
+    {
+        if (stats == null) return;
+
+        foreach (var stat in stats)
+        {
+            if (isWeaponLocal && IsWeaponSpecificStat(stat.StatID))
+            {
+                if (weaponRef.WeaponStats.ContainsKey(stat.StatID))
+                    weaponRef.WeaponStats[stat.StatID] += stat.Value;
+                else
+                    weaponRef.WeaponStats.Add(stat.StatID, stat.Value);
+            }
+            else
+            {
+                if (GlobalStats.ContainsKey(stat.StatID))
+                    GlobalStats[stat.StatID] += stat.Value;
+                else
+                    GlobalStats.Add(stat.StatID, stat.Value);
             }
         }
     }
@@ -148,29 +190,6 @@ public class RuntimeChimeraData
 
         if (GlobalStats.ContainsKey(stat)) GlobalStats[stat] += delta;
         else GlobalStats.Add(stat, delta);
-    }
-
-    private void ProcessStats(List<StatEntry> stats, bool isWeaponLocal, RuntimeWeapon weaponRef)
-    {
-        if (stats == null) return;
-
-        foreach (var stat in stats)
-        {
-            if (isWeaponLocal && IsWeaponSpecificStat(stat.StatID))
-            {
-                if (weaponRef.WeaponStats.ContainsKey(stat.StatID))
-                    weaponRef.WeaponStats[stat.StatID] += stat.Value;
-                else
-                    weaponRef.WeaponStats.Add(stat.StatID, stat.Value);
-            }
-            else
-            {
-                if (GlobalStats.ContainsKey(stat.StatID))
-                    GlobalStats[stat.StatID] += stat.Value;
-                else
-                    GlobalStats.Add(stat.StatID, stat.Value);
-            }
-        }
     }
 
     private bool IsWeaponSpecificStat(StatType type)

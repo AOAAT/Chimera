@@ -291,10 +291,15 @@ public class CombatDirector : MonoBehaviour
         IsDeploymentPhase = false;
         isCheckingWinCondition = true;
 
-        // 👇【新增】：战斗开始瞬间，让技能管理器生成 UI！
+        // 👇【核心接入】：在战斗正式打响时，呼叫 UI 排布所有的主动技能！
         if (ActiveSkillUIManager.Instance != null)
         {
+            Debug.Log("<color=#FFD700>[CombatDirector]</color> 呼叫 ActiveSkillUIManager 构建界面...");
             ActiveSkillUIManager.Instance.BuildSkillUI(activePlayerUnits);
+        }
+        else
+        {
+            Debug.LogError("<color=#FF0000>[CombatDirector] 严重错误！找不到 ActiveSkillUIManager 单例！请确认场景中挂载了该脚本。</color>");
         }
     }
 
@@ -433,10 +438,15 @@ public class CombatDirector : MonoBehaviour
             }
         }
 
+        // 清理技能 UI，防止下次进来重叠
+        if (ActiveSkillUIManager.Instance != null)
+        {
+            foreach (Transform child in ActiveSkillUIManager.Instance.SlotContainer) Destroy(child.gameObject);
+        }
+
         bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
         if (isVictory)
         {
-            // 👇【终极空指针防御】：哪怕大地图模块没加载，打捞页面也能安全弹出并结束！
             LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
 
             int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
@@ -452,7 +462,6 @@ public class CombatDirector : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("【系统警告】找不到大巴扎导演(LootSequenceDirector)，无法进入打捞页面！直接执行返回地图！");
                 ExecuteReturnToMap();
             }
         }

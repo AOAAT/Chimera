@@ -53,14 +53,13 @@ public class StatEntry
 // ==========================================
 // 全新系统：等级数据矩阵块 (Level Matrix Block)
 // ==========================================
+// --- 请替换 GameCoreTypes.cs 中的 ComponentLevelData 类 ---
+
 [Serializable]
 public class ComponentLevelData
 {
     public int Level = 1; // 1, 2, 3, 4
-
-    [Tooltip("这件物品在商店里的基础售价")]
-    public int BasePrice = 100; // 👇【核心新增】：商店标价！
-
+    public int BasePrice = 100;
     public int ScrapValue = 10;
 
     [Header("本级绝对数值 (非乘区)")]
@@ -69,18 +68,19 @@ public class ComponentLevelData
     [Header("本级新增的基础 ECA 机制 (万能积木)")]
     public List<ECABlock> Mechanics = new List<ECABlock>();
 
-    [Header("本级专属生命周期动作 (如: 3级解锁吸血)")]
+    [Header("本级专属生命周期动作")]
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
 
-    [Header("本级新增的额外标签 (可选, 用于后期流派质变)")]
+    [Header("本级新增的额外标签")]
     public List<SubTag> BonusTags = new List<SubTag>();
 
     [TextArea] public string SpecialMechanicDesc = "等级特效描述...";
 
+    // 👇【核心修复】：强制 new 一个对象，绝对防空！
     [Header("=== 本级主动技能 (仅装在核心槽位生效) ===")]
-    public ActiveSkillConfig ActiveSkill;
+    public ActiveSkillConfig ActiveSkill = new ActiveSkillConfig();
 }
 
 [Serializable]

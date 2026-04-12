@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
+  m_Name: BUFF_Overclock
+  m_EditorClassIdentifier: 
+  BuffID: BUFF_001
+  BuffName: "\u8D85\u9891\u8FC7\u8F7D"
+  BuffIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+  ParticleColor: {r: 1, g: 1, b: 1, a: 1}
+  DurationType: 1
+  BaseDuration: 4
+  StackType: 0
+  MaxStacks: 1
+  StatModifiers:
+  - StatID: 9
+    Value: 20000
+  OnApplyActions: []
+  TickInterval: 1
+  OnTickActions: []
+  OnRemoveActions: []
+  OnMaxStacksActions: []
+  OverrideAI: 0
+  OverrideMovementLogic: 2
+  OverrideSafeDodgeDistance: 8

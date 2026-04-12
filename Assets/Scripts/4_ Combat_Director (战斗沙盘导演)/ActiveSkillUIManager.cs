@@ -1,27 +1,34 @@
 ﻿// --- START OF FILE ActiveSkillUIManager.cs ---
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro; // 如果没有这行请加上
 
 public class ActiveSkillUIManager : MonoBehaviour
 {
-    public static ActiveSkillUIManager Instance; // 👇 加了单例
+    public static ActiveSkillUIManager Instance;
 
+    [Header("=== UI 绑定 ===")]
     public Transform SlotContainer;
     public GameObject SkillSlotPrefab;
 
     private Color[] palette = new Color[] {
-        new Color(0.2f, 0.8f, 1f),   // 青蓝
-        new Color(1f, 0.6f, 0.2f),   // 橙黄
-        new Color(0.8f, 0.2f, 0.8f), // 紫红
-        new Color(0.4f, 1f, 0.4f)    // 亮绿
+        new Color(0.2f, 0.8f, 1f),
+        new Color(1f, 0.6f, 0.2f),
+        new Color(0.8f, 0.2f, 0.8f),
+        new Color(0.4f, 1f, 0.4f)
     };
 
     private void Awake() { Instance = this; }
 
-    // 👇 参数改成 List<DamageReceiver> 适配战斗导演
     public void BuildSkillUI(List<DamageReceiver> playerUnits)
     {
+        Debug.Log($"<color=#FFD700>[SkillUI_Manager]</color> 收到指令，开始为 {playerUnits.Count} 台机甲排布技能栏...");
+
+        if (SlotContainer == null || SkillSlotPrefab == null)
+        {
+            Debug.LogError("<color=#FF0000>[SkillUI_Manager] 严重错误！SlotContainer 或 SkillSlotPrefab 没有在面板上拖拽赋值！</color>");
+            return;
+        }
+
         foreach (Transform child in SlotContainer) Destroy(child.gameObject);
 
         int validSkillCount = 0;
@@ -35,14 +42,19 @@ public class ActiveSkillUIManager : MonoBehaviour
             Color assignedColor = palette[i % palette.Length];
             EntityHUD hud = unit.GetComponentInChildren<EntityHUD>();
 
-            // 头顶名字赋色
             if (hud != null && hud.MechNameText != null)
             {
                 hud.MechNameText.text = unit.gameObject.name.Replace("[UNIT] ", "");
                 hud.MechNameText.color = assignedColor;
             }
 
-            if (skillCtrl != null && skillCtrl.SkillConfig != null && skillCtrl.SkillConfig.HasActiveSkill)
+            if (skillCtrl == null)
+            {
+                Debug.LogWarning($"<color=#FF0000>[SkillUI_Manager]</color> 机甲 {unit.gameObject.name} 身上没找到 MechSkillController！");
+                continue;
+            }
+
+            if (skillCtrl.SkillConfig != null && skillCtrl.SkillConfig.HasActiveSkill)
             {
                 GameObject slotObj = Instantiate(SkillSlotPrefab, SlotContainer);
                 ActiveSkillSlotUI slotUI = slotObj.GetComponent<ActiveSkillSlotUI>();
@@ -52,6 +64,11 @@ public class ActiveSkillUIManager : MonoBehaviour
 
                 slotUI.Initialize(skillCtrl, key, keyName, assignedColor, unit.gameObject.name.Replace("[UNIT] ", ""));
                 validSkillCount++;
+                Debug.Log($"<color=#00FF00>[SkillUI_Manager]</color> 成功生成技能格子：{skillCtrl.SkillConfig.SkillName}");
+            }
+            else
+            {
+                Debug.Log($"<color=#888888>[SkillUI_Manager]</color> 掠过机甲 {unit.gameObject.name}，因为它没有主动技能。");
             }
         }
     }
