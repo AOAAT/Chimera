@@ -10,6 +10,11 @@ public class BuffManager : MonoBehaviour
     private DamageReceiver myReceiver;
     public Dictionary<StatType, float> BuffStatModifiers = new Dictionary<StatType, float>();
 
+    public bool HasAIOverride { get; private set; }
+    public MovementStrategy CurrentOverrideMovement { get; private set; }
+    public float CurrentOverrideDodgeDist { get; private set; }
+
+
     // 👇 暴露事件和列表
     public event Action OnBuffsChanged;
     public IReadOnlyList<ActiveBuff> GetActiveBuffs() => activeBuffs;
@@ -87,6 +92,17 @@ public class BuffManager : MonoBehaviour
             }
         }
         // 👇 任何变化都要通知 UI
+        HasAIOverride = false;
+        foreach (var buff in activeBuffs)
+        {
+            if (buff.Blueprint.OverrideAI)
+            {
+                HasAIOverride = true;
+                CurrentOverrideMovement = buff.Blueprint.OverrideMovementLogic;
+                CurrentOverrideDodgeDist = buff.Blueprint.OverrideSafeDodgeDistance;
+                break; // 暂定取最新挂载的 AI 覆写
+            }
+        }
         OnBuffsChanged?.Invoke();
     }
 

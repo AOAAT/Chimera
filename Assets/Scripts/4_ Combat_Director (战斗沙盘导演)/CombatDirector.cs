@@ -290,6 +290,12 @@ public class CombatDirector : MonoBehaviour
         IsCombatActive = true;
         IsDeploymentPhase = false;
         isCheckingWinCondition = true;
+
+        // 👇【新增】：战斗开始瞬间，让技能管理器生成 UI！
+        if (ActiveSkillUIManager.Instance != null)
+        {
+            ActiveSkillUIManager.Instance.BuildSkillUI(activePlayerUnits);
+        }
     }
 
     private void Update()

@@ -52,4 +52,11 @@ public class BuffDataSO : ScriptableObject
 
     [Tooltip("仅 ThresholdTrigger 有效：叠满 N 层时瞬间触发 (如：射钉枪爆甲)")]
     public List<ECAAction> OnMaxStacksActions = new List<ECAAction>();
+
+    [Header("=== 行为覆写 (AI Override) ===")]
+    [Tooltip("勾选后，挂载此 Buff 期间将强制改变机甲的走位逻辑！")]
+    public bool OverrideAI = false;
+    public MovementStrategy OverrideMovementLogic = MovementStrategy.Dodge;
+    public float OverrideSafeDodgeDistance = 8f;
+
 }

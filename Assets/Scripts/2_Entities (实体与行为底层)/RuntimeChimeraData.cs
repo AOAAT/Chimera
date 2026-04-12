@@ -45,6 +45,11 @@ public class RuntimeChimeraData
 
     public List<ComponentDataSO> AllEquippedSOs = new List<ComponentDataSO>();
 
+    public string UnitID; 
+    
+    public Color AssignedColor;
+
+
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
     {
         AllEquippedSOs.Clear();

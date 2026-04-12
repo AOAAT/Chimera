@@ -78,4 +78,20 @@ public class ComponentLevelData
     public List<SubTag> BonusTags = new List<SubTag>();
 
     [TextArea] public string SpecialMechanicDesc = "等级特效描述...";
+
+    [Header("=== 本级主动技能 (仅装在核心槽位生效) ===")]
+    public ActiveSkillConfig ActiveSkill;
+}
+
+[Serializable]
+public class ActiveSkillConfig
+{
+    public bool HasActiveSkill = false;
+    public string SkillName = "核心过载";
+    public Sprite SkillIcon;
+    public float CPCost = 3f;
+    public float Cooldown = 10f;
+
+    [Header("技能执行的 ECA 魔法积木")]
+    public List<ECAAction> OnSkillCastActions = new List<ECAAction>();
 }

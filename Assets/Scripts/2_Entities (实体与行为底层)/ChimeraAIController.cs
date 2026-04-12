@@ -93,11 +93,14 @@ public class ChimeraAIController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (currentTarget == null)
-        {
-            if (rb != null) rb.velocity = Vector2.zero;
-            return;
-        }
+        if (currentTarget == null) { if (rb != null) rb.velocity = Vector2.zero; return; }
+
+        // 👇【核心读取】：尝试获取 Buff 管理器
+        BuffManager buffMgr = GetComponent<BuffManager>();
+
+        // 动态决定当前的 AI 逻辑
+        MovementStrategy activeLogic = (buffMgr != null && buffMgr.HasAIOverride) ? buffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
+        float activeDodgeDist = (buffMgr != null && buffMgr.HasAIOverride) ? buffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
 
         Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
         Vector3 dirToTarget = (currentTarget.position - logicCenter).normalized;
@@ -116,16 +119,16 @@ public class ChimeraAIController : MonoBehaviour
 
         Vector2 targetVelocity = Vector2.zero;
 
-        // 极度丝滑的永动机走位：要么风筝，要么突脸，要么边缘游走！
-        if (runtimeData.MovementLogic == MovementStrategy.Dodge && dist < runtimeData.SafeDodgeDistance)
+        // 👇 用 activeLogic 和 activeDodgeDist 替换掉原来的 runtimeData.xx
+        if (activeLogic == MovementStrategy.Dodge && dist < activeDodgeDist)
         {
             targetVelocity = -dirToTarget * CurrentSpeed;
         }
-        else if (runtimeData.MovementLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
+        else if (activeLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
         {
             targetVelocity = dirToTarget * CurrentSpeed;
         }
-        else if (runtimeData.MovementLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange)
+        else if (activeLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange)
         {
             targetVelocity = dirToTarget * CurrentSpeed;
         }

@@ -12,6 +12,9 @@ public class EntityHUD : MonoBehaviour
     public Transform BuffGrid;
     public GameObject BuffIconPrefab;
 
+    [Header("=== 实体名称 (机甲专属) ===")]
+    public TMP_Text MechNameText; // 👇 【新增这行代码】
+
     [Header("=== 动态格栅 ===")]
     public HealthBarGrid HPGrid;
     public HealthBarGrid APGrid;

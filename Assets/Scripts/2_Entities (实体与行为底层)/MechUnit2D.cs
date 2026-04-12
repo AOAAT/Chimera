@@ -134,6 +134,9 @@ public class MechUnit2D : MonoBehaviour
     {
         RuntimeChimeraData combatData = new RuntimeChimeraData();
 
+        MechSkillController skillCtrl = gameObject.AddComponent<MechSkillController>();
+        skillCtrl.Initialize(combatData);
+
         // 👇【修复 1：防呆补丁】强制纠正任何因为老存档导致的 Level = 0 的情况
         InstancedComponent[] tempInstances = new InstancedComponent[data.ChassisData.Sockets.Count];
         for (int i = 0; i < data.SlotIndices.Count; i++)
