@@ -6614,7 +6614,7 @@ MonoBehaviour:
   APText: {fileID: 546455847}
   PowerText: {fileID: 1454804935}
   UnitNameInput: {fileID: 946785348}
-  PreviewScale: 2
+  PreviewScale: 1
 --- !u!114 &857266333
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7650,7 +7650,7 @@ GameObject:
   - component: {fileID: 966191557}
   - component: {fileID: 966191558}
   m_Layer: 5
-  m_Name: SkillListContainer
+  m_Name: "\u6280\u80FD\u5217\u8868SkillListContainer"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7672,8 +7672,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1421, y: 191}
-  m_SizeDelta: {x: 200, y: 600}
+  m_AnchoredPosition: {x: -1410.1086, y: 121.519165}
+  m_SizeDelta: {x: 304.9537, y: 738.9617}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &966191558
 MonoBehaviour:
@@ -7695,7 +7695,7 @@ MonoBehaviour:
   m_ChildAlignment: 0
   m_Spacing: 20
   m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
+  m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
@@ -11271,7 +11271,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
