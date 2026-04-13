@@ -70,4 +70,37 @@ public static class GameFormulas
             finalHPDamage = rawDamage - currentAP;
         }
     }
+
+    // ==========================================
+    // 👇【核心新增】：大运流！真实物理动能碰撞伤害公式
+    // ==========================================
+    /// <summary>
+    /// 计算两个刚体碰撞时产生的动能破坏力 (基于相对速度和双方质量)
+    /// </summary>
+    /// <param name="massA">主动撞击方质量</param>
+    /// <param name="massB">被撞方质量</param>
+    /// <param name="relativeVelocity">双方碰撞瞬间的相对速度大小 (m/s)</param>
+    /// <param name="damageConversionRate">动能转化为 HP 伤害的比率 (策划用于调控数值膨胀，推荐 1.0~5.0)</param>
+    /// <returns>返回这次碰撞产生的总基础伤害</returns>
+    public static float CalcKineticRamDamage(float massA, float massB, float relativeVelocity, float damageConversionRate = 2.0f)
+    {
+        // 防呆：质量不能为 0，否则除以 0 报错
+        float m1 = Mathf.Max(0.1f, massA);
+        float m2 = Mathf.Max(0.1f, massB);
+
+        // 真实物理学：完全非弹性碰撞的动能损耗公式 (Reduced Mass * V_rel^2 / 2)
+        // 折合质量 (Reduced Mass) = (m1 * m2) / (m1 + m2)
+        float reducedMass = (m1 * m2) / (m1 + m2);
+
+        // 动能损耗 E = 0.5 * reducedMass * V_rel^2
+        float kineticEnergyLoss = 0.5f * reducedMass * (relativeVelocity * relativeVelocity);
+
+        // 转化为游戏里的扣血量 (乘以策划配置的转化率)
+        float rawDamage = kineticEnergyLoss * damageConversionRate;
+
+        // 兜底：撞击太轻（比如走路擦到）不造成伤害
+        if (rawDamage < 5f) return 0f;
+
+        return rawDamage;
+    }
 }

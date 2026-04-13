@@ -37,7 +37,13 @@ public enum SalvageDropType
     DraftThree  // 三选一
 }
 
-public enum WeaponDeliveryType { Melee, Ranged }
+// --- 请替换 GameCoreTypes.cs 中的 WeaponDeliveryType 并增加新枚举 ---
+
+// 在末尾加上 Tactical_Dash 战术位移
+public enum WeaponDeliveryType { Melee, Ranged, Tactical_Dash }
+
+// 👇【新增】：怪物的战术位移方向
+public enum TacticalDashDirection { AwayFromTarget, TowardsTarget, Lateral }
 public enum ComponentType { Core, Weapon, Support, Factory, Movement }
 public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest }
 public enum MovementStrategy { Active_Firepower, Active_Survival, Dodge }

@@ -15,6 +15,9 @@ public class ChimeraAIController : MonoBehaviour
     [Header("=== 物理状态 ===")]
     public bool isStaggered = false;
     private float staggerTimer = 0f;
+    public bool isDashing = false;
+    private float dashTimer = 0f;
+
 
     private float maxWeaponRange = 0f;
     private float minWeaponRange = 0f;
@@ -75,8 +78,25 @@ public class ChimeraAIController : MonoBehaviour
     private void Update()
     {
         if (runtimeData == null) return;
-        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) { if (rb != null) rb.velocity = Vector2.zero; return; }
+        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
+        {
+            if (rb != null) rb.velocity = Vector2.zero; return;
+        }
+
+        // 处理受击硬直
         if (isStaggered) { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; } return; }
+
+        // 👇【新增】：处理冲刺状态 (冲刺期间无视常规走位！)
+        if (isDashing)
+        {
+            dashTimer -= Time.deltaTime;
+            if (dashTimer <= 0)
+            {
+                isDashing = false;
+                rb.drag = 5f; // 冲刺结束，恢复刹车阻力
+            }
+            return; // 冲刺期间，直接 return，不要执行下面的 HandleMovement！
+        }
 
         FindTarget();
         HandleMovement();
@@ -133,5 +153,72 @@ public class ChimeraAIController : MonoBehaviour
         float clampedDeltaV = Mathf.Clamp(impulse / mass, 0f, 20f);
         rb.drag = 5f; rb.velocity = Vector2.zero;
         rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse);
+    }
+
+    // ==========================================
+    // 👇【核心升级】：大运流！真实的物理碰撞判定
+    // ==========================================
+    private void OnCollisionEnter2D(Collision2D col)
+    {
+        if (runtimeData == null || rb == null) return;
+
+        Rigidbody2D targetRb = col.gameObject.GetComponent<Rigidbody2D>();
+        if (targetRb == null) return;
+
+        // 1. 获取双方碰撞瞬间的“相对速度” (Relative Velocity)
+        // 比如机甲速度 10，怪物速度 -10 (对撞)，相对速度就是 20！
+        float relVelocity = col.relativeVelocity.magnitude;
+
+        // 2. 设定“起撞阈值”：只有相对速度超过 5.0，才算作有效撞击，防止平时走路挤在一起疯狂扣血。
+        if (relVelocity > 5.0f)
+        {
+            DamageReceiver victim = col.gameObject.GetComponentInParent<DamageReceiver>();
+
+            // 撞到了敌人！
+            if (victim != null && victim.isEnemy)
+            {
+                EnemyBrain enemyAI = victim.GetComponent<EnemyBrain>();
+                float enemyMass = enemyAI != null && enemyAI.MyData != null ? enemyAI.MyData.GetStat(StatType.Mass) : 5f;
+
+                // 3. 呼叫全局动能公式！(传入自身质量、敌人质量、相对速度)
+                float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, enemyMass, relVelocity, 2.0f);
+
+                if (rawDamage > 0)
+                {
+                    // 4. 谁受的伤更重？(重车撞轻车，轻车吃全额伤害，重车只吃少量反弹伤害)
+                    // 分配比例：对方越轻，我方受到的反弹伤害越小。
+                    float myDamageShare = enemyMass / (runtimeData.TotalMass + enemyMass);
+                    float enemyDamageShare = runtimeData.TotalMass / (runtimeData.TotalMass + enemyMass);
+
+                    // 给怪物造成碾压伤害
+                    victim.TakeDamage(rawDamage * enemyDamageShare, runtimeData.UnitName + " (泥头车碾压)");
+
+                    // 给自己造成少量的反作用力结构损伤 (如果你觉得玩家撞人自己不该掉血，可以把这行删掉)
+                    DamageReceiver myReceiver = GetComponent<DamageReceiver>();
+                    if (myReceiver != null) myReceiver.TakeDamage(rawDamage * myDamageShare, "撞击反作用力");
+
+                    // 5. 视角震动反馈 (撞得越狠，震得越厉害)
+                    if (ScreenEffectManager.Instance != null)
+                    {
+                        ScreenEffectManager.Instance.TriggerShake(Mathf.Clamp(rawDamage / 100f, 0.1f, 0.5f), 0.15f);
+                    }
+
+                    Debug.Log($"<color=#FFD700>【大运流】</color> 相对速度 {relVelocity:F1}！机甲(M:{runtimeData.TotalMass}) 撞击 怪物(M:{enemyMass})！怪物承受 {rawDamage * enemyDamageShare:F0} 伤害，机甲承受 {rawDamage * myDamageShare:F0} 反噬！");
+                }
+            }
+        }
+    }
+
+    // 👇【新增】：提供给 ECA 积木调用的“主动冲刺”接口！
+    public void ExecuteDash(Vector2 direction, float speedMultiplier, float duration)
+    {
+        isDashing = true;
+        dashTimer = duration;
+
+        // 冲刺期间极大地降低空气阻力，让它像炮弹一样滑出去！
+        rb.drag = 0.5f;
+
+        // 瞬间赋予极高的物理速度 (基础移速 * 冲刺倍率)
+        rb.velocity = direction.normalized * (CurrentSpeed * speedMultiplier);
     }
 }

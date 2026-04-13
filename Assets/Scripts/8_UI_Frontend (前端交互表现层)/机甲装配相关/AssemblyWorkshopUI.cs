@@ -395,4 +395,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
         HangarMenuUI.Instance.gameObject.SetActive(true);
         HangarMenuUI.Instance.RefreshHangar();
     }
+
+
 }
