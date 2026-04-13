@@ -22,16 +22,17 @@ public class CombatCPBarUI : MonoBehaviour
 
     private void Update()
     {
-        // 实时平滑地更新水池的上涨动画
-        if (GlobalCPManager.Instance != null && CombatDirector.Instance != null && CombatDirector.Instance.IsCombatActive)
+        // 👇【核心修复】：删除了 IsCombatActive 的限制！
+        // UI 就是个无情的显示器，只要 GlobalCPManager 活着，它就疯狂刷新显示真实数据！
+        if (GlobalCPManager.Instance != null)
         {
             float current = GlobalCPManager.Instance.CurrentCP;
             float max = GlobalCPManager.Instance.GetActualMaxCP();
 
             if (CPBarSlider != null)
             {
-                CPBarSlider.maxValue = max;
-                CPBarSlider.value = current;
+                CPBarSlider.maxValue = max; // 动态适应最大值
+                CPBarSlider.value = current; // 动态适应当前值
             }
 
             if (CPText != null)

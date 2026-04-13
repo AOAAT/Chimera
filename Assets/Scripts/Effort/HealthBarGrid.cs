@@ -18,6 +18,8 @@ public class HealthBarGrid : MonoBehaviour
 
     private RectTransform container;
 
+    // --- 请替换 HealthBarGrid.cs 中的 UpdateGrid 方法 ---
+
     public void UpdateGrid(float maxValue)
     {
         if (ValuePerGrid <= 0) return;
@@ -27,10 +29,14 @@ public class HealthBarGrid : MonoBehaviour
             container = GetComponent<RectTransform>();
         }
 
-        // 1. 先把旧的线条全部打扫干净
-        foreach (Transform child in container)
+        // 1. 👇【史诗级修复】：精准打扫！只删掉名字以 "GridLine" 开头的黑线，绝不误伤背景和填充条！
+        for (int i = container.childCount - 1; i >= 0; i--)
         {
-            Destroy(child.gameObject);
+            Transform child = container.GetChild(i);
+            if (child.name.StartsWith("GridLine"))
+            {
+                Destroy(child.gameObject);
+            }
         }
 
         // 2. 算出需要切几刀？ (比如 500血，每格100，需要 4 根线)
@@ -65,6 +71,9 @@ public class HealthBarGrid : MonoBehaviour
             // 宽度直接写死像素！高度写 0 意味着跟随锚点拉伸！
             rect.sizeDelta = new Vector2(LineThickness, 0f);
             rect.anchoredPosition = Vector2.zero;
+
+            // 👇【保险措施】：强行把生成的黑线放在最前面（遮挡住底下的颜色）
+            lineObj.transform.SetAsLastSibling();
         }
     }
 }

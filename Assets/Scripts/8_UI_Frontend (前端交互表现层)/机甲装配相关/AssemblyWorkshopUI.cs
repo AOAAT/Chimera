@@ -155,12 +155,12 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OnClickGhostChassis()
     {
+        // 👇【核心修复】：移除 !c.IsEquipped，显示仓库里的所有底盘！
         RightInventoryPanelUI.Instance.OpenForChassisSelection(
-            () => PlayerInventoryManager.Instance.ChassisInventory.FindAll(c => !c.IsEquipped),
+            () => PlayerInventoryManager.Instance.ChassisInventory,
             OnChassisSelectedFromInventory
         );
     }
-
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
         currentEditingProfile = new SavedUnitProfile(selectedChassis, "特制原型机");
@@ -240,8 +240,9 @@ public class AssemblyWorkshopUI : MonoBehaviour
         int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
         bool hasEquippedComp = (existingIdx != -1);
 
+        // 👇【核心修复】：移除 !c.IsEquipped，显示所有符合该插槽类型的组件！
         RightInventoryPanelUI.Instance.OpenForComponentSelection(
-            () => PlayerInventoryManager.Instance.ComponentInventory.FindAll(c => !c.IsEquipped && slotDef.AllowedTypes.Contains(c.BaseData.Type)),
+            () => PlayerInventoryManager.Instance.ComponentInventory.FindAll(c => slotDef.AllowedTypes.Contains(c.BaseData.Type)),
             hasEquippedComp,
             (selectedComp) => OnComponentSelectedFromInventory(slotIndex, selectedComp)
         );

@@ -8,6 +8,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 {
     public static ItemDetailPanelUI Instance;
     private bool isTooltipMode = false;
+    private float openTime = 0f;
 
     // ==========================================
     // 1. 核心控制器：面板显隐切换
@@ -141,7 +142,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public void ShowComponentDetail(InstancedComponent instance)
     {
         if (instance == null || instance.BaseData == null) return;
-
+        openTime = Time.time; // 👇【新增】：记录打开瞬间的时间
         var data = instance.BaseData;
 
         HidePanel();
@@ -179,6 +180,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public void ShowChassisDetail(ChassisDataSO data)
     {
         if (data == null) return;
+        openTime = Time.time; // 👇【新增】：记录打开瞬间的时间
         HidePanel();
         gameObject.SetActive(true);
 
@@ -478,5 +480,10 @@ public class ItemDetailPanelUI : MonoBehaviour
 
         // 4. 应用最终的绝对像素坐标
         rect.position = new Vector3(mousePos.x + offsetX, mousePos.y + offsetY, 0);
+
+        if (Input.GetMouseButtonDown(0) && (Time.time - openTime) > 0.1f)
+        {
+            HidePanel();
+        }
     }
 }
