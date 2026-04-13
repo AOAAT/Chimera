@@ -42,6 +42,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public float PreviewScale = 1.0f;
     private const float WorldToUIMultiplier = 100f; // 1米 = 100像素，严禁修改
 
+    [Header("=== 插槽防误触控制 ===")]
+    [Tooltip("插槽可点击区域的大小 (推荐 30~40)")]
+    public float SlotButtonSize = 35f;
+    [Tooltip("拖入 Unity 自带的 'Knob' 圆球贴图，或者你的圆形 UI 图")]
+    public Sprite CircularSlotSprite;
     private void Awake()
     {
         Instance = this;
@@ -190,7 +195,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
             Image slotImg = slotObj.AddComponent<Image>();
             slotImg.color = new Color(1f, 1f, 1f, 0.3f);
-            slotImg.rectTransform.sizeDelta = new Vector2(60, 60);
+            slotImg.rectTransform.sizeDelta = new Vector2(SlotButtonSize, SlotButtonSize);
+
+            // 👇【核心修复 2】：如果有圆形贴图，就把它变成圆的！
+            if (CircularSlotSprite != null) slotImg.sprite = CircularSlotSprite;
 
             // 内部坐标永远用 100f 换算，保证原始比例完美对齐
             slotImg.rectTransform.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;

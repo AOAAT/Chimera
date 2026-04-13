@@ -6615,6 +6615,8 @@ MonoBehaviour:
   PowerText: {fileID: 1454804935}
   UnitNameInput: {fileID: 946785348}
   PreviewScale: 1
+  SlotButtonSize: 45
+  CircularSlotSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
 --- !u!114 &857266333
 MonoBehaviour:
   m_ObjectHideFlags: 0
