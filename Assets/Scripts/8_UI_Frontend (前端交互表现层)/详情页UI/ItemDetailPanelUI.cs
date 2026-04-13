@@ -7,6 +7,7 @@ using TMPro;
 public class ItemDetailPanelUI : MonoBehaviour
 {
     public static ItemDetailPanelUI Instance;
+    private bool isTooltipMode = false;
 
     // ==========================================
     // 1. 核心控制器：面板显隐切换
@@ -91,14 +92,25 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void Awake()
     {
-        // 👇【核心防冲突】：如果自己被嵌套在“强化预览界面”里，就乖乖做个子面板，绝不抢占全局单例！
+        // 核心防冲突：如果自己被嵌套在“强化预览界面”里，就乖乖做个子面板，绝不跟随鼠标！
         if (GetComponentInParent<UpgradePreviewPanelUI>() != null)
         {
+            isTooltipMode = false;
             return;
         }
 
-        // 只有独立在外的那个全局 Tooltip 才有资格成为 Instance
+        // 只有独立在外的那个全局 Tooltip 才有资格成为 Instance 并跟随鼠标
         Instance = this;
+        isTooltipMode = true;
+
+        // 👇【核心修复】：给悬浮窗套上射线穿透外衣，彻底解决闪烁死循环！
+        CanvasGroup group = GetComponent<CanvasGroup>();
+        if (group == null) group = gameObject.AddComponent<CanvasGroup>();
+
+        // 让这个 UI 面板对鼠标的射线“完全隐身”！鼠标会直接穿过它点到后面的图标
+        group.blocksRaycasts = false;
+        group.interactable = false;
+
         HidePanel();
     }
     public void HidePanel()
@@ -441,5 +453,30 @@ public class ItemDetailPanelUI : MonoBehaviour
             case ComponentType.Factory: return "辅助插件"; // 兼容旧枚举
             default: return "未知组件";
         }
+    }
+
+    private void LateUpdate()
+    {
+        // 只有全局悬浮窗模式，并且当前处于显示状态时，才执行跟随
+        if (!isTooltipMode || !gameObject.activeSelf) return;
+
+        Vector2 mousePos = Input.mousePosition;
+        RectTransform rect = GetComponent<RectTransform>();
+
+        // 1. 屏幕象限检测：鼠标是否在屏幕右侧？是否在屏幕上半部分？
+        // (0.6f 是阈值，超过屏幕 60% 位置就开始翻转，防止超长文本越界)
+        float pivotX = mousePos.x / Screen.width > 0.6f ? 1f : 0f;
+        float pivotY = mousePos.y / Screen.height > 0.6f ? 1f : 0f;
+
+        // 2. 动态修改锚点 (Pivot)
+        // 如果 Pivot 是 (0,0)，UI 就会在鼠标右上角；如果是 (1,1)，UI 就在鼠标左下角！
+        rect.pivot = new Vector2(pivotX, pivotY);
+
+        // 3. 增加指针偏移量 (防止 UI 遮挡住玩家的鼠标箭头)
+        float offsetX = pivotX == 0 ? 20f : -20f;
+        float offsetY = pivotY == 0 ? 20f : -20f;
+
+        // 4. 应用最终的绝对像素坐标
+        rect.position = new Vector3(mousePos.x + offsetX, mousePos.y + offsetY, 0);
     }
 }
