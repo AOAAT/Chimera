@@ -34,7 +34,7 @@ public class EventOptionUI : MonoBehaviour
         string finalString = $"<b><size=110%>{rawTitle}</size></b>";
 
         if (!string.IsNullOrEmpty(rawFlavor))
-            finalString += $"  <color=#A0A0A0><i>- {rawFlavor}</i></color>";
+            finalString += $"  <color=#FFFF33><i>- {rawFlavor}</i></color>";
 
         if (!string.IsNullOrEmpty(warning))
         {

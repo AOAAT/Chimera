@@ -25,7 +25,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 91689e69fe081f041af81225272f304c, type: 2}
     - {fileID: 11400000, guid: e7915cd58b047a749a37507be8957ce6, type: 2}
     NextEventNode: {fileID: 0}
-  - OptionText: "\u79BB\u5F00"
+  - OptionText: "\u201D\u79BB\u5F00\u201C"
     FlavorText: "\u201C\u4E00\u5806\u7834\u70C2\u2026\u2026\u201D"
     Conditions: []
     Actions: []
