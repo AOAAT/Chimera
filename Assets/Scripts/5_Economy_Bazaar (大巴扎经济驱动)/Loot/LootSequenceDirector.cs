@@ -15,7 +15,7 @@ public class LootSequenceDirector : MonoBehaviour
     // ==========================================
     // 全新入口：双源合流与集散中心启动
     // ==========================================
-    public void StartLootHub(LootSequenceSO encounterLoot, LootSequenceSO nodeLoot, MacroCategory macro, int mapDepth)
+    public void StartLootHub(LootSequenceSO encounterLoot, LootSequenceSO nodeLoot, MacroCategory macro, int mapDepth, System.Action onComplete = null)
     {
         currentMacroContext = macro;
         currentDepthContext = mapDepth;
@@ -42,7 +42,7 @@ public class LootSequenceDirector : MonoBehaviour
         }
 
         // 4. 呼叫 UI 展开集散大厅！
-        LootUIManager.Instance.OpenHub(activeTasks);
+        LootUIManager.Instance.OpenHub(activeTasks, onComplete);
     }
 
     // ==========================================

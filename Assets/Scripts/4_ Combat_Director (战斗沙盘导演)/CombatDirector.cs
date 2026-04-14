@@ -458,10 +458,12 @@ public class CombatDirector : MonoBehaviour
 
             if (LootSequenceDirector.Instance != null)
             {
-                LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer);
+                // 👇【核心修复】：传入 ExecuteReturnToMap 委托
+                LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer, () => ExecuteReturnToMap());
             }
             else
             {
+                Debug.LogWarning("【系统警告】找不到大巴扎导演...");
                 ExecuteReturnToMap();
             }
         }

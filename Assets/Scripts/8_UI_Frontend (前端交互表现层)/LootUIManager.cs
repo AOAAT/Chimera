@@ -30,6 +30,7 @@ public class LootUIManager : MonoBehaviour
     private ActiveLootTask activeTask; // 玩家当前正在交互的那个包裹
     private InstancedComponent selectedItem;
     private List<InventoryItemSlotUI> spawnedItemSlots = new List<InventoryItemSlotUI>();
+    private System.Action onHubClosedCallback;
 
     private void Awake() { if (Instance == null) Instance = this; }
 
@@ -53,9 +54,10 @@ public class LootUIManager : MonoBehaviour
     // ==========================================
     // 渲染总集散大厅
     // ==========================================
-    public void OpenHub(List<ActiveLootTask> tasks)
+    public void OpenHub(List<ActiveLootTask> tasks, System.Action onClose = null)
     {
         currentTasks = tasks;
+        onHubClosedCallback = onClose; // 记住是谁叫我开门的
         RefreshHubUI();
         HubPanel.SetActive(true);
     }
@@ -247,9 +249,17 @@ public class LootUIManager : MonoBehaviour
     private void OnLeaveHubClicked()
     {
         CloseAllPanels();
-        CombatDirector.Instance.ExecuteReturnToMap();
-    }
 
+        if (onHubClosedCallback != null)
+        {
+            onHubClosedCallback.Invoke(); // 通知叫门的人，我关门了！
+        }
+        else
+        {
+            // 兜底方案
+            CombatDirector.Instance.ExecuteReturnToMap();
+        }
+    }
     private string TranslateTag(SubTag tag)
     {
         switch (tag) { case SubTag.Ballistic: return "实弹"; case SubTag.Mutation: return "突变"; default: return tag.ToString(); }
