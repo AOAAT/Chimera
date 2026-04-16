@@ -21,14 +21,12 @@ MonoBehaviour:
   VisualScaleMultiplier: 1
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
+  - StatID: 16
+    Value: 0
   - StatID: 15
-    Value: 1000
-  - StatID: 15
-    Value: 500
+    Value: 1
   - StatID: 17
     Value: 0
-  - StatID: 16
-    Value: 40
   SanPenalties: []
   TargetingLogic: 0
   MovementLogic: 0

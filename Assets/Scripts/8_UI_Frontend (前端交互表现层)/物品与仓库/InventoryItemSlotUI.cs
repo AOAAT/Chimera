@@ -15,6 +15,7 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     private InstancedChassis cachedChassis;
     private InstancedComponent cachedComponent;
     private bool isUnequipSlot = false;
+    public bool IsLootMode = false; // 👇【新增】：如果是战利品模式，严禁右键！
 
     [Header("=== 占用状态表现 ===")]
     public GameObject EquippedOverlay;
@@ -112,17 +113,11 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
         {
-            if (isUnequipSlot) return; // 卸载槽位没有右键功能
+            // 👇【核心防作弊】：如果是卸载槽，或者处于战利品展示模式，绝对禁止呼出右键菜单！
+            if (isUnequipSlot || IsLootMode) return;
 
-            // 👇【核心交互】：无论是组件还是底盘，右键统统呼叫菜单！
-            if (cachedComponent != null)
-            {
-                ItemContextMenuUI.Instance.ShowMenu(cachedComponent, null, Input.mousePosition);
-            }
-            else if (cachedChassis != null)
-            {
-                ItemContextMenuUI.Instance.ShowMenu(null, cachedChassis, Input.mousePosition);
-            }
+            if (cachedComponent != null) ItemContextMenuUI.Instance.ShowMenu(cachedComponent, null, Input.mousePosition);
+            else if (cachedChassis != null) ItemContextMenuUI.Instance.ShowMenu(null, cachedChassis, Input.mousePosition);
         }
     }
     public void OnPointerEnter(PointerEventData eventData)

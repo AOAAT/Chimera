@@ -49,22 +49,15 @@ public class CombatDirector : MonoBehaviour
     private List<DamageReceiver> activeEnemies = new List<DamageReceiver>();
     private List<DamageReceiver> activePlayerUnits = new List<DamageReceiver>();
     private bool isCheckingWinCondition = false;
+    private bool isLastCombatVictory = false;
 
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-    }
+    private void Awake() { if (Instance == null) Instance = this; }
 
     private void Start()
     {
-        if (StartBattleButton != null)
-            StartBattleButton.onClick.AddListener(OnBattleStartClicked);
-
-        if (ReturnToMapButton != null)
-            ReturnToMapButton.onClick.AddListener(OnReturnToMapClicked);
-
+        if (StartBattleButton != null) StartBattleButton.onClick.AddListener(OnBattleStartClicked);
+        if (ReturnToMapButton != null) ReturnToMapButton.onClick.AddListener(OnReturnToMapClicked);
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
-
         if (ArenaReference != null) ArenaReference.SetActive(false);
     }
 
@@ -84,11 +77,7 @@ public class CombatDirector : MonoBehaviour
 
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
 
-        if (RunManager.Instance == null)
-        {
-            Debug.LogError("【致命错误】找不到 RunManager 指挥中枢！无法生成敌人！");
-            return;
-        }
+        if (RunManager.Instance == null) return;
 
         int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
         int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
@@ -101,10 +90,6 @@ public class CombatDirector : MonoBehaviour
             SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
         }
-        else
-        {
-            Debug.LogWarning("【警告】当前节点没有获取到遭遇战图纸！");
-        }
     }
 
     private void SetupArenaVisuals()
@@ -116,24 +101,16 @@ public class CombatDirector : MonoBehaviour
         {
             SpriteRenderer targetSR = CurrentLayout.ArenaReference.GetComponent<SpriteRenderer>();
             SpriteRenderer mySR = ArenaReference.GetComponent<SpriteRenderer>();
-
-            // 👇【核心新增】：尝试寻找是否有随机背景池？
             ArenaBackgroundConfig bgConfig = CurrentLayout.ArenaReference.GetComponent<ArenaBackgroundConfig>();
 
             if (mySR != null)
             {
-                // 1. 如果策划配置了图库，开启盲盒抽图模式！
                 if (bgConfig != null && bgConfig.RandomBackgrounds.Count > 0)
                 {
                     Sprite chosenSprite = bgConfig.RandomBackgrounds[Random.Range(0, bgConfig.RandomBackgrounds.Count)];
                     mySR.sprite = chosenSprite;
-
-                    // 依然保留滤镜颜色的继承
                     if (targetSR != null) mySR.color = targetSR.color;
-
-                    Debug.Log($"<color=#00FFFF>【地形生成】</color> 成功从场景池中抽取了背景: {chosenSprite.name}");
                 }
-                // 2. 降级兼容：如果图库是空的，或者根本没挂这个脚本，老老实实用原来那张图
                 else if (targetSR != null && targetSR.sprite != null)
                 {
                     mySR.sprite = targetSR.sprite;
@@ -150,13 +127,11 @@ public class CombatDirector : MonoBehaviour
         activeEnemiesContainer.transform.SetParent(this.transform);
 
         Vector3 centerPos = CurrentArenaCenter;
-
         if (CurrentLayout == null || CurrentLayout.Enemies == null) return;
 
         foreach (var spawnData in CurrentLayout.Enemies)
         {
             if (spawnData.EnemyType == null) continue;
-
             Vector3 spawnPos = centerPos + new Vector3(spawnData.LocalPosition.x, spawnData.LocalPosition.y, 0f);
             GameObject enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, activeEnemiesContainer.transform);
             enemyObj.name = $"[Enemy] {spawnData.EnemyType.EnemyName}";
@@ -165,16 +140,11 @@ public class CombatDirector : MonoBehaviour
             if (brain != null) brain.MyData = spawnData.EnemyType;
 
             SpriteRenderer sr = enemyObj.GetComponentInChildren<SpriteRenderer>();
-            if (sr != null && spawnData.EnemyType.EnemySprite != null)
-            {
-                sr.sprite = spawnData.EnemyType.EnemySprite;
-            }
+            if (sr != null && spawnData.EnemyType.EnemySprite != null) sr.sprite = spawnData.EnemyType.EnemySprite;
 
             BuffManager buffMgr = enemyObj.GetComponent<BuffManager>();
             if (buffMgr == null) buffMgr = enemyObj.AddComponent<BuffManager>();
         }
-
-        Debug.Log($"<color=#FF4500>【战术导演】</color> 场上所有敌方单位已成功接入 Buff 总线。");
     }
 
     private void GenerateForbiddenZones()
@@ -218,8 +188,6 @@ public class CombatDirector : MonoBehaviour
 
                 visualObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
                 sr.color = new Color(1f, 0f, 0f, 0.2f);
-
-                // 👇【核心修复】：让红框渲染在正确的图层上！
                 sr.sortingLayerName = "DeployZone";
                 sr.sortingOrder = 0;
             }
@@ -264,7 +232,6 @@ public class CombatDirector : MonoBehaviour
         wall.transform.SetParent(boundariesContainer.transform);
         wall.transform.position = pos;
         wall.layer = LayerMask.NameToLayer("Default");
-
         wall.transform.localScale = new Vector3(size.x, size.y, 1f);
 
         BoxCollider2D col = wall.AddComponent<BoxCollider2D>();
@@ -289,11 +256,7 @@ public class CombatDirector : MonoBehaviour
             if (r.isEnemy) activeEnemies.Add(r);
             else activePlayerUnits.Add(r);
         }
-        if (activePlayerUnits.Count == 0)
-        {
-            Debug.LogWarning("【系统警告】长官，您还没有向战场空投任何机甲，禁止开战！");
-            return;
-        }
+        if (activePlayerUnits.Count == 0) return;
 
         if (StartBattleButton != null) StartBattleButton.interactable = false;
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
@@ -301,27 +264,13 @@ public class CombatDirector : MonoBehaviour
         if (NavHangarButton != null) NavHangarButton.interactable = false;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
 
-        Debug.Log("【战斗导演】引擎轰鸣！发令枪响，全军出击！机库与物品库的大门连同钥匙已全部销毁！");
-
-        if (forbiddenZonesContainer != null)
-        {
-            forbiddenZonesContainer.SetActive(false);
-        }
+        if (forbiddenZonesContainer != null) forbiddenZonesContainer.SetActive(false);
 
         IsCombatActive = true;
         IsDeploymentPhase = false;
         isCheckingWinCondition = true;
 
-        // 👇【核心接入】：在战斗正式打响时，呼叫 UI 排布所有的主动技能！
-        if (ActiveSkillUIManager.Instance != null)
-        {
-            Debug.Log("<color=#FFD700>[CombatDirector]</color> 呼叫 ActiveSkillUIManager 构建界面...");
-            ActiveSkillUIManager.Instance.BuildSkillUI(activePlayerUnits);
-        }
-        else
-        {
-            Debug.LogError("<color=#FF0000>[CombatDirector] 严重错误！找不到 ActiveSkillUIManager 单例！请确认场景中挂载了该脚本。</color>");
-        }
+        if (ActiveSkillUIManager.Instance != null) ActiveSkillUIManager.Instance.BuildSkillUI(activePlayerUnits);
     }
 
     private void Update()
@@ -362,8 +311,7 @@ public class CombatDirector : MonoBehaviour
         IsCombatActive = false;
         isCheckingWinCondition = false;
         IsDeploymentPhase = false;
-
-        Debug.Log(isVictory ? "【战斗结束】大获全胜！" : "【战斗结束】全军覆没...");
+        isLastCombatVictory = isVictory;
 
         if (SettlementPanel != null)
         {
@@ -389,62 +337,40 @@ public class CombatDirector : MonoBehaviour
                     {
                         var sortedTiers = brain.MyData.SanPenalties.OrderByDescending(t => t.HpThreshold).ToList();
                         int currentLoss = 0;
-
                         foreach (var tier in sortedTiers)
                         {
-                            if (hpPercent >= tier.HpThreshold)
-                            {
-                                currentLoss = tier.SanDeduction;
-                                break;
-                            }
+                            if (hpPercent >= tier.HpThreshold) { currentLoss = tier.SanDeduction; break; }
                         }
                         totalSanLoss += currentLoss;
                     }
                 }
             }
-
-            Debug.Log($"<color=#FF0000>【系统结算】本次战役总计损失 {totalSanLoss} 点 SAN 值！</color>");
-            if (GlobalResourceManager.Instance != null)
-            {
-                GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
-            }
+            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
         }
     }
 
+    // ==========================================
+    // 👇 彻底净化的返回逻辑（附带探照灯级 Log）
+    // ==========================================
     private void OnReturnToMapClicked()
     {
+        Debug.Log("<color=#FFFF00>【战斗导演】玩家点击了返回按钮，开始清理战场...</color>");
+
+        // 1. 清理战场垃圾
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
-        foreach (var mech in allMechs)
-        {
-            if (mech != null)
-            {
-                mech.SyncPostCombatState();
-                Destroy(mech.gameObject);
-            }
-        }
+        foreach (var mech in allMechs) { if (mech != null) { mech.SyncPostCombatState(); Destroy(mech.gameObject); } }
 
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
-        foreach (var r in allReceivers)
-        {
-            if (r != null && r.gameObject != null) Destroy(r.gameObject);
-        }
+        foreach (var r in allReceivers) { if (r != null && r.gameObject != null) Destroy(r.gameObject); }
 
         Projectile[] allBullets = FindObjectsOfType<Projectile>();
-        foreach (var b in allBullets)
-        {
-            if (b != null && b.gameObject != null) Destroy(b.gameObject);
-        }
+        foreach (var b in allBullets) { if (b != null && b.gameObject != null) Destroy(b.gameObject); }
 
         GameObject[] allDebris = GameObject.FindGameObjectsWithTag("CombatDebris");
-        foreach (var debris in allDebris)
-        {
-            if (debris != null) Destroy(debris);
-        }
+        foreach (var debris in allDebris) { if (debris != null) Destroy(debris); }
 
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
-
         if (ArenaReference != null) ArenaReference.SetActive(false);
-
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
 
@@ -453,23 +379,20 @@ public class CombatDirector : MonoBehaviour
 
         if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
         {
-            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
-            {
-                if (profile != null) profile.IsDeployed = false;
-            }
+            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits) { if (profile != null) profile.IsDeployed = false; }
         }
 
-        // 清理技能 UI，防止下次进来重叠
         if (ActiveSkillUIManager.Instance != null)
         {
             foreach (Transform child in ActiveSkillUIManager.Instance.SlotContainer) Destroy(child.gameObject);
         }
 
-        bool isVictory = SettlementTitleText != null && SettlementTitleText.text.Contains("胜 利");
-        if (isVictory)
+        // 2. 判定走向：赢了开盲盒，输了回大厅
+        Debug.Log($"<color=#FFFF00>【战斗导演】当前胜负状态：isLastCombatVictory = {isLastCombatVictory}</color>");
+
+        if (isLastCombatVictory)
         {
             LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
-
             int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
             int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
             MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
@@ -477,45 +400,31 @@ public class CombatDirector : MonoBehaviour
             LootSequenceSO nodeLoot = NodeLootManager.Instance != null ? NodeLootManager.Instance.GetLootForNode(currentStage, currentLayer, currentType) : null;
             MacroCategory currentMacro = GetMacroForNodeType(currentType);
 
+            Debug.Log($"<color=#FFFF00>【战斗导演】房间掉落: {(encounterLoot != null ? "有" : "空")} | 节点全局掉落: {(nodeLoot != null ? "有" : "空")}</color>");
+
             if (LootSequenceDirector.Instance != null)
             {
-                // 👇【核心修复】：传入 ExecuteReturnToMap 委托
+                Debug.Log("<color=#00FF00>【战斗导演】呼叫大巴扎导演(Loot Hub)开门！</color>");
                 LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer, () => ExecuteReturnToMap());
             }
             else
             {
-                Debug.LogWarning("【系统警告】找不到大巴扎导演...");
+                Debug.LogError("<color=#FF0000>【战斗导演】致命错误！找不到 LootSequenceDirector.Instance！直接强退回地图！</color>");
                 ExecuteReturnToMap();
             }
         }
         else
         {
-            Debug.LogError("【肉鸽终结】机甲全毁，本次探险结束！请重新来过！");
+            Debug.Log("<color=#FF0000>【战斗导演】战败！跳过战利品结算，直接返回大地图！</color>");
+            ExecuteReturnToMap();
         }
     }
 
-    private MacroCategory GetMacroForNodeType(MapNodeType type)
-    {
-        switch (type)
-        {
-            case MapNodeType.Enemy_Flesh: return MacroCategory.Flesh;
-            case MapNodeType.Enemy_Magic: return MacroCategory.Magic;
-            case MapNodeType.Enemy_Tech:
-            case MapNodeType.Enemy_Mixed:
-            default: return MacroCategory.Tech;
-        }
-    }
+    private MacroCategory GetMacroForNodeType(MapNodeType type) { return MacroCategory.Tech; }
 
     public void ExecuteReturnToMap()
     {
         Debug.Log("【战斗导演】系统交接完毕，将指挥权交还给大地图...");
-        if (MapManager.Instance != null)
-        {
-            MapManager.Instance.OnCombatVictory(currentNodeData);
-        }
-        else
-        {
-            Debug.LogWarning("【系统警告】找不到 MapManager！如果你在单独测试战斗场景，请忽略此报错。");
-        }
+        if (MapManager.Instance != null) MapManager.Instance.OnCombatVictory(currentNodeData);
     }
 }

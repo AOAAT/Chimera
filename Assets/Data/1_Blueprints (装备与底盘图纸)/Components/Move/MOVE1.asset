@@ -21,7 +21,7 @@ MonoBehaviour:
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
-  BaseSubTags: 01000000
+  BaseSubTags: 00000000
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
