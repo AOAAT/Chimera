@@ -17,6 +17,7 @@ MonoBehaviour:
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
   ComponentIcon: {fileID: 21300000, guid: d90bfac6071d040478b1a20594229c7f, type: 3}
   Type: 2
+  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
@@ -26,13 +27,22 @@ MonoBehaviour:
   - Level: 1
     BasePrice: 100
     ScrapValue: 10
-    Stats: []
+    Stats:
+    - StatID: 0
+      Value: 0
     Mechanics: []
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
   - Level: 2
     BasePrice: 100
     ScrapValue: 10
@@ -43,6 +53,13 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
   - Level: 3
     BasePrice: 100
     ScrapValue: 10
@@ -53,6 +70,13 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
   - Level: 4
     BasePrice: 100
     ScrapValue: 10
@@ -63,8 +87,19 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
   AnchorOffset: {x: 0.008905817, y: -0.13181402}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9

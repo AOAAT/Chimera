@@ -11,6 +11,7 @@ public class Projectile : MonoBehaviour
     private bool isEnemyFire;
     private bool isCritical;
     private bool hasHit = false;
+    private bool hitAllies = false;
 
     [Header("=== 视觉穿透与延迟销毁 ===")]
     public bool EnableVisualPenetration = false;
@@ -27,23 +28,23 @@ public class Projectile : MonoBehaviour
     // 记录子弹当前的飞行方向 (单位向量)
     private Vector2 currentDirection;
 
-    public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy, bool isCrit)
+    public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy, bool isCrit, bool targetAllies = false)
     {
         this.target = target;
         this.damage = damage;
         this.weaponData = data;
         this.isEnemyFire = isEnemy;
         this.isCritical = isCrit;
+        this.hitAllies = targetAllies; // 记录是否是打队友的奶弹
 
-        this.speed = data.GetStat(StatType.ProjectileSpeed);
+        this.speed = data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f;
         if (this.speed <= 0) this.speed = 10f;
         if (CombatSandbox.Instance != null) this.speed *= CombatSandbox.Instance.SpeedMultiplier;
 
         gameObject.layer = LayerMask.NameToLayer("Projectile");
-
-        // 👇 记录初始发射方向 (就是生成时枪口的朝向)
         currentDirection = transform.right;
     }
+
 
     private void Start()
     {
@@ -158,10 +159,16 @@ public class Projectile : MonoBehaviour
     {
         if (hasHit) return;
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
-        if (receiver != null && receiver.isEnemy != this.isEnemyFire)
+        if (receiver != null)
         {
-            this.target = receiver.transform;
-            HitTarget();
+            // 如果是奶弹，必须打中同阵营；如果是子弹，必须打中不同阵营
+            bool isFriendly = (receiver.isEnemy == this.isEnemyFire);
+            if (isFriendly == hitAllies)
+            {
+                this.target = receiver.transform;
+                HitTarget();
+            }
         }
     }
+
 }

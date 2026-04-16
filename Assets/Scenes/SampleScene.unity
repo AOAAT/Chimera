@@ -1431,8 +1431,8 @@ MonoBehaviour:
   TotalLayers: 15
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
-  NormalEnemyWeight: 0
-  EventWeight: 1
+  NormalEnemyWeight: 1
+  EventWeight: 0
   EliteWeight: 0
   WorkshopWeight: 0
   BufferFactor: 0.2
@@ -4911,7 +4911,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeIntensityEnabled: 0
-  m_ApplyToSortingLayers: 000000009ba198bd8391d244cfebe762
+  m_ApplyToSortingLayers: 000000009ba198bd8391d244cfebe762078cf75101e24420fb958cda
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -6436,7 +6436,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1553.2, y: -281.6}
+  m_AnchoredPosition: {x: -1550.9, y: -240.8}
   m_SizeDelta: {x: 172.6822, y: 22.67}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &750070700
@@ -7124,7 +7124,7 @@ MonoBehaviour:
   EquippedComponents:
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
+  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   previewObjects: []
@@ -7211,25 +7211,24 @@ MonoBehaviour:
   UnitName: "\u5E95\u76D81"
   Final_MaxHP: 100
   Final_MaxAP: 100
-  Final_TotalPowerCost: 2
+  Final_TotalPowerCost: 0
   Final_TotalMass: 0
   Final_TotalEnginePower: 0
   EquippedWeapons:
   - WeaponName: "\u94FE\u952F"
-    DeliveryType: 0
+    DeliveryType: 1
     Stats:
-    - StatID: 5
-      Value: 20
-    - StatID: 6
-      Value: 10
     - StatID: 7
-      Value: 10
-    - StatID: 8
-      Value: 0
+      Value: 5
+    - StatID: 6
+      Value: 15
     - StatID: 9
+      Value: 0
+    - StatID: 8
+      Value: 15
+    - StatID: 10
       Value: 200
-  DebugTags:
-  - Heavy
+  DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11807,7 +11806,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -13209,6 +13208,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
+  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15865,7 +15865,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1627183691
 RectTransform:
   m_ObjectHideFlags: 0
@@ -15901,7 +15901,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -17092,7 +17092,7 @@ RectTransform:
   m_Father: {fileID: 1516022381}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -20071,6 +20071,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -8571138707712537858, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: RandomBackgrounds.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8571138707712537858, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: RandomBackgrounds.Array.data[1]
+      value: 
+      objectReference: {fileID: 21300000, guid: b816a63bf4521004b85703acd83c2ae3, type: 3}
+    - target: {fileID: -8571138707712537858, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: RandomBackgrounds.Array.data[2]
+      value: 
+      objectReference: {fileID: 21300000, guid: 17d9748013d5c5548be800dc3c10db52, type: 3}
     - target: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_Name
       value: "\u6218\u6597\u573A\u5730Battle"
@@ -20080,9 +20092,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1911001817309192337, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_Size.x
+      value: 1.0666667
+      objectReference: {fileID: 0}
+    - target: {fileID: 1911001817309192337, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_Size.y
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1911001817309192337, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 22c94b3be12ec1c4ba1f84bdcdff6881, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 1911001817309192337, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_Color.a
       value: 1
@@ -20091,9 +20111,29 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1911001817309192337, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_WasSpriteAssigned
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3522034077309816423, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: RandomBackgrounds.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3522034077309816423, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: RandomBackgrounds.Array.data[0]
+      value: 
+      objectReference: {fileID: 21300000, guid: 8789d15ba6093e942acc186967a8babb, type: 3}
+    - target: {fileID: 3522034077309816423, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: RandomBackgrounds.Array.data[1]
+      value: 
+      objectReference: {fileID: 21300000, guid: b816a63bf4521004b85703acd83c2ae3, type: 3}
+    - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 9.94283
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -20134,6 +20174,18 @@ PrefabInstance:
     - target: {fileID: 8927388940433260606, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9028761944493503425, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_Size.x
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 9028761944493503425, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_SpriteTilingProperty.newSize.x
+      value: 1.0666667
+      objectReference: {fileID: 0}
+    - target: {fileID: 9028761944493503425, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
+      propertyPath: m_SpriteTilingProperty.newSize.y
+      value: 0.6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -20269,10 +20321,10 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 619394802}
   - {fileID: 1153547657}
   - {fileID: 1428290839}
   - {fileID: 1181035856}
-  - {fileID: 619394802}
   - {fileID: 704089790691060775}
   - {fileID: 923019978}
   - {fileID: 2061521696}

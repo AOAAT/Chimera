@@ -73,6 +73,7 @@ public class ChimeraAIController : MonoBehaviour
         if (minWeaponRange == float.MaxValue) minWeaponRange = 1.5f * distMult;
         else if (minWeaponRange < 1.5f * distMult) minWeaponRange = 1.5f * distMult;
         if (maxWeaponRange < minWeaponRange) maxWeaponRange = minWeaponRange;
+        Debug.Log($"<color=#00FFFF>【机甲动力底盘】</color> [{runtimeData.UnitName}] 总质量(Mass): <color=white>{runtimeData.TotalMass:F1}</color> | 引擎总出力: <color=white>{currentEnginePower:F1}</color> ===> 最终实际移速: <color=#00FF00>{CurrentSpeed:F2} m/s</color>");
     }
 
     private void Update()
@@ -220,5 +221,64 @@ public class ChimeraAIController : MonoBehaviour
 
         // 瞬间赋予极高的物理速度 (基础移速 * 冲刺倍率)
         rb.velocity = direction.normalized * (CurrentSpeed * speedMultiplier);
+    }
+
+    // ==========================================
+    // 👇【核心修复】：实时绘制真实的武器射程圈！
+    // ==========================================
+    private void OnDrawGizmos()
+    {
+        if (runtimeData == null || runtimeData.EquippedWeapons == null) return;
+
+        // 引入全局度量衡系数
+        float distMult = 1f;
+        if (Application.isPlaying && CombatSandbox.Instance != null)
+        {
+            distMult = CombatSandbox.Instance.DistanceMultiplier;
+        }
+
+        // 机甲的绝对中心逻辑点
+        Vector3 logicCenter = transform.position;
+        if (Application.isPlaying)
+        {
+            logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
+        }
+
+        // 读取 Buff 加成的临时射程
+        BuffManager buffMgr = GetComponent<BuffManager>();
+        float bonusMaxRange = (buffMgr != null && buffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) ? buffMgr.BuffStatModifiers[StatType.MaxRange] : 0f;
+        float bonusMinRange = (buffMgr != null && buffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) ? buffMgr.BuffStatModifiers[StatType.MinRange] : 0f;
+
+        // 遍历所有装备的武器
+        foreach (var wpn in runtimeData.EquippedWeapons)
+        {
+            if (wpn == null) continue;
+
+            // 1. 画最大射程 (淡蓝色)
+            float maxR = (wpn.GetStat(StatType.MaxRange) + bonusMaxRange) * distMult;
+            if (maxR > 0f)
+            {
+                Gizmos.color = new Color(0f, 0.5f, 1f, 0.15f);
+                Gizmos.DrawWireSphere(logicCenter, maxR);
+            }
+
+            // 2. 画最小射程/射击死角 (淡红色)
+            float minR = (wpn.GetStat(StatType.MinRange) + bonusMinRange) * distMult;
+            if (minR > 0f)
+            {
+                Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+                Gizmos.DrawWireSphere(logicCenter, minR);
+            }
+        }
+
+        // 3. 画当前 AI 决定的极限走位安全线 (绿色点状线/虚框参考)
+        MovementStrategy activeLogic = (buffMgr != null && buffMgr.HasAIOverride) ? buffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
+        float activeDodgeDist = (buffMgr != null && buffMgr.HasAIOverride) ? buffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
+
+        if (activeLogic == MovementStrategy.Dodge)
+        {
+            Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
+            Gizmos.DrawWireSphere(logicCenter, activeDodgeDist * distMult);
+        }
     }
 }

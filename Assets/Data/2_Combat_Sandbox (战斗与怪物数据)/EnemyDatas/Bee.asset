@@ -23,7 +23,7 @@ MonoBehaviour:
   BaseStats:
   - StatID: 15
     Value: 1000
-  - StatID: 14
+  - StatID: 15
     Value: 500
   - StatID: 17
     Value: 0
@@ -46,4 +46,5 @@ MonoBehaviour:
   OnSpawnActions: []
   OnDeathActions:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
-  OnTakeDamageActions: []
+  OnTakeDamageActions:
+  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}

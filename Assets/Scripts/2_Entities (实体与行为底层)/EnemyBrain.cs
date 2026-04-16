@@ -30,7 +30,7 @@ public class EnemyBrain : MonoBehaviour
     private float moveStateTimer = 0f;
     private Vector2 lockedMoveDirection;
 
-    // 👇【核心新增 1】：全局施法间隔 (Global Cooldown)
+    // 全局施法间隔 (Global Cooldown)
     private float globalActionTimer = 0f;
 
     private float lastFrameHP;
@@ -62,8 +62,11 @@ public class EnemyBrain : MonoBehaviour
         myHitboxCollider.isTrigger = true;
 
         gameObject.layer = LayerMask.NameToLayer("Enemy_Body");
-        rb.gravityScale = 0f; rb.freezeRotation = true; rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        rb.drag = 3f; rb.mass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.drag = 3f;
+        rb.mass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
 
         if (mainSr.sprite != null)
         {
@@ -98,9 +101,10 @@ public class EnemyBrain : MonoBehaviour
 
         ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
         if (procAnim != null) { procAnim.SetTargetVisual(visualHitboxNode.transform); procAnim.RefreshBaseState(); }
+
+        Debug.Log($"<color=#FF4500>【怪物异变参数】</color> [{MyData.EnemyName}] 质量(Mass): <color=white>{rb.mass:F1}</color> | 基础移速: <color=white>{MyData.GetStat(StatType.MoveSpeed):F2} m/s</color>");
     }
 
-    // 👇【核心新增 2】：动态获取最终属性 (受减速/冰冻 Buff 影响！)
     private float GetFinalStat(StatType statType, float baseValue = 0f)
     {
         float val = baseValue == 0f ? MyData.GetStat(statType) : baseValue;
@@ -121,6 +125,7 @@ public class EnemyBrain : MonoBehaviour
             ExecuteECAActions(MyData.OnTakeDamageActions, this.transform, null);
             lastFrameHP = myReceiver.CurrentHP;
         }
+
         if (myReceiver.CurrentHP <= 0) return;
 
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
@@ -128,7 +133,6 @@ public class EnemyBrain : MonoBehaviour
             rb.velocity = Vector2.zero; return;
         }
 
-        // 全局施法硬直冷却
         if (globalActionTimer > 0) globalActionTimer -= Time.deltaTime;
 
         foreach (var skill in runtimeSkills)
@@ -140,7 +144,6 @@ public class EnemyBrain : MonoBehaviour
         HandleMovementAndCombat();
     }
 
-    // 👇【核心新增 3】：独立的策略索敌引擎
     private Transform GetTargetByStrategy(TargetingStrategy strategy)
     {
         var allPlayers = FindObjectsOfType<DamageReceiver>().Where(r => !r.isEnemy && r.CurrentHP > 0).ToList();
@@ -157,7 +160,6 @@ public class EnemyBrain : MonoBehaviour
         }
     }
 
-    // 提纯的测距引擎 (基于外壳)
     private float CalculateDistanceToTarget(Transform target, out Vector2 dirToTarget)
     {
         if (target == null) { dirToTarget = Vector2.zero; return 0f; }
@@ -186,8 +188,6 @@ public class EnemyBrain : MonoBehaviour
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
 
         float distToMain = CalculateDistanceToTarget(currentTarget, out Vector2 dirToMainTarget);
-
-        // 动态移速 (吃减速 Buff)
         float currentSpeed = GetFinalStat(StatType.MoveSpeed) * speedMult;
         if (currentSpeed < 0.1f) currentSpeed = 0.1f;
 
@@ -208,7 +208,6 @@ public class EnemyBrain : MonoBehaviour
         }
         else if (MyData.MovementLogic == EnemyMovementStrategy.IntentDriven)
         {
-            // 1. 如果手里没牌，且不在施法僵直中，抽一张牌（确定意图）！
             if (currentIntent == null && globalActionTimer <= 0)
             {
                 var readySkills = runtimeSkills.Where(s => s.CurrentCooldown <= 0).ToList();
@@ -224,10 +223,8 @@ public class EnemyBrain : MonoBehaviour
                 }
             }
 
-            // 2. 如果手里有牌，死死执行这个意图！
             if (currentIntent != null)
             {
-                // 极其智能：使用这张牌专属的索敌逻辑去找目标！
                 Transform intentTarget = currentIntent.SkillData.OverrideTargeting ? GetTargetByStrategy(currentIntent.SkillData.SkillTargetingLogic) : currentTarget;
 
                 if (intentTarget != null)
@@ -236,33 +233,32 @@ public class EnemyBrain : MonoBehaviour
                     float maxR = currentIntent.SkillData.MaxRange * distMult;
                     float minR = currentIntent.SkillData.MinRange * distMult;
 
-                    // 走位拉扯，直到进入这张牌的射程
                     if (intentDist > maxR) targetVelocity = intentDir * currentSpeed;
                     else if (intentDist < minR) targetVelocity = -intentDir * currentSpeed;
                     else
                     {
-                        // 进入射程，踩刹车，打出底牌！
                         targetVelocity = Vector2.zero;
                         PerformAttack(currentIntent);
-                        currentIntent = null; // 打完牌，清空意图，等待下一轮抽卡
+                        currentIntent = null;
                     }
                 }
                 else
                 {
-                    currentIntent = null; // 目标死了或消失了，把牌撕了重新抽
+                    currentIntent = null;
                 }
             }
             else
             {
-                // 手里没牌又在冷却时，缓慢向着最近的敌人游走压迫
                 targetVelocity = dirToMainTarget * (currentSpeed * 0.5f);
             }
         }
+
+        if (distToMain <= 0.01f && Vector2.Dot(targetVelocity, dirToMainTarget) > 0) targetVelocity = Vector2.zero;
+        ExecutePhysicalMovement(targetVelocity, distMult);
     }
 
     private void TryRollAndFireSkills(float distMult)
     {
-        // 施法僵直中，不准抽卡！(这是拉扯感的来源)
         if (globalActionTimer > 0) return;
 
         var availableSkills = new List<RuntimeEnemySkill>();
@@ -271,7 +267,6 @@ public class EnemyBrain : MonoBehaviour
         {
             if (skill.CurrentCooldown > 0) continue;
 
-            // 👇 独立索敌覆写！
             Transform targetForSkill = skill.SkillData.OverrideTargeting ? GetTargetByStrategy(skill.SkillData.SkillTargetingLogic) : currentTarget;
             if (targetForSkill == null) continue;
 
@@ -300,7 +295,6 @@ public class EnemyBrain : MonoBehaviour
         Transform actualTarget = skillData.OverrideTargeting ? GetTargetByStrategy(skillData.SkillTargetingLogic) : currentTarget;
         if (actualTarget == null) return;
 
-        // 👇 攻速与施法僵直 (吃减速 Buff！)
         float baseAtkSpeed = rSkill.DummyWeapon.GetStat(StatType.AttackSpeed);
         if (baseAtkSpeed <= 0) baseAtkSpeed = 50f;
         float finalAtkSpeed = GetFinalStat(StatType.AttackSpeed, baseAtkSpeed);
@@ -308,22 +302,19 @@ public class EnemyBrain : MonoBehaviour
 
         float cd = GameFormulas.CalcCooldown(finalAtkSpeed);
         rSkill.CurrentCooldown = cd;
-        // 全局施法间隔：占用技能冷却的 40% 时间，这期间怪物发呆或凭惯性滑行！
         globalActionTimer = cd * 0.4f;
+
+        Debug.Log($"<color=#FF4500>【怪物火控系统】</color> [{MyData.EnemyName} - {skillData.SkillName}] 攻速评分: <color=white>{finalAtkSpeed:F1}</color> ===> 技能冷却: <color=#00FF00>{cd:F2} 秒</color> (附带施法僵直: {globalActionTimer:F2} 秒)");
 
         CalculateDistanceToTarget(actualTarget, out Vector2 attackDir);
 
-        // ==========================================
-        // 👇【核心新增】：战术位移技能 (Tactical Dash)
-        // ==========================================
         if (skillData.DeliveryType == WeaponDeliveryType.Tactical_Dash)
         {
             Vector2 dashDir = Vector2.zero;
             if (skillData.DashDirection == TacticalDashDirection.AwayFromTarget) dashDir = -attackDir;
             else if (skillData.DashDirection == TacticalDashDirection.TowardsTarget) dashDir = attackDir;
-            else dashDir = new Vector2(-attackDir.y, attackDir.x); // 侧滑
+            else dashDir = new Vector2(-attackDir.y, attackDir.x);
 
-            // 给自己施加物理冲量进行闪避！
             ApplyImpulse(dashDir, skillData.DashImpulse);
 
             Debug.Log($"<color=#00FFFF>【战术拉扯】</color> [{MyData.EnemyName}] 释放了 [{skillData.SkillName}]，进行战术机动！");
@@ -333,7 +324,6 @@ public class EnemyBrain : MonoBehaviour
             return;
         }
 
-        // === 正常攻击逻辑 ===
         float finalDmg = Random.Range(skillData.MinDamage, skillData.MaxDamage);
         bool isCrit = Random.value <= skillData.CriticalChance;
         if (isCrit) finalDmg *= 1.5f;
@@ -364,11 +354,10 @@ public class EnemyBrain : MonoBehaviour
         if (currentMoveState == MoveExecutionState.Staggered)
         {
             moveStateTimer -= Time.deltaTime;
-            if (moveStateTimer <= 0) { currentMoveState = MoveExecutionState.Ready; rb.drag = 3f; } // 恢复正常阻力
+            if (moveStateTimer <= 0) { currentMoveState = MoveExecutionState.Ready; rb.drag = 3f; }
             return;
         }
 
-        // 核心惯性滑行：如果在施法发呆期间 (globalActionTimer > 0)，不再主动给速度，任由物理引擎用 drag 减速！
         if (globalActionTimer > 0) return;
 
         if (MyData.MoveType == EnemyMoveType.Stationary) { rb.velocity = Vector2.zero; return; }
@@ -427,47 +416,60 @@ public class EnemyBrain : MonoBehaviour
         currentMoveState = MoveExecutionState.Staggered;
         moveStateTimer = stunTime;
 
-        rb.drag = 5f; // 受击时临时增大阻力防止飞出屏幕
+        rb.drag = 5f;
         rb.velocity = Vector2.zero;
         rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
 
     private void LateUpdate() { EnforceArenaBounds(); }
-    private void EnforceArenaBounds() { /* ... 保持原样 ... */ }
-    private void HandleDeathSequence() { /* ... 保持原样 ... */ }
-    private IEnumerator CorpseDecayRoutine() { yield return null; /* ... 保持原样 ... */ }
+
+    private void EnforceArenaBounds()
+    {
+        if (CombatDirector.Instance == null || CombatDirector.Instance.CurrentArenaSize.x == 0) return;
+
+        Vector2 center = CombatDirector.Instance.CurrentArenaCenter;
+        Vector2 size = CombatDirector.Instance.CurrentArenaSize;
+
+        float minX = center.x - size.x / 2f;
+        float maxX = center.x + size.x / 2f;
+        float minY = center.y - size.y / 2f;
+        float maxY = center.y + size.y / 2f;
+
+        Vector3 currentPos = transform.position;
+        float clampedX = Mathf.Clamp(currentPos.x, minX, maxX);
+        float clampedY = Mathf.Clamp(currentPos.y, minY, maxY);
+
+        if (currentPos.x != clampedX || currentPos.y != clampedY)
+        {
+            transform.position = new Vector3(clampedX, clampedY, currentPos.z);
+            if (rb != null) rb.velocity = Vector2.zero;
+        }
+    }
 
     private void OnCollisionEnter2D(Collision2D col)
     {
         if (isDead) return;
 
-        // 只有在“冲刺态”下，撞击才具有毁灭性！
         if (currentMoveState == MoveExecutionState.Dashing)
         {
-            // 撞到了谁？
             DamageReceiver victim = col.gameObject.GetComponentInParent<DamageReceiver>();
 
-            // 如果撞到的是玩家机甲，且这次冲锋还没碾过他
             if (victim != null && !victim.isEnemy && !dashedVictims.Contains(victim))
             {
                 dashedVictims.Add(victim);
 
-                // 1. 动能伤害公式：自身质量 (Mass) 乘以 冲刺速度倍率，越重越痛！
                 float myMass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
                 float kineticDamage = myMass * MyData.DashSpeedMultiplier * 5f;
 
                 victim.TakeDamage(kineticDamage, MyData.EnemyName + " (野蛮冲撞)");
 
-                // 2. 动能击飞：把玩家撞得倒退滑行！
                 ChimeraAIController playerAI = victim.GetComponent<ChimeraAIController>();
                 if (playerAI != null)
                 {
                     Vector2 knockbackDir = (victim.transform.position - transform.position).normalized;
-                    // 施加巨大冲量
                     playerAI.ApplyImpulse(knockbackDir, myMass * 100f);
                 }
 
-                // 3. 极致反馈：撞击瞬间屏幕震动！
                 if (ScreenEffectManager.Instance != null)
                 {
                     ScreenEffectManager.Instance.TriggerShake(0.4f, 0.2f);
@@ -478,8 +480,58 @@ public class EnemyBrain : MonoBehaviour
         }
         else
         {
-            // 如果没在冲刺，就清空受害者名单，为下一次冲锋做准备
             dashedVictims.Clear();
         }
+    }
+
+    private void HandleDeathSequence()
+    {
+        if (isDead) return;
+        isDead = true;
+
+        rb.velocity = Vector2.zero;
+        rb.isKinematic = true;
+        rb.simulated = false;
+
+        Collider2D[] colliders = GetComponentsInChildren<Collider2D>();
+        foreach (var col in colliders) col.enabled = false;
+
+        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
+        if (procAnim != null) procAnim.StopAnimation();
+
+        Animator[] anims = GetComponentsInChildren<Animator>();
+        foreach (var anim in anims) anim.SetTrigger("Die");
+
+        ExecuteECAActions(MyData.OnDeathActions, this.transform, null);
+
+        gameObject.tag = "Untagged";
+        gameObject.layer = LayerMask.NameToLayer("Floor");
+
+        StartCoroutine(CorpseDecayRoutine());
+    }
+
+    private IEnumerator CorpseDecayRoutine()
+    {
+        float lingerTime = MyData != null ? MyData.CorpseLingerTime : 5f;
+        yield return new WaitForSeconds(lingerTime);
+
+        SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
+        float fadeTime = 2f;
+        float elapsed = 0f;
+
+        while (elapsed < fadeTime)
+        {
+            elapsed += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeTime);
+            foreach (var sr in srs)
+            {
+                Color c = sr.color;
+                c.a = alpha;
+                sr.color = c;
+            }
+            yield return null;
+        }
+
+        Destroy(gameObject);
     }
 }

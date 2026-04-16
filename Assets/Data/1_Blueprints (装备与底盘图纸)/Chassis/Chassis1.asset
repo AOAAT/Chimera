@@ -19,7 +19,7 @@ MonoBehaviour:
   Description: "\u5E95\u76D8\u7684\u98CE\u5473\u63CF\u8FF0"
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   MacroCategory: 0
-  SubTags: 000000000100000002000000
+  SubTags: 
   BaseStats:
   - StatID: 0
     Value: 100

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "SalvageConfig", menuName = "Chimera Protocol/Economy/Salvage Config")]
+[CreateAssetMenu(fileName = "SalvageConfig", menuName = "Chimera Protocol/3. 宏观控制/等级配置 - Salvage Config (战利品掉落概率)")]
 public class SalvageConfigSO : ScriptableObject
 {
     [Header("=== 第二阶段：多态生成概率 ===")]

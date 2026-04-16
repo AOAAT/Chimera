@@ -41,7 +41,7 @@ public class WeaponModule : MonoBehaviour
         muzzlePoint = muzzleObj.transform;
 
         currentState = WeaponState.Idle;
-        stateTimer = 0f;
+        stateTimer = 0f; // 开局即可开火
     }
 
     public Vector3 GetLogicCenter()
@@ -56,7 +56,7 @@ public class WeaponModule : MonoBehaviour
         return transform;
     }
 
-    // 👇【核心枢纽】：所有的武器数值，都必须经过这里的洗礼，叠加 Buff 增益！
+    // 所有的武器数值，都必须经过这里的洗礼，叠加 Buff 增益！
     private float GetFinalWeaponStat(StatType statID)
     {
         float baseValue = weaponData.GetStat(statID);
@@ -86,7 +86,6 @@ public class WeaponModule : MonoBehaviour
     {
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
 
-        // 👇 替换为最终属性
         float maxRange = GetFinalWeaponStat(StatType.MaxRange) * distMult;
         float minRange = GetFinalWeaponStat(StatType.MinRange) * distMult;
         int maxLockCount = Mathf.Max((int)GetFinalWeaponStat(StatType.MultiShotCount), 1);
@@ -139,6 +138,8 @@ public class WeaponModule : MonoBehaviour
                 stateTimer -= Time.deltaTime;
                 float strikeProgress = 1f - (stateTimer / t_Strike);
                 actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, strikeProgress);
+
+                // 砸到最低点，爆出伤害！
                 if (stateTimer <= 0f) { FirePayload(); currentState = WeaponState.Recovery; stateTimer = t_Recovery; }
                 break;
             case WeaponState.Recovery:
@@ -152,27 +153,34 @@ public class WeaponModule : MonoBehaviour
 
     private void InitiateAttack()
     {
-        // 👇 替换为最终属性（享受超频 Buff 攻速加成！）
         float atkSpeed = GetFinalWeaponStat(StatType.AttackSpeed);
         if (atkSpeed <= 0) atkSpeed = 100f;
 
         totalCooldown = GameFormulas.CalcCooldown(atkSpeed);
 
+        // 👇【主策专属】：极其清晰的火控播报！
+        Debug.Log($"<color=#FF8800>【机甲火控系统】</color> [{weaponData.WeaponName}] 攻速评分: <color=white>{atkSpeed:F1}</color> ===> 真实攻击间隔(CD): <color=#00FF00>{totalCooldown:F2} 秒</color>");
+
+        // 👇【核心修复】：远程武器没有动作三段式，直接开火，并强制挂起冷却时间！
         if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
         {
             FirePayload();
             stateTimer = totalCooldown;
-            return;
+            return; // 这一行至关重要，它保证了远程武器不会执行后面的近战动作代码！
         }
 
+        // 近战武器的三段式切分
         t_Windup = totalCooldown * weaponData.SourceSO.WindupTimeRatio;
         t_Strike = totalCooldown * weaponData.SourceSO.StrikeTimeRatio;
         t_Recovery = totalCooldown - t_Windup - t_Strike;
+
         rot_Base = Quaternion.AngleAxis(aimAngle, Vector3.forward);
         rot_Windup = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.WindupAngle);
         rot_Strike = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.StrikeAngle);
+
         currentState = WeaponState.Windup;
         stateTimer = t_Windup;
+
         if (myAnimator != null) myAnimator.SetTrigger("Windup");
     }
 
@@ -181,7 +189,6 @@ public class WeaponModule : MonoBehaviour
         if (CurrentTargets.Count == 0) return;
         if (myAnimator != null) myAnimator.SetTrigger("Fire");
 
-        // 👇 替换为最终属性（享受狂暴 Buff 伤害/暴击加成！）
         float safeMinDmg = Mathf.Max(0f, GetFinalWeaponStat(StatType.MinDamage));
         float safeMaxDmg = Mathf.Max(safeMinDmg, GetFinalWeaponStat(StatType.MaxDamage));
 
@@ -191,6 +198,8 @@ public class WeaponModule : MonoBehaviour
         if (isCrit) finalDmg *= 1.5f;
 
         ECAContext fireContext = new ECAContext { ImpactPoint = muzzlePoint.position, PrimaryTarget = CurrentTargets[0], BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false, SourceEntity = mechRoot };
+
+        // 1. 触发开火 ECA
         if (weaponData.OnFireActions != null)
         {
             foreach (var action in weaponData.OnFireActions)
@@ -199,12 +208,13 @@ public class WeaponModule : MonoBehaviour
             }
         }
 
+        // 2. 发送伤害实体
         foreach (var target in CurrentTargets)
         {
             Vector3 visualTargetCenter = GetTargetCenter(target);
             if (weaponData.DeliveryType == WeaponDeliveryType.Melee)
             {
-                ECAContext hitContext = new ECAContext { ImpactPoint = visualTargetCenter, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false };
+                ECAContext hitContext = new ECAContext { ImpactPoint = visualTargetCenter, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false, SourceEntity = mechRoot };
                 if (weaponData.OnHitActions != null) foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(hitContext);
             }
             else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)

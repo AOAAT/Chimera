@@ -117,10 +117,28 @@ public class CombatDirector : MonoBehaviour
             SpriteRenderer targetSR = CurrentLayout.ArenaReference.GetComponent<SpriteRenderer>();
             SpriteRenderer mySR = ArenaReference.GetComponent<SpriteRenderer>();
 
-            if (targetSR != null && mySR != null && targetSR.sprite != null)
+            // 👇【核心新增】：尝试寻找是否有随机背景池？
+            ArenaBackgroundConfig bgConfig = CurrentLayout.ArenaReference.GetComponent<ArenaBackgroundConfig>();
+
+            if (mySR != null)
             {
-                mySR.sprite = targetSR.sprite;
-                mySR.color = targetSR.color;
+                // 1. 如果策划配置了图库，开启盲盒抽图模式！
+                if (bgConfig != null && bgConfig.RandomBackgrounds.Count > 0)
+                {
+                    Sprite chosenSprite = bgConfig.RandomBackgrounds[Random.Range(0, bgConfig.RandomBackgrounds.Count)];
+                    mySR.sprite = chosenSprite;
+
+                    // 依然保留滤镜颜色的继承
+                    if (targetSR != null) mySR.color = targetSR.color;
+
+                    Debug.Log($"<color=#00FFFF>【地形生成】</color> 成功从场景池中抽取了背景: {chosenSprite.name}");
+                }
+                // 2. 降级兼容：如果图库是空的，或者根本没挂这个脚本，老老实实用原来那张图
+                else if (targetSR != null && targetSR.sprite != null)
+                {
+                    mySR.sprite = targetSR.sprite;
+                    mySR.color = targetSR.color;
+                }
             }
         }
     }
@@ -200,7 +218,10 @@ public class CombatDirector : MonoBehaviour
 
                 visualObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
                 sr.color = new Color(1f, 0f, 0f, 0.2f);
-                sr.sortingOrder = -5;
+
+                // 👇【核心修复】：让红框渲染在正确的图层上！
+                sr.sortingLayerName = "DeployZone";
+                sr.sortingOrder = 0;
             }
         }
     }

@@ -13,14 +13,18 @@ public class StatEntryDrawer : PropertyDrawer
     // 🎨 主策的专属词条池 (你可以随时在这里增删改！)
     // ==========================================
 
-    // 1. 底盘池
+    // ==========================================
+    // 🎨 主策的专属词条池
+    // ==========================================
+
+    // 1. 底盘池 (加入了 AddedBlock)
     private readonly StatType[] ChassisPool = {
-        StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower
+        StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower
     };
 
     // 2. 核心组件池
     private readonly StatType[] CorePool = {
-        StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower
+        StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower
     };
 
     // 3. 移动组件池
@@ -28,7 +32,7 @@ public class StatEntryDrawer : PropertyDrawer
         StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower
     };
 
-    // 4. 武器组件池
+    // 4. 武器组件池 (武器一般不加格挡，保持原样)
     private readonly StatType[] WeaponPool = {
         StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost,
         StatType.MaxDamage, StatType.MinDamage, StatType.MaxRange, StatType.MinRange,
@@ -36,16 +40,15 @@ public class StatEntryDrawer : PropertyDrawer
         StatType.MultiShotCount, StatType.ProjectileSpeed
     };
 
-    // 5. 辅助/工厂组件池
+    // 5. 辅助/工厂组件池 (加入了 AddedBlock，极品防御插件的来源！)
     private readonly StatType[] SupportPool = {
-        StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost
+        StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost
     };
 
-    // 6. 敌人本体池
+    // 6. 敌人本体池 (加入了怪物的专属 Block)
     private readonly StatType[] EnemyPool = {
-        StatType.HP, StatType.AP, StatType.Mass, StatType.MoveSpeed
+        StatType.HP, StatType.AP, StatType.Block, StatType.Mass, StatType.MoveSpeed
     };
-
     // ==========================================
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "Action_DealFlatDamage", menuName = "Chimera Protocol/ECA Actions/Deal Flat Damage (造成固定/真实伤害)")]
+[CreateAssetMenu(fileName = "Action_DealFlatDamage", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - Deal Flat Damage (造成固定or真实伤害)")]
 public class Action_DealFlatDamage : ECAAction
 {
     [Header("=== 伤害设置 ===")]

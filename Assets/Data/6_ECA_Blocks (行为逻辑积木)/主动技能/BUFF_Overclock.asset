@@ -21,7 +21,7 @@ MonoBehaviour:
   StackType: 0
   MaxStacks: 1
   StatModifiers:
-  - StatID: 9
+  - StatID: 10
     Value: 20000
   OnApplyActions: []
   TickInterval: 1

@@ -7,7 +7,6 @@ public class UpgradePreviewPanelUI : MonoBehaviour
     public static UpgradePreviewPanelUI Instance;
 
     [Header("=== 双栏 UI 容器 ===")]
-    [Tooltip("直接把做好的 ItemDetailPanelUI 预制体拖两个进来当子节点！")]
     public ItemDetailPanelUI LeftCard_Current;
     public ItemDetailPanelUI RightCard_Next;
 
@@ -34,30 +33,19 @@ public class UpgradePreviewPanelUI : MonoBehaviour
         currentPreviewData = previewData;
         gameObject.SetActive(true);
 
-        // ==========================================
-        // 极简复用魔法：把实体塞给现成的面板，一切自动搞定！
-        // ==========================================
-
-        // 1. 渲染左侧：当前状态
+        // 1. 渲染左侧：当前状态 (普通模式)
         LeftCard_Current.ShowComponentDetail(previewData.TargetItem);
 
-        // 2. 渲染右侧：下一级状态
-        // 我们直接凭空“捏造”一个高一星级的临时实体，喂给右侧面板！
-        // 它的背景图、数值、特殊机制全部会自动走 ItemDetailPanelUI 的原有逻辑刷新！
-        InstancedComponent nextLevelMock = new InstancedComponent(
-            previewData.TargetItem.BaseData,
-            previewData.NextLevel
-        );
-        RightCard_Next.ShowComponentDetail(nextLevelMock);
+        // 2. 渲染右侧：下一级状态 (带 Diff 高亮！)
+        InstancedComponent nextLevelMock = new InstancedComponent(previewData.TargetItem.BaseData, previewData.NextLevel);
+
+        // 👇【核心新增】：我们给 ShowComponentDetail 追加一个可选参数，把 diffData 传进去！
+        RightCard_Next.ShowComponentDetail(nextLevelMock, previewData);
     }
 
     private void OnConfirmClicked()
     {
-        if (currentPreviewData != null)
-        {
-            // 呼叫核心大脑执行吞噬升级！
-            ComponentUpgradeManager.Instance.ConfirmAndExecuteUpgrade(currentPreviewData);
-        }
+        if (currentPreviewData != null) ComponentUpgradeManager.Instance.ConfirmAndExecuteUpgrade(currentPreviewData);
         ClosePanel();
     }
 

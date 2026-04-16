@@ -33,41 +33,68 @@ public static class GameFormulas
     // 假设武器图纸上填的 AttackSpeed 是一个 0~100+ 的“加速评分”
     // 基础冷却我们假定为 2.0 秒（或者你可以从武器SO里读一个 BaseCooldown）
     // 极限最快射速限制为 0.2 秒
+    // GameFormulas.cs
+    // GameFormulas.cs
     public static float CalcCooldown(float attackSpeedScore)
     {
         float baseCooldown = 2.0f;
         float minCooldown = 0.2f;
 
+        // 👇【架构师级修改：动态锚点解算】
+        // 策划需求：评分达到 100 时，冷却必须精准等于 1.0 秒
+        float targetScore = 100f;
+        float targetCooldown = 1.0f;
+
         if (attackSpeedScore <= 0f) return baseCooldown;
 
-        // 使用经典的衰减公式： y = Min + (Base - Min) * (100 / (100 + X))
-        // 当 score = 0 时，冷却 = 2.0s
-        // 当 score = 100 时，冷却 = 0.2 + 1.8 * 0.5 = 1.1s
-        // 当 score = 300 时，冷却 = 0.2 + 1.8 * 0.25 = 0.65s
-        // 永远平滑，永远递减，永远达不到 0.2s！
-        float factor = 100f / (100f + attackSpeedScore);
+        // 运行时根据策划填的锚点，利用自然对数 (Mathf.Log) 逆向推导出完美的衰减常数
+        // 这样代码就彻底变成了“数据驱动”，策划怎么改锚点都不会崩
+        float ratio = (targetCooldown - minCooldown) / (baseCooldown - minCooldown);
+        float decayConstant = -targetScore / Mathf.Log(ratio); // 对于(100, 1.0)，这里算出来大概是 123.315
+
+        float factor = Mathf.Exp(-attackSpeedScore / decayConstant);
 
         return minCooldown + (baseCooldown - minCooldown) * factor;
     }
 
-    public static void CalcDamageReduction(float rawDamage, float currentAP, bool isTrueDamage, out float finalHPDamage, out float armorAbsorbed)
+    public static void CalcDamageReduction(float rawDamage, float currentAP, float currentBlock, bool isTrueDamage, out float finalHPDamage, out float armorAbsorbed)
     {
-        if (isTrueDamage || currentAP <= 0)
+        // 1. 如果是真实伤害，无视格挡和AP，直接打肉！
+        if (isTrueDamage)
         {
             armorAbsorbed = 0f;
             finalHPDamage = rawDamage;
             return;
         }
 
-        if (rawDamage <= currentAP)
+        // 2. 普通伤害：先经过格挡 (Block) 的削减
+        float damageAfterBlock = Mathf.Max(0f, rawDamage - currentBlock);
+
+        // 如果连格挡都没打穿，直接刮痧，AP和HP都不掉
+        if (damageAfterBlock <= 0f)
         {
-            armorAbsorbed = rawDamage;
+            armorAbsorbed = 0f;
+            finalHPDamage = 0f;
+            return;
+        }
+
+        // 3. 再打护甲血条 (AP)
+        if (currentAP <= 0)
+        {
+            armorAbsorbed = 0f;
+            finalHPDamage = damageAfterBlock;
+            return;
+        }
+
+        if (damageAfterBlock <= currentAP)
+        {
+            armorAbsorbed = damageAfterBlock;
             finalHPDamage = 0f;
         }
         else
         {
             armorAbsorbed = currentAP;
-            finalHPDamage = rawDamage - currentAP;
+            finalHPDamage = damageAfterBlock - currentAP;
         }
     }
 

@@ -30,7 +30,9 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 10
-    - StatID: 3
+    - StatID: 0
+      Value: 20
+    - StatID: 5
       Value: 20
     Mechanics: []
     OnFireActions: []
@@ -38,6 +40,13 @@ MonoBehaviour:
     OnAssembleActions: []
     BonusTags: 
     SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45

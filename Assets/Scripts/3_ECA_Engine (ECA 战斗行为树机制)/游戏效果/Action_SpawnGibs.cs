@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "SpawnGibs", menuName = "Chimera Protocol/ECA Actions/Feedback: Spawn Gibs (爆裂碎块)")]
+[CreateAssetMenu(fileName = "SpawnGibs", menuName = "Chimera Protocol/2. ECA 机制积木/表现 - Spawn Gibs (爆裂碎块)")]
 public class Action_SpawnGibs : ECAAction
 {
     [Header("=== 碎块池配置 ===")]

@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// --- 找到 GameCoreTypes.cs 里的 StatType 枚举 ---
 public enum StatType
 {
-    AddedHP, AddedAP, AddedMass,
+    AddedHP, AddedAP, AddedMass, AddedBlock, // 👇 新增 AddedBlock
     PowerCost, EnginePower,
     MaxDamage, MinDamage, MaxRange, MinRange,
     AttackSpeed, CriticalChance, ExplosionRadius, MultiShotCount, ProjectileSpeed,
-    HP, AP, Mass, MoveSpeed
+    HP, AP, Mass, MoveSpeed, Block // 👇 给怪物本体也加一个 Block
 }
 
 // ==========================================
@@ -45,7 +46,7 @@ public enum WeaponDeliveryType { Melee, Ranged, Tactical_Dash }
 // 👇【新增】：怪物的战术位移方向
 public enum TacticalDashDirection { AwayFromTarget, TowardsTarget, Lateral }
 public enum ComponentType { Core, Weapon, Support, Factory, Movement }
-public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest }
+public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest, Furthest }
 public enum MovementStrategy { Active_Firepower, Active_Survival, Dodge }
 public enum EnemyMovementStrategy { Swarm, Artillery, IntentDriven }
 

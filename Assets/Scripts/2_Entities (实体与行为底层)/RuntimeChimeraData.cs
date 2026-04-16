@@ -18,6 +18,8 @@ public class RuntimeWeapon
 
     public float BonusCriticalChance = 0f;
 
+    // 👇【新增】：万能状态机字典，用来存弹夹余量、开火次数等！
+    public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
     public float GetStat(StatType statID) { return WeaponStats.ContainsKey(statID) ? WeaponStats[statID] : 0f; }
 }
 

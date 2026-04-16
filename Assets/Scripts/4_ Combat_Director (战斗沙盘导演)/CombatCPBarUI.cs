@@ -37,7 +37,7 @@ public class CombatCPBarUI : MonoBehaviour
 
             if (CPText != null)
             {
-                CPText.text = $"{Mathf.FloorToInt(current)} / {max}";
+                CPText.text = $"{current.ToString("F1")} / {max.ToString("F1")}";
             }
         }
     }

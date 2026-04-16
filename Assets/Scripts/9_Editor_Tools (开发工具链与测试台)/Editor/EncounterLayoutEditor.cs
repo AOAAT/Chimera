@@ -23,13 +23,11 @@ public class EncounterLayoutEditor : Editor
         EditorGUILayout.Space(20);
         EditorGUILayout.LabelField("🗺️ 战术沙盘 2.0 (所见即所得)", EditorStyles.boldLabel);
 
-        // === 1. 数据侦察：扒取预制体的真实参数 ===
         Vector2 arenaWorldSize = new Vector2(20f, 20f); // 兜底大小
         Texture2D arenaTexture = null;
 
         if (layout.ArenaReference != null)
         {
-            // 精准读取物理碰撞箱的绝对大小 (考虑到 Scale 缩放)
             BoxCollider2D col = layout.ArenaReference.GetComponent<BoxCollider2D>();
             if (col != null)
             {
@@ -39,9 +37,17 @@ public class EncounterLayoutEditor : Editor
                 );
             }
 
-            // 读取场地背景贴图
+            // 👇【核心升级】：兼容随机背景池的沙盘预览！
+            ArenaBackgroundConfig bgConfig = layout.ArenaReference.GetComponent<ArenaBackgroundConfig>();
             SpriteRenderer sr = layout.ArenaReference.GetComponent<SpriteRenderer>();
-            if (sr != null && sr.sprite != null)
+
+            // 优先读取图库里的第一张作为沙盘底图
+            if (bgConfig != null && bgConfig.RandomBackgrounds.Count > 0 && bgConfig.RandomBackgrounds[0] != null)
+            {
+                arenaTexture = bgConfig.RandomBackgrounds[0].texture;
+            }
+            // 如果没配置图库，再回退读取 SpriteRenderer
+            else if (sr != null && sr.sprite != null)
             {
                 arenaTexture = sr.sprite.texture;
             }

@@ -104,7 +104,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         Instance = this;
         isTooltipMode = true;
 
-        // 👇【核心修复】：给悬浮窗套上射线穿透外衣，彻底解决闪烁死循环！
+        // 给悬浮窗套上射线穿透外衣，彻底解决闪烁死循环！
         CanvasGroup group = GetComponent<CanvasGroup>();
         if (group == null) group = gameObject.AddComponent<CanvasGroup>();
 
@@ -137,12 +137,12 @@ public class ItemDetailPanelUI : MonoBehaviour
     public Color TagColor_Default = new Color(0.3f, 0.3f, 0.3f, 1f);
 
     // ==========================================
-    // A. 路由中心：组件详情分发
+    // A. 路由中心：组件详情分发 (支持强化对比 Diff 数据传入)
     // ==========================================
-    public void ShowComponentDetail(InstancedComponent instance)
+    public void ShowComponentDetail(InstancedComponent instance, UpgradePreviewData diffData = null)
     {
         if (instance == null || instance.BaseData == null) return;
-        openTime = Time.time; // 👇【新增】：记录打开瞬间的时间
+        openTime = Time.time;
         var data = instance.BaseData;
 
         HidePanel();
@@ -154,20 +154,20 @@ public class ItemDetailPanelUI : MonoBehaviour
         {
             case ComponentType.Weapon:
                 Panel_Weapon.SetActive(true);
-                FillWeaponData(instance);
+                FillWeaponData(instance, diffData);
                 break;
             case ComponentType.Core:
                 Panel_Core.SetActive(true);
-                FillCoreData(instance);
+                FillCoreData(instance, diffData);
                 break;
             case ComponentType.Movement:
                 Panel_Movement.SetActive(true);
-                FillMovementData(instance);
+                FillMovementData(instance, diffData);
                 break;
             case ComponentType.Support:
-            case ComponentType.Factory: // 👇 兼容底层枚举。如果枚举里还有Factory，直接按辅助面板显示！
+            case ComponentType.Factory:
                 Panel_Support.SetActive(true);
-                FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText);
+                FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText, diffData);
                 break;
         }
 
@@ -180,7 +180,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public void ShowChassisDetail(ChassisDataSO data)
     {
         if (data == null) return;
-        openTime = Time.time; // 👇【新增】：记录打开瞬间的时间
+        openTime = Time.time;
         HidePanel();
         gameObject.SetActive(true);
 
@@ -191,9 +191,19 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Chassis_Common.BackgroundImage != null && data.DetailBackgroundSprite != null)
             Chassis_Common.BackgroundImage.sprite = data.DetailBackgroundSprite;
 
-        if (Chassis_HPText != null) Chassis_HPText.text = $"+{GetStat(data.BaseStats, StatType.AddedHP)}";
-        if (Chassis_APText != null) Chassis_APText.text = $"+{GetStat(data.BaseStats, StatType.AddedAP)}";
-        if (Chassis_PowerCostText != null) Chassis_PowerCostText.text = $"{GetStat(data.BaseStats, StatType.PowerCost)}";
+        // 获取属性并拼接格挡值
+        float hp = GetStat(data.BaseStats, StatType.AddedHP);
+        float ap = GetStat(data.BaseStats, StatType.AddedAP);
+        float block = GetStat(data.BaseStats, StatType.AddedBlock);
+        float power = GetStat(data.BaseStats, StatType.PowerCost);
+
+        if (Chassis_HPText != null) Chassis_HPText.text = $"+{hp}";
+        if (Chassis_APText != null)
+        {
+            if (block > 0) Chassis_APText.text = $"+{ap} <color=#FFD700>(格挡 {block})</color>";
+            else Chassis_APText.text = $"+{ap}";
+        }
+        if (Chassis_PowerCostText != null) Chassis_PowerCostText.text = $"{power}";
 
         if (Chassis_SocketIcons != null)
         {
@@ -209,14 +219,9 @@ public class ItemDetailPanelUI : MonoBehaviour
                         var mapping = SocketIconDict.Find(x => x.Type == slot.AllowedTypes[0]);
                         Chassis_SocketIcons[i].sprite = mapping.Icon != null ? mapping.Icon : GenericSocketIcon;
                     }
-                    else if (allowedCount > 1)
-                    {
-                        Chassis_SocketIcons[i].sprite = GenericSocketIcon;
-                    }
-                    else
-                    {
-                        Chassis_SocketIcons[i].sprite = EmptySocketIcon;
-                    }
+                    else if (allowedCount > 1) Chassis_SocketIcons[i].sprite = GenericSocketIcon;
+                    else Chassis_SocketIcons[i].sprite = EmptySocketIcon;
+
                     Chassis_SocketIcons[i].gameObject.SetActive(true);
                 }
                 else
@@ -229,10 +234,26 @@ public class ItemDetailPanelUI : MonoBehaviour
     }
 
     // ==========================================
-    // 数据灌入逻辑
+    // 数据灌入与红绿着色逻辑
     // ==========================================
 
-    private void FillWeaponData(InstancedComponent instance)
+    // 核心黑科技：专门处理数值变色的格式化器
+    private string FormatStat(float value, StatType statType, UpgradePreviewData diffData)
+    {
+        string baseStr = value.ToString();
+        if (diffData == null) return baseStr; // 如果不是强化面板模式，直接返回普通白字
+
+        var diff = diffData.StatDiffs.Find(d => d.StatID == statType);
+        if (diff.HasChanged)
+        {
+            string colorHex = diff.IsBuff ? "#00FF00" : "#FF4500"; // 绿增红减
+            string sign = diff.Delta > 0 ? "+" : "";
+            return $"{baseStr} <color={colorHex}>({sign}{diff.Delta})</color>";
+        }
+        return baseStr;
+    }
+
+    private void FillWeaponData(InstancedComponent instance, UpgradePreviewData diffData)
     {
         var data = instance.BaseData;
         var lvData = data.GetLevelData(instance.CurrentLevel);
@@ -248,14 +269,40 @@ public class ItemDetailPanelUI : MonoBehaviour
         float crit = GetStat(lvData.Stats, StatType.CriticalChance);
         float pwr = GetStat(lvData.Stats, StatType.PowerCost);
 
-        if (Weapon_DamageText != null) Weapon_DamageText.text = (minDmg == maxDmg) ? $"{maxDmg}" : $"{minDmg} ~ {maxDmg}";
-        if (Weapon_RangeText != null) Weapon_RangeText.text = (minRng == 0) ? $"{maxRng}" : $"{minRng} ~ {maxRng}";
-        if (Weapon_AttackSpeedText != null) Weapon_AttackSpeedText.text = $"{atkSpeed}";
-        if (Weapon_CritText != null) Weapon_CritText.text = $"+{crit:P0}";
-        if (Weapon_PowerCostText != null) Weapon_PowerCostText.text = $"{pwr}";
+        if (Weapon_DamageText != null)
+        {
+            string minStr = FormatStat(minDmg, StatType.MinDamage, diffData);
+            string maxStr = FormatStat(maxDmg, StatType.MaxDamage, diffData);
+            Weapon_DamageText.text = (minDmg == maxDmg) ? $"{maxStr}" : $"{minStr} ~ {maxStr}";
+        }
+        if (Weapon_RangeText != null)
+        {
+            string minRngStr = FormatStat(minRng, StatType.MinRange, diffData);
+            string maxRngStr = FormatStat(maxRng, StatType.MaxRange, diffData);
+            Weapon_RangeText.text = (minRng == 0) ? $"{maxRngStr}" : $"{minRngStr} ~ {maxRngStr}";
+        }
+        if (Weapon_AttackSpeedText != null) Weapon_AttackSpeedText.text = FormatStat(atkSpeed, StatType.AttackSpeed, diffData);
+        if (Weapon_PowerCostText != null) Weapon_PowerCostText.text = FormatStat(pwr, StatType.PowerCost, diffData);
+
+        // 暴击率百分比显示处理
+        if (Weapon_CritText != null)
+        {
+            string critColorStr = "";
+            if (diffData != null)
+            {
+                var diff = diffData.StatDiffs.Find(d => d.StatID == StatType.CriticalChance);
+                if (diff.HasChanged)
+                {
+                    string colorHex = diff.IsBuff ? "#00FF00" : "#FF4500";
+                    string sign = diff.Delta > 0 ? "+" : "";
+                    critColorStr = $" <color={colorHex}>({sign}{diff.Delta:P0})</color>";
+                }
+            }
+            Weapon_CritText.text = $"+{crit:P0}{critColorStr}";
+        }
     }
 
-    private void FillCoreData(InstancedComponent instance)
+    private void FillCoreData(InstancedComponent instance, UpgradePreviewData diffData)
     {
         var data = instance.BaseData;
         var lvData = data.GetLevelData(instance.CurrentLevel);
@@ -263,12 +310,29 @@ public class ItemDetailPanelUI : MonoBehaviour
         FillCommonData(Core_Common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentLevel);
 
-        if (Core_HPText != null) Core_HPText.text = $"+{GetStat(lvData.Stats, StatType.AddedHP)}";
-        if (Core_APText != null) Core_APText.text = $"+{GetStat(lvData.Stats, StatType.AddedAP)}";
-        if (Core_PowerCostText != null) Core_PowerCostText.text = $"{GetStat(lvData.Stats, StatType.PowerCost)}";
+        float hp = GetStat(lvData.Stats, StatType.AddedHP);
+        float ap = GetStat(lvData.Stats, StatType.AddedAP);
+        float block = GetStat(lvData.Stats, StatType.AddedBlock);
+        float power = GetStat(lvData.Stats, StatType.PowerCost);
+
+        if (Core_HPText != null) Core_HPText.text = $"+{FormatStat(hp, StatType.AddedHP, diffData)}";
+        if (Core_APText != null)
+        {
+            string apStr = $"+{FormatStat(ap, StatType.AddedAP, diffData)}";
+            if (block > 0 || (diffData != null && diffData.StatDiffs.Exists(d => d.StatID == StatType.AddedBlock && d.HasChanged)))
+            {
+                string blockStr = FormatStat(block, StatType.AddedBlock, diffData);
+                Core_APText.text = $"{apStr} <color=#FFD700>(格挡 {blockStr})</color>";
+            }
+            else
+            {
+                Core_APText.text = apStr;
+            }
+        }
+        if (Core_PowerCostText != null) Core_PowerCostText.text = $"{FormatStat(power, StatType.PowerCost, diffData)}";
     }
 
-    private void FillMovementData(InstancedComponent instance)
+    private void FillMovementData(InstancedComponent instance, UpgradePreviewData diffData)
     {
         var data = instance.BaseData;
         var lvData = data.GetLevelData(instance.CurrentLevel);
@@ -276,59 +340,44 @@ public class ItemDetailPanelUI : MonoBehaviour
         FillCommonData(Movement_Common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentLevel);
 
-        if (Movement_SpeedText != null) Movement_SpeedText.text = $"+{GetStat(lvData.Stats, StatType.EnginePower)}";
-        if (Movement_HPText != null) Movement_HPText.text = $"+{GetStat(lvData.Stats, StatType.AddedHP)}";
-        if (Movement_MassText != null) Movement_MassText.text = $"+{GetStat(lvData.Stats, StatType.AddedMass)}";
-        if (Movement_PowerCostText != null) Movement_PowerCostText.text = $"{GetStat(lvData.Stats, StatType.PowerCost)}";
+        if (Movement_SpeedText != null) Movement_SpeedText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.EnginePower), StatType.EnginePower, diffData)}";
+        if (Movement_HPText != null) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP, diffData)}";
+        if (Movement_MassText != null) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass, diffData)}";
+        if (Movement_PowerCostText != null) Movement_PowerCostText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData)}";
     }
 
-    private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
+    private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText, UpgradePreviewData diffData)
     {
         var data = instance.BaseData;
         var lvData = data.GetLevelData(instance.CurrentLevel);
 
-        FillCommonData(common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        float block = GetStat(lvData.Stats, StatType.AddedBlock);
+        string finalDesc = data.Description;
+
+        // 如果当前有格挡，或者强化后有格挡变化，都在描述末尾追加这行字！
+        if (block > 0 || (diffData != null && diffData.StatDiffs.Exists(d => d.StatID == StatType.AddedBlock && d.HasChanged)))
+        {
+            string blockStr = FormatStat(block, StatType.AddedBlock, diffData);
+            finalDesc += $"\n\n<b><color=#FFD700>被动防弹：每次受击减免 {blockStr} 点伤害</color></b>";
+        }
+
+        FillCommonData(common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, finalDesc, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentLevel);
 
-        if (powerText != null) powerText.text = $"{GetStat(lvData.Stats, StatType.PowerCost)}";
+        if (powerText != null) powerText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData)}";
     }
 
     // ==========================================
     // 辅助工具方法
     // ==========================================
-
-    // --- 请替换 ItemDetailPanelUI.cs 中的 FillCommonData 方法 ---
-
     private void FillCommonData(CommonUIElements ui, string name, string lv, Sprite icon, string desc, int scrap, string role, string mechanic)
     {
-        // 1. 全局字体变黑 (如果你在 Prefab 里已经调黑了，这里就是双重保险)
         Color defaultTextColor = Color.black;
 
-        if (ui.NameText != null)
-        {
-            ui.NameText.text = name;
-            ui.NameText.color = defaultTextColor;
-        }
-
-        if (ui.DescriptionText != null)
-        {
-            ui.DescriptionText.text = desc;
-            ui.DescriptionText.color = defaultTextColor;
-        }
-
-        if (ui.TacticalRoleText != null)
-        {
-            ui.TacticalRoleText.text = role;
-            ui.TacticalRoleText.color = defaultTextColor;
-        }
-
-        if (ui.SpecialMechanicText != null)
-        {
-            ui.SpecialMechanicText.text = mechanic;
-            ui.SpecialMechanicText.color = defaultTextColor;
-        }
-
-        // 注意：回收估值我们之前用的富文本 <color=#888888>，所以它不受影响，依然是灰色。
+        if (ui.NameText != null) { ui.NameText.text = name; ui.NameText.color = defaultTextColor; }
+        if (ui.DescriptionText != null) { ui.DescriptionText.text = desc; ui.DescriptionText.color = defaultTextColor; }
+        if (ui.TacticalRoleText != null) { ui.TacticalRoleText.text = role; ui.TacticalRoleText.color = defaultTextColor; }
+        if (ui.SpecialMechanicText != null) { ui.SpecialMechanicText.text = mechanic; ui.SpecialMechanicText.color = defaultTextColor; }
         if (ui.ScrapValueText != null) ui.ScrapValueText.text = $"{scrap}";
 
         if (ui.IconImage != null)
@@ -337,28 +386,24 @@ public class ItemDetailPanelUI : MonoBehaviour
             ui.IconImage.SetNativeSize();
         }
 
-        // 2. 👇【核心新增】：等级专属颜色判定！
         if (ui.LevelText != null)
         {
             if (string.IsNullOrEmpty(lv))
             {
-                ui.LevelText.text = ""; // 底盘无等级
+                ui.LevelText.text = "";
             }
             else
             {
                 ui.LevelText.text = $"Lv.{lv}";
-
-                // 根据传入的字符串解析出等级数字
                 int levelNum = 1;
                 int.TryParse(lv, out levelNum);
 
-                // 经典稀有度颜色映射
                 switch (levelNum)
                 {
-                    case 1: ui.LevelText.color = Color.white; break;             // 1级：普通白
-                    case 2: ui.LevelText.color = new Color(0.2f, 0.6f, 1f, 1f); break; // 2级：稀有蓝
-                    case 3: ui.LevelText.color = new Color(0.7f, 0.2f, 0.9f, 1f); break; // 3级：史诗紫
-                    case 4: ui.LevelText.color = new Color(1f, 0.6f, 0f, 1f); break;   // 4级：传说橙
+                    case 1: ui.LevelText.color = Color.white; break;
+                    case 2: ui.LevelText.color = new Color(0.2f, 0.6f, 1f, 1f); break;
+                    case 3: ui.LevelText.color = new Color(0.7f, 0.2f, 0.9f, 1f); break;
+                    case 4: ui.LevelText.color = new Color(1f, 0.6f, 0f, 1f); break;
                     default: ui.LevelText.color = Color.white; break;
                 }
             }
@@ -382,16 +427,12 @@ public class ItemDetailPanelUI : MonoBehaviour
     private void RenderTags(MacroCategory macro, ComponentType? compType, List<SubTag> subTags, int level)
     {
         if (TagsContainer == null || TagPrefab == null) return;
-
         foreach (Transform child in TagsContainer) Destroy(child.gameObject);
 
         string baseTag = compType.HasValue ? "机甲组件" : "载具底盘";
         CreateTag(baseTag, TagColor_Default);
 
-        if (compType.HasValue)
-        {
-            CreateTag(TranslateComponentType(compType.Value), TagColor_Default);
-        }
+        if (compType.HasValue) CreateTag(TranslateComponentType(compType.Value), TagColor_Default);
 
         Color macroColor = TagColor_Default;
         string macroName = "";
@@ -405,17 +446,13 @@ public class ItemDetailPanelUI : MonoBehaviour
 
         if (subTags != null)
         {
-            foreach (var tag in subTags)
-            {
-                CreateTag(TranslateSubTag(tag), macroColor);
-            }
+            foreach (var tag in subTags) CreateTag(TranslateSubTag(tag), macroColor);
         }
     }
 
     private void CreateTag(string text, Color bgColor)
     {
         if (string.IsNullOrEmpty(text)) return;
-
         GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
         Image bgImg = tagObj.GetComponent<Image>();
         TMP_Text txt = tagObj.GetComponentInChildren<TMP_Text>();
@@ -452,33 +489,24 @@ public class ItemDetailPanelUI : MonoBehaviour
             case ComponentType.Weapon: return "武器系统";
             case ComponentType.Support: return "辅助插件";
             case ComponentType.Movement: return "移动装置";
-            case ComponentType.Factory: return "辅助插件"; // 兼容旧枚举
+            case ComponentType.Factory: return "辅助插件";
             default: return "未知组件";
         }
     }
 
     private void LateUpdate()
     {
-        // 只有全局悬浮窗模式，并且当前处于显示状态时，才执行跟随
         if (!isTooltipMode || !gameObject.activeSelf) return;
 
         Vector2 mousePos = Input.mousePosition;
         RectTransform rect = GetComponent<RectTransform>();
 
-        // 1. 屏幕象限检测：鼠标是否在屏幕右侧？是否在屏幕上半部分？
-        // (0.6f 是阈值，超过屏幕 60% 位置就开始翻转，防止超长文本越界)
         float pivotX = mousePos.x / Screen.width > 0.6f ? 1f : 0f;
         float pivotY = mousePos.y / Screen.height > 0.6f ? 1f : 0f;
-
-        // 2. 动态修改锚点 (Pivot)
-        // 如果 Pivot 是 (0,0)，UI 就会在鼠标右上角；如果是 (1,1)，UI 就在鼠标左下角！
         rect.pivot = new Vector2(pivotX, pivotY);
 
-        // 3. 增加指针偏移量 (防止 UI 遮挡住玩家的鼠标箭头)
         float offsetX = pivotX == 0 ? 20f : -20f;
         float offsetY = pivotY == 0 ? 20f : -20f;
-
-        // 4. 应用最终的绝对像素坐标
         rect.position = new Vector3(mousePos.x + offsetX, mousePos.y + offsetY, 0);
 
         if (Input.GetMouseButtonDown(0) && (Time.time - openTime) > 0.1f)
