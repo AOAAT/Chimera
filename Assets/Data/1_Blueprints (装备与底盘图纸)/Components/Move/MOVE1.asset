@@ -33,7 +33,7 @@ MonoBehaviour:
     - StatID: 0
       Value: 20
     - StatID: 5
-      Value: 12138
+      Value: 20
     Mechanics: []
     OnFireActions: []
     OnHitActions: []

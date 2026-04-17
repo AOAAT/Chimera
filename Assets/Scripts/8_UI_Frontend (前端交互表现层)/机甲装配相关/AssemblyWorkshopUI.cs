@@ -34,6 +34,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text HPText;
     public TMP_Text APText;
     public TMP_Text PowerText;
+    // 👇【核心新增】：三大硬核物理面板
+    public TMP_Text BlockText;      // 总格挡
+    public TMP_Text MassText;       // 总质量
+    public TMP_Text SpeedText;      // 实际计算后的移速
+
     public TMP_InputField UnitNameInput;
 
     // 👇【核心修复】：暴露统一的滑动条，锁死底层的像素转换率
@@ -94,6 +99,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         RefreshWorkshopState();
     }
 
+    // --- 请替换 AssemblyWorkshopUI.cs 中的 RefreshWorkshopState 方法 ---
     private void RefreshWorkshopState()
     {
         RightInventoryPanel.SetActive(false);
@@ -105,6 +111,9 @@ public class AssemblyWorkshopUI : MonoBehaviour
             HPText.text = "HP: -- / --";
             APText.text = "AP: -- / --";
             PowerText.text = "耗电: --";
+            if (BlockText != null) BlockText.text = "格挡: --";
+            if (MassText != null) MassText.text = "质量: --";
+            if (SpeedText != null) SpeedText.text = "移速: --";
             UnitNameInput.text = "等待底盘接入...";
             UnitNameInput.interactable = false;
         }
@@ -113,10 +122,17 @@ public class AssemblyWorkshopUI : MonoBehaviour
             GhostChassisPrompt.SetActive(false);
             ChassisVisualRoot.gameObject.SetActive(true);
 
+            // 1. 抓取底盘的基础属性
             float maxHP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedHP);
             float maxAP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedAP);
             float totalPower = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.PowerCost);
 
+            // 👇【新增抓取】：底盘的物理三件套
+            float totalBlock = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedBlock);
+            float totalMass = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedMass);
+            float totalEngine = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.EnginePower);
+
+            // 2. 遍历身上插的所有组件，疯狂叠加属性！
             foreach (string compID in currentEditingProfile.EquippedComponentIDs)
             {
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
@@ -128,10 +144,16 @@ public class AssemblyWorkshopUI : MonoBehaviour
                         maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
                         maxAP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedAP);
                         totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
+
+                        // 👇【新增叠加】
+                        totalBlock += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedBlock);
+                        totalMass += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedMass);
+                        totalEngine += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.EnginePower);
                     }
                 }
             }
 
+            // 3. 血量重置与扣损逻辑
             if (isCreatingNew)
             {
                 currentEditingProfile.CurrentHP = maxHP;
@@ -143,9 +165,20 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 currentEditingProfile.CurrentAP = maxAP;
             }
 
+            // 4. 调用底层的沙盘公式，算出最真实的战场移速！
+            float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+            float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
+
+            // 5. 灌入所有的 Text 文本槽位！
             HPText.text = $"HP: {currentEditingProfile.CurrentHP} / {maxHP}";
             APText.text = $"AP: {currentEditingProfile.CurrentAP} / {maxAP}";
             PowerText.text = $"耗电: {totalPower}";
+
+            // 👇【新增文本灌入】
+            if (BlockText != null) BlockText.text = $"格挡: {totalBlock}";
+            if (MassText != null) MassText.text = $"质量: {totalMass}t";
+            if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
+
             UnitNameInput.text = currentEditingProfile.UnitName;
             UnitNameInput.interactable = true;
 

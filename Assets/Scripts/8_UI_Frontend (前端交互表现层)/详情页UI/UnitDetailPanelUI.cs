@@ -12,6 +12,10 @@ public class UnitDetailPanelUI : MonoBehaviour
     public TMP_Text HPText;
     public TMP_Text APText;
     public TMP_Text PowerText;
+    // 👇【核心新增】：三大硬核物理面板
+    public TMP_Text BlockText;
+    public TMP_Text MassText;
+    public TMP_Text SpeedText;
 
     [Header("=== 机甲预览图 UI 绑定 ===")]
     public RectTransform UnitVisualContainer;
@@ -30,6 +34,7 @@ public class UnitDetailPanelUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    // --- 请替换 UnitDetailPanelUI.cs 中的 OpenDetail 方法 ---
     public void OpenDetail(int slotIndex, SavedUnitProfile profile)
     {
         currentSlotIndex = slotIndex;
@@ -39,33 +44,45 @@ public class UnitDetailPanelUI : MonoBehaviour
         NameText.text = profile.UnitName;
         APText.text = $"AP: {profile.CurrentAP}";
 
+        // 1. 抓取底盘基准值
         float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
-        foreach (string compID in profile.EquippedComponentIDs)
-        {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (comp != null && comp.BaseData != null)
-            {
-                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
-                if (lvData != null) maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
-            }
-        }
-        HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
-
         float totalPower = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.PowerCost);
+        float totalBlock = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedBlock);
+        float totalMass = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedMass);
+        float totalEngine = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.EnginePower);
+
+        // 2. 遍历组件叠加
         foreach (string compID in profile.EquippedComponentIDs)
         {
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
                 var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
-                if (lvData != null) totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
+                if (lvData != null)
+                {
+                    maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
+                    totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
+                    totalBlock += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedBlock);
+                    totalMass += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedMass);
+                    totalEngine += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.EnginePower);
+                }
             }
         }
+
+        // 3. 计算最终移速
+        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+        float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
+
+        // 4. 灌入数据
+        HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
         PowerText.text = $"耗电量: {totalPower}";
+
+        if (BlockText != null) BlockText.text = $"格挡: {totalBlock}";
+        if (MassText != null) MassText.text = $"质量: {totalMass}t";
+        if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
 
         BuildUnitVisual(profile);
     }
-
     private void BuildUnitVisual(SavedUnitProfile profile)
     {
         foreach (Transform child in UnitVisualContainer) Destroy(child.gameObject);
