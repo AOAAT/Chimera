@@ -107,59 +107,65 @@ public class MapGenerator : MonoBehaviour
         return selectedType;
     }
 
-        private void ExecuteZipperConnection(List<List<MapNodeData>> layers)
+    // ==========================================
+    // 👇【核心重构】：智能引力拉链算法 (完美回归中路，绝对不交叉)
+    // ==========================================
+    private void ExecuteZipperConnection(List<List<MapNodeData>> layers)
     {
         for (int i = 0; i < TotalLayers - 1; i++)
         {
             List<MapNodeData> currLayer = layers[i];
             List<MapNodeData> nextLayer = layers[i + 1];
 
-            int currIdx = 0;
-            int nextIdx = 0;
+            int c = 0;
+            int n = 0;
 
-            // 使用双指针拉链法，指针只能向右走，绝对不可能产生物理交叉！
-            while (currIdx < currLayer.Count || nextIdx < nextLayer.Count)
+            // 1. 永远先连接双方最左侧的初始点
+            ConnectNodes(currLayer[c], nextLayer[n]);
+
+            // 2. 只要还没拉到最右侧，就继续拉
+            while (c < currLayer.Count - 1 || n < nextLayer.Count - 1)
             {
-                // 1. 连线当前指针指向的两个节点
-                ConnectNodes(currLayer[currIdx], nextLayer[nextIdx]);
+                bool canMoveC = c < currLayer.Count - 1;
+                bool canMoveN = n < nextLayer.Count - 1;
 
-                // 2. 看看两边是不是还能往右走？
-                bool currCanMove = currIdx < currLayer.Count - 1;
-                bool nextCanMove = nextIdx < nextLayer.Count - 1;
-
-                if (currCanMove && nextCanMove)
+                if (canMoveC && canMoveN)
                 {
-                    // 都在半路上，随机决定谁往右走（或者一起走）
-                    float roll = Random.value;
-                    if (roll < 0.3f)
-                        currIdx++;      // 下面的节点往右走，连向同一个上面的节点 (形成 V 字)
-                    else if (roll < 0.6f)
-                        nextIdx++;      // 上面的节点往右走，连向同一个下面的节点 (形成倒 V 字)
+                    // 核心魔法：计算推进 C 和推进 N 的“进度偏差比”
+                    float maxC = Mathf.Max(1, currLayer.Count - 1);
+                    float maxN = Mathf.Max(1, nextLayer.Count - 1);
+
+                    float currentCRatio = c / maxC;
+                    float currentNRatio = n / maxN;
+
+                    float diffIfMoveC = Mathf.Abs((c + 1) / maxC - currentNRatio);
+                    float diffIfMoveN = Mathf.Abs(currentCRatio - (n + 1) / maxN);
+
+                    // 谁推进一步后的偏差更小（更靠近中心线），就推进谁！
+                    // 这就强制把边缘的孤岛节点，硬生生地拉向了对面的中心节点！
+                    if (diffIfMoveC < diffIfMoveN)
+                    {
+                        c++;
+                    }
+                    else if (diffIfMoveN < diffIfMoveC)
+                    {
+                        n++;
+                    }
                     else
                     {
-                        currIdx++;
-                        nextIdx++;
-                    } // 一起往右走，形成两条平行向上的线
+                        // 如果偏差一样（完美对称时），随机选择向左或向右推进，形成漂亮的菱形网状分支！
+                        if (Random.value < 0.5f) c++;
+                        else n++;
+                    }
                 }
-                else if (currCanMove)
-                {
-                    // 上面到头了，下面只能乖乖往右走，全部汇聚到上面的最右侧节点
-                    currIdx++;
-                }
-                else if (nextCanMove)
-                {
-                    // 下面到头了，上面只能乖乖往右走，全部从下面的最右侧节点出发
-                    nextIdx++;
-                }
-                else
-                {
-                    // 两边都到头了，本层连线完美收工！
-                    break;
-                }
+                else if (canMoveC) c++;
+                else if (canMoveN) n++;
+
+                // 连接推进后的新节点！
+                ConnectNodes(currLayer[c], nextLayer[n]);
             }
         }
     }
-
     private void ConnectNodes(MapNodeData from, MapNodeData to)
     {
         if (!from.NextNodeIDs.Contains(to.NodeID)) from.NextNodeIDs.Add(to.NodeID);

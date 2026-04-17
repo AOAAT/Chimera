@@ -9,6 +9,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public static ItemDetailPanelUI Instance;
     private bool isTooltipMode = false;
     private float openTime = 0f;
+    private RectTransform targetAnchorRect;
 
     // ==========================================
     // 1. 核心控制器：面板显隐切换
@@ -24,7 +25,6 @@ public class ItemDetailPanelUI : MonoBehaviour
     // 2. 动态背景库 (根据组件类型和 1~4 级切换)
     // ==========================================
     [Header("=== 动态背景库 (Backgrounds) ===")]
-    [Tooltip("数组长度必须为 4，分别对应 1、2、3、4 级的武器背景")]
     public Sprite[] Bg_Weapon = new Sprite[4];
     public Sprite[] Bg_Core = new Sprite[4];
     public Sprite[] Bg_Movement = new Sprite[4];
@@ -41,9 +41,9 @@ public class ItemDetailPanelUI : MonoBehaviour
         public TMP_Text NameText;
         public TMP_Text LevelText;
         public TMP_Text DescriptionText;
-        public TMP_Text TacticalRoleText;    // 战术定位
-        public TMP_Text SpecialMechanicText; // 机制描述
-        public TMP_Text ScrapValueText;      // 回收估值
+        public TMP_Text TacticalRoleText;
+        public TMP_Text SpecialMechanicText;
+        public TMP_Text ScrapValueText;
     }
 
     [Header("=== 武器面板专属绑定 ===")]
@@ -66,18 +66,28 @@ public class ItemDetailPanelUI : MonoBehaviour
     public TMP_Text Movement_HPText;
     public TMP_Text Movement_PowerCostText;
     public TMP_Text Movement_MassText;
+    // 👇【新增】：移动组件的 AP 显示槽位
+    public TMP_Text Movement_APText;
 
     [Header("=== 辅助面板专属绑定 ===")]
     public CommonUIElements Support_Common;
     public TMP_Text Support_PowerCostText;
+    public TMP_Text Support_HPText;
+    public TMP_Text Support_APText;
+    public TMP_Text Support_BlockText;
+    // 👇【新增】：辅助组件的质量槽位
+    public TMP_Text Support_MassText;
 
     [Header("=== 底盘面板专属绑定 ===")]
     public CommonUIElements Chassis_Common;
     public TMP_Text Chassis_HPText;
     public TMP_Text Chassis_APText;
     public TMP_Text Chassis_PowerCostText;
+    // 👇【新增】：底盘的重量和格挡槽位
+    public TMP_Text Chassis_MassText;
+    public TMP_Text Chassis_BlockText;
 
-    [Tooltip("如果你画了固定的接口图标槽位，请依次把它们拖进来 (最多支持的插槽数)")]
+    [Tooltip("如果你画了固定的接口图标槽位，请依次把它们拖进来")]
     public Image[] Chassis_SocketIcons;
 
     [System.Serializable]
@@ -93,27 +103,24 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void Awake()
     {
-        // 核心防冲突：如果自己被嵌套在“强化预览界面”里，就乖乖做个子面板，绝不跟随鼠标！
         if (GetComponentInParent<UpgradePreviewPanelUI>() != null)
         {
             isTooltipMode = false;
             return;
         }
 
-        // 只有独立在外的那个全局 Tooltip 才有资格成为 Instance 并跟随鼠标
         Instance = this;
         isTooltipMode = true;
 
-        // 给悬浮窗套上射线穿透外衣，彻底解决闪烁死循环！
         CanvasGroup group = GetComponent<CanvasGroup>();
         if (group == null) group = gameObject.AddComponent<CanvasGroup>();
 
-        // 让这个 UI 面板对鼠标的射线“完全隐身”！鼠标会直接穿过它点到后面的图标
         group.blocksRaycasts = false;
         group.interactable = false;
 
         HidePanel();
     }
+
     public void HidePanel()
     {
         gameObject.SetActive(false);
@@ -124,9 +131,6 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Panel_Chassis != null) Panel_Chassis.SetActive(false);
     }
 
-    // ==========================================
-    // 5. 顶部标签系统
-    // ==========================================
     [Header("=== 顶部标签流式布局 ===")]
     public Transform TagsContainer;
     public GameObject TagPrefab;
@@ -136,9 +140,6 @@ public class ItemDetailPanelUI : MonoBehaviour
     public Color TagColor_Magic = new Color(0.6f, 0.2f, 0.8f, 1f);
     public Color TagColor_Default = new Color(0.3f, 0.3f, 0.3f, 1f);
 
-    // ==========================================
-    // A. 路由中心：组件详情分发 (支持强化对比 Diff 数据传入)
-    // ==========================================
     public void ShowComponentDetail(InstancedComponent instance, UpgradePreviewData diffData = null)
     {
         if (instance == null || instance.BaseData == null) return;
@@ -148,9 +149,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         HidePanel();
         gameObject.SetActive(true);
 
-        ComponentType type = data.Type;
-
-        switch (type)
+        switch (data.Type)
         {
             case ComponentType.Weapon:
                 Panel_Weapon.SetActive(true);
@@ -174,9 +173,6 @@ public class ItemDetailPanelUI : MonoBehaviour
         RenderTags(data.MacroCategory, data.Type, data.BaseSubTags, instance.CurrentLevel);
     }
 
-    // ==========================================
-    // B. 路由中心：底盘详情专属
-    // ==========================================
     public void ShowChassisDetail(ChassisDataSO data)
     {
         if (data == null) return;
@@ -191,18 +187,17 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Chassis_Common.BackgroundImage != null && data.DetailBackgroundSprite != null)
             Chassis_Common.BackgroundImage.sprite = data.DetailBackgroundSprite;
 
-        // 获取属性并拼接格挡值
+        // 👇【核心扩展】：底盘新增 Mass 和 Block
         float hp = GetStat(data.BaseStats, StatType.AddedHP);
         float ap = GetStat(data.BaseStats, StatType.AddedAP);
         float block = GetStat(data.BaseStats, StatType.AddedBlock);
+        float mass = GetStat(data.BaseStats, StatType.AddedMass);
         float power = GetStat(data.BaseStats, StatType.PowerCost);
 
         if (Chassis_HPText != null) Chassis_HPText.text = $"+{hp}";
-        if (Chassis_APText != null)
-        {
-            if (block > 0) Chassis_APText.text = $"+{ap} <color=#FFD700>(格挡 {block})</color>";
-            else Chassis_APText.text = $"+{ap}";
-        }
+        if (Chassis_APText != null) Chassis_APText.text = $"+{ap}";
+        if (Chassis_BlockText != null) Chassis_BlockText.text = $"+{block}";
+        if (Chassis_MassText != null) Chassis_MassText.text = $"{mass}t"; // 加上吨的单位，更硬核
         if (Chassis_PowerCostText != null) Chassis_PowerCostText.text = $"{power}";
 
         if (Chassis_SocketIcons != null)
@@ -233,20 +228,15 @@ public class ItemDetailPanelUI : MonoBehaviour
         RenderTags(data.MacroCategory, null, data.SubTags, 0);
     }
 
-    // ==========================================
-    // 数据灌入与红绿着色逻辑
-    // ==========================================
-
-    // 核心黑科技：专门处理数值变色的格式化器
     private string FormatStat(float value, StatType statType, UpgradePreviewData diffData)
     {
         string baseStr = value.ToString();
-        if (diffData == null) return baseStr; // 如果不是强化面板模式，直接返回普通白字
+        if (diffData == null) return baseStr;
 
         var diff = diffData.StatDiffs.Find(d => d.StatID == statType);
         if (diff.HasChanged)
         {
-            string colorHex = diff.IsBuff ? "#00FF00" : "#FF4500"; // 绿增红减
+            string colorHex = diff.IsBuff ? "#00FF00" : "#FF4500";
             string sign = diff.Delta > 0 ? "+" : "";
             return $"{baseStr} <color={colorHex}>({sign}{diff.Delta})</color>";
         }
@@ -284,7 +274,6 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Weapon_AttackSpeedText != null) Weapon_AttackSpeedText.text = FormatStat(atkSpeed, StatType.AttackSpeed, diffData);
         if (Weapon_PowerCostText != null) Weapon_PowerCostText.text = FormatStat(pwr, StatType.PowerCost, diffData);
 
-        // 暴击率百分比显示处理
         if (Weapon_CritText != null)
         {
             string critColorStr = "";
@@ -312,6 +301,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 
         float hp = GetStat(lvData.Stats, StatType.AddedHP);
         float ap = GetStat(lvData.Stats, StatType.AddedAP);
+        // 为了保持核心面板整洁，格挡依然拼在 AP 后面
         float block = GetStat(lvData.Stats, StatType.AddedBlock);
         float power = GetStat(lvData.Stats, StatType.PowerCost);
 
@@ -340,9 +330,11 @@ public class ItemDetailPanelUI : MonoBehaviour
         FillCommonData(Movement_Common, data.ComponentName, instance.CurrentLevel.ToString(), data.ComponentIcon, data.Description, lvData.ScrapValue, data.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentLevel);
 
+        // 👇【核心扩展】：移动组件新增 AP 独立显示
         if (Movement_SpeedText != null) Movement_SpeedText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.EnginePower), StatType.EnginePower, diffData)}";
         if (Movement_HPText != null) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP, diffData)}";
-        if (Movement_MassText != null) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass, diffData)}";
+        if (Movement_APText != null) Movement_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP, diffData)}";
+        if (Movement_MassText != null) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass, diffData)}t";
         if (Movement_PowerCostText != null) Movement_PowerCostText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData)}";
     }
 
@@ -351,10 +343,22 @@ public class ItemDetailPanelUI : MonoBehaviour
         var data = instance.BaseData;
         var lvData = data.GetLevelData(instance.CurrentLevel);
 
+        // 获取所有防具和负面属性
+        float hp = GetStat(lvData.Stats, StatType.AddedHP);
+        float ap = GetStat(lvData.Stats, StatType.AddedAP);
         float block = GetStat(lvData.Stats, StatType.AddedBlock);
+        float mass = GetStat(lvData.Stats, StatType.AddedMass); // 👇 获取质量
+
+        // 格式化并灌入对应的 Text 组件
+        if (Support_HPText != null) Support_HPText.text = $"+{FormatStat(hp, StatType.AddedHP, diffData)}";
+        if (Support_APText != null) Support_APText.text = $"+{FormatStat(ap, StatType.AddedAP, diffData)}";
+        if (Support_BlockText != null) Support_BlockText.text = $"+{FormatStat(block, StatType.AddedBlock, diffData)}";
+
+        // 👇【核心新增】：显示质量加成，带上硬核的 't' (吨) 单位！
+        if (Support_MassText != null) Support_MassText.text = $"+{FormatStat(mass, StatType.AddedMass, diffData)}t";
+
         string finalDesc = data.Description;
 
-        // 如果当前有格挡，或者强化后有格挡变化，都在描述末尾追加这行字！
         if (block > 0 || (diffData != null && diffData.StatDiffs.Exists(d => d.StatID == StatType.AddedBlock && d.HasChanged)))
         {
             string blockStr = FormatStat(block, StatType.AddedBlock, diffData);
@@ -367,9 +371,6 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (powerText != null) powerText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData)}";
     }
 
-    // ==========================================
-    // 辅助工具方法
-    // ==========================================
     private void FillCommonData(CommonUIElements ui, string name, string lv, Sprite icon, string desc, int scrap, string role, string mechanic)
     {
         Color defaultTextColor = Color.black;
@@ -498,16 +499,46 @@ public class ItemDetailPanelUI : MonoBehaviour
     {
         if (!isTooltipMode || !gameObject.activeSelf) return;
 
-        Vector2 mousePos = Input.mousePosition;
-        RectTransform rect = GetComponent<RectTransform>();
+        if (Time.time - openTime < 0.05f)
+        {
+            UnityEngine.EventSystems.PointerEventData pointerData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
+            {
+                position = Input.mousePosition
+            };
 
-        float pivotX = mousePos.x / Screen.width > 0.6f ? 1f : 0f;
-        float pivotY = mousePos.y / Screen.height > 0.6f ? 1f : 0f;
-        rect.pivot = new Vector2(pivotX, pivotY);
+            List<UnityEngine.EventSystems.RaycastResult> results = new List<UnityEngine.EventSystems.RaycastResult>();
+            UnityEngine.EventSystems.EventSystem.current.RaycastAll(pointerData, results);
 
-        float offsetX = pivotX == 0 ? 20f : -20f;
-        float offsetY = pivotY == 0 ? 20f : -20f;
-        rect.position = new Vector3(mousePos.x + offsetX, mousePos.y + offsetY, 0);
+            targetAnchorRect = null;
+            foreach (var result in results)
+            {
+                if (result.gameObject.GetComponentInParent<InventoryItemSlotUI>() != null)
+                {
+                    targetAnchorRect = result.gameObject.GetComponentInParent<RectTransform>();
+                    break;
+                }
+            }
+
+            if (targetAnchorRect != null)
+            {
+                RectTransform myRect = GetComponent<RectTransform>();
+
+                Vector3[] corners = new Vector3[4];
+                targetAnchorRect.GetWorldCorners(corners);
+                Vector3 slotCenter = (corners[0] + corners[2]) / 2f;
+                float slotHeight = corners[1].y - corners[0].y;
+
+                float pivotX = slotCenter.x / Screen.width > 0.6f ? 1f : 0f;
+                float pivotY = slotCenter.y / Screen.height > 0.6f ? 1f : 0f;
+
+                myRect.pivot = new Vector2(pivotX, pivotY);
+
+                float offsetX = pivotX == 0 ? 0f : 0f;
+                float offsetY = pivotY == 0 ? (slotHeight / 2f + 10f) : -(slotHeight / 2f + 10f);
+
+                myRect.position = new Vector3(slotCenter.x + offsetX, slotCenter.y + offsetY, 0);
+            }
+        }
 
         if (Input.GetMouseButtonDown(0) && (Time.time - openTime) > 0.1f)
         {

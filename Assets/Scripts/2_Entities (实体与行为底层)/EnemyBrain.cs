@@ -30,9 +30,7 @@ public class EnemyBrain : MonoBehaviour
     private float moveStateTimer = 0f;
     private Vector2 lockedMoveDirection;
 
-    // 全局施法间隔 (Global Cooldown)
     private float globalActionTimer = 0f;
-
     private float lastFrameHP;
     private bool isDead = false;
     private HashSet<DamageReceiver> dashedVictims = new HashSet<DamageReceiver>();
@@ -50,17 +48,43 @@ public class EnemyBrain : MonoBehaviour
         myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
 
-        GameObject visualHitboxNode = new GameObject("VisualAndHitbox");
-        visualHitboxNode.transform.SetParent(this.transform, false);
-        visualHitboxNode.layer = LayerMask.NameToLayer("Enemy_Hitbox");
+        // ==========================================
+        // 👇【核心修复】：智能贴图接管！绝对不产生影分身！
+        // ==========================================
+        GameObject visualHitboxNode = null;
 
-        SpriteRenderer mainSr = visualHitboxNode.AddComponent<SpriteRenderer>();
-        if (MyData.EnemySprite != null) mainSr.sprite = MyData.EnemySprite;
+        // 1. 先把挂在根节点的贴图无情删掉 (如果有的话)
+        SpriteRenderer rootSr = GetComponent<SpriteRenderer>();
+        if (rootSr != null) Destroy(rootSr);
+
+        // 2. 寻找子节点里是不是已经有贴图了？(比如测试台生成的)
+        SpriteRenderer existingChildSr = GetComponentInChildren<SpriteRenderer>();
+
+        if (existingChildSr != null && existingChildSr.gameObject != this.gameObject)
+        {
+            // 如果有，直接征用它！
+            visualHitboxNode = existingChildSr.gameObject;
+            if (MyData.EnemySprite != null) existingChildSr.sprite = MyData.EnemySprite;
+        }
+        else
+        {
+            // 3. 如果实在没有，再自己建一个！
+            visualHitboxNode = new GameObject("VisualAndHitbox");
+            visualHitboxNode.transform.SetParent(this.transform, false);
+            SpriteRenderer newSr = visualHitboxNode.AddComponent<SpriteRenderer>();
+            if (MyData.EnemySprite != null) newSr.sprite = MyData.EnemySprite;
+        }
+
+        visualHitboxNode.layer = LayerMask.NameToLayer("Enemy_Hitbox");
         visualHitboxNode.transform.localScale = Vector3.one * MyData.VisualScaleMultiplier;
 
-        myHitboxCollider = visualHitboxNode.AddComponent<BoxCollider2D>();
+        myHitboxCollider = visualHitboxNode.GetComponent<BoxCollider2D>();
+        if (myHitboxCollider == null) myHitboxCollider = visualHitboxNode.AddComponent<BoxCollider2D>();
         myHitboxCollider.isTrigger = true;
 
+        // ==========================================
+        // 物理层配置
+        // ==========================================
         gameObject.layer = LayerMask.NameToLayer("Enemy_Body");
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
@@ -68,7 +92,8 @@ public class EnemyBrain : MonoBehaviour
         rb.drag = 3f;
         rb.mass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
 
-        if (mainSr.sprite != null)
+        SpriteRenderer mainSr = visualHitboxNode.GetComponent<SpriteRenderer>();
+        if (mainSr != null && mainSr.sprite != null)
         {
             Vector2 realSize = mainSr.sprite.bounds.size * MyData.VisualScaleMultiplier;
             BoxCollider2D physicsCol = GetComponent<BoxCollider2D>();
@@ -77,10 +102,14 @@ public class EnemyBrain : MonoBehaviour
             physicsCol.size = new Vector2(realSize.x * 0.8f, realSize.y * 0.3f);
             physicsCol.offset = new Vector2(0f, -(realSize.y / 2f) + (physicsCol.size.y / 2f));
 
-            DynamicDepthSorter sorter = gameObject.AddComponent<DynamicDepthSorter>();
+            DynamicDepthSorter sorter = gameObject.GetComponent<DynamicDepthSorter>();
+            if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
             sorter.YOffset = -(realSize.y / 2f);
         }
 
+        // ==========================================
+        // 技能初始化
+        // ==========================================
         foreach (var skillSO in MyData.Skills)
         {
             if (skillSO == null) continue;
@@ -97,7 +126,12 @@ public class EnemyBrain : MonoBehaviour
         ExecuteECAActions(MyData.OnSpawnActions, this.transform, null);
         myReceiver.OnEntityDeath += HandleDeathSequence;
 
-        if (MyData.AnimController != null) visualHitboxNode.AddComponent<Animator>().runtimeAnimatorController = MyData.AnimController;
+        if (MyData.AnimController != null)
+        {
+            Animator anim = visualHitboxNode.GetComponent<Animator>();
+            if (anim == null) anim = visualHitboxNode.AddComponent<Animator>();
+            anim.runtimeAnimatorController = MyData.AnimController;
+        }
 
         ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
         if (procAnim != null) { procAnim.SetTargetVisual(visualHitboxNode.transform); procAnim.RefreshBaseState(); }
@@ -304,8 +338,6 @@ public class EnemyBrain : MonoBehaviour
         rSkill.CurrentCooldown = cd;
         globalActionTimer = cd * 0.4f;
 
-        Debug.Log($"<color=#FF4500>【怪物火控系统】</color> [{MyData.EnemyName} - {skillData.SkillName}] 攻速评分: <color=white>{finalAtkSpeed:F1}</color> ===> 技能冷却: <color=#00FF00>{cd:F2} 秒</color> (附带施法僵直: {globalActionTimer:F2} 秒)");
-
         CalculateDistanceToTarget(actualTarget, out Vector2 attackDir);
 
         if (skillData.DeliveryType == WeaponDeliveryType.Tactical_Dash)
@@ -316,9 +348,6 @@ public class EnemyBrain : MonoBehaviour
             else dashDir = new Vector2(-attackDir.y, attackDir.x);
 
             ApplyImpulse(dashDir, skillData.DashImpulse);
-
-            Debug.Log($"<color=#00FFFF>【战术拉扯】</color> [{MyData.EnemyName}] 释放了 [{skillData.SkillName}]，进行战术机动！");
-
             ECAContext dashCtx = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = actualTarget, SourceEntity = transform, IsEnemyFire = true };
             ExecuteECAActions(skillData.OnFireActions, actualTarget, rSkill.DummyWeapon);
             return;
@@ -328,10 +357,7 @@ public class EnemyBrain : MonoBehaviour
         bool isCrit = Random.value <= skillData.CriticalChance;
         if (isCrit) finalDmg *= 1.5f;
 
-        string critLog = isCrit ? "<color=#FFD700><b>(暴击!)</b></color>" : "";
-        Debug.Log($"<color=#FF00FF>【敌人施法】</color> [{MyData.EnemyName}] 释放了 [{skillData.SkillName}]！| 判定伤害: {finalDmg:F1} {critLog}");
-
-        ECAContext fireContext = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = actualTarget, BaseDamage = finalDmg, SourceWeapon = rSkill.DummyWeapon, IsCriticalHit = isCrit, IsEnemyFire = true };
+        ECAContext fireContext = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = actualTarget, BaseDamage = finalDmg, SourceWeapon = rSkill.DummyWeapon, IsCriticalHit = isCrit, IsEnemyFire = true, SourceEntity = this.transform };
         foreach (var action in skillData.OnFireActions) if (action != null) action.Execute(fireContext);
 
         if (skillData.DeliveryType == WeaponDeliveryType.Ranged && skillData.ProjectilePrefab != null)
@@ -342,7 +368,7 @@ public class EnemyBrain : MonoBehaviour
         }
         else if (skillData.DeliveryType == WeaponDeliveryType.Melee)
         {
-            ECAContext hitContext = new ECAContext { ImpactPoint = actualTarget.position, PrimaryTarget = actualTarget, BaseDamage = finalDmg, SourceWeapon = rSkill.DummyWeapon, IsCriticalHit = isCrit, IsEnemyFire = true };
+            ECAContext hitContext = new ECAContext { ImpactPoint = actualTarget.position, PrimaryTarget = actualTarget, BaseDamage = finalDmg, SourceWeapon = rSkill.DummyWeapon, IsCriticalHit = isCrit, IsEnemyFire = true, SourceEntity = this.transform };
             foreach (var action in skillData.OnHitActions) if (action != null) action.Execute(hitContext);
             Rigidbody2D targetRb = actualTarget.GetComponentInParent<Rigidbody2D>();
             if (targetRb != null && skillData.KnockbackForce > 0) targetRb.AddForce(attackDir * skillData.KnockbackForce, ForceMode2D.Impulse);
@@ -426,14 +452,11 @@ public class EnemyBrain : MonoBehaviour
     private void EnforceArenaBounds()
     {
         if (CombatDirector.Instance == null || CombatDirector.Instance.CurrentArenaSize.x == 0) return;
-
         Vector2 center = CombatDirector.Instance.CurrentArenaCenter;
         Vector2 size = CombatDirector.Instance.CurrentArenaSize;
 
-        float minX = center.x - size.x / 2f;
-        float maxX = center.x + size.x / 2f;
-        float minY = center.y - size.y / 2f;
-        float maxY = center.y + size.y / 2f;
+        float minX = center.x - size.x / 2f; float maxX = center.x + size.x / 2f;
+        float minY = center.y - size.y / 2f; float maxY = center.y + size.y / 2f;
 
         Vector3 currentPos = transform.position;
         float clampedX = Mathf.Clamp(currentPos.x, minX, maxX);
@@ -453,11 +476,9 @@ public class EnemyBrain : MonoBehaviour
         if (currentMoveState == MoveExecutionState.Dashing)
         {
             DamageReceiver victim = col.gameObject.GetComponentInParent<DamageReceiver>();
-
             if (victim != null && !victim.isEnemy && !dashedVictims.Contains(victim))
             {
                 dashedVictims.Add(victim);
-
                 float myMass = Mathf.Max(MyData.GetStat(StatType.Mass), 1f);
                 float kineticDamage = myMass * MyData.DashSpeedMultiplier * 5f;
 
@@ -470,12 +491,7 @@ public class EnemyBrain : MonoBehaviour
                     playerAI.ApplyImpulse(knockbackDir, myMass * 100f);
                 }
 
-                if (ScreenEffectManager.Instance != null)
-                {
-                    ScreenEffectManager.Instance.TriggerShake(0.4f, 0.2f);
-                }
-
-                Debug.Log($"<color=#FF4500>【破阵碾压】</color> {MyData.EnemyName} 犹如全速行驶的泥头车，将机甲撞飞并造成 {kineticDamage:F1} 点物理伤害！");
+                if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(0.4f, 0.2f);
             }
         }
         else
@@ -484,6 +500,9 @@ public class EnemyBrain : MonoBehaviour
         }
     }
 
+    // ==========================================
+    // 👇【终极死亡引擎】：关闭动画器防诈尸，纯程序接管！
+    // ==========================================
     private void HandleDeathSequence()
     {
         if (isDead) return;
@@ -496,11 +515,12 @@ public class EnemyBrain : MonoBehaviour
         Collider2D[] colliders = GetComponentsInChildren<Collider2D>();
         foreach (var col in colliders) col.enabled = false;
 
+        // 【防诈尸核心】：如果挂了 Animator，强行关掉它！防止它一帧帧把 -90度旋转再给掰正！
+        Animator[] anims = GetComponentsInChildren<Animator>();
+        foreach (var anim in anims) anim.enabled = false;
+
         ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
         if (procAnim != null) procAnim.StopAnimation();
-
-        Animator[] anims = GetComponentsInChildren<Animator>();
-        foreach (var anim in anims) anim.SetTrigger("Die");
 
         ExecuteECAActions(MyData.OnDeathActions, this.transform, null);
 
@@ -531,7 +551,6 @@ public class EnemyBrain : MonoBehaviour
             }
             yield return null;
         }
-
         Destroy(gameObject);
     }
 }

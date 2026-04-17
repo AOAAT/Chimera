@@ -5,8 +5,8 @@ public class MapLineDrawer : MonoBehaviour
 {
     [Header("=== 连线配置 ===")]
     public GameObject DotPrefab;       // 一个白色小圆点的UI预制体
-    public int DotsPerLine = 10;       // 一条线由多少个点组成
-    public float CurveIntensity = 50f; // 曲线的弯曲程度
+    public int DotsPerLine = 8;       // 一条线由多少个点组成
+    public float CurveIntensity = 80f; // 曲线的弯曲程度
 
     private MapNodeData fromNode;
     private MapNodeData toNode;

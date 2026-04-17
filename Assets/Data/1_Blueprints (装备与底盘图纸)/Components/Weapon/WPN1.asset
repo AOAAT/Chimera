@@ -59,6 +59,111 @@ MonoBehaviour:
       CPCost: 3
       Cooldown: 10
       OnSkillCastActions: []
+  - Level: 2
+    BasePrice: 100
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 50
+    - StatID: 6
+      Value: 90
+    - StatID: 7
+      Value: 90
+    - StatID: 8
+      Value: 100
+    - StatID: 9
+      Value: 0
+    - StatID: 10
+      Value: 100
+    - StatID: 14
+      Value: 200
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
+  - Level: 3
+    BasePrice: 100
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 50
+    - StatID: 6
+      Value: 90
+    - StatID: 7
+      Value: 90
+    - StatID: 8
+      Value: 100
+    - StatID: 9
+      Value: 0
+    - StatID: 10
+      Value: 100
+    - StatID: 14
+      Value: 200
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
+  - Level: 4
+    BasePrice: 100
+    ScrapValue: 10
+    Stats:
+    - StatID: 0
+      Value: 50
+    - StatID: 6
+      Value: 90
+    - StatID: 7
+      Value: 90
+    - StatID: 8
+      Value: 100
+    - StatID: 9
+      Value: 0
+    - StatID: 10
+      Value: 100
+    - StatID: 14
+      Value: 200
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 05427638238aeef4f8e08cdec66762e5, type: 2}
+    - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+    - {fileID: 11400000, guid: ab5dc93b118b4c948a28569437e51111, type: 2}
+    - {fileID: 11400000, guid: 81c1ed40a16509046b9180c0c2d56c77, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
+      SkillIcon: {fileID: 0}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions: []
   DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   WindupAngle: -45
