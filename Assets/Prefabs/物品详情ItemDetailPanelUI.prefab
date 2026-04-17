@@ -3629,7 +3629,7 @@ MonoBehaviour:
   Panel_Support: {fileID: 6399505910040992901}
   Panel_Chassis: {fileID: 8191785960238832945}
   Bg_Weapon:
-  - {fileID: 21300000, guid: 4d40523d6e250f74eaf60ae6f8e7fb52, type: 3}
+  - {fileID: 21300000, guid: f70fde415d824e74999713608033f8cc, type: 3}
   - {fileID: 21300000, guid: 1809645fa87c790429ce394ba57b85fa, type: 3}
   - {fileID: 21300000, guid: b44e8144af74a564ab6332cdd74ad131, type: 3}
   - {fileID: 21300000, guid: acf69b6494dde1f4ca643bf8ecf4e76d, type: 3}
