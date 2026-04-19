@@ -48,7 +48,7 @@ public class RuntimeChimeraData
 
     // 存储本台机甲的主动技能
     public ActiveSkillConfig CoreActiveSkill;
-
+    private Dictionary<StatType, float> cachedFlattenedStats = new Dictionary<StatType, float>();
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
     {
         AllEquippedSOs.Clear();
@@ -141,8 +141,16 @@ public class RuntimeChimeraData
                 foreach (var action in levelData.OnAssembleActions) if (action != null) action.Execute(assembleContext);
             }
         }
+        RefreshStatCache();
     }
-
+    private void RefreshStatCache()
+    {
+        cachedFlattenedStats.Clear();
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
+        {
+            cachedFlattenedStats[type] = GetGlobalStat(type);
+        }
+    }
     // ==========================================
     // 极其关键的属性读取算法 (绝对不能省略！)
     // ==========================================
@@ -168,7 +176,10 @@ public class RuntimeChimeraData
             }
         }
     }
-
+    public float GetFastStat(StatType type)
+    {
+        return cachedFlattenedStats.ContainsKey(type) ? cachedFlattenedStats[type] : 0f;
+    }
     public void ModifyStat(ComponentDataSO targetSO, StatType stat, float delta)
     {
         if (IsWeaponSpecificStat(stat))

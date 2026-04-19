@@ -75,8 +75,30 @@ public class DamageReceiver : MonoBehaviour
         if (CurrentHP <= 0) Die();
     }
 
-    private void Die()
+    private void Start()
     {
+        // 【优化】：出生即注册，避免全局搜索
+        RegisterUnit();
+    }
+
+    private void RegisterUnit()
+    {
+        if (isEnemy) { if (!CombatDirector.ActiveEnemies.Contains(this)) CombatDirector.ActiveEnemies.Add(this); }
+        else { if (!CombatDirector.ActivePlayerUnits.Contains(this)) CombatDirector.ActivePlayerUnits.Add(this); }
+    }
+
+    private void OnDestroy()
+    {
+        // 【优化】：彻底杜绝野指针
+        UnregisterUnit();
+    }
+
+
+    private void Die()
+
+    {
+        UnregisterUnit();
+
         this.enabled = false;
 
         EntityHUD hud = GetComponentInChildren<EntityHUD>();
@@ -84,5 +106,11 @@ public class DamageReceiver : MonoBehaviour
 
         // 呼叫大脑执行死亡剧本
         OnEntityDeath?.Invoke();
+    }
+
+    private void UnregisterUnit()
+    {
+        if (isEnemy) CombatDirector.ActiveEnemies.Remove(this);
+        else CombatDirector.ActivePlayerUnits.Remove(this);
     }
 }

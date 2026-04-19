@@ -193,7 +193,22 @@ public class ChimeraAIController : MonoBehaviour
 
                     // 给怪物造成碾压伤害
                     victim.TakeDamage(rawDamage * enemyDamageShare, runtimeData.UnitName + " (泥头车碾压)");
+                    if (rawDamage > 30f || relVelocity > 10f)
+                    {
+                        // 伤害越高，停顿时间稍微长那么一点点 (0.05s ~ 0.12s)
+                        float freezeTime = Mathf.Clamp(rawDamage / 1000f + 0.05f, 0.05f, 0.12f);
 
+                        if (GameFeelManager.Instance != null)
+                        {
+                            GameFeelManager.Instance.RequestHitStop(freezeTime, 0.01f);
+                        }
+
+                        // 同时配合镜头震动，质感瞬间爆炸
+                        if (ScreenEffectManager.Instance != null)
+                        {
+                            ScreenEffectManager.Instance.TriggerShake(rawDamage / 200f, 0.15f);
+                        }
+                    }
                     // 给自己造成少量的反作用力结构损伤 (如果你觉得玩家撞人自己不该掉血，可以把这行删掉)
                     DamageReceiver myReceiver = GetComponent<DamageReceiver>();
                     if (myReceiver != null) myReceiver.TakeDamage(rawDamage * myDamageShare, "撞击反作用力");

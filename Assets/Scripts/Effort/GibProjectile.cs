@@ -18,6 +18,8 @@ public class GibProjectile : MonoBehaviour
     public GameObject BloodDecalPrefab;
     public float DecalSpawnInterval = 0.1f; // 多久滴一滴血
 
+    private GameObject mySourcePrefab; // 记录自己是从哪个预制体出来的
+
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private float currentSpeed;
@@ -26,8 +28,9 @@ public class GibProjectile : MonoBehaviour
     private float decalTimer;
     private bool hasStopped = false;
 
-    public void Eject(Vector2 direction)
+    public void Eject(Vector2 direction,GameObject prefabRef)
     {
+        mySourcePrefab = prefabRef;
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
 
@@ -78,15 +81,8 @@ public class GibProjectile : MonoBehaviour
         // 4. 彻底停下，变成永久的环境装饰物
         if (currentSpeed <= 0)
         {
-            currentSpeed = 0;
-            hasStopped = true;
-            sr.color = GroundedColor; // 变暗
-
-            // 停下时在原地再爆一滩大血迹
-            if (BloodDecalPrefab != null) SpawnDecal(true);
-
-            // 移除脚本以节省 CPU 性能，它现在只是一张静态贴图了！
-            Destroy(this);
+            // 【优化】：不再销毁脚本，也不再销毁物体，而是回收入池
+            SimplePool.Despawn(mySourcePrefab, this.gameObject);
         }
     }
 

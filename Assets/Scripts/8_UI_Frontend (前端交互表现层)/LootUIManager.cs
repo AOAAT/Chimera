@@ -1,4 +1,5 @@
 ﻿// --- START OF FILE LootUIManager.cs ---
+using System.Collections; // 必须引用
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,6 +32,11 @@ public class LootUIManager : MonoBehaviour
     public Button ConfirmButton;       // 收下
     public Button SalvageButton;       // 粉碎
     public Button ReturnButton;        // 返回大厅
+
+    [Header("=== 弹射动画配置 ===")]
+    public float EjectDuration = 0.5f;   // 弹射总时长
+    public float ItemStaggerDelay = 0.1f; // 每个零件弹出的间隔（制造时序感）
+    public AnimationCurve EjectCurve = AnimationCurve.EaseInOut(0, 0, 1, 1); // 缓动曲线
 
     private List<ActiveLootTask> currentTasks;
     private ActiveLootTask activeTask;
@@ -130,7 +136,32 @@ public class LootUIManager : MonoBehaviour
             if (!task.IsBoxOpened) LootSequenceDirector.Instance.RollItemsForTask(task);
             HubPanel.SetActive(false);
             OpenItemPanel();
+            StartCoroutine(ProcessScanningAndOpen(task));
         }
+    }
+
+    private IEnumerator ProcessScanningAndOpen(ActiveLootTask task)
+    {
+        // 1. 如果已经开过了，跳过扫描
+        if (task.IsBoxOpened)
+        {
+            HubPanel.SetActive(false);
+            OpenItemPanel();
+            yield break;
+        }
+
+        // 2. 伪装扫描：可以禁用交互，并让鼠标变成忙碌状态
+        Debug.Log("【系统】正在解析机械残骸...");
+
+        // 这里你可以触发一个全屏的微弱扫描线特效
+        // ScreenEffectManager.Instance.TriggerFlash(new Color(0, 1, 1, 0.1f), 0.5f);
+
+        yield return new WaitForSecondsRealtime(0.6f); // 停顿一下，制造期待感
+
+        // 3. 正式开盲盒
+        LootSequenceDirector.Instance.RollItemsForTask(task);
+        HubPanel.SetActive(false);
+        OpenItemPanel();
     }
 
     // ==========================================
@@ -186,19 +217,24 @@ public class LootUIManager : MonoBehaviour
                 FixedItemSlots[i].gameObject.SetActive(true);
                 FixedItemSlots[i].SetHighlight(false);
 
+                // 初始化状态：缩放为0，放在屏幕中心
+                FixedItemSlots[i].transform.localScale = Vector3.zero;
+
                 int index = i;
                 var item = items[i];
-
-                // 👇【完美复用】：把生成的实体塞进你的预制体格子！
                 FixedItemSlots[i].SetupComponent(item, (_) => OnItemSlotClicked(index, item));
+
+                // 👇【核心】：启动弹射协程
+                StartCoroutine(AnimateItemEject(FixedItemSlots[i].GetComponent<RectTransform>(), i));
             }
             else
             {
-                // 👇【智能隐藏】：如果是单抽盲盒 (items.Count == 1)，i=1 和 i=2 会自动被隐藏！
                 FixedItemSlots[i].gameObject.SetActive(false);
             }
         }
     }
+
+
 
     private void OnItemSlotClicked(int index, InstancedComponent item)
     {
@@ -215,11 +251,54 @@ public class LootUIManager : MonoBehaviour
             }
         }
     }
+    private IEnumerator AnimateItemEject(RectTransform rect, int index)
+    {
+        // 1. 等待时序间隔
+        yield return new WaitForSecondsRealtime(index * ItemStaggerDelay);
 
-    // ==========================================
-    // 核心交互：收下 / 粉碎 / 返回
-    // ==========================================
-    private void OnConfirmClicked()
+        Vector2 finalPos = rect.anchoredPosition; // 记住你在编辑器里摆好的位置
+        Vector2 startPos = Vector2.zero;          // 从面板中心（0,0）出发
+
+        float elapsed = 0;
+
+        // 播放发射音效
+        if (GlobalAudioManager.Instance != null)
+            // 找一个清脆的机械弹出声
+            // GlobalAudioManager.Instance.PlaySound(EjectClip, transform.position);
+
+            while (elapsed < EjectDuration)
+            {
+                elapsed += Time.unscaledDeltaTime; // 即使卡肉时间，UI 也要动
+                float t = elapsed / EjectDuration;
+
+                // 缓动计算
+                float curveT = EjectCurve.Evaluate(t);
+
+                // 坐标插值
+                rect.anchoredPosition = Vector2.LerpUnclamped(startPos, finalPos, curveT);
+
+                // 缩放插值（从0.5倍爆出，最后带一点点回弹）
+                float scale = Mathf.LerpUnclamped(0.5f, 1.0f, curveT);
+                rect.localScale = Vector3.one * scale;
+
+                // 旋转动画（喷射时转个360度）
+                rect.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(180, 0, curveT));
+
+                yield return null;
+            }
+
+        // 落地反馈：微弱的屏幕震动
+        if (ScreenEffectManager.Instance != null)
+            ScreenEffectManager.Instance.TriggerShake(0.05f, 0.1f);
+
+        rect.anchoredPosition = finalPos;
+        rect.localScale = Vector3.one;
+        rect.localRotation = Quaternion.identity;
+    }
+// ==========================================
+// 核心交互：收下 / 粉碎 / 返回
+// ==========================================
+private void OnConfirmClicked()
     {
         if (selectedItem != null)
         {

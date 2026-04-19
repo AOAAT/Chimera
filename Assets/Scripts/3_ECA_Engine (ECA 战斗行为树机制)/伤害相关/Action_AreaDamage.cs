@@ -14,12 +14,14 @@ public class Action_AreaDamage : ECAAction
         float realRadius = (baseRadius + BonusRadius) * CombatSandbox.Instance.DistanceMultiplier;
         float finalDmg = context.BaseDamage * DamageMultiplier;
 
-        DamageReceiver[] all = FindObjectsOfType<DamageReceiver>();
-        foreach (var rec in all)
+        // 【优化】：不再 FindObjectsOfType，直接检索对应阵营列表
+        var targets = context.IsEnemyFire ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
+
+        for (int i = targets.Count - 1; i >= 0; i--) // 倒序遍历防止移除报错
         {
-            if (rec.isEnemy != context.IsEnemyFire && Vector3.Distance(context.ImpactPoint, rec.transform.position) <= realRadius)
+            var rec = targets[i];
+            if (rec != null && Vector3.Distance(context.ImpactPoint, rec.transform.position) <= realRadius)
             {
-                // 👇 传参补全
                 rec.TakeDamage(finalDmg, context.SourceWeapon.WeaponName + " (溅射)", IsTrueDamage, context.IsCriticalHit);
             }
         }

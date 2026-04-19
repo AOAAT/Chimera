@@ -9,6 +9,12 @@ public class CombatDirector : MonoBehaviour
 {
     public static CombatDirector Instance { get; private set; }
 
+    // 【优化】：静态列表检索，O(1) 访问
+    public static List<DamageReceiver> ActiveEnemies = new List<DamageReceiver>();
+    public static List<DamageReceiver> ActivePlayerUnits = new List<DamageReceiver>();
+
+  
+
     public bool IsCombatActive { get; private set; }
     public bool IsDeploymentPhase { get; private set; }
 
@@ -51,7 +57,14 @@ public class CombatDirector : MonoBehaviour
     private bool isCheckingWinCondition = false;
     private bool isLastCombatVictory = false;
 
-    private void Awake() { if (Instance == null) Instance = this; }
+    private void Awake() { Instance = this; }
+
+    // 【新增】：快速清理方法
+    public static void ClearUnitRegistry()
+    {
+        ActiveEnemies.Clear();
+        ActivePlayerUnits.Clear();
+    }
 
     private void Start()
     {

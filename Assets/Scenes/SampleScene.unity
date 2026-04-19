@@ -1702,8 +1702,8 @@ MonoBehaviour:
   TotalLayers: 15
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
-  NormalEnemyWeight: 0
-  EventWeight: 1
+  NormalEnemyWeight: 1
+  EventWeight: 0
   EliteWeight: 0
   WorkshopWeight: 0
   BufferFactor: 0.2
@@ -7396,6 +7396,32 @@ MonoBehaviour:
   ConfirmButton: {fileID: 130177394}
   SalvageButton: {fileID: 626676776}
   ReturnButton: {fileID: 1840190997}
+  EjectDuration: 0.5
+  ItemStaggerDelay: 0.1
+  EjectCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &791016787
 GameObject:
   m_ObjectHideFlags: 0

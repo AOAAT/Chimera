@@ -34,27 +34,31 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text HPText;
     public TMP_Text APText;
     public TMP_Text PowerText;
-    // 👇【核心新增】：三大硬核物理面板
     public TMP_Text BlockText;      // 总格挡
     public TMP_Text MassText;       // 总质量
     public TMP_Text SpeedText;      // 实际计算后的移速
 
     public TMP_InputField UnitNameInput;
 
-    // 👇【核心修复】：暴露统一的滑动条，锁死底层的像素转换率
     [Header("=== 视觉与排版控制 ===")]
     [Range(0.1f, 5f)]
     public float PreviewScale = 1.0f;
-    private const float WorldToUIMultiplier = 100f; // 1米 = 100像素，严禁修改
+    private const float WorldToUIMultiplier = 100f; // 1米 = 100像素
 
-    [Header("=== 插槽防误触控制 ===")]
-    [Tooltip("插槽可点击区域的大小 (推荐 30~40)")]
+    [Header("=== 插槽表现控制 ===")]
+    [Tooltip("插槽可点击区域的大小 (推荐 35)")]
     public float SlotButtonSize = 35f;
-    [Tooltip("拖入 Unity 自带的 'Knob' 圆球贴图，或者你的圆形 UI 图")]
+    [Tooltip("插槽的圆形贴图")]
     public Sprite CircularSlotSprite;
+
+    [Header("=== 能量导线系统 ===")]
+    public GameObject UIConduitPrefab; // 拖入带 LineRenderer 和 MechEnergyConduit 脚本的预制体
+    // 使用字典精准映射：插槽索引 -> 对应的导线脚本
+    private Dictionary<int, MechEnergyConduit> activeConduitMap = new Dictionary<int, MechEnergyConduit>();
+
     private void Awake()
     {
-        Instance = this;
+        if (Instance == null) Instance = this;
         gameObject.SetActive(false);
     }
 
@@ -84,6 +88,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         snapshot_HP = unitProfile.CurrentHP;
         snapshot_AP = unitProfile.CurrentAP;
 
+        // 计算当前战损
         float initialMaxHP = PlayerInventoryManager.GetStatValue(unitProfile.ChassisData.BaseStats, StatType.AddedHP);
         foreach (string compID in unitProfile.EquippedComponentIDs)
         {
@@ -99,7 +104,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
         RefreshWorkshopState();
     }
 
-    // --- 请替换 AssemblyWorkshopUI.cs 中的 RefreshWorkshopState 方法 ---
     private void RefreshWorkshopState()
     {
         RightInventoryPanel.SetActive(false);
@@ -122,17 +126,14 @@ public class AssemblyWorkshopUI : MonoBehaviour
             GhostChassisPrompt.SetActive(false);
             ChassisVisualRoot.gameObject.SetActive(true);
 
-            // 1. 抓取底盘的基础属性
+            // 1. 基础数值计算
             float maxHP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedHP);
             float maxAP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedAP);
             float totalPower = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.PowerCost);
-
-            // 👇【新增抓取】：底盘的物理三件套
             float totalBlock = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedBlock);
             float totalMass = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedMass);
             float totalEngine = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.EnginePower);
 
-            // 2. 遍历身上插的所有组件，疯狂叠加属性！
             foreach (string compID in currentEditingProfile.EquippedComponentIDs)
             {
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
@@ -144,8 +145,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
                         maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
                         maxAP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedAP);
                         totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
-
-                        // 👇【新增叠加】
                         totalBlock += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedBlock);
                         totalMass += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedMass);
                         totalEngine += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.EnginePower);
@@ -153,7 +152,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 }
             }
 
-            // 3. 血量重置与扣损逻辑
+            // 2. 更新血量状态
             if (isCreatingNew)
             {
                 currentEditingProfile.CurrentHP = maxHP;
@@ -165,18 +164,16 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 currentEditingProfile.CurrentAP = maxAP;
             }
 
-            // 4. 调用底层的沙盘公式，算出最真实的战场移速！
+            // 3. 物理公式应用
             float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
             float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
 
-            // 5. 灌入所有的 Text 文本槽位！
-            HPText.text = $"HP: {currentEditingProfile.CurrentHP} / {maxHP}";
-            APText.text = $"AP: {currentEditingProfile.CurrentAP} / {maxAP}";
-            PowerText.text = $"耗电: {totalPower}";
-
-            // 👇【新增文本灌入】
-            if (BlockText != null) BlockText.text = $"格挡: {totalBlock}";
-            if (MassText != null) MassText.text = $"质量: {totalMass}t";
+            // 4. UI 文字刷新
+            HPText.text = $"HP: {currentEditingProfile.CurrentHP:F0} / {maxHP:F0}";
+            APText.text = $"AP: {currentEditingProfile.CurrentAP:F0} / {maxAP:F0}";
+            PowerText.text = $"耗电: {totalPower:F0}";
+            if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
+            if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";
             if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
 
             UnitNameInput.text = currentEditingProfile.UnitName;
@@ -186,14 +183,125 @@ public class AssemblyWorkshopUI : MonoBehaviour
         }
     }
 
+    private void RenderMechAndSockets()
+    {
+        // 清理旧物件和导线映射
+        foreach (Transform child in ChassisVisualRoot) Destroy(child.gameObject);
+        activeConduitMap.Clear();
+
+        if (currentEditingProfile == null) return;
+
+        // 生成缩放根节点
+        GameObject scalerObj = new GameObject("UI_ScalerRoot");
+        scalerObj.transform.SetParent(ChassisVisualRoot, false);
+        scalerObj.transform.localScale = Vector3.one * PreviewScale;
+
+        // 生成底盘图片
+        GameObject chassisObj = new GameObject("UI_ChassisBase");
+        chassisObj.transform.SetParent(scalerObj.transform, false);
+        Image chassisImg = chassisObj.AddComponent<Image>();
+        chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
+        chassisImg.SetNativeSize();
+        chassisImg.raycastTarget = false; // 底盘不挡点击
+
+        RectTransform coreTrans = null;
+        Dictionary<int, RectTransform> slotRects = new Dictionary<int, RectTransform>();
+
+        // 第一遍循环：生成插槽和已装组件
+        for (int i = 0; i < currentEditingProfile.ChassisData.Sockets.Count; i++)
+        {
+            var slotDef = currentEditingProfile.ChassisData.Sockets[i];
+            int slotIdx = i;
+
+            GameObject slotObj = new GameObject($"UI_Socket_{slotDef.SlotName}");
+            slotObj.transform.SetParent(chassisObj.transform, false);
+            RectTransform slotRect = slotObj.AddComponent<RectTransform>();
+            slotRect.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
+            slotRect.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
+            slotRect.sizeDelta = new Vector2(SlotButtonSize, SlotButtonSize);
+
+            // 必须添加 Image 才能被 Button 识别点击
+            Image slotVisual = slotObj.AddComponent<Image>();
+            slotVisual.sprite = CircularSlotSprite;
+            slotVisual.color = new Color(1f, 1f, 1f, 0.3f);
+            slotVisual.raycastTarget = true;
+
+            slotRects.Add(slotIdx, slotRect);
+
+            // 检查已装组件
+            int equippedIdx = currentEditingProfile.SlotIndices.IndexOf(slotIdx);
+            if (equippedIdx != -1)
+            {
+                string compID = currentEditingProfile.EquippedComponentIDs[equippedIdx];
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null)
+                {
+                    slotVisual.color = new Color(1f, 1f, 1f, 0f); // 装了东西就隐形
+                    if (comp.BaseData.Type == ComponentType.Core) coreTrans = slotRect;
+                    RenderComponentInSlot(slotRect, comp, slotDef);
+                }
+            }
+
+            Button btn = slotObj.AddComponent<Button>();
+            btn.onClick.AddListener(() => OnSlotClicked(slotIdx));
+        }
+
+        // 第二遍循环：拉取导线
+        if (coreTrans != null && UIConduitPrefab != null)
+        {
+            foreach (var kvp in slotRects)
+            {
+                if (kvp.Value == coreTrans) continue;
+
+                GameObject lineObj = Instantiate(UIConduitPrefab, chassisObj.transform);
+                lineObj.transform.SetAsFirstSibling(); // 垫在最底层
+
+                var conduit = lineObj.GetComponent<MechEnergyConduit>();
+                if (conduit != null)
+                {
+                    conduit.Initialize(coreTrans, kvp.Value);
+                    activeConduitMap.Add(kvp.Key, conduit);
+                }
+            }
+        }
+    }
+
+    private void RenderComponentInSlot(Transform slotRect, InstancedComponent comp, SlotDefinition slotDef)
+    {
+        GameObject compHingeObj = new GameObject($"UI_Hinge_{comp.BaseData.ComponentName}");
+        compHingeObj.transform.SetParent(slotRect, false);
+        compHingeObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
+        compHingeObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
+
+        GameObject compVisObj = new GameObject("Sprite_Visual");
+        compVisObj.transform.SetParent(compHingeObj.transform, false);
+        Image compImg = compVisObj.AddComponent<Image>();
+        compImg.sprite = comp.BaseData.ComponentIcon;
+        compImg.SetNativeSize();
+        compImg.raycastTarget = false;
+        compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
+    }
+
+    // 当组件成功安装时触发
+    public void OnComponentEquipped(int slotIndex)
+    {
+        if (activeConduitMap.ContainsKey(slotIndex))
+        {
+            activeConduitMap[slotIndex].TriggerPulse();
+        }
+
+        if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.05f);
+        if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(0.1f, 0.1f);
+    }
+
     public void OnClickGhostChassis()
     {
-        // 👇【核心修复】：移除 !c.IsEquipped，显示仓库里的所有底盘！
         RightInventoryPanelUI.Instance.OpenForChassisSelection(
             () => PlayerInventoryManager.Instance.ChassisInventory,
             OnChassisSelectedFromInventory
         );
     }
+
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
         currentEditingProfile = new SavedUnitProfile(selectedChassis, "特制原型机");
@@ -203,77 +311,12 @@ public class AssemblyWorkshopUI : MonoBehaviour
         RefreshWorkshopState();
     }
 
-    private void RenderMechAndSockets()
-    {
-        foreach (Transform child in ChassisVisualRoot) Destroy(child.gameObject);
-
-        // 👇【神级修复】：建一个缩放根节点，把 PreviewScale 挂在它身上！
-        GameObject scalerObj = new GameObject("UI_ScalerRoot");
-        scalerObj.transform.SetParent(ChassisVisualRoot, false);
-        scalerObj.transform.localScale = Vector3.one * PreviewScale; // <--- 缩放魔法在这里发生！
-
-        GameObject chassisObj = new GameObject("UI_ChassisBase");
-        chassisObj.transform.SetParent(scalerObj.transform, false); // 挂在缩放节点下
-        Image chassisImg = chassisObj.AddComponent<Image>();
-        chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
-        chassisImg.SetNativeSize();
-
-        for (int i = 0; i < currentEditingProfile.ChassisData.Sockets.Count; i++)
-        {
-            var slotDef = currentEditingProfile.ChassisData.Sockets[i];
-            int slotIndex = i;
-
-            GameObject slotObj = new GameObject($"UI_Socket_{slotDef.SlotName}");
-            slotObj.transform.SetParent(chassisObj.transform, false);
-
-            Image slotImg = slotObj.AddComponent<Image>();
-            slotImg.color = new Color(1f, 1f, 1f, 0.3f);
-            slotImg.rectTransform.sizeDelta = new Vector2(SlotButtonSize, SlotButtonSize);
-
-            // 👇【核心修复 2】：如果有圆形贴图，就把它变成圆的！
-            if (CircularSlotSprite != null) slotImg.sprite = CircularSlotSprite;
-
-            // 内部坐标永远用 100f 换算，保证原始比例完美对齐
-            slotImg.rectTransform.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
-            slotImg.rectTransform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
-
-            Button slotBtn = slotObj.AddComponent<Button>();
-            slotBtn.onClick.AddListener(() => OnSlotClicked(slotIndex));
-
-            int equippedIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
-            if (equippedIdx != -1)
-            {
-                string compID = currentEditingProfile.EquippedComponentIDs[equippedIdx];
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-
-                if (comp != null && comp.BaseData != null)
-                {
-                    slotImg.color = new Color(1f, 1f, 1f, 0f);
-
-                    GameObject compHingeObj = new GameObject($"UI_Hinge_{comp.BaseData.ComponentName}");
-                    compHingeObj.transform.SetParent(slotObj.transform, false);
-                    compHingeObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
-                    compHingeObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
-
-                    GameObject compVisObj = new GameObject("Sprite_Visual");
-                    compVisObj.transform.SetParent(compHingeObj.transform, false);
-                    Image compImg = compVisObj.AddComponent<Image>();
-                    compImg.sprite = comp.BaseData.ComponentIcon;
-                    compImg.SetNativeSize();
-
-                    compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
-                }
-            }
-        }
-    }
-
     private void OnSlotClicked(int slotIndex)
     {
         var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
         int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
         bool hasEquippedComp = (existingIdx != -1);
 
-        // 👇【核心修复】：移除 !c.IsEquipped，显示所有符合该插槽类型的组件！
         RightInventoryPanelUI.Instance.OpenForComponentSelection(
             () => PlayerInventoryManager.Instance.ComponentInventory.FindAll(c => slotDef.AllowedTypes.Contains(c.BaseData.Type)),
             hasEquippedComp,
@@ -296,7 +339,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         {
             if (!PlayerInventoryManager.Instance.ValidateHPBeforeUnequip(currentEditingProfile, oldComp, selectedComp))
             {
-                Debug.LogWarning("【车间警报】拆卸该装甲会导致机体直接解体，操作已强制撤销！");
+                Debug.LogWarning("【车间警报】血量过低，禁止拆除生存组件！");
                 return;
             }
         }
@@ -313,7 +356,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
             selectedComp.EquippedUnitID = currentEditingProfile.UnitID;
             currentEditingProfile.SlotIndices.Add(slotIndex);
             currentEditingProfile.EquippedComponentIDs.Add(selectedComp.InstanceID);
+
+            // 👇 安装成功，触发导线脉冲和震动
+            OnComponentEquipped(slotIndex);
         }
+
         RefreshWorkshopState();
     }
 
@@ -335,13 +382,13 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
         if (coreCount != 1)
         {
-            errorMessage = $"【安检失败】机甲必须有且仅有 1 个核心引擎！当前数量: {coreCount}";
+            errorMessage = $"【安检失败】机甲必须有且仅有 1 个核心引擎！";
             return false;
         }
 
         if (mobilityCount < 1)
         {
-            errorMessage = "【安检失败】机甲缺乏移动模块 (Mobility)，无法出击！";
+            errorMessage = "【安检失败】机甲缺乏移动模块，无法出击！";
             return false;
         }
 
@@ -350,10 +397,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void SaveAndExitWorkshop()
     {
-        if (currentEditingProfile == null)
-        {
-            CancelAndExitWorkshop(); return;
-        }
+        if (currentEditingProfile == null) { CancelAndExitWorkshop(); return; }
 
         if (!ValidateUnitLegality(out string errorMsg))
         {
@@ -362,25 +406,13 @@ public class AssemblyWorkshopUI : MonoBehaviour
         }
 
         currentEditingProfile.UnitName = UnitNameInput.text;
-
-        if (isCreatingNew)
-        {
-            PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
-        }
-        else
-        {
-            PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
-        }
-
+        PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
         ExitToHangar();
     }
 
     public void CancelAndExitWorkshop()
     {
-        if (currentEditingProfile == null)
-        {
-            ExitToHangar(); return;
-        }
+        if (currentEditingProfile == null) { ExitToHangar(); return; }
 
         if (isCreatingNew)
         {
@@ -395,22 +427,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
         }
         else
         {
-            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
-            {
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null) comp.EquippedUnitID = string.Empty;
-            }
-
+            // 回滚快照
             currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
             currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
             currentEditingProfile.CurrentHP = snapshot_HP;
             currentEditingProfile.CurrentAP = snapshot_AP;
-
-            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
-            {
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null) comp.EquippedUnitID = currentEditingProfile.UnitID;
-            }
         }
 
         ExitToHangar();
@@ -418,16 +439,9 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     private void ExitToHangar()
     {
-        if (ItemDetailPanelUI.Instance != null)
-        {
-            ItemDetailPanelUI.Instance.HidePanel();
-        }
-
-        currentEditingProfile = null;
+        if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
         gameObject.SetActive(false);
         HangarMenuUI.Instance.gameObject.SetActive(true);
         HangarMenuUI.Instance.RefreshHangar();
     }
-
-
 }

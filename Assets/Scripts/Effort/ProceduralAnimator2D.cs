@@ -31,6 +31,17 @@ public class ProceduralAnimator2D : MonoBehaviour
     public float SquashAmount = -0.3f;
     public float SquashRecoverSpeed = 10f;
 
+    [Header("=== 5. 损毁表现 (Juiciness) ===")]
+    [Tooltip("血量低于 50% 时生成的烟雾/火花预制体")]
+    public GameObject SmokePrefab;
+    [Tooltip("血量低于 30% 时的额外震动增益")]
+    public float PanicVibrationMultiplier = 2.0f;
+
+    private GameObject activeSmoke;
+    private float baseVibrationSpeed;
+    private float baseVibrationIntensity;
+    private bool baseEnableVibration;
+
     private Transform visualTransform;
     private Rigidbody2D rb;
     private DamageReceiver receiver;
@@ -41,6 +52,7 @@ public class ProceduralAnimator2D : MonoBehaviour
 
     private float currentSquash = 0f;
     private float timeOffset;
+    private float lastHP = -1f;
 
     // 👇【新增】：允许外部代码精确指定到底要摇晃哪一块贴图
     public void SetTargetVisual(Transform target)
@@ -56,17 +68,22 @@ public class ProceduralAnimator2D : MonoBehaviour
         timeOffset = Random.Range(0f, 100f);
         rb = GetComponent<Rigidbody2D>();
         receiver = GetComponent<DamageReceiver>();
-    }
 
-    private float lastHP = -1f;
+        // 备份策划在 Inspector 填写的初始值
+        baseVibrationSpeed = VibrationSpeed;
+        baseVibrationIntensity = VibrationIntensity;
+        baseEnableVibration = EnableVibration;
+    }
 
     private void Update()
     {
         if (visualTransform == null) return;
 
+        // 1. 状态同步：物理速度决定是否处于“移动态”
         if (AutoSyncWithVelocity && rb != null)
             IsMoving = rb.velocity.sqrMagnitude > (WalkSpeedThreshold * WalkSpeedThreshold);
 
+        // 2. 状态同步：受击判定
         if (receiver != null)
         {
             if (lastHP == -1f) lastHP = receiver.CurrentHP;
@@ -75,8 +92,10 @@ public class ProceduralAnimator2D : MonoBehaviour
                 TriggerHitSquash();
                 lastHP = receiver.CurrentHP;
             }
+            HandleDamageVisuals(); // 处理烟雾和濒死震动
         }
 
+        // 3. 计算果冻形变恢复
         currentSquash = Mathf.Lerp(currentSquash, 0f, Time.deltaTime * SquashRecoverSpeed);
 
         Vector3 targetScale = originalScale;
@@ -85,7 +104,9 @@ public class ProceduralAnimator2D : MonoBehaviour
 
         float t = Time.time + timeOffset;
 
-        // 1. 移动摇摆
+        // --- 表现层计算 ---
+
+        // A. 移动摇摆
         if (IsMoving && EnableWobble)
         {
             float wobbleSin = Mathf.Sin(t * WobbleSpeed);
@@ -94,7 +115,7 @@ public class ProceduralAnimator2D : MonoBehaviour
             targetRot = originalLocalRot * Quaternion.Euler(0f, 0f, wobbleSin * WobbleAngle);
             targetPos = originalLocalPos + new Vector3(0f, bobbingCos * BobbingHeight, 0f);
         }
-        // 2. 生物呼吸
+        // B. 生物呼吸 (仅在不移动时触发)
         else if (!IsMoving && EnableBreathing)
         {
             float normalizedBreath = (Mathf.Sin(t * BreathSpeed) + 1f) / 2f;
@@ -102,22 +123,57 @@ public class ProceduralAnimator2D : MonoBehaviour
             targetScale.x = originalScale.x * (1f + normalizedBreath * BreathScaleX);
         }
 
-        // 3. 机械震动 (待机时柴油机疯狂颤抖！)
-        if (!IsMoving && EnableVibration)
+        // C. 机械震动 (核心损毁或待机时)
+        if (EnableVibration)
         {
-            // 利用柏林噪声产生极高频、无规律的机械震颤
+            // 利用柏林噪声产生不规则的高频机械感
             float vibX = (Mathf.PerlinNoise(t * VibrationSpeed, 0f) - 0.5f) * 2f * VibrationIntensity;
             float vibY = (Mathf.PerlinNoise(0f, t * VibrationSpeed) - 0.5f) * 2f * VibrationIntensity;
             targetPos += new Vector3(vibX, vibY, 0f);
         }
 
-        // 4. 受击形变
+        // D. 应用受击形变
         targetScale.y += currentSquash;
         targetScale.x -= currentSquash * 0.5f;
 
+        // 最终应用到变换组件
         visualTransform.localScale = targetScale;
         visualTransform.localPosition = targetPos;
         visualTransform.localRotation = targetRot;
+    }
+
+    private void HandleDamageVisuals()
+    {
+        float hpPercent = receiver.CurrentHP / receiver.MaxHP;
+
+        // --- 烟雾逻辑 (低于 50%) ---
+        if (hpPercent < 0.5f)
+        {
+            if (activeSmoke == null && SmokePrefab != null)
+            {
+                activeSmoke = Instantiate(SmokePrefab, transform.position, Quaternion.identity, transform);
+                activeSmoke.name = "FX_DamageSmoke";
+            }
+        }
+        else
+        {
+            if (activeSmoke != null) Destroy(activeSmoke);
+        }
+
+        // --- 濒死震动逻辑 (低于 30%) ---
+        if (hpPercent < 0.3f)
+        {
+            EnableVibration = true;
+            VibrationSpeed = baseVibrationSpeed * PanicVibrationMultiplier;
+            VibrationIntensity = baseVibrationIntensity * PanicVibrationMultiplier;
+        }
+        else
+        {
+            // 恢复策划设定的初始震动状态
+            EnableVibration = baseEnableVibration;
+            VibrationSpeed = baseVibrationSpeed;
+            VibrationIntensity = baseVibrationIntensity;
+        }
     }
 
     public void TriggerHitSquash() { currentSquash = SquashAmount; }
@@ -125,6 +181,7 @@ public class ProceduralAnimator2D : MonoBehaviour
     public void StopAnimation()
     {
         this.enabled = false;
+        if (activeSmoke != null) Destroy(activeSmoke);
         if (visualTransform != null)
         {
             visualTransform.localScale = originalScale;
@@ -133,7 +190,6 @@ public class ProceduralAnimator2D : MonoBehaviour
         }
     }
 
-    // 👇 新增方法：强制刷新基础状态
     public void RefreshBaseState()
     {
         if (visualTransform != null)
