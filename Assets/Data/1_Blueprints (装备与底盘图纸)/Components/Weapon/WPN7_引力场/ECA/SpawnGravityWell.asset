@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ee6b17a37496564384fe3d9efb080d0, type: 3}
   m_Name: SpawnGravityWell
   m_EditorClassIdentifier: 
-  GravityWellPrefab: {fileID: 0}
+  GravityWellPrefab: {fileID: 8554874941352698456, guid: 18e06bc3fdaa7f4489e1380aa15fa385, type: 3}
   LifeTime: 3
-  Radius: 6
-  Force: 400
+  Radius: 500
+  Force: 1
