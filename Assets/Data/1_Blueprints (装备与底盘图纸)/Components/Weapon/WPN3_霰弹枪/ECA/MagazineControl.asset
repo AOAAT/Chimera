@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a5687c350813ff4aa0879682051f6e4, type: 3}
   m_Name: MagazineControl
   m_EditorClassIdentifier: 
-  MaxAmmo: 2
-  ReloadTime: 3
+  MaxAmmo: 9
+  ReloadTime: 2

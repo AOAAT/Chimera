@@ -103,9 +103,9 @@ public class ChimeraAIController : MonoBehaviour
             if (staggerTimer <= 0)
             {
                 isStaggered = false;
-                rb.drag = 5f;
+                rb.drag = 5f; // 【关键】：硬直结束，恢复阻力，AI 重新接管
             }
-            return;
+            return; // 硬直期间不执行 FindTarget 和 HandleMovement
         }
 
         // 处理冲刺状态
@@ -192,22 +192,60 @@ public class ChimeraAIController : MonoBehaviour
     // 物理接口区 (ECA 积木和碰撞引擎调用)
     // ==========================================
 
-    public void ApplyImpulse(Vector2 dir, float impulse)
+    // --- 修改 ChimeraAIController.cs ---
+    // 增加 ignoreStun 参数，默认不忽略
+    public void ApplyImpulse(Vector2 dir, float impulse, bool ignoreStun = false)
     {
         float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
-        float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
 
-        if (stunTime <= 0f) return;
+        // 如果不忽略硬直，才去计算晕眩时间
+        if (!ignoreStun)
+        {
+            float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
+            if (stunTime > 0f)
+            {
+                isStaggered = true;
+                staggerTimer = stunTime;
+            }
+        }
 
-        isStaggered = true;
-        staggerTimer = stunTime;
-
+        // 无论晕不晕，物理上的推挤力是一定要给的，这才是后坐力的浪漫
         float clampedDeltaV = Mathf.Clamp(impulse / mass, 0f, 20f);
         rb.drag = 5f;
-        rb.velocity = Vector2.zero;
+        // 注意：如果是后坐力，我们不强制清空原有速度，让它滑得更自然
+        if (!ignoreStun) rb.velocity = Vector2.zero;
+
         rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse);
     }
 
+
+    public void ApplyRecoil(Vector2 dir, float impulse, float manualStunTime)
+    {
+        if (rb == null) return;
+
+        float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
+
+        // 1. 立即进入硬直状态，拦截 AI 走位覆盖
+        isStaggered = true;
+        staggerTimer = manualStunTime;
+
+        // 2. 物理手感调校：瞬间降低阻力，让它能滑出去
+        // 等到 Update 里的 staggerTimer 结束时，会自动恢复到 5f
+        rb.drag = 1.0f;
+
+        // 3. 施加冲量
+        // 计算速度增量 deltaV = I / m
+        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+        float deltaV = (impulse / mass) * speedMult;
+
+        // 强制赋予一个初始速度，确保第一帧就有位移
+        rb.velocity = dir * deltaV;
+
+        // 补一发冲量确保物理模拟连贯
+        rb.AddForce(dir * impulse * speedMult, ForceMode2D.Impulse);
+
+        // Debug.Log($"<color=white>【后坐力】</color> 冲量:{impulse} 导致位移速度:{rb.velocity.magnitude:F2}");
+    }
     private void OnCollisionEnter2D(Collision2D col)
     {
         if (runtimeData == null || rb == null) return;

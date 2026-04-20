@@ -39,13 +39,13 @@ MonoBehaviour:
     - StatID: 9
       Value: 0
     - StatID: 10
-      Value: 100
+      Value: 200
     - StatID: 11
       Value: 0.3
     - StatID: 14
       Value: 200
     - StatID: 13
-      Value: 5
+      Value: 6
     Mechanics: []
     OnFireActions:
     - {fileID: 11400000, guid: e86cce55e7dd419449dbb6e9321f19d7, type: 2}
