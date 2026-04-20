@@ -7845,9 +7845,9 @@ MonoBehaviour:
   TargetChassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   GlobalVisualScale: 1
   EquippedComponents:
-  - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+  - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
   - {fileID: 0}
-  - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
+  - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   previewObjects: []
@@ -7938,23 +7938,21 @@ MonoBehaviour:
   Final_TotalMass: 0
   Final_TotalEnginePower: 0
   EquippedWeapons:
-  - WeaponName: "\u4E1B\u86C7\u4E4B\u9996"
-    DeliveryType: 1
+  - WeaponName: "\u65B0\u7EC4\u4EF6"
+    DeliveryType: 0
     Stats:
     - StatID: 6
-      Value: 5
+      Value: 15
     - StatID: 7
-      Value: 0
+      Value: 10
     - StatID: 8
-      Value: 50
+      Value: 20
     - StatID: 9
       Value: 0
     - StatID: 10
       Value: 100
     - StatID: 11
-      Value: 0.1
-    - StatID: 14
-      Value: 100
+      Value: 0.3
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -13424,7 +13422,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -15104,6 +15102,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 91ef5cfb3c19d7043866cf6d2e217b94, type: 2}
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
+  - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15129,6 +15128,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 91ef5cfb3c19d7043866cf6d2e217b94, type: 2}
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
+  - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0

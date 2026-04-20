@@ -18,5 +18,5 @@ MonoBehaviour:
   - {fileID: 8366446270124421813, guid: 1800044700c3e654a90ff6dafc419ce6, type: 3}
   MinGibCount: 4
   MaxGibCount: 8
-  TriggerScreenBlood: 1
+  TriggerScreenBlood: 0
   ScreenBloodColor: {r: 0.6, g: 0, b: 0, a: 0.7}

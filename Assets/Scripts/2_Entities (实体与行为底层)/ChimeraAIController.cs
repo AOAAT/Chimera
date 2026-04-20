@@ -170,7 +170,13 @@ public class ChimeraAIController : MonoBehaviour
         }
         else if (activeLogic == MovementStrategy.Active_Firepower)
         {
-            if (dist > optimalFireRange)
+            float engagementBuffer = 0f;
+            if (runtimeData.EquippedWeapons.Any(w => w.DeliveryType == WeaponDeliveryType.Melee))
+            {
+                engagementBuffer = 0.5f * CombatSandbox.GetDist(1f);
+            }
+
+            if (dist > (optimalFireRange - engagementBuffer)) // 👈 减去缓冲区，多走两步
             {
                 targetVelocity = dirToTarget * CurrentSpeed;
             }

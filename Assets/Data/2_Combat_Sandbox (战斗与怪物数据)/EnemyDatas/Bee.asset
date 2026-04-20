@@ -26,7 +26,9 @@ MonoBehaviour:
   - StatID: 15
     Value: 500
   - StatID: 17
-    Value: 0
+    Value: 2
+  - StatID: 18
+    Value: 2
   SanPenalties: []
   TargetingLogic: 0
   MovementLogic: 0

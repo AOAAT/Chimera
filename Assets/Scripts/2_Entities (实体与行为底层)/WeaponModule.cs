@@ -21,11 +21,9 @@ public class WeaponModule : MonoBehaviour
     private Transform muzzlePoint;
     private Animator myAnimator;
 
-    // 👇【核心修复】：目标粘性与扫描优化
     private Transform lockedTarget;
     private float scanTimer = 0f;
-    private const float SCAN_INTERVAL = 0.4f; // 每 0.4 秒才准扫描一次新目标
-    private const float RANGE_BUFFER = 1.15f; // 锁定后，敌人跑出 115% 射程才会断开锁定
+    private const float SCAN_INTERVAL = 0.3f;
 
     public void Initialize(RuntimeWeapon data, RuntimeChimeraData owner, Vector2 centerOffset, Transform root)
     {
@@ -38,7 +36,9 @@ public class WeaponModule : MonoBehaviour
 
         GameObject muzzleObj = new GameObject("MuzzlePoint");
         muzzleObj.transform.SetParent(actualHinge, false);
-        muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset * CombatSandbox.GetDist(1f);
+
+        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
+        muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset * distMult;
         muzzlePoint = muzzleObj.transform;
 
         currentState = WeaponState.Idle;
@@ -50,56 +50,99 @@ public class WeaponModule : MonoBehaviour
         if (weaponData == null || actualHinge == null) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
 
-        // 1. 智能索敌（带粘性，防止鬼畜）
         UpdateTargetSelection();
 
-        // 2. 行为表现
         if (lockedTarget != null)
         {
-            // 指向锁定目标
             Vector3 aimDir = lockedTarget.position - actualHinge.position;
             aimAngle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
-
-            // 平滑转向（可选）：让转向更有机械质感
             actualHinge.rotation = Quaternion.RotateTowards(actualHinge.rotation, Quaternion.AngleAxis(aimAngle, Vector3.forward), 720f * Time.deltaTime);
 
             if (currentState == WeaponState.Idle && stateTimer <= 0f)
             {
-                InitiateAttack(lockedTarget);
+                // 只有在射程内才启动攻击逻辑
+                if (IsTargetInRange(lockedTarget))
+                {
+                    InitiateAttack(lockedTarget);
+                }
             }
         }
 
+        // 状态机计时
         if (stateTimer > 0f) stateTimer -= Time.deltaTime;
         if (scanTimer > 0f) scanTimer -= Time.deltaTime;
+
+        HandleStateTransitions();
+    }
+
+    private void HandleStateTransitions()
+    {
+        if (stateTimer <= 0f)
+        {
+            switch (currentState)
+            {
+                case WeaponState.Windup:
+                    currentState = WeaponState.Strike;
+                    stateTimer = t_Strike;
+                    // 如果是近战，动画可以播放下劈
+                    break;
+                case WeaponState.Strike:
+                    FirePayload(lockedTarget);
+                    currentState = WeaponState.Recovery;
+                    stateTimer = t_Recovery;
+                    break;
+                case WeaponState.Recovery:
+                    currentState = WeaponState.Idle;
+                    stateTimer = 0f;
+                    break;
+            }
+        }
+
+        // 动作表现插值 (仅近战有效)
+        if (weaponData.DeliveryType == WeaponDeliveryType.Melee && currentState != WeaponState.Idle)
+        {
+            UpdateMeleeAnimation();
+        }
+    }
+
+    private bool IsTargetInRange(Transform target)
+    {
+        float distMult = CombatSandbox.GetDist(1f);
+        float maxR = GetFinalWeaponStat(StatType.MaxRange) * distMult;
+
+        Collider2D targetCol = target.GetComponentInChildren<Collider2D>();
+        if (targetCol == null) return Vector3.Distance(muzzlePoint.position, target.position) <= maxR;
+
+        // 👇【核心修复】：计算枪口到敌人碰撞体“表面”的真实距离
+        float surfaceDist = Vector2.Distance(muzzlePoint.position, targetCol.ClosestPoint(muzzlePoint.position));
+        return surfaceDist <= maxR;
     }
 
     private void UpdateTargetSelection()
     {
-        float maxRange = GetFinalWeaponStat(StatType.MaxRange) * (CombatSandbox.Instance?.DistanceMultiplier ?? 1f);
+        float distMult = CombatSandbox.GetDist(1f);
+        float maxRange = GetFinalWeaponStat(StatType.MaxRange) * distMult;
 
-        // --- 逻辑 A：已有目标，检查是否需要断开 ---
+        // 如果是近战，扫描半径给 1.5 米的宽限，确保能先锁定并走向敌人
+        float scanRange = weaponData.DeliveryType == WeaponDeliveryType.Melee ? maxRange + 1.5f : maxRange;
+
         if (lockedTarget != null)
         {
             DamageReceiver dr = lockedTarget.GetComponentInParent<DamageReceiver>();
-            float dist = Vector3.Distance(transform.position, lockedTarget.position);
-
-            // 如果目标没死，且没跑得太远（给个 15% 的缓冲区），就死磕它，不许换人！
-            if (dr != null && dr.CurrentHP > 0 && dist <= maxRange * RANGE_BUFFER)
+            if (dr == null || dr.CurrentHP <= 0 || !IsTargetInRange(lockedTarget))
             {
-                return; // 继续锁定，直接跳过后面的扫描
+                // 如果跑得太远（超过扫描范围），才丢失目标
+                if (lockedTarget != null && Vector3.Distance(transform.position, lockedTarget.position) > scanRange * 1.2f)
+                    lockedTarget = null;
             }
-            else
-            {
-                lockedTarget = null; // 目标丢失
-            }
+            else return;
         }
 
-        // --- 逻辑 B：没有目标，或者旧目标跑了，定时扫描全场 ---
         if (scanTimer <= 0f)
         {
             scanTimer = SCAN_INTERVAL;
             int mask = LayerMask.GetMask("Enemy_Hitbox");
-            Collider2D hit = Physics2D.OverlapCircle(transform.position, maxRange, mask);
+            Collider2D hit = Physics2D.OverlapCircle(transform.position, scanRange, mask);
             if (hit != null) lockedTarget = hit.transform;
         }
     }
@@ -109,12 +152,47 @@ public class WeaponModule : MonoBehaviour
         float atkSpeed = GetFinalWeaponStat(StatType.AttackSpeed);
         totalCooldown = GameFormulas.CalcCooldown(atkSpeed);
 
-        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged) { FirePayload(target); stateTimer = totalCooldown; return; }
+        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
+        {
+            FirePayload(target);
+            stateTimer = totalCooldown;
+            return;
+        }
 
+        // 近战三段式切分
         t_Windup = totalCooldown * weaponData.SourceSO.WindupTimeRatio;
         t_Strike = totalCooldown * weaponData.SourceSO.StrikeTimeRatio;
         t_Recovery = totalCooldown - t_Windup - t_Strike;
-        currentState = WeaponState.Windup; stateTimer = t_Windup;
+
+        rot_Base = Quaternion.AngleAxis(aimAngle, Vector3.forward);
+        rot_Windup = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.WindupAngle);
+        rot_Strike = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.StrikeAngle);
+
+        currentState = WeaponState.Windup;
+        stateTimer = t_Windup;
+
+        if (myAnimator != null) myAnimator.SetTrigger("Windup");
+    }
+
+    private void UpdateMeleeAnimation()
+    {
+        // 简单的角度插值，模拟挥砍动作
+        float progress = 0;
+        if (currentState == WeaponState.Windup)
+        {
+            progress = 1f - (stateTimer / t_Windup);
+            actualHinge.rotation = Quaternion.Slerp(rot_Base, rot_Windup, progress);
+        }
+        else if (currentState == WeaponState.Strike)
+        {
+            progress = 1f - (stateTimer / t_Strike);
+            actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, progress);
+        }
+        else if (currentState == WeaponState.Recovery)
+        {
+            progress = 1f - (stateTimer / t_Recovery);
+            actualHinge.rotation = Quaternion.Slerp(rot_Strike, rot_Base, progress);
+        }
     }
 
     private void FirePayload(Transform target)
@@ -128,7 +206,7 @@ public class WeaponModule : MonoBehaviour
 
         ECAContext context = new ECAContext
         {
-            ImpactPoint = muzzlePoint.position,
+            ImpactPoint = (weaponData.DeliveryType == WeaponDeliveryType.Melee) ? target.position : muzzlePoint.position,
             PrimaryTarget = target,
             BaseDamage = finalDmg,
             SourceWeapon = weaponData,
@@ -146,15 +224,11 @@ public class WeaponModule : MonoBehaviour
         {
             GameObject projObj = SimplePool.Spawn(weaponData.ProjectilePrefab, muzzlePoint.position, actualHinge.rotation);
             Projectile pScript = projObj.GetComponent<Projectile>();
-            if (pScript != null)
-            {
-                // 参数顺序：目标, 伤害, 武器, 玩家黑盒, 自身, 是否怪弹, 是否暴击, 代际, 是否奶弹
-                pScript.Fire(target, context.BaseDamage, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
-            }
+            if (pScript != null) pScript.Fire(target, context.BaseDamage, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
         }
         else
         {
-            context.ImpactPoint = target.position;
+            // 近战直接执行命中效果
             if (weaponData.OnHitActions != null) foreach (var a in weaponData.OnHitActions) a.Execute(context);
             if (ownerData != null && ownerData.GlobalOnHitActions != null) foreach (var a in ownerData.GlobalOnHitActions) a.Execute(context);
         }
