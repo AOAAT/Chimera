@@ -7829,7 +7829,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &923019976
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7846,11 +7846,16 @@ MonoBehaviour:
   GlobalVisualScale: 1
   EquippedComponents:
   - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
   - {fileID: 0}
   - {fileID: 0}
-  previewObjects: []
+  previewObjects:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!212 &923019977
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -7933,18 +7938,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
   Final_MaxHP: 100
-  Final_MaxAP: 200
+  Final_MaxAP: 400
   Final_TotalPowerCost: 0
-  Final_TotalMass: 0
+  Final_TotalMass: 5
   Final_TotalEnginePower: 0
   EquippedWeapons:
   - WeaponName: "\u5F15\u529B\u573A"
     DeliveryType: 1
     Stats:
+    - StatID: 8
+      Value: 50
+    - StatID: 9
+      Value: 0
     - StatID: 6
       Value: 0
-    - StatID: 9
-      Value: 50
     - StatID: 7
       Value: 0
     - StatID: 10
@@ -13424,7 +13431,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -15098,6 +15105,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
   - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
   - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
+  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15117,6 +15125,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
   - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
   - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
+  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0
