@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
+  m_Name: "WPN2_\u8F6E\u80CE\u53D1\u5C04\u5668"
+  m_EditorClassIdentifier: 
+  ComponentBaseID: WPN_002
+  ComponentName: "\u8F6E\u80CE\u53D1\u5C04\u5668"
+  Description: "\u8FD9\u6B3E\u6B66\u5668\u6700\u521D\u8BDE\u751F\u4E8E\u707E\u53D8\u521D\u671F\u7684\u5E9F\u54C1\u56DE\u6536\u7AD9\u3002\u8001\u9A6C\u4E01\u53D1\u660E\u4E86\u5B83\uFF0C\u5E76\u6210\u529F\u7528\u5B83\u5728\u672A\u6765\u7684\u4E09\u4E2A\u6708\u91CC\u4FDD\u536B\u4E86\u81EA\u5DF1\u7684\u5783\u573E\u573A\uFF0C\u76F4\u5230\u6551\u63F4\u961F\u7684\u5230\u6765\u3002"
+  ComponentIcon: {fileID: 21300000, guid: 28411d912c3d99c4f8465b89d0e586fc, type: 3}
+  Type: 1
+  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
+  AnimController: {fileID: 0}
+  MuzzleOffset: {x: 0, y: 0}
+  MacroCategory: 0
+  BaseSubTags: 
+  MinDropLevel: 1
+  LevelMatrix:
+  - Level: 1
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 0
+    - StatID: 6
+      Value: 10
+    - StatID: 7
+      Value: 10
+    - StatID: 8
+      Value: 50
+    - StatID: 9
+      Value: 0
+    - StatID: 14
+      Value: 100
+    - StatID: 10
+      Value: 100
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    - {fileID: 11400000, guid: c1a36af09224097469f6870cdea61f87, type: 2}
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
+  AnchorOffset: {x: -0.13543439, y: -0.12485361}
+  BaseRotationOffset: 90
+  VisualScaleMultiplier: 1
+  TargetingLogic: 0
+  MovementLogic: 0
+  SafeDodgeDistance: 8

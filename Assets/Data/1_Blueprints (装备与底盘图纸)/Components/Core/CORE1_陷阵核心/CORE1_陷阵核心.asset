@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
+  m_Name: "CORE1_\u9677\u9635\u6838\u5FC3"
+  m_EditorClassIdentifier: 
+  ComponentBaseID: CORE_001
+  ComponentName: "\u9677\u9635\u6838\u5FC3"
+  Description: "\u539F\u672C\u8BE5\u6838\u5FC3\u88AB\u8BBE\u5B9A\u4E3A\u6B7B\u6218\u4E0D\u9000\uFF0C\u76F4\u5230\u667A\u80FD\u673A\u68B0\u5728\u8840\u8089\u8BC5\u5492\u7684\u5F71\u54CD\u4E0B\u4E5F\u5F00\u59CB\u611F\u53D7\u5230\u75BC\u75DB\u2026\u2026"
+  ComponentIcon: {fileID: 21300000, guid: 8102df1c47bbde64898452736043cf9d, type: 3}
+  Type: 0
+  TacticalRoleDesc: "\u5C31\u8FD1\u7D22\u654C\uFF0C\u706B\u529B\u4F18\u5148"
+  AnimController: {fileID: 0}
+  MuzzleOffset: {x: 0, y: 0}
+  MacroCategory: 0
+  BaseSubTags: 
+  MinDropLevel: 1
+  LevelMatrix:
+  - Level: 1
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 1
+      Value: 100
+    - StatID: 3
+      Value: 3
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 1
+      SkillName: "\u6218\u672F\u64A4\u9000"
+      SkillIcon: {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}
+      CPCost: 3
+      Cooldown: 10
+      OnSkillCastActions:
+      - {fileID: 11400000, guid: 4e2314065b660784eb7bd9a21067f00f, type: 2}
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 0}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
+  AnchorOffset: {x: -0.012473935, y: -0.1668223}
+  BaseRotationOffset: 0
+  VisualScaleMultiplier: 1
+  TargetingLogic: 0
+  MovementLogic: 0
+  SafeDodgeDistance: 0

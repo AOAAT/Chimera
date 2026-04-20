@@ -1,5 +1,4 @@
-﻿// --- START OF FILE ChimeraAIController.cs ---
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
 
 public class ChimeraAIController : MonoBehaviour
@@ -18,9 +17,10 @@ public class ChimeraAIController : MonoBehaviour
     public bool isDashing = false;
     private float dashTimer = 0f;
 
-
-    private float maxWeaponRange = 0f;
-    private float minWeaponRange = 0f;
+    // AI 走位核心阈值
+    private float maxWeaponRange = 0f;      // 所有武器中最远的射程 (用于生存模式)
+    private float minWeaponRange = 0f;      // 所有武器中最大的最小射程 (死角判定)
+    private float optimalFireRange = 0f;    // 最短的那把武器的最大射程 (用于火力模式)
 
     public void Initialize(RuntimeChimeraData data)
     {
@@ -28,7 +28,6 @@ public class ChimeraAIController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         if (rb != null) rb.drag = 5f;
 
-        // 👇 监听 Buff 变化事件！
         myBuffMgr = GetComponent<BuffManager>();
         if (myBuffMgr != null) myBuffMgr.OnBuffsChanged += RecalculateSpeedAndRanges;
 
@@ -40,13 +39,13 @@ public class ChimeraAIController : MonoBehaviour
         if (myBuffMgr != null) myBuffMgr.OnBuffsChanged -= RecalculateSpeedAndRanges;
     }
 
-    // 👇【核心新增】：每次增减 Buff，重新算一遍自己的面板属性！
-    private void RecalculateSpeedAndRanges()
+    public void RecalculateSpeedAndRanges()
     {
+        if (runtimeData == null) return;
+
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
 
-        // 抓取并叠加 Buff 里增加的引擎马力 (EnginePower)
         float currentEnginePower = runtimeData.TotalEnginePower;
         if (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.EnginePower))
         {
@@ -55,25 +54,37 @@ public class ChimeraAIController : MonoBehaviour
 
         CurrentSpeed = GameFormulas.CalcMoveSpeed(currentEnginePower, runtimeData.TotalMass, speedMult);
 
+        // --- 核心逻辑：计算 AI 控距阈值 ---
         maxWeaponRange = 0f;
-        minWeaponRange = float.MaxValue;
+        minWeaponRange = 0f;
+        optimalFireRange = float.MaxValue;
 
-        // 这里也粗略地叠加上武器射程 Buff，决定机甲要站在多远的地方
         float bonusMaxRange = (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) ? myBuffMgr.BuffStatModifiers[StatType.MaxRange] : 0f;
         float bonusMinRange = (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) ? myBuffMgr.BuffStatModifiers[StatType.MinRange] : 0f;
 
-        foreach (var wpn in runtimeData.EquippedWeapons)
+        if (runtimeData.EquippedWeapons.Count == 0)
         {
-            float maxR = (wpn.GetStat(StatType.MaxRange) + bonusMaxRange) * distMult;
-            float minR = (wpn.GetStat(StatType.MinRange) + bonusMinRange) * distMult;
-            if (maxR > maxWeaponRange) maxWeaponRange = maxR;
-            if (minR < minWeaponRange) minWeaponRange = minR;
+            optimalFireRange = 1.5f;
+        }
+        else
+        {
+            foreach (var wpn in runtimeData.EquippedWeapons)
+            {
+                float rawMax = wpn.GetStat(StatType.MaxRange) + bonusMaxRange;
+                float rawMin = wpn.GetStat(StatType.MinRange) + bonusMinRange;
+
+                if (rawMax > maxWeaponRange) maxWeaponRange = rawMax;
+                if (rawMin > minWeaponRange) minWeaponRange = rawMin;
+                if (rawMax < optimalFireRange) optimalFireRange = rawMax;
+            }
         }
 
-        if (minWeaponRange == float.MaxValue) minWeaponRange = 1.5f * distMult;
-        else if (minWeaponRange < 1.5f * distMult) minWeaponRange = 1.5f * distMult;
-        if (maxWeaponRange < minWeaponRange) maxWeaponRange = minWeaponRange;
-        Debug.Log($"<color=#00FFFF>【机甲动力底盘】</color> [{runtimeData.UnitName}] 总质量(Mass): <color=white>{runtimeData.TotalMass:F1}</color> | 引擎总出力: <color=white>{currentEnginePower:F1}</color> ===> 最终实际移速: <color=#00FF00>{CurrentSpeed:F2} m/s</color>");
+        // 应用度量衡缩放
+        maxWeaponRange *= distMult;
+        minWeaponRange *= distMult;
+        optimalFireRange *= distMult;
+
+        if (optimalFireRange < minWeaponRange) optimalFireRange = minWeaponRange + 0.5f;
     }
 
     private void Update()
@@ -81,22 +92,32 @@ public class ChimeraAIController : MonoBehaviour
         if (runtimeData == null) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
-            if (rb != null) rb.velocity = Vector2.zero; return;
+            if (rb != null) rb.velocity = Vector2.zero;
+            return;
         }
 
         // 处理受击硬直
-        if (isStaggered) { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; } return; }
+        if (isStaggered)
+        {
+            staggerTimer -= Time.deltaTime;
+            if (staggerTimer <= 0)
+            {
+                isStaggered = false;
+                rb.drag = 5f;
+            }
+            return;
+        }
 
-        // 👇【新增】：处理冲刺状态 (冲刺期间无视常规走位！)
+        // 处理冲刺状态
         if (isDashing)
         {
             dashTimer -= Time.deltaTime;
             if (dashTimer <= 0)
             {
                 isDashing = false;
-                rb.drag = 5f; // 冲刺结束，恢复刹车阻力
+                rb.drag = 5f;
             }
-            return; // 冲刺期间，直接 return，不要执行下面的 HandleMovement！
+            return;
         }
 
         FindTarget();
@@ -120,9 +141,12 @@ public class ChimeraAIController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (currentTarget == null) { if (rb != null) rb.velocity = Vector2.zero; return; }
+        if (currentTarget == null)
+        {
+            if (rb != null) rb.velocity = Vector2.zero;
+            return;
+        }
 
-        // AI覆写由 BuffManager 决定
         MovementStrategy activeLogic = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
         float activeDodgeDist = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
 
@@ -130,35 +154,60 @@ public class ChimeraAIController : MonoBehaviour
         Vector3 dirToTarget = (currentTarget.position - logicCenter).normalized;
         float dist = Vector3.Distance(logicCenter, currentTarget.position);
 
-        Collider2D[] enemyCols = currentTarget.GetComponentsInChildren<Collider2D>();
-        Collider2D targetCol = null;
-        foreach (var c in enemyCols) { if (c.isTrigger) { targetCol = c; break; } }
-        if (targetCol == null && enemyCols.Length > 0) targetCol = enemyCols[0];
+        Collider2D targetCol = currentTarget.GetComponentInChildren<Collider2D>();
         if (targetCol != null) dist = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
 
         Vector2 targetVelocity = Vector2.zero;
 
-        if (activeLogic == MovementStrategy.Dodge && dist < activeDodgeDist) targetVelocity = -dirToTarget * CurrentSpeed;
-        else if (activeLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange) targetVelocity = dirToTarget * CurrentSpeed;
-        else if (activeLogic == MovementStrategy.Active_Firepower && dist > minWeaponRange) targetVelocity = dirToTarget * CurrentSpeed;
+        // --- 基于“最优火力窗口”的决策逻辑 ---
+        if (activeLogic == MovementStrategy.Dodge && dist < activeDodgeDist)
+        {
+            targetVelocity = -dirToTarget * CurrentSpeed;
+        }
+        else if (activeLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
+        {
+            targetVelocity = dirToTarget * CurrentSpeed;
+        }
+        else if (activeLogic == MovementStrategy.Active_Firepower)
+        {
+            if (dist > optimalFireRange)
+            {
+                targetVelocity = dirToTarget * CurrentSpeed;
+            }
+            else if (dist < minWeaponRange)
+            {
+                targetVelocity = -dirToTarget * (CurrentSpeed * 0.5f);
+            }
+            else
+            {
+                // 已进入所有武器的最大射程覆盖区，且不在死角，原地开火
+                targetVelocity = Vector2.zero;
+            }
+        }
 
         if (rb != null) rb.velocity = targetVelocity;
     }
+
+    // ==========================================
+    // 物理接口区 (ECA 积木和碰撞引擎调用)
+    // ==========================================
 
     public void ApplyImpulse(Vector2 dir, float impulse)
     {
         float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
         float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
+
         if (stunTime <= 0f) return;
-        isStaggered = true; staggerTimer = stunTime;
+
+        isStaggered = true;
+        staggerTimer = stunTime;
+
         float clampedDeltaV = Mathf.Clamp(impulse / mass, 0f, 20f);
-        rb.drag = 5f; rb.velocity = Vector2.zero;
+        rb.drag = 5f;
+        rb.velocity = Vector2.zero;
         rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse);
     }
 
-    // ==========================================
-    // 👇【核心升级】：大运流！真实的物理碰撞判定
-    // ==========================================
     private void OnCollisionEnter2D(Collision2D col)
     {
         if (runtimeData == null || rb == null) return;
@@ -166,134 +215,64 @@ public class ChimeraAIController : MonoBehaviour
         Rigidbody2D targetRb = col.gameObject.GetComponent<Rigidbody2D>();
         if (targetRb == null) return;
 
-        // 1. 获取双方碰撞瞬间的“相对速度” (Relative Velocity)
-        // 比如机甲速度 10，怪物速度 -10 (对撞)，相对速度就是 20！
         float relVelocity = col.relativeVelocity.magnitude;
+        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
 
-        // 2. 设定“起撞阈值”：只有相对速度超过 5.0，才算作有效撞击，防止平时走路挤在一起疯狂扣血。
-        if (relVelocity > 5.0f)
+        if (relVelocity > 5.0f * speedMult)
         {
             DamageReceiver victim = col.gameObject.GetComponentInParent<DamageReceiver>();
-
-            // 撞到了敌人！
             if (victim != null && victim.isEnemy)
             {
                 EnemyBrain enemyAI = victim.GetComponent<EnemyBrain>();
                 float enemyMass = enemyAI != null && enemyAI.MyData != null ? enemyAI.MyData.GetStat(StatType.Mass) : 5f;
-
-                // 3. 呼叫全局动能公式！(传入自身质量、敌人质量、相对速度)
                 float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, enemyMass, relVelocity, 2.0f);
 
                 if (rawDamage > 0)
                 {
-                    // 4. 谁受的伤更重？(重车撞轻车，轻车吃全额伤害，重车只吃少量反弹伤害)
-                    // 分配比例：对方越轻，我方受到的反弹伤害越小。
                     float myDamageShare = enemyMass / (runtimeData.TotalMass + enemyMass);
                     float enemyDamageShare = runtimeData.TotalMass / (runtimeData.TotalMass + enemyMass);
 
-                    // 给怪物造成碾压伤害
                     victim.TakeDamage(rawDamage * enemyDamageShare, runtimeData.UnitName + " (泥头车碾压)");
-                    if (rawDamage > 30f || relVelocity > 10f)
+
+                    // 触发顿挫感 (Hit Stop)
+                    if (rawDamage > 30f || relVelocity > 10f * speedMult)
                     {
-                        // 伤害越高，停顿时间稍微长那么一点点 (0.05s ~ 0.12s)
                         float freezeTime = Mathf.Clamp(rawDamage / 1000f + 0.05f, 0.05f, 0.12f);
-
-                        if (GameFeelManager.Instance != null)
-                        {
-                            GameFeelManager.Instance.RequestHitStop(freezeTime, 0.01f);
-                        }
-
-                        // 同时配合镜头震动，质感瞬间爆炸
-                        if (ScreenEffectManager.Instance != null)
-                        {
-                            ScreenEffectManager.Instance.TriggerShake(rawDamage / 200f, 0.15f);
-                        }
+                        if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(freezeTime, 0.01f);
+                        if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(rawDamage / 200f, 0.15f);
                     }
-                    // 给自己造成少量的反作用力结构损伤 (如果你觉得玩家撞人自己不该掉血，可以把这行删掉)
+
                     DamageReceiver myReceiver = GetComponent<DamageReceiver>();
                     if (myReceiver != null) myReceiver.TakeDamage(rawDamage * myDamageShare, "撞击反作用力");
-
-                    // 5. 视角震动反馈 (撞得越狠，震得越厉害)
-                    if (ScreenEffectManager.Instance != null)
-                    {
-                        ScreenEffectManager.Instance.TriggerShake(Mathf.Clamp(rawDamage / 100f, 0.1f, 0.5f), 0.15f);
-                    }
-
-                    Debug.Log($"<color=#FFD700>【大运流】</color> 相对速度 {relVelocity:F1}！机甲(M:{runtimeData.TotalMass}) 撞击 怪物(M:{enemyMass})！怪物承受 {rawDamage * enemyDamageShare:F0} 伤害，机甲承受 {rawDamage * myDamageShare:F0} 反噬！");
                 }
             }
         }
     }
 
-    // 👇【新增】：提供给 ECA 积木调用的“主动冲刺”接口！
     public void ExecuteDash(Vector2 direction, float speedMultiplier, float duration)
     {
         isDashing = true;
         dashTimer = duration;
-
-        // 冲刺期间极大地降低空气阻力，让它像炮弹一样滑出去！
         rb.drag = 0.5f;
-
-        // 瞬间赋予极高的物理速度 (基础移速 * 冲刺倍率)
         rb.velocity = direction.normalized * (CurrentSpeed * speedMultiplier);
     }
 
-    // ==========================================
-    // 👇【核心修复】：实时绘制真实的武器射程圈！
-    // ==========================================
     private void OnDrawGizmos()
     {
-        if (runtimeData == null || runtimeData.EquippedWeapons == null) return;
+        if (runtimeData == null) return;
 
-        // 引入全局度量衡系数
-        float distMult = 1f;
-        if (Application.isPlaying && CombatSandbox.Instance != null)
-        {
-            distMult = CombatSandbox.Instance.DistanceMultiplier;
-        }
+        Vector3 logicCenter = Application.isPlaying ? transform.TransformPoint(runtimeData.LogicCenterOffset) : transform.position;
 
-        // 机甲的绝对中心逻辑点
-        Vector3 logicCenter = transform.position;
-        if (Application.isPlaying)
-        {
-            logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
-        }
+        // 画出最优火力线 (黄色)
+        Gizmos.color = new Color(1f, 0.9f, 0f, 0.4f);
+        Gizmos.DrawWireSphere(logicCenter, optimalFireRange);
 
-        // 读取 Buff 加成的临时射程
-        BuffManager buffMgr = GetComponent<BuffManager>();
-        float bonusMaxRange = (buffMgr != null && buffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) ? buffMgr.BuffStatModifiers[StatType.MaxRange] : 0f;
-        float bonusMinRange = (buffMgr != null && buffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) ? buffMgr.BuffStatModifiers[StatType.MinRange] : 0f;
+        // 画出最远射程边缘 (蓝色)
+        Gizmos.color = new Color(0f, 0.5f, 1f, 0.1f);
+        Gizmos.DrawWireSphere(logicCenter, maxWeaponRange);
 
-        // 遍历所有装备的武器
-        foreach (var wpn in runtimeData.EquippedWeapons)
-        {
-            if (wpn == null) continue;
-
-            // 1. 画最大射程 (淡蓝色)
-            float maxR = (wpn.GetStat(StatType.MaxRange) + bonusMaxRange) * distMult;
-            if (maxR > 0f)
-            {
-                Gizmos.color = new Color(0f, 0.5f, 1f, 0.15f);
-                Gizmos.DrawWireSphere(logicCenter, maxR);
-            }
-
-            // 2. 画最小射程/射击死角 (淡红色)
-            float minR = (wpn.GetStat(StatType.MinRange) + bonusMinRange) * distMult;
-            if (minR > 0f)
-            {
-                Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
-                Gizmos.DrawWireSphere(logicCenter, minR);
-            }
-        }
-
-        // 3. 画当前 AI 决定的极限走位安全线 (绿色点状线/虚框参考)
-        MovementStrategy activeLogic = (buffMgr != null && buffMgr.HasAIOverride) ? buffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
-        float activeDodgeDist = (buffMgr != null && buffMgr.HasAIOverride) ? buffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
-
-        if (activeLogic == MovementStrategy.Dodge)
-        {
-            Gizmos.color = new Color(0f, 1f, 0f, 0.3f);
-            Gizmos.DrawWireSphere(logicCenter, activeDodgeDist * distMult);
-        }
+        // 画出死角边缘 (红色)
+        Gizmos.color = new Color(1f, 0f, 0f, 0.1f);
+        Gizmos.DrawWireSphere(logicCenter, minWeaponRange);
     }
 }

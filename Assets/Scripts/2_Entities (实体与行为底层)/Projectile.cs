@@ -1,5 +1,4 @@
-﻿// --- START OF FILE Projectile.cs ---
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
@@ -13,21 +12,23 @@ public class Projectile : MonoBehaviour
     private bool hasHit = false;
     private bool hitAllies = false;
 
-    [Header("=== 视觉穿透与延迟销毁 ===")]
+    [Header("=== 视觉表现 ===")]
     public bool EnableVisualPenetration = false;
     public float PostHitLingerTime = 0f;
 
-    // 👇【核心新增】：平滑制导系统！
     [Header("=== 弹道轨迹控制 ===")]
-    [Tooltip("是否开启平滑追踪？(如果不勾，就是生硬直线；勾了就是追踪导弹/平滑光束)")]
+    [Tooltip("是否开启追踪？(霰弹枪请在预制体或ECA中设为 false)")]
     public bool EnableHoming = true;
 
-    [Tooltip("每秒最大转向角度 (决定了光束/导弹拐弯的圆润程度。推荐：光束2000，导弹300)")]
+    [Tooltip("每秒最大转向角度 (仅在 EnableHoming 开启时有效)")]
     public float TurnSpeed = 1500f;
 
-    // 记录子弹当前的飞行方向 (单位向量)
+    // 子弹当前的物理飞行方向
     private Vector2 currentDirection;
 
+    // ==========================================
+    // 发射接口
+    // ==========================================
     public void Fire(Transform target, float damage, RuntimeWeapon data, bool isEnemy, bool isCrit, bool targetAllies = false)
     {
         this.target = target;
@@ -35,25 +36,43 @@ public class Projectile : MonoBehaviour
         this.weaponData = data;
         this.isEnemyFire = isEnemy;
         this.isCritical = isCrit;
-        this.hitAllies = targetAllies; // 记录是否是打队友的奶弹
+        this.hitAllies = targetAllies;
 
+        // 【度量衡修复】：应用全局速度缩放
+        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         this.speed = data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f;
         if (this.speed <= 0) this.speed = 10f;
-        if (CombatSandbox.Instance != null) this.speed *= CombatSandbox.Instance.SpeedMultiplier;
+        this.speed *= speedMult;
 
         gameObject.layer = LayerMask.NameToLayer("Projectile");
-        currentDirection = transform.right;
-    }
 
+        // 初始方向锁定为枪口当前的朝向 (transform.right)
+        currentDirection = transform.right;
+
+        // 安全销毁：防止子弹飞出世界后永不消失 (5秒射程保底)
+        Destroy(gameObject, 5f);
+    }
 
     private void Start()
     {
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
-        if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.isKinematic = true; }
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody2D>();
+            rb.gravityScale = 0;
+            rb.isKinematic = true;
+        }
 
         Collider2D col = GetComponent<Collider2D>();
-        if (col == null) { col = gameObject.AddComponent<CircleCollider2D>(); col.isTrigger = true; }
-        else col.isTrigger = true;
+        if (col == null)
+        {
+            col = gameObject.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+        }
+        else
+        {
+            col.isTrigger = true;
+        }
     }
 
     private void Update()
@@ -62,36 +81,21 @@ public class Projectile : MonoBehaviour
         {
             if (EnableVisualPenetration)
             {
-                // 穿透时，顺着最后的惯性方向继续飞
+                // 穿透模式下，继续顺着最后的方向飞
                 transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
             }
             return;
         }
 
-        if (target == null || !target.gameObject.activeInHierarchy)
+        // --- 弹道飞行逻辑 ---
+
+        // 情况 A：开启了追踪且目标存活
+        if (EnableHoming && target != null && target.gameObject.activeInHierarchy)
         {
-            Destroy(gameObject);
-            return;
-        }
-
-        Vector3 targetCenter = target.position;
-        Collider2D col = target.GetComponentInChildren<Collider2D>();
-        if (col != null) targetCenter = col.bounds.center;
-
-        // ==========================================
-        // 🧠 核心修复：弹道飞行逻辑重构
-        // ==========================================
-
-        if (EnableHoming)
-        {
-            // 1. 算出指向敌人的理想向量
+            Vector3 targetCenter = GetTargetCenter();
             Vector2 directionToTarget = (targetCenter - transform.position).normalized;
 
-            // 2. 算出当前方向和理想方向的角度差
-            float rotateAmount = Vector3.Cross(currentDirection, directionToTarget).z;
-
-            // 3. 限制最大转向角速度，让它“平滑”地扭过去！
-            // 这里用了一个小技巧：RotateTowards 能完美控制最大旋转角度
+            // 平滑转向计算
             currentDirection = Vector3.RotateTowards(
                 currentDirection,
                 directionToTarget,
@@ -99,25 +103,41 @@ public class Projectile : MonoBehaviour
                 0f
             ).normalized;
 
-            // 4. 更新子弹自身的旋转角度 (让贴图或长拖尾始终对准飞行方向)
+            // 同步图片旋转
             float angle = Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
-
-            // 5. 按照最终平滑过的方向向前飞行！
-            transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
         }
+        // 情况 B：直线飞行 (霰弹枪模式，或目标丢失)
         else
         {
-            // 如果不开启制导，就沿直线死板地飞 (适合普通机枪子弹)
-            currentDirection = (targetCenter - transform.position).normalized;
-            transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
+            // 保持发射瞬间的 currentDirection 匀速直线运动
+            // 无需旋转，因为发射时已经设置好了旋转角度
         }
 
-        // 碰撞判定保持不变
-        if (Vector3.Distance(transform.position, targetCenter) <= 0.2f)
+        // 应用位移
+        transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
+
+        // --- 命中判定逻辑 ---
+
+        // 如果有明确的目标，执行距离辅助判定（防穿模）
+        if (target != null && target.gameObject.activeInHierarchy)
         {
-            HitTarget();
+            // 【度量衡修复】：判定半径乘以全局距离缩放
+            float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
+            float hitThreshold = 0.2f * distMult;
+
+            if (Vector3.Distance(transform.position, GetTargetCenter()) <= hitThreshold)
+            {
+                HitTarget();
+            }
         }
+    }
+
+    private Vector3 GetTargetCenter()
+    {
+        if (target == null) return transform.position;
+        Collider2D col = target.GetComponentInChildren<Collider2D>();
+        return col != null ? col.bounds.center : target.position;
     }
 
     private void HitTarget()
@@ -155,20 +175,26 @@ public class Projectile : MonoBehaviour
         }
     }
 
+    // 在 Projectile.cs 内部
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
+
+        // 找到对方身上的血条组件
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
+
         if (receiver != null)
         {
-            // 如果是奶弹，必须打中同阵营；如果是子弹，必须打中不同阵营
+            // 1. 阵营判定：如果你是玩家射出的子弹，不能打玩家自己（除非是奶弹）
             bool isFriendly = (receiver.isEnemy == this.isEnemyFire);
+
+            // 如果是子弹打敌人，或者奶弹打队友
             if (isFriendly == hitAllies)
             {
+                // 👇【核心】：一旦撞击，立刻原地执行命中逻辑！
                 this.target = receiver.transform;
                 HitTarget();
             }
         }
     }
-
 }

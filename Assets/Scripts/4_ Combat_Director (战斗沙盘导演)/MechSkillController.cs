@@ -1,5 +1,4 @@
-﻿// --- START OF FILE MechSkillController.cs ---
-using UnityEngine;
+﻿using UnityEngine;
 
 public class MechSkillController : MonoBehaviour
 {
@@ -14,19 +13,7 @@ public class MechSkillController : MonoBehaviour
     {
         runtimeData = data;
         receiver = GetComponent<DamageReceiver>();
-
-        // 直接从黑盒里取！绝对安全！
         SkillConfig = data.CoreActiveSkill;
-
-        if (SkillConfig != null && SkillConfig.HasActiveSkill)
-        {
-            Debug.Log($"<color=#00FF00>[MechSkillController]</color> 机甲 {data.UnitName} 初始化主动技能成功：{SkillConfig.SkillName}");
-            CurrentCooldown = 0f;
-        }
-        else
-        {
-            Debug.Log($"<color=#888888>[MechSkillController]</color> 机甲 {data.UnitName} 没有任何主动技能配置。");
-        }
     }
 
     private void Update()
@@ -41,7 +28,6 @@ public class MechSkillController : MonoBehaviour
 
         if (GlobalCPManager.Instance != null && !GlobalCPManager.Instance.ModifyCP(-SkillConfig.CPCost))
         {
-            Debug.LogWarning($"【指令拒绝】CP 不足，需要 {SkillConfig.CPCost}！");
             return false;
         }
 
@@ -62,8 +48,7 @@ public class MechSkillController : MonoBehaviour
             if (context.ExecutionAborted) break;
         }
 
-        Debug.Log($"<color=#00FF00>【战术执行】</color> [{runtimeData.UnitName}] 释放了 [{SkillConfig.SkillName}]！");
-        return true;
+        return true; // 确保 return 之前没有多余逻辑
     }
 
     private Color originalColor = Color.clear;
@@ -74,6 +59,7 @@ public class MechSkillController : MonoBehaviour
         foreach (var sr in srs)
         {
             if (sr.gameObject.layer == LayerMask.NameToLayer("UI")) continue;
+            // 缓存原始颜色逻辑
             if (originalColor == Color.clear) originalColor = sr.color;
             sr.color = isHighlighted ? new Color(2f, 2f, 2f, 1f) : originalColor;
         }

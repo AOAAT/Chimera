@@ -2897,7 +2897,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_UiScaleMode: 0
-  m_ReferencePixelsPerUnit: 100
+  m_ReferencePixelsPerUnit: 400
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 800, y: 600}
   m_ScreenMatchMode: 0
@@ -7528,6 +7528,7 @@ MonoBehaviour:
   PreviewScale: 1
   SlotButtonSize: 45
   CircularSlotSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  UIConduitPrefab: {fileID: 0}
 --- !u!114 &857266333
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7844,9 +7845,9 @@ MonoBehaviour:
   TargetChassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   GlobalVisualScale: 1
   EquippedComponents:
+  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
   - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
+  - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   previewObjects: []
@@ -7932,24 +7933,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
   Final_MaxHP: 100
-  Final_MaxAP: 100
+  Final_MaxAP: 200
   Final_TotalPowerCost: 0
   Final_TotalMass: 0
   Final_TotalEnginePower: 0
   EquippedWeapons:
-  - WeaponName: "\u94FE\u952F"
+  - WeaponName: "\u9730\u5F39\u67AA"
     DeliveryType: 1
     Stats:
-    - StatID: 7
-      Value: 5
     - StatID: 6
       Value: 15
+    - StatID: 7
+      Value: 10
+    - StatID: 8
+      Value: 10
     - StatID: 9
       Value: 0
-    - StatID: 8
-      Value: 15
     - StatID: 10
+      Value: 100
+    - StatID: 11
+      Value: 0.3
+    - StatID: 14
       Value: 200
+    - StatID: 13
+      Value: 5
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -14772,9 +14779,9 @@ MonoBehaviour:
   HPText: {fileID: 1566858077}
   APText: {fileID: 392109553}
   PowerText: {fileID: 2147379717}
-  BlockText: {fileID: 0}
-  MassText: {fileID: 0}
-  SpeedText: {fileID: 0}
+  BlockText: {fileID: 1092946631}
+  MassText: {fileID: 1117232995}
+  SpeedText: {fileID: 1056145628}
   UnitVisualContainer: {fileID: 1776220425}
   PreviewScale: 1.2
 --- !u!114 &1417487727
@@ -15070,6 +15077,7 @@ MonoBehaviour:
   AllChassisDatabase:
   - {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   AllComponentDatabase:
+  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
@@ -15078,6 +15086,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
   - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
+  - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
+  - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
+  - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15088,6 +15099,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
   - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
+  - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
+  - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
+  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+  - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
+  - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22897,6 +22913,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 619394802}
+  - {fileID: 598666139}
   - {fileID: 1153547657}
   - {fileID: 1436878911}
   - {fileID: 240448475}
@@ -22906,7 +22923,6 @@ SceneRoots:
   - {fileID: 704089790691060775}
   - {fileID: 923019978}
   - {fileID: 2061521696}
-  - {fileID: 598666139}
   - {fileID: 406590257}
   - {fileID: 1502507815}
   - {fileID: 118723368}

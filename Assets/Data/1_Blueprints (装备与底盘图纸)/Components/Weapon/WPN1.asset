@@ -41,7 +41,7 @@ MonoBehaviour:
     - StatID: 10
       Value: 100
     - StatID: 14
-      Value: 200
+      Value: 300
     Mechanics: []
     OnFireActions: []
     OnHitActions:

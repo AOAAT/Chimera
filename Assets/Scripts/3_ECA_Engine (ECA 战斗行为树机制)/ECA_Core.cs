@@ -1,5 +1,5 @@
-﻿// --- START OF FILE ECA_Core.cs ---
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic; // 必须加这个
 
 public class ECAContext
 {
@@ -13,8 +13,10 @@ public class ECAContext
     public bool IsEnemyFire;
     public Transform SourceEntity;
 
-    // 👇【核心新增】：熔断开关！一旦有积木把它设为 true，后续积木立即停止！
     public bool ExecutionAborted = false;
+
+    // 👇【核心补全】：万能自定义状态字典，用于积木间通讯
+    public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
 }
 
 public abstract class ECAAction : ScriptableObject

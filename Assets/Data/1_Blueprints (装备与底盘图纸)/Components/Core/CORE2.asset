@@ -56,5 +56,5 @@ MonoBehaviour:
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
   TargetingLogic: 0
-  MovementLogic: 1
-  SafeDodgeDistance: 1
+  MovementLogic: 2
+  SafeDodgeDistance: 80
