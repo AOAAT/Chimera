@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ApplyImpulse", menuName = "Chimera Protocol/2. ECA 机制积木/物理 - 动能击退 (Apply Impulse)")]
+[CreateAssetMenu(fileName = "ApplyImpulse", menuName = "Chimera Protocol/2. ECA 机制积木/物理 - 动能击退 (Push)")]
 public class Action_ApplyImpulse : ECAAction
 {
     [Header("=== 物理打击参数 ===")]
@@ -11,28 +11,19 @@ public class Action_ApplyImpulse : ECAAction
     {
         if (context.PrimaryTarget == null) return;
 
-        // 1. 计算受力方向
-        Vector2 forceDir = (context.PrimaryTarget.position - context.ImpactPoint).normalized;
-        if (forceDir == Vector2.zero) forceDir = Random.insideUnitCircle.normalized;
+        // 👇【推力逻辑】：目标位置 - 来源位置 = 向外弹开
+        Vector2 pushDir = (Vector2)(context.PrimaryTarget.position - context.ImpactPoint).normalized;
 
-        // 【核心修复】：积木冲量必须乘以 SpeedMultiplier
-        // 因为 $v = at$，当我们缩放了速度（SpeedMultiplier），为了产生相同的位移占比，冲量也必须同步。
+        // 兜底：如果正好在同一坐标，给个随机方向
+        if (pushDir == Vector2.zero) pushDir = Random.insideUnitCircle.normalized;
+
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         float scaledImpulse = BaseImpulse * speedMult;
 
-        // 2. 尝试寻找大脑并施加打击
         EnemyBrain enemy = context.PrimaryTarget.GetComponentInParent<EnemyBrain>();
-        if (enemy != null)
-        {
-            enemy.ApplyImpulse(forceDir, scaledImpulse);
-            return;
-        }
+        if (enemy != null) enemy.ApplyImpulse(pushDir, scaledImpulse);
 
         ChimeraAIController player = context.PrimaryTarget.GetComponentInParent<ChimeraAIController>();
-        if (player != null)
-        {
-            player.ApplyImpulse(forceDir, scaledImpulse);
-            return;
-        }
+        if (player != null) player.ApplyImpulse(pushDir, scaledImpulse);
     }
 }

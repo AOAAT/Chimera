@@ -7847,7 +7847,7 @@ MonoBehaviour:
   EquippedComponents:
   - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
   - {fileID: 0}
-  - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
+  - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
   - {fileID: 0}
   - {fileID: 0}
   previewObjects: []
@@ -7912,7 +7912,7 @@ Transform:
   m_GameObject: {fileID: 923019975}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.73, y: 1.54, z: 0}
+  m_LocalPosition: {x: -63.9, y: -0.9, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -7938,25 +7938,23 @@ MonoBehaviour:
   Final_TotalMass: 0
   Final_TotalEnginePower: 0
   EquippedWeapons:
-  - WeaponName: "\u9730\u5F39\u67AA"
+  - WeaponName: "\u5F15\u529B\u573A"
     DeliveryType: 1
     Stats:
     - StatID: 6
-      Value: 15
-    - StatID: 7
-      Value: 10
-    - StatID: 8
-      Value: 10
+      Value: 0
     - StatID: 9
+      Value: 50
+    - StatID: 7
       Value: 0
     - StatID: 10
-      Value: 100
+      Value: 20
     - StatID: 11
-      Value: 0.3
+      Value: 0.2
     - StatID: 14
-      Value: 200
-    - StatID: 13
-      Value: 5
+      Value: 50
+    - StatID: 12
+      Value: 20
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -11075,6 +11073,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4872622684470426530, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707768737508080184, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707768737508080184, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
@@ -15085,10 +15091,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
-  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
   - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
+  - {fileID: 11400000, guid: 7a128084928c07d49b40c50781823912, type: 2}
+  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
+  - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
+  - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15100,10 +15109,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
   - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
   - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
-  - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+  - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
+  - {fileID: 11400000, guid: 7a128084928c07d49b40c50781823912, type: 2}
+  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
+  - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
+  - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17781,6 +17794,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4872622684470426530, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707768737508080184, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707768737508080184, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
@@ -22757,6 +22778,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 569280515538230462, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
       propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2898341747108257873, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
+      propertyPath: m_fontSizeMin
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4124028757352260589, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}

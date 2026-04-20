@@ -1,33 +1,60 @@
-﻿// --- START OF FILE Action_PullArea.cs ---
-using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 
-[CreateAssetMenu(fileName = "PullArea", menuName = "Chimera Protocol/2. ECA 机制积木/物理 - 黑洞牵引 (Blackhole)")]
+[CreateAssetMenu(fileName = "PullArea", menuName = "Chimera Protocol/2. ECA 机制积木/物理 - 引力坍缩 (Pull)")]
 public class Action_PullArea : ECAAction
 {
+    [Header("=== 引力配置 ===")]
     public float PullRadius = 8f;
-    public float PullForce = 800f; // 吸力极其巨大
+    [Tooltip("吸附力度。建议 600-1200")]
+    public float PullForce = 800f;
 
     public override void Execute(ECAContext context)
     {
-        float realRadius = PullRadius * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
+        // 1. 确定黑洞中心（子弹落点）
+        float realRadius = CombatSandbox.GetDist(PullRadius);
+        Vector3 center = context.ImpactPoint;
 
-        // 找到爆炸点周围所有的单位 (不分敌我，黑洞是无情的！)
-        var targets = FindObjectsOfType<DamageReceiver>()
-            .Where(r => r.CurrentHP > 0)
-            .Where(r => Vector3.Distance(context.ImpactPoint, r.transform.position) <= realRadius);
+        // 2. 寻找受害者
+        var allPotentials = CombatDirector.ActiveEnemies.Concat(CombatDirector.ActivePlayerUnits);
+
+        var targets = allPotentials
+            .Where(r => r != null && r.CurrentHP > 0)
+            .Where(r => Vector3.Distance(center, r.transform.position) <= realRadius);
 
         foreach (var t in targets)
         {
-            Vector2 pullDir = (context.ImpactPoint - t.transform.position).normalized;
+            // 不拉扯发射者自己，防止把自己吸飞
+            if (t.transform == context.SourceEntity) continue;
 
-            // 尝试呼叫它们的物理引擎！
+            // 👇【数学修正】：强制计算指向中心的向量
+            // 方向 = 中心点 - 敌人当前点
+            Vector2 pullDir = (Vector2)(center - t.transform.position);
+            float distance = pullDir.magnitude;
+
+            // 如果已经非常接近中心了，就不再加力，防止在中心点鬼畜抖动
+            if (distance < 0.2f) continue;
+
+            // 归一化方向
+            pullDir.Normalize();
+
+            // 尝试呼叫物理引擎
             EnemyBrain enemy = t.GetComponent<EnemyBrain>();
-            if (enemy != null) enemy.ApplyImpulse(pullDir, PullForce);
+            if (enemy != null)
+            {
+                // 传入向心力
+                enemy.ApplyImpulse(pullDir, PullForce);
+            }
 
-            // 如果连机甲都在范围内，机甲也会被吸过去！
             ChimeraAIController player = t.GetComponent<ChimeraAIController>();
-            if (player != null) player.ApplyImpulse(pullDir, PullForce);
+            if (player != null)
+            {
+                player.ApplyImpulse(pullDir, PullForce);
+            }
         }
+
+        // 视觉调试：紫色的十字星代表黑洞中心
+        Debug.DrawLine(center + Vector3.up, center + Vector3.down, Color.magenta, 0.5f);
+        Debug.DrawLine(center + Vector3.left, center + Vector3.right, Color.magenta, 0.5f);
     }
 }
