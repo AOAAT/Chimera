@@ -6,7 +6,10 @@ public class WeaponModule : MonoBehaviour
 {
     private enum WeaponState { Idle, Windup, Strike, Recovery }
     private WeaponState currentState = WeaponState.Idle;
+
     private RuntimeWeapon weaponData;
+    private RuntimeChimeraData ownerData; // 核心：记住是谁装的我
+
     private float totalCooldown = 0f;
     private float stateTimer = 0f;
     private float t_Windup, t_Strike, t_Recovery;
@@ -18,32 +21,26 @@ public class WeaponModule : MonoBehaviour
     private Transform muzzlePoint;
     private Animator myAnimator;
 
-    public List<Transform> CurrentTargets = new List<Transform>();
-
-    public void Initialize(RuntimeWeapon data, Vector2 centerOffset, Transform root)
+    public void Initialize(RuntimeWeapon data, RuntimeChimeraData owner, Vector2 centerOffset, Transform root)
     {
         weaponData = data;
+        ownerData = owner; // 存下主人黑盒
         logicCenterOffset = centerOffset;
         mechRoot = root;
+
         actualHinge = GetActualHinge();
         if (actualHinge.childCount > 0) myAnimator = actualHinge.GetChild(0).GetComponent<Animator>();
 
         GameObject muzzleObj = new GameObject("MuzzlePoint");
         muzzleObj.transform.SetParent(actualHinge, false);
 
-        // 【核心修复】：枪口偏移量必须乘以全局度量衡，否则缩放后子弹从胸口发射
+        // 【度量衡修复】：视觉枪口位置偏移
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
         muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset * distMult;
         muzzlePoint = muzzleObj.transform;
 
         currentState = WeaponState.Idle;
         stateTimer = 0f;
-    }
-
-    public Vector3 GetLogicCenter()
-    {
-        if (mechRoot != null) return mechRoot.TransformPoint(logicCenterOffset);
-        return transform.position;
     }
 
     private Transform GetActualHinge()
@@ -63,128 +60,99 @@ public class WeaponModule : MonoBehaviour
         return baseValue;
     }
 
-    private float GetMaxDistanceFromBounds(Vector2 center, Bounds bounds)
-    {
-        Vector2 min = bounds.min; Vector2 max = bounds.max;
-        float d1 = Vector2.SqrMagnitude(center - new Vector2(min.x, min.y));
-        float d2 = Vector2.SqrMagnitude(center - new Vector2(max.x, min.y));
-        float d3 = Vector2.SqrMagnitude(center - new Vector2(min.x, max.y));
-        float d4 = Vector2.SqrMagnitude(center - new Vector2(max.x, max.y));
-        return Mathf.Sqrt(Mathf.Max(d1, Mathf.Max(d2, Mathf.Max(d3, d4))));
-    }
-
-    private void FindTarget()
-    {
-        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
-        float maxRange = GetFinalWeaponStat(StatType.MaxRange) * distMult;
-        float minRange = GetFinalWeaponStat(StatType.MinRange) * distMult;
-        int maxLockCount = Mathf.Max((int)GetFinalWeaponStat(StatType.MultiShotCount), 1);
-        Vector3 center = GetLogicCenter();
-        DamageReceiver myReceiver = mechRoot.GetComponent<DamageReceiver>();
-        bool amIEnemy = (myReceiver != null && myReceiver.isEnemy);
-        int targetLayerMask = amIEnemy ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
-
-        Collider2D[] hits = Physics2D.OverlapCircleAll(center, maxRange, targetLayerMask);
-        CurrentTargets = hits
-            .Select(hit => new { Collider = hit, Receiver = hit.GetComponentInParent<DamageReceiver>() })
-            .Where(x => x.Receiver != null && x.Receiver.CurrentHP > 0)
-            .Where(x => GetMaxDistanceFromBounds(center, x.Collider.bounds) >= minRange)
-            .GroupBy(x => x.Receiver).Select(group => group.First())
-            .OrderBy(x => Vector2.Distance(center, x.Collider.ClosestPoint(center)))
-            .Take(maxLockCount).Select(x => x.Receiver.transform).ToList();
-    }
-
     private void Update()
     {
         if (weaponData == null || actualHinge == null) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
-        FindTarget();
-        Transform primaryTarget = (CurrentTargets.Count > 0) ? CurrentTargets[0] : null;
+
+        // 简化的索敌逻辑，保持与 AI 目标一致
+        Transform primaryTarget = FindPrimaryTarget();
 
         switch (currentState)
         {
             case WeaponState.Idle:
                 if (primaryTarget != null)
                 {
-                    Vector3 targetCenter = GetTargetCenter(primaryTarget);
-                    Vector3 aimDir = targetCenter - actualHinge.position;
+                    Vector3 aimDir = primaryTarget.position - actualHinge.position;
                     aimAngle = Mathf.Atan2(aimDir.y, aimDir.x) * Mathf.Rad2Deg;
                     actualHinge.rotation = Quaternion.AngleAxis(aimAngle, Vector3.forward);
-                    if (stateTimer <= 0f) InitiateAttack();
+                    if (stateTimer <= 0f) InitiateAttack(primaryTarget);
                 }
                 if (stateTimer > 0f) stateTimer -= Time.deltaTime;
                 break;
             case WeaponState.Windup:
                 stateTimer -= Time.deltaTime;
-                float windupProgress = 1f - (stateTimer / t_Windup);
-                actualHinge.rotation = Quaternion.Slerp(rot_Base, rot_Windup, windupProgress);
                 if (stateTimer <= 0f) { currentState = WeaponState.Strike; stateTimer = t_Strike; }
                 break;
             case WeaponState.Strike:
                 stateTimer -= Time.deltaTime;
-                float strikeProgress = 1f - (stateTimer / t_Strike);
-                actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, strikeProgress);
-                if (stateTimer <= 0f) { FirePayload(); currentState = WeaponState.Recovery; stateTimer = t_Recovery; }
+                if (stateTimer <= 0f) { FirePayload(primaryTarget); currentState = WeaponState.Recovery; stateTimer = t_Recovery; }
                 break;
             case WeaponState.Recovery:
                 stateTimer -= Time.deltaTime;
-                float recoveryProgress = 1f - (stateTimer / t_Recovery);
-                actualHinge.rotation = Quaternion.Slerp(rot_Strike, rot_Base, recoveryProgress);
                 if (stateTimer <= 0f) { currentState = WeaponState.Idle; stateTimer = 0f; }
                 break;
         }
     }
 
-    private void InitiateAttack()
+    private Transform FindPrimaryTarget()
+    {
+        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1.0f;
+        float maxRange = GetFinalWeaponStat(StatType.MaxRange) * distMult;
+        int mask = LayerMask.GetMask("Enemy_Hitbox");
+        Collider2D hit = Physics2D.OverlapCircle(transform.position, maxRange, mask);
+        return hit != null ? hit.transform : null;
+    }
+
+    private void InitiateAttack(Transform target)
     {
         float atkSpeed = GetFinalWeaponStat(StatType.AttackSpeed);
-        if (atkSpeed <= 0) atkSpeed = 100f;
         totalCooldown = GameFormulas.CalcCooldown(atkSpeed);
 
-        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged) { FirePayload(); stateTimer = totalCooldown; return; }
+        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged) { FirePayload(target); stateTimer = totalCooldown; return; }
+
         t_Windup = totalCooldown * weaponData.SourceSO.WindupTimeRatio;
         t_Strike = totalCooldown * weaponData.SourceSO.StrikeTimeRatio;
         t_Recovery = totalCooldown - t_Windup - t_Strike;
-        rot_Base = Quaternion.AngleAxis(aimAngle, Vector3.forward);
-        rot_Windup = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.WindupAngle);
-        rot_Strike = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.StrikeAngle);
         currentState = WeaponState.Windup; stateTimer = t_Windup;
-        if (myAnimator != null) myAnimator.SetTrigger("Windup");
     }
 
-    private void FirePayload()
+    private void FirePayload(Transform target)
     {
-        if (CurrentTargets.Count == 0) return;
+        if (target == null) return;
         if (myAnimator != null) myAnimator.SetTrigger("Fire");
-        float finalDmg = Random.Range(Mathf.Max(0f, GetFinalWeaponStat(StatType.MinDamage)), Mathf.Max(0f, GetFinalWeaponStat(StatType.MaxDamage)));
+
+        float finalDmg = Random.Range(GetFinalWeaponStat(StatType.MinDamage), GetFinalWeaponStat(StatType.MaxDamage));
         bool isCrit = Random.value <= (GetFinalWeaponStat(StatType.CriticalChance) + weaponData.BonusCriticalChance);
         if (isCrit) finalDmg *= 1.5f;
 
-        ECAContext fireContext = new ECAContext { ImpactPoint = muzzlePoint.position, PrimaryTarget = CurrentTargets[0], BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false, SourceEntity = mechRoot };
-        if (weaponData.OnFireActions != null) foreach (var action in weaponData.OnFireActions) if (action != null) { action.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
+        ECAContext context = new ECAContext { ImpactPoint = muzzlePoint.position, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, ChassisData = ownerData, IsCriticalHit = isCrit, IsEnemyFire = false, SourceEntity = mechRoot };
 
-        foreach (var target in CurrentTargets)
+        if (weaponData.OnFireActions != null)
         {
-            Vector3 visualTargetCenter = GetTargetCenter(target);
-            if (weaponData.DeliveryType == WeaponDeliveryType.Melee)
+            foreach (var a in weaponData.OnFireActions) { if (a != null) a.Execute(context); if (context.ExecutionAborted) return; }
+        }
+
+        if (ownerData != null && ownerData.GlobalOnFireActions != null)
+        {
+            foreach (var a in ownerData.GlobalOnFireActions) { if (a != null) a.Execute(context); if (context.ExecutionAborted) return; }
+        }
+
+        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
+        {
+            GameObject projObj = SimplePool.Spawn(weaponData.ProjectilePrefab, muzzlePoint.position, actualHinge.rotation);
+            Projectile pScript = projObj.GetComponent<Projectile>();
+            if (pScript != null)
             {
-                ECAContext hitContext = new ECAContext { ImpactPoint = visualTargetCenter, PrimaryTarget = target, BaseDamage = finalDmg, SourceWeapon = weaponData, IsCriticalHit = isCrit, IsEnemyFire = false, SourceEntity = mechRoot };
-                if (weaponData.OnHitActions != null) foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(hitContext);
+                // 👇【关键修复】：传入 mechRoot 作为 shooter
+                pScript.Fire(target, finalDmg, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
             }
-            else if (weaponData.DeliveryType == WeaponDeliveryType.Ranged && weaponData.ProjectilePrefab != null)
-            {
-                Vector3 bulletDir = visualTargetCenter - muzzlePoint.position;
-                float bulletAngle = Mathf.Atan2(bulletDir.y, bulletDir.x) * Mathf.Rad2Deg;
-                GameObject projObj = Instantiate(weaponData.ProjectilePrefab, muzzlePoint.position, Quaternion.AngleAxis(bulletAngle, Vector3.forward));
-                projObj.GetComponent<Projectile>().Fire(target, finalDmg, weaponData, false, isCrit);
-            }
+        }
+        else
+        {
+            if (weaponData.OnHitActions != null) foreach (var a in weaponData.OnHitActions) if (a != null) a.Execute(context);
+            if (ownerData != null && ownerData.GlobalOnHitActions != null) foreach (var a in ownerData.GlobalOnHitActions) if (a != null) a.Execute(context);
         }
     }
 
-    private Vector3 GetTargetCenter(Transform target)
-    {
-        if (target == null) return Vector3.zero;
-        Collider2D targetCol = target.GetComponentInChildren<Collider2D>();
-        return targetCol != null ? targetCol.bounds.center : target.position;
-    }
 }

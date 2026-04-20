@@ -49,8 +49,16 @@ public class RuntimeChimeraData
     // 存储本台机甲的主动技能
     public ActiveSkillConfig CoreActiveSkill;
     private Dictionary<StatType, float> cachedFlattenedStats = new Dictionary<StatType, float>();
+
+    public List<ECAAction> GlobalOnFireActions = new List<ECAAction>();
+    public List<ECAAction> GlobalOnHitActions = new List<ECAAction>();
+    public List<ECAAction> GlobalOnKillActions = new List<ECAAction>();
+
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
     {
+        GlobalOnFireActions.Clear();
+        GlobalOnHitActions.Clear();
+        GlobalOnKillActions.Clear();
         AllEquippedSOs.Clear();
         GlobalStats.Clear();
         Tags.Clear();
@@ -120,6 +128,18 @@ public class RuntimeChimeraData
 
                 if (levelData.Mechanics != null) GlobalMechanics.AddRange(levelData.Mechanics);
                 ProcessStats(levelData.Stats, false, null);
+            }
+        }
+        foreach (var compInstance in components)
+        {
+            if (compInstance == null) continue;
+            var levelData = compInstance.BaseData.GetLevelData(compInstance.CurrentLevel);
+
+            // 如果是辅助/核心等非武器组件，且配了 OnHit/OnFire，则注入全局池
+            if (compInstance.BaseData.Type != ComponentType.Weapon)
+            {
+                if (levelData.OnFireActions != null) GlobalOnFireActions.AddRange(levelData.OnFireActions);
+                if (levelData.OnHitActions != null) GlobalOnHitActions.AddRange(levelData.OnHitActions);
             }
         }
 
