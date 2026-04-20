@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
-  m_Name: "CORE2_\u7F38\u4E2D\u4E4B\u8111"
+  m_Name: "CORE3_\u9A6C\u5934"
   m_EditorClassIdentifier: 
-  ComponentBaseID: CORE_002
-  ComponentName: "\u7F38\u4E2D\u4E4B\u8111"
-  Description: "\u5728\u8425\u517B\u6DB2\u7684\u6ECB\u517B\u4E0E\u7535\u4FE1\u53F7\u7684\u523A\u6FC0\u4E0B\uFF0C\u8FD9\u9897\u5927\u8111\u81F3\u4ECA\u4ECD\u89C9\u5F97\u81EA\u5DF1\u751F\u6D3B\u5728\u66FE\u7ECF\u7684\u9EC4\u91D1\u65F6\u4EE3\u3002"
-  ComponentIcon: {fileID: 21300000, guid: c1001407cc5357e4781d0c3f06ced7a0, type: 3}
+  ComponentBaseID: CORE_003
+  ComponentName: "\u9A6C\u5934"
+  Description: "\u6211\u4F1A\u7ED9\u4ED6\u4E00\u4E2A\u65E0\u6CD5\u62D2\u7EDD\u7684\u6761\u4EF6\u3002"
+  ComponentIcon: {fileID: 21300000, guid: f20f08251c4a15f4ea83f456b746ba82, type: 3}
   Type: 0
-  TacticalRoleDesc: "\u751F\u5B58\u4F18\u5148\uFF0C\u5C31\u8FD1\u7D22\u654C"
+  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
@@ -27,17 +27,7 @@ MonoBehaviour:
   - Level: 1
     BasePrice: 0
     ScrapValue: 0
-    Stats:
-    - StatID: 4
-      Value: 0
-    - StatID: 0
-      Value: 0
-    - StatID: 1
-      Value: 0
-    - StatID: 3
-      Value: 0
-    - StatID: 3
-      Value: 0
+    Stats: []
     Mechanics: []
     OnFireActions: []
     OnHitActions: []
@@ -46,12 +36,12 @@ MonoBehaviour:
     SpecialMechanicDesc: 
     ActiveSkill:
       HasActiveSkill: 1
-      SkillName: "\u7F38\u4E2D\u4E4B\u8111"
-      SkillIcon: {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
-      CPCost: 2
-      Cooldown: 6
+      SkillName: "\u9A6C\u8D70\u65E5"
+      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+      CPCost: 3
+      Cooldown: 8
       OnSkillCastActions:
-      - {fileID: 11400000, guid: 57b2741638f76e54a8507f596b8cb853, type: 2}
+      - {fileID: 11400000, guid: b54cd9e6a5e9fee439560ae1565081d7, type: 2}
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45

@@ -287,12 +287,53 @@ public class ChimeraAIController : MonoBehaviour
         }
     }
 
+    // --- 请替换 ChimeraAIController.cs 中的 ExecuteDash 方法 ---
+
     public void ExecuteDash(Vector2 direction, float speedMultiplier, float duration)
     {
         isDashing = true;
         dashTimer = duration;
+
+        // 1. 计算预设的冲刺速度
+        float dashVelocityMagnitude = CurrentSpeed * speedMultiplier;
+        Vector2 dashVelocity = direction.normalized * dashVelocityMagnitude;
+
+        // 2. 👇【核心修复】：零距离接触检查 (Point-Blank Check)
+        // 在冲刺方向前方 1.0 米范围内探测敌人
+        float scanDist = CombatSandbox.GetDist(1.2f);
+        int mask = LayerMask.GetMask("Enemy_Hitbox");
+
+        // 扫出一个小圆圈
+        Collider2D[] instantHits = Physics2D.OverlapCircleAll(transform.position, scanDist, mask);
+
+        foreach (var hit in instantHits)
+        {
+            DamageReceiver victim = hit.GetComponentInParent<DamageReceiver>();
+            if (victim != null && victim.isEnemy)
+            {
+                // 如果已经在脸上了，直接手动调用伤害公式
+                // 此时相对速度直接取 dashVelocityMagnitude，因为是瞬间撞击
+                float enemyMass = hit.GetComponentInParent<EnemyBrain>()?.MyData.GetStat(StatType.Mass) ?? 5f;
+
+                float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, enemyMass, dashVelocityMagnitude, 2.0f);
+
+                if (rawDamage > 10f)
+                {
+                    Debug.Log($"<color=#FFD700>【零距离处决】</color> 贴脸冲锋！对 {victim.name} 造成 {rawDamage:F0} 强制碾压伤害");
+
+                    float enemyShare = runtimeData.TotalMass / (runtimeData.TotalMass + enemyMass);
+                    victim.TakeDamage(rawDamage * enemyShare, runtimeData.UnitName + " (零距离冲撞)");
+
+                    // 同样触发卡肉和震屏
+                    if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.1f, 0.01f);
+                    if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(0.3f, 0.2f);
+                }
+            }
+        }
+
+        // 3. 执行物理位移
         rb.drag = 0.5f;
-        rb.velocity = direction.normalized * (CurrentSpeed * speedMultiplier);
+        rb.velocity = dashVelocity;
     }
 
     private void OnDrawGizmos()
