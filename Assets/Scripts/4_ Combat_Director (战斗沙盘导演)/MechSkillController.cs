@@ -24,15 +24,20 @@ public class MechSkillController : MonoBehaviour
 
     public bool TryCastSkill()
     {
+        // 1. 基础前置判定：配置是否存在、是否阵亡、冷却是否就绪
         if (SkillConfig == null || IsDead || CurrentCooldown > 0) return false;
 
+        // 2. 资源消耗判定
         if (GlobalCPManager.Instance != null && !GlobalCPManager.Instance.ModifyCP(-SkillConfig.CPCost))
         {
+            // Debug.LogWarning($"【指令拒绝】CP不足，无法释放技能：{SkillConfig.SkillName}");
             return false;
         }
 
+        // 3. 记录冷却起算点
         CurrentCooldown = SkillConfig.Cooldown;
 
+        // 4. 构建 ECA 执行上下文
         ECAContext context = new ECAContext
         {
             PrimaryTarget = this.transform,
@@ -42,15 +47,30 @@ public class MechSkillController : MonoBehaviour
             IsEnemyFire = false
         };
 
-        foreach (var action in SkillConfig.OnSkillCastActions)
+        // 5. 👇【核心新增】：技能历史录入
+        // 只有当当前释放的技能“不是”缸中之脑本身时，才进行录入。
+        // 注意：请确保你在 ScriptableObject 图纸里填写的技能名称准确为 "缸中之脑"
+        if (SkillCastHistory.Instance != null && SkillConfig.SkillName != "缸中之脑")
         {
-            if (action != null) action.Execute(context);
-            if (context.ExecutionAborted) break;
+            SkillCastHistory.Instance.Record(this.SkillConfig);
         }
 
-        return true; // 确保 return 之前没有多余逻辑
-    }
+        // 6. 顺序执行 ECA 积木链
+        foreach (var action in SkillConfig.OnSkillCastActions)
+        {
+            if (action != null)
+            {
+                action.Execute(context);
 
+                // 如果积木内部触发了熔断（比如镜像复刻失败），则停止执行后续积木
+                if (context.ExecutionAborted) break;
+            }
+        }
+
+        // 7. 执行成功回执
+        // Debug.Log($"<color=#00FF00>【战术执行】</color> [{runtimeData.UnitName}] 成功释放了：{SkillConfig.SkillName}");
+        return true;
+    }
     private Color originalColor = Color.clear;
     public void SetHighlight(bool isHighlighted)
     {
