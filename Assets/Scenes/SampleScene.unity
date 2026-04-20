@@ -7845,8 +7845,8 @@ MonoBehaviour:
   TargetChassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   GlobalVisualScale: 1
   EquippedComponents:
-  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
-  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
+  - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+  - {fileID: 0}
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 0}
   - {fileID: 0}
@@ -7933,9 +7933,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
   Final_MaxHP: 100
-  Final_MaxAP: 400
+  Final_MaxAP: 100
   Final_TotalPowerCost: 0
-  Final_TotalMass: 5
+  Final_TotalMass: 0
   Final_TotalEnginePower: 0
   EquippedWeapons:
   - WeaponName: "\u4E1B\u86C7\u4E4B\u9996"
@@ -13424,7 +13424,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -15083,7 +15083,6 @@ MonoBehaviour:
   AllChassisDatabase:
   - {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   AllComponentDatabase:
-  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
@@ -15091,6 +15090,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
+  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+  - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
@@ -15099,7 +15101,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
   - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
   - {fileID: 11400000, guid: 91ef5cfb3c19d7043866cf6d2e217b94, type: 2}
-  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
@@ -15114,6 +15115,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
   - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
   - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+  - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
@@ -15122,7 +15125,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
   - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
   - {fileID: 11400000, guid: 91ef5cfb3c19d7043866cf6d2e217b94, type: 2}
-  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
 --- !u!114 &1436878913
@@ -21078,6 +21080,7 @@ GameObject:
   - component: {fileID: 1973191903}
   - component: {fileID: 1973191907}
   - component: {fileID: 1973191908}
+  - component: {fileID: 1973191909}
   m_Layer: 0
   m_Name: '[3. Combat & Feedback]'
   m_TagString: Untagged
@@ -21195,6 +21198,18 @@ MonoBehaviour:
   BaseRegenRate: 1
   BonusMaxCP: 0
   BonusRegenRate: 0
+--- !u!114 &1973191909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1973191901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35f543fde9c49ad4e8e1268529e7de26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1977254741
 GameObject:
   m_ObjectHideFlags: 0

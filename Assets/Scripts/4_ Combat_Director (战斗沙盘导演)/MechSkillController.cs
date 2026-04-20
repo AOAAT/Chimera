@@ -14,6 +14,11 @@ public class MechSkillController : MonoBehaviour
         runtimeData = data;
         receiver = GetComponent<DamageReceiver>();
         SkillConfig = data.CoreActiveSkill;
+
+        if (SkillConfig != null)
+        {
+            Debug.Log($"[SkillCtrl] {data.UnitName} 初始化技能: {SkillConfig.SkillName}");
+        }
     }
 
     private void Update()
@@ -24,20 +29,15 @@ public class MechSkillController : MonoBehaviour
 
     public bool TryCastSkill()
     {
-        // 1. 基础前置判定：配置是否存在、是否阵亡、冷却是否就绪
         if (SkillConfig == null || IsDead || CurrentCooldown > 0) return false;
 
-        // 2. 资源消耗判定
         if (GlobalCPManager.Instance != null && !GlobalCPManager.Instance.ModifyCP(-SkillConfig.CPCost))
         {
-            // Debug.LogWarning($"【指令拒绝】CP不足，无法释放技能：{SkillConfig.SkillName}");
             return false;
         }
 
-        // 3. 记录冷却起算点
         CurrentCooldown = SkillConfig.Cooldown;
 
-        // 4. 构建 ECA 执行上下文
         ECAContext context = new ECAContext
         {
             PrimaryTarget = this.transform,
@@ -47,30 +47,33 @@ public class MechSkillController : MonoBehaviour
             IsEnemyFire = false
         };
 
-        // 5. 👇【核心新增】：技能历史录入
-        // 只有当当前释放的技能“不是”缸中之脑本身时，才进行录入。
-        // 注意：请确保你在 ScriptableObject 图纸里填写的技能名称准确为 "缸中之脑"
-        if (SkillCastHistory.Instance != null && SkillConfig.SkillName != "缸中之脑")
+        // --- 👇 核心录入逻辑 ---
+        if (SkillConfig.SkillName != "缸中之脑")
         {
-            SkillCastHistory.Instance.Record(this.SkillConfig);
+            if (SkillCastHistory.Instance != null)
+            {
+                SkillCastHistory.Instance.Record(this.SkillConfig);
+            }
+            else
+            {
+                Debug.LogError("<color=red>【严重错误】</color> 场景中缺少 SkillCastHistory 物体！缸中之脑将无法工作！");
+            }
         }
 
-        // 6. 顺序执行 ECA 积木链
+        // 顺序执行积木
         foreach (var action in SkillConfig.OnSkillCastActions)
         {
             if (action != null)
             {
                 action.Execute(context);
-
-                // 如果积木内部触发了熔断（比如镜像复刻失败），则停止执行后续积木
                 if (context.ExecutionAborted) break;
             }
         }
 
-        // 7. 执行成功回执
-        // Debug.Log($"<color=#00FF00>【战术执行】</color> [{runtimeData.UnitName}] 成功释放了：{SkillConfig.SkillName}");
         return true;
     }
+
+    // 设置高亮的方法保持不变...
     private Color originalColor = Color.clear;
     public void SetHighlight(bool isHighlighted)
     {
@@ -79,7 +82,6 @@ public class MechSkillController : MonoBehaviour
         foreach (var sr in srs)
         {
             if (sr.gameObject.layer == LayerMask.NameToLayer("UI")) continue;
-            // 缓存原始颜色逻辑
             if (originalColor == Color.clear) originalColor = sr.color;
             sr.color = isHighlighted ? new Color(2f, 2f, 2f, 1f) : originalColor;
         }

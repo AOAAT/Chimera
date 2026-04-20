@@ -1,44 +1,89 @@
-﻿// --- START OF FILE ActiveSkillSlotUI.cs ---
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
 public class ActiveSkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
+    [Header("=== 基础图标与进度 ===")]
     public Image SkillIcon;
     public Image CooldownFill;
     public TMP_Text CPCostText;
     public TMP_Text HotkeyText;
     public TMP_Text MechNameText;
+
+    // 👇【核心新增】：显示技能名称的文本框
+    [Header("=== 技能名称显示 ===")]
+    public TMP_Text SkillNameDisplay;
+
     public GameObject DeathOverlay;
 
     private MechSkillController bindedController;
     private KeyCode myHotkey;
-    private KeyCode myNumpadKey; // 👇 兼容小键盘
+    private KeyCode myNumpadKey;
 
     public void Initialize(MechSkillController controller, KeyCode key, string keyName, Color mechColor, string mechName)
     {
         bindedController = controller;
         myHotkey = key;
-
-        // 智能映射：如果分配的是 Alpha1(键盘左上角)，自动绑定对应的 Keypad1(右侧小键盘)
         myNumpadKey = myHotkey + (KeyCode.Keypad1 - KeyCode.Alpha1);
 
         SkillIcon.sprite = controller.SkillConfig.SkillIcon;
         CPCostText.text = controller.SkillConfig.CPCost.ToString();
         HotkeyText.text = keyName;
-
         MechNameText.text = mechName;
         MechNameText.color = mechColor;
 
+        // 👇 初始化显示技能名字
+        if (SkillNameDisplay != null)
+        {
+            SkillNameDisplay.text = controller.SkillConfig.SkillName;
+        }
+
         DeathOverlay.SetActive(false);
+
+        // 如果是缸中之脑，订阅变身事件
+        if (controller.SkillConfig.SkillName == "缸中之脑")
+        {
+            if (SkillCastHistory.Instance != null)
+            {
+                SkillCastHistory.Instance.OnMemoryChanged += SyncMirrorVisuals;
+                SyncMirrorVisuals(SkillCastHistory.Instance.MemorizedSkill);
+            }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (SkillCastHistory.Instance != null)
+        {
+            SkillCastHistory.Instance.OnMemoryChanged -= SyncMirrorVisuals;
+        }
+    }
+
+    private void SyncMirrorVisuals(ActiveSkillConfig newSkill)
+    {
+        if (newSkill == null)
+        {
+            SkillIcon.color = new Color(1, 1, 1, 0.4f);
+            if (SkillNameDisplay != null) SkillNameDisplay.text = "等待解析...";
+            return;
+        }
+
+        // 👇【变身】：瞬间替换图标和文本！
+        SkillIcon.sprite = newSkill.SkillIcon;
+        SkillIcon.color = Color.white;
+
+        if (SkillNameDisplay != null)
+        {
+            // 给复刻出来的名字加个特殊的颜色区分
+            SkillNameDisplay.text = $"<color=#00FFFF>[复刻]</color> {newSkill.SkillName}";
+        }
     }
 
     private void Update()
     {
         if (bindedController == null) return;
-
         if (bindedController.IsDead)
         {
             DeathOverlay.SetActive(true);
@@ -46,56 +91,42 @@ public class ActiveSkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
             return;
         }
 
-        // 处理冷却圈旋转表现 (1 -> 0)
         float cd = bindedController.CurrentCooldown;
         float maxCd = bindedController.SkillConfig.Cooldown;
         CooldownFill.fillAmount = cd > 0 ? cd / maxCd : 0f;
 
+        bool hasMemoryIfBrain = (bindedController.SkillConfig.SkillName != "缸中之脑") ||
+                                (SkillCastHistory.Instance != null && SkillCastHistory.Instance.MemorizedSkill != null);
+
         bool cpEnough = GlobalCPManager.Instance != null && GlobalCPManager.Instance.CurrentCP >= bindedController.SkillConfig.CPCost;
+
         CPCostText.color = cpEnough ? Color.white : Color.red;
 
-        // 👇【核心修复】：同时监听主键盘和小键盘！
+        if (!hasMemoryIfBrain) SkillIcon.color = new Color(1, 1, 1, 0.3f);
+        else SkillIcon.color = Color.white;
+
         if (Input.GetKeyDown(myHotkey) || Input.GetKeyDown(myNumpadKey))
         {
-            ExecuteSkillRequest(cpEnough, cd);
+            ExecuteSkillRequest(cpEnough && hasMemoryIfBrain, cd);
         }
     }
 
     public void OnSkillClicked()
     {
-        // 鼠标点击走同样的判定
+        bool hasMemoryIfBrain = (bindedController.SkillConfig.SkillName != "缸中之脑") ||
+                                (SkillCastHistory.Instance != null && SkillCastHistory.Instance.MemorizedSkill != null);
         bool cpEnough = GlobalCPManager.Instance != null && GlobalCPManager.Instance.CurrentCP >= bindedController.SkillConfig.CPCost;
         float cd = bindedController.CurrentCooldown;
 
-        ExecuteSkillRequest(cpEnough, cd);
+        ExecuteSkillRequest(cpEnough && hasMemoryIfBrain, cd);
     }
 
-    private void ExecuteSkillRequest(bool cpEnough, float cd)
+    private void ExecuteSkillRequest(bool canCast, float cd)
     {
-        if (cd > 0)
-        {
-            Debug.Log($"【技能拒绝】[{bindedController.SkillConfig.SkillName}] 仍在冷却中！还剩 {cd:F1} 秒");
-            return;
-        }
-
-        if (!cpEnough)
-        {
-            Debug.Log($"【技能拒绝】[{bindedController.SkillConfig.SkillName}] CP能量不足！");
-            // 这里可以未来接一个按钮闪红的抖动动画
-            return;
-        }
-
-        // 一切就绪，开火！
+        if (cd > 0 || !canCast) return;
         bindedController.TryCastSkill();
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        if (bindedController != null) bindedController.SetHighlight(true);
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        if (bindedController != null) bindedController.SetHighlight(false);
-    }
+    public void OnPointerEnter(PointerEventData eventData) { if (bindedController != null) bindedController.SetHighlight(true); }
+    public void OnPointerExit(PointerEventData eventData) { if (bindedController != null) bindedController.SetHighlight(false); }
 }

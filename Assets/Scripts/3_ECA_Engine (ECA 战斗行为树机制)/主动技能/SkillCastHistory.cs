@@ -1,31 +1,45 @@
 ﻿using UnityEngine;
+using System;
 
 public class SkillCastHistory : MonoBehaviour
 {
     public static SkillCastHistory Instance;
 
-    // 记忆中的技能配置
     public ActiveSkillConfig MemorizedSkill { get; private set; }
+
+    // 招式更新广播
+    public event Action<ActiveSkillConfig> OnMemoryChanged;
 
     private void Awake()
     {
-        Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+            // 如果是跨关卡游戏，建议加上这句，但目前 V1.0 在战斗场景内即可
+            // DontDestroyOnLoad(gameObject); 
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
     }
 
-    /// <summary>
-    /// 记录一次技能释放
-    /// </summary>
     public void Record(ActiveSkillConfig config)
     {
-        // 核心锁死：缸中之脑不能复刻自己，防止逻辑死循环
+        // 核心锁死：缸中之脑不能复刻自己
         if (config == null || config.SkillName == "缸中之脑") return;
 
         MemorizedSkill = config;
 
-        // 可以在这里触发一个全局音效，表示“技能已捕捉”
-        Debug.Log($"<color=#00FF00>【脑机捕获】</color> 成功录入招式：{config.SkillName}");
+        // 广播：新招式已录入！
+        OnMemoryChanged?.Invoke(config);
+
+        Debug.Log($"<color=#00FF00>【记忆录入成功】</color> 招式：{config.SkillName}");
     }
 
-    // 战斗结束清理记忆
-    public void Clear() { MemorizedSkill = null; }
+    public void Clear()
+    {
+        MemorizedSkill = null;
+        OnMemoryChanged?.Invoke(null);
+    }
 }
