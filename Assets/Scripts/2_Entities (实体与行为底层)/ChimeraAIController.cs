@@ -14,31 +14,23 @@ public class ChimeraAIController : MonoBehaviour
 
     [Header("=== 物理状态 ===")]
     public bool isStaggered = false;
-    public float staggerTimer = 0f;
+    private float staggerTimer = 0f;
     public bool isDashing = false;
     private float dashTimer = 0f;
 
-    [Header("=== AI 走位核心阈值 (只读) ===")]
-    [SerializeField] private float maxWeaponRange = 0f;      // 所有武器中最远的射程
-    [SerializeField] private float minWeaponRange = 0f;      // 所有武器中最大的最小射程 (死角)
-    [SerializeField] private float optimalFireRange = 0f;    // 最短的那把武器的最大射程 (火力窗口)
+    // AI 走位核心阈值
+    private float maxWeaponRange = 0f;
+    private float minWeaponRange = 0f;
+    private float optimalFireRange = 0f;
 
     public void Initialize(RuntimeChimeraData data)
     {
         runtimeData = data;
         rb = GetComponent<Rigidbody2D>();
-
-        if (rb != null)
-        {
-            rb.drag = 5f; // 默认地面阻力
-        }
+        if (rb != null) rb.drag = 5f;
 
         myBuffMgr = GetComponent<BuffManager>();
-        if (myBuffMgr != null)
-        {
-            // 每次 Buff 变化，重新计算移速和射程窗口
-            myBuffMgr.OnBuffsChanged += RecalculateSpeedAndRanges;
-        }
+        if (myBuffMgr != null) myBuffMgr.OnBuffsChanged += RecalculateSpeedAndRanges;
 
         RecalculateSpeedAndRanges();
     }
@@ -61,7 +53,6 @@ public class ChimeraAIController : MonoBehaviour
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
 
-        // 1. 计算移速
         float currentEnginePower = runtimeData.TotalEnginePower;
         if (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.EnginePower))
         {
@@ -70,117 +61,95 @@ public class ChimeraAIController : MonoBehaviour
 
         CurrentSpeed = GameFormulas.CalcMoveSpeed(currentEnginePower, runtimeData.TotalMass, speedMult);
 
-        // 2. 计算火力窗口 (Optimal Fire Window)
+        // --- 重新计算射程阈值 ---
         maxWeaponRange = 0f;
         minWeaponRange = 0f;
         optimalFireRange = float.MaxValue;
 
-        float bonusMaxRange = (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) ? myBuffMgr.BuffStatModifiers[StatType.MaxRange] : 0f;
-        float bonusMinRange = (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) ? myBuffMgr.BuffStatModifiers[StatType.MinRange] : 0f;
-
         if (runtimeData.EquippedWeapons.Count == 0)
         {
-            optimalFireRange = 1.5f;
+            optimalFireRange = 1.5f * distMult;
         }
         else
         {
             foreach (var wpn in runtimeData.EquippedWeapons)
             {
-                float rawMax = wpn.GetStat(StatType.MaxRange) + bonusMaxRange;
-                float rawMin = wpn.GetStat(StatType.MinRange) + bonusMinRange;
+                float rawMax = wpn.GetStat(StatType.MaxRange);
+                float rawMin = wpn.GetStat(StatType.MinRange);
 
-                // 记录全机最远射程
-                if (rawMax > maxWeaponRange) maxWeaponRange = rawMax;
+                // 叠加 Buff 影响
+                if (myBuffMgr != null)
+                {
+                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) rawMax += myBuffMgr.BuffStatModifiers[StatType.MaxRange];
+                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) rawMin += myBuffMgr.BuffStatModifiers[StatType.MinRange];
+                }
 
-                // 记录最大的射击死角
-                if (rawMin > minWeaponRange) minWeaponRange = rawMin;
-
-                // 最短的最大射程，即为最优火力线
-                if (rawMax < optimalFireRange) optimalFireRange = rawMax;
+                if (rawMax * distMult > maxWeaponRange) maxWeaponRange = rawMax * distMult;
+                if (rawMin * distMult > minWeaponRange) minWeaponRange = rawMin * distMult;
+                if (rawMax * distMult < optimalFireRange) optimalFireRange = rawMax * distMult;
             }
         }
 
-        // 应用度量衡缩放
-        maxWeaponRange *= distMult;
-        minWeaponRange *= distMult;
-        optimalFireRange *= distMult;
-
-        // 安全兜底：火力线不能卡在死角里
-        if (optimalFireRange < minWeaponRange)
-        {
-            optimalFireRange = minWeaponRange + 0.5f;
-        }
-
-        Debug.Log($"<color=#00FFFF>[AI属性同步]</color> {runtimeData.UnitName} | 移速: {CurrentSpeed:F1} | 最优窗口: {optimalFireRange:F1}m");
+        if (optimalFireRange < minWeaponRange) optimalFireRange = minWeaponRange + 0.5f;
+        if (optimalFireRange == float.MaxValue) optimalFireRange = 5f * distMult;
     }
+
 
     private void Update()
     {
         if (runtimeData == null) return;
-
-        // 战斗未开启时，强行刹车
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
             if (rb != null) rb.velocity = Vector2.zero;
             return;
         }
 
-        // 处理受击硬直
         if (isStaggered)
         {
             staggerTimer -= Time.deltaTime;
-            if (staggerTimer <= 0)
-            {
-                isStaggered = false;
-                if (rb != null) rb.drag = 5f; // 恢复正常阻力
-            }
-            return; // 硬直期间 AI 无法控制位移
+            if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; }
+            return;
         }
 
-        // 处理冲刺状态
         if (isDashing)
         {
             dashTimer -= Time.deltaTime;
-            if (dashTimer <= 0)
-            {
-                isDashing = false;
-                if (rb != null) rb.drag = 5f;
-            }
-            return; // 冲刺期间由物理惯性掌控
+            if (dashTimer <= 0) { isDashing = false; rb.drag = 5f; }
+            return;
         }
 
+        // 👇【核心修复】：每帧执行索敌，确保 currentTarget 不为空
         FindTarget();
         HandleMovement();
     }
 
     private void FindTarget()
     {
+        // 1. 扫描场上所有存活敌人
         var allEnemies = CombatDirector.ActiveEnemies.Where(e => e != null && e.CurrentHP > 0).ToList();
-        if (allEnemies.Count == 0)
+        if (allEnemies.Count == 0) { currentTarget = null; return; }
+
+        // 2. 获取核心大脑的策略
+        TargetingStrategy strategy = runtimeData.TargetingLogic;
+
+        // 👇【关键修正】：如果大脑设为了 Follow (0)，强制修正为 Nearest (1)
+        // 核心大脑本身不能“跟随核心”，它必须有一个具体的策略
+        if (strategy == TargetingStrategy.FollowCoreAI) strategy = TargetingStrategy.Nearest;
+
+        // 3. 执行排序逻辑
+        IOrderedEnumerable<DamageReceiver> sorted;
+        switch (strategy)
         {
-            currentTarget = null;
-            return;
+            case TargetingStrategy.MaxHPHighest: sorted = allEnemies.OrderByDescending(e => e.MaxHP); break;
+            case TargetingStrategy.MaxHPLowest: sorted = allEnemies.OrderBy(e => e.MaxHP); break;
+            case TargetingStrategy.CurrentHPHighest: sorted = allEnemies.OrderByDescending(e => e.CurrentHP); break;
+            case TargetingStrategy.CurrentHPLowest: sorted = allEnemies.OrderBy(e => e.CurrentHP); break;
+            case TargetingStrategy.Furthest: sorted = allEnemies.OrderByDescending(e => Vector3.Distance(transform.position, e.transform.position)); break;
+            case TargetingStrategy.Nearest:
+            default: sorted = allEnemies.OrderBy(e => Vector3.Distance(transform.position, e.transform.position)); break;
         }
 
-        // 根据核心设定的索敌逻辑进行排序
-        switch (runtimeData.TargetingLogic)
-        {
-            case TargetingStrategy.Nearest:
-                currentTarget = allEnemies.OrderBy(e => Vector3.Distance(transform.position, e.transform.position)).First().transform;
-                break;
-            case TargetingStrategy.MaxHPHighest:
-                currentTarget = allEnemies.OrderByDescending(e => e.MaxHP).First().transform;
-                break;
-            case TargetingStrategy.MaxHPLowest:
-                currentTarget = allEnemies.OrderBy(e => e.MaxHP).First().transform;
-                break;
-            case TargetingStrategy.CurrentHPHighest:
-                currentTarget = allEnemies.OrderByDescending(e => e.CurrentHP).First().transform;
-                break;
-            case TargetingStrategy.CurrentHPLowest:
-                currentTarget = allEnemies.OrderBy(e => e.CurrentHP).First().transform;
-                break;
-        }
+        currentTarget = sorted.First().transform;
     }
 
     private void HandleMovement()
@@ -191,65 +160,49 @@ public class ChimeraAIController : MonoBehaviour
             return;
         }
 
-        // 判断是否有来自 Buff 的 AI 覆写
+        // 判定 AI 覆写
         MovementStrategy activeLogic = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
         float activeDodgeDist = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
 
         Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
-        Vector3 dirToTarget = (currentTarget.position - logicCenter).normalized;
+
+        // 考虑碰撞盒表面的真实距离
         float dist = Vector3.Distance(logicCenter, currentTarget.position);
-
-        // 考虑对方碰撞盒边缘的精确距离判定
         Collider2D targetCol = currentTarget.GetComponentInChildren<Collider2D>();
-        if (targetCol != null)
-        {
-            dist = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
-        }
+        if (targetCol != null) dist = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
 
+        Vector2 dirToTarget = (currentTarget.position - logicCenter).normalized;
         Vector2 targetVelocity = Vector2.zero;
 
-        // --- 执行决策树 ---
+        // --- 基于策略的位移决策 ---
         if (activeLogic == MovementStrategy.Dodge && dist < activeDodgeDist)
         {
-            // 撤离模式：离得太近就后退
             targetVelocity = -dirToTarget * CurrentSpeed;
         }
         else if (activeLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
         {
-            // 生存模式：保持在最远武器的射程线
             targetVelocity = dirToTarget * CurrentSpeed;
         }
         else if (activeLogic == MovementStrategy.Active_Firepower)
         {
-            // 【核心重构】：最优火力窗口模式
-            float engagementBuffer = 0f;
-            // 如果身上有近战武器，允许额外深入 0.5 米防止哑火
-            if (runtimeData.EquippedWeapons.Any(w => w.DeliveryType == WeaponDeliveryType.Melee))
-            {
-                engagementBuffer = 0.5f * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
-            }
+            // 为近战单位增加侵入缓冲区
+            float engagementBuffer = runtimeData.EquippedWeapons.Any(w => w.DeliveryType == WeaponDeliveryType.Melee) ? 0.8f : 0f;
 
             if (dist > (optimalFireRange - engagementBuffer))
             {
-                // 离得太远：向前推进
                 targetVelocity = dirToTarget * CurrentSpeed;
             }
             else if (dist < minWeaponRange)
             {
-                // 进了死角：尝试后退
                 targetVelocity = -dirToTarget * (CurrentSpeed * 0.5f);
             }
             else
             {
-                // 完美射程窗口：强制停车，最大化火力
-                targetVelocity = Vector2.zero;
+                targetVelocity = Vector2.zero; // 完美就位
             }
         }
 
-        if (rb != null)
-        {
-            rb.velocity = targetVelocity;
-        }
+        if (rb != null) rb.velocity = targetVelocity;
     }
 
     // ==========================================

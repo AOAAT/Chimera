@@ -32,14 +32,15 @@ MonoBehaviour:
       Value: 10
     - StatID: 0
       Value: 20
-    - StatID: 5
-      Value: 200
     - StatID: 2
       Value: 5
+    - StatID: 5
+      Value: 200
     Mechanics: []
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -55,6 +56,7 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: -0.0036027594, y: 0.08916532}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9

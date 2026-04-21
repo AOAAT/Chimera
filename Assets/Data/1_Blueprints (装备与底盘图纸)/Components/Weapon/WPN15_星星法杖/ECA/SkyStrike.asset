@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b3b2c4c0a5453243950112c53357cbe, type: 3}
+  m_Name: SkyStrike
+  m_EditorClassIdentifier: 
+  WarningVFX: {fileID: 0}
+  BeamPrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  ExplosionVFX: {fileID: 0}
+  Delay: 0.2
+  DamageRadius: 15
+  IsTrueDamage: 0

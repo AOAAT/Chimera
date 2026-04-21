@@ -90,12 +90,13 @@ public enum ComponentType
 
 public enum TargetingStrategy
 {
-    Nearest,
-    MaxHPHighest,
-    MaxHPLowest,
-    CurrentHPHighest,
-    CurrentHPLowest,
-    Furthest
+    FollowCoreAI = 0,    // 👈【核心新增】：默认继承核心大脑的设定
+    Nearest = 1,
+    MaxHPHighest = 2,
+    MaxHPLowest = 3,
+    CurrentHPHighest = 4,
+    CurrentHPLowest = 5,
+    Furthest = 6
 }
 
 public enum MovementStrategy

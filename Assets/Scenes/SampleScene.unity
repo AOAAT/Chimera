@@ -15117,6 +15117,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
+  - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15151,6 +15152,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
+  - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0

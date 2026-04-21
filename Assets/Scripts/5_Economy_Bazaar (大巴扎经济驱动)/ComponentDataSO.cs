@@ -45,6 +45,10 @@ public class ComponentDataSO : ScriptableObject
     [Tooltip("下劈时间占总攻击间隔的百分比 (如 0.1 代表 10% 时间砸下去)")]
     [Range(0.01f, 0.9f)] public float StrikeTimeRatio = 0.1f;
 
+    [Header("⚔️ 武器专属索敌 (仅 Weapon 类型生效)")]
+    [Tooltip("设置为 FollowCoreAI 时，将严格遵循核心组件的 AI 逻辑")]
+    public TargetingStrategy TargetingOverride = TargetingStrategy.FollowCoreAI;
+
     [Header("=== 视觉与对齐修正 ===")]
     public Vector2 AnchorOffset = Vector2.zero;
     [Range(-180f, 180f)] public float BaseRotationOffset = 0f;
