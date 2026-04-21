@@ -98,8 +98,15 @@ public class CombatDirector : MonoBehaviour
         isCheckingWinCondition = false;
         currentNodeData = nodeData;
 
-        // 重置注册表
+        // 1. 重置注册表
         ClearUnitRegistry();
+
+        // 2. 👇【核心修复】：进入部署阶段，立即彻底清理并隐藏技能栏
+        // 杜绝上一场战斗的 UI 残留
+        if (ActiveSkillUIManager.Instance != null)
+        {
+            ActiveSkillUIManager.Instance.ClearUI();
+        }
 
         if (CombatUIPanel != null) CombatUIPanel.SetActive(true);
         if (StartBattleButton != null) StartBattleButton.interactable = true;
@@ -179,8 +186,6 @@ public class CombatDirector : MonoBehaviour
             {
                 brain.MyData = spawnData.EnemyType;
             }
-
-            // 敌人出生即进入注册表 (由 DamageReceiver 内部处理)
         }
     }
 
@@ -236,7 +241,7 @@ public class CombatDirector : MonoBehaviour
     /// </summary>
     private void OnBattleStartClicked()
     {
-        // 1. 强制清理并重新抓取当前存活单位进入注册表
+        // 1. 重新抓取当前部署在场上的存活单位
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
 
@@ -253,7 +258,7 @@ public class CombatDirector : MonoBehaviour
             return;
         }
 
-        // 2. 👇【核心修复】：执行开战协议 (Battle Start Pipeline)
+        // 2. 执行开战协议 (激活全机被动)
         Debug.Log("<color=#00FFFF>【战斗导演】正在激活全军被动模组...</color>");
         foreach (var playerUnit in ActivePlayerUnits)
         {
@@ -274,12 +279,12 @@ public class CombatDirector : MonoBehaviour
 
         if (forbiddenZonesContainer != null) forbiddenZonesContainer.SetActive(false);
 
-        // 4. 正式鸣枪
+        // 4. 正式鸣枪：进入战斗状态
         IsCombatActive = true;
         IsDeploymentPhase = false;
         isCheckingWinCondition = true;
 
-        // 构建主动技能栏
+        // 5. 👇【核心修复】：仅在鸣枪这一刻，构建并显示主动技能栏
         if (ActiveSkillUIManager.Instance != null)
         {
             ActiveSkillUIManager.Instance.BuildSkillUI(ActivePlayerUnits);
@@ -299,7 +304,6 @@ public class CombatDirector : MonoBehaviour
 
         if (!IsCombatActive || !isCheckingWinCondition) return;
 
-        // 胜负判定 (利用注册表，性能极高)
         bool allEnemiesDead = ActiveEnemies.All(e => e == null || e.CurrentHP <= 0);
         if (allEnemiesDead)
         {
@@ -361,7 +365,7 @@ public class CombatDirector : MonoBehaviour
     {
         Debug.Log("<color=#FFFF00>【战斗导演】正在撤收战场资源...</color>");
 
-        // 1. 清理
+        // 1. 清理物理实体
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
         foreach (var mech in allMechs) { if (mech != null) { mech.SyncPostCombatState(); Destroy(mech.gameObject); } }
 
@@ -379,16 +383,19 @@ public class CombatDirector : MonoBehaviour
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        // 重置部署状态
         if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
         {
             foreach (var profile in PlayerInventoryManager.Instance.HangarUnits) { if (profile != null) profile.IsDeployed = false; }
         }
 
-        // 清理注册表
+        // 2. 👇【核心修复】：返回时彻底清理并关闭技能栏
+        if (ActiveSkillUIManager.Instance != null)
+        {
+            ActiveSkillUIManager.Instance.ClearUI();
+        }
+
         ClearUnitRegistry();
 
-        // 2. 走向结算
         if (isLastCombatVictory)
         {
             LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;

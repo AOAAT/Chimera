@@ -34,7 +34,7 @@ MonoBehaviour:
   - SlotName: "\u5934\u90E8"
     AllowedTypes: 00000000
     LocalPosition: {x: 0, y: 0.58}
-    MountAngle: 1
+    MountAngle: -0
     DefaultComponentScale: 1
   - SlotName: "\u8F85\u52A9"
     AllowedTypes: 02000000
@@ -49,7 +49,7 @@ MonoBehaviour:
   - SlotName: "\u5DE6"
     AllowedTypes: 0100000002000000
     LocalPosition: {x: -0.63, y: 0.23}
-    MountAngle: -90
+    MountAngle: 90
     DefaultComponentScale: 1
   - SlotName: "\u79FB\u52A8"
     AllowedTypes: 04000000

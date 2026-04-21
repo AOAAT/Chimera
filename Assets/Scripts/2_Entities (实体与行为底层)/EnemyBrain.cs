@@ -421,22 +421,35 @@ public class EnemyBrain : MonoBehaviour
         foreach (var x in actions) if (x != null) x.Execute(c);
     }
 
+    // --- 修改 EnemyBrain.cs 的 HandleDeathSequence 方法 ---
     private void HandleDeathSequence()
     {
         if (isDead) return;
         isDead = true;
 
+        // 1. 物理与动画停摆逻辑保持不变...
         rb.velocity = Vector2.zero;
         rb.isKinematic = true;
         rb.simulated = false;
 
-        foreach (var c in GetComponentsInChildren<Collider2D>()) c.enabled = false;
-        foreach (var a in GetComponentsInChildren<Animator>()) a.enabled = false;
-        if (GetComponent<ProceduralAnimator2D>() != null) GetComponent<ProceduralAnimator2D>().StopAnimation();
+        // 2. 👇【核心修复】：在实体彻底消失前，触发所有 Buff 的死亡管线
+        BuffManager bm = GetComponent<BuffManager>();
+        if (bm != null)
+        {
+            ECAContext deathContext = new ECAContext
+            {
+                ImpactPoint = transform.position,
+                PrimaryTarget = this.transform,
+                SourceEntity = this.transform, // 此时自己是来源
+                IsEnemyFire = true
+            };
+            bm.TriggerHolderDeathActions(deathContext);
+        }
 
-        // --- 核心：死亡 ECA 触发 ---
+        // 3. 原有的怪物图纸死亡积木触发（依然保留，作为双轨制）
         ExecuteECAActions(MyData.OnDeathActions, null);
 
+        // 4. 尸体淡出逻辑...
         gameObject.layer = LayerMask.NameToLayer("Floor");
         StartCoroutine(CorpseDecayRoutine());
     }

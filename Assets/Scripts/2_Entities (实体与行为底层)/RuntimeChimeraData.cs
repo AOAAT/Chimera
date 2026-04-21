@@ -6,6 +6,7 @@ public class RuntimeWeapon
 {
     public string WeaponName;
     public ComponentDataSO SourceSO;
+    public int CurrentLevel = 1;
     public Dictionary<StatType, float> WeaponStats = new Dictionary<StatType, float>();
     public List<ECABlock> WeaponMechanics = new List<ECABlock>();
     public WeaponDeliveryType DeliveryType;
@@ -85,7 +86,7 @@ public class RuntimeChimeraData
 
             if (compSO.Type == ComponentType.Weapon)
             {
-                RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = compSO.ComponentName, SourceSO = compSO, DeliveryType = compSO.DeliveryType, ProjectilePrefab = compSO.ProjectilePrefab };
+                RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = compSO.ComponentName, SourceSO = compSO, CurrentLevel = compInstance.CurrentLevel,DeliveryType = compSO.DeliveryType, ProjectilePrefab = compSO.ProjectilePrefab };
                 if (levelData.OnHitActions != null) newWeapon.OnHitActions.AddRange(levelData.OnHitActions);
                 if (levelData.OnFireActions != null) newWeapon.OnFireActions.AddRange(levelData.OnFireActions);
                 ProcessStats(levelData.Stats, true, newWeapon);

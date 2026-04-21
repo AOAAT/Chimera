@@ -13,16 +13,12 @@ MonoBehaviour:
   m_Name: LootSequence
   m_EditorClassIdentifier: 
   Tasks:
-  - Mode: 3
-    TripleChoiceProbability: 1
-    PoolSource: 0
-    CustomMacroMix: 
-    CustomSubTagMix: 
-    CustomPool:
-    - Blueprint: {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
-      Level: 4
-  - Mode: 2
-    TripleChoiceProbability: 1
+  - Mode: 0
+    TripleChoiceProbability: 0
+    Weight_Lv1: 0
+    Weight_Lv2: 0
+    Weight_Lv3: 0
+    Weight_Lv4: 0
     PoolSource: 0
     CustomMacroMix: 
     CustomSubTagMix: 

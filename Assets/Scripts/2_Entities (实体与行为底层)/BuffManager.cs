@@ -162,7 +162,29 @@ public class BuffManager : MonoBehaviour
         ActiveBuff b = activeBuffs.Find(x => x.Blueprint.BuffID == buffID);
         return b != null ? b.CurrentStacks : 0;
     }
+
+    // --- 在 BuffManager.cs 中增加此方法 ---
+    public void TriggerHolderDeathActions(ECAContext deathContext)
+    {
+        // 遍历当前身上所有的 Buff
+        foreach (var buff in activeBuffs)
+        {
+            if (buff.Blueprint.OnHolderDeathActions != null)
+            {
+                foreach (var action in buff.Blueprint.OnHolderDeathActions)
+                {
+                    if (action != null)
+                    {
+                        // Debug.Log($"<color=white>【临终遗言】</color> 触发 Buff:[{buff.Blueprint.BuffName}] 的死亡动作");
+                        action.Execute(deathContext);
+                    }
+                }
+            }
+        }
+    }
 }
+
+
 
 // ==========================================
 // 运行时 Buff 实例：存放动态时间、层数

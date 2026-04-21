@@ -22,7 +22,6 @@ public class WeaponModule : MonoBehaviour
     private Animator myAnimator;
 
     private Transform lockedTarget;
-    // 👇【核心新增】：存储本次攻击选定的所有目标
     private List<Transform> currentMultiTargets = new List<Transform>();
     private float scanTimer = 0f;
     private const float SCAN_INTERVAL = 0.3f;
@@ -62,10 +61,7 @@ public class WeaponModule : MonoBehaviour
 
             if (currentState == WeaponState.Idle && stateTimer <= 0f)
             {
-                if (IsTargetInRange(lockedTarget))
-                {
-                    InitiateAttack(lockedTarget);
-                }
+                if (IsTargetInRange(lockedTarget)) InitiateAttack(lockedTarget);
             }
         }
 
@@ -81,44 +77,20 @@ public class WeaponModule : MonoBehaviour
         {
             switch (currentState)
             {
-                case WeaponState.Windup:
-                    currentState = WeaponState.Strike;
-                    stateTimer = t_Strike;
-                    break;
-                case WeaponState.Strike:
-                    // 👇 改为不传参，直接处理 currentMultiTargets 列表
-                    FirePayload();
-                    currentState = WeaponState.Recovery;
-                    stateTimer = t_Recovery;
-                    break;
-                case WeaponState.Recovery:
-                    currentState = WeaponState.Idle;
-                    stateTimer = 0f;
-                    break;
+                case WeaponState.Windup: currentState = WeaponState.Strike; stateTimer = t_Strike; break;
+                case WeaponState.Strike: FirePayload(); currentState = WeaponState.Recovery; stateTimer = t_Recovery; break;
+                case WeaponState.Recovery: currentState = WeaponState.Idle; stateTimer = 0f; break;
             }
         }
 
         if (weaponData.DeliveryType == WeaponDeliveryType.Melee && currentState != WeaponState.Idle)
-        {
             UpdateMeleeAnimation();
-        }
-    }
-
-    private bool IsTargetInRange(Transform target)
-    {
-        float distMult = CombatSandbox.GetDist(1f);
-        float maxR = GetFinalWeaponStat(StatType.MaxRange) * distMult;
-        Collider2D targetCol = target.GetComponentInChildren<Collider2D>();
-        if (targetCol == null) return Vector3.Distance(muzzlePoint.position, target.position) <= maxR;
-        float surfaceDist = Vector2.Distance(muzzlePoint.position, targetCol.ClosestPoint(muzzlePoint.position));
-        return surfaceDist <= maxR;
     }
 
     private void UpdateTargetSelection()
     {
         float distMult = CombatSandbox.GetDist(1f);
         float maxRange = GetFinalWeaponStat(StatType.MaxRange) * distMult;
-        // 👇 获取本级图纸设定的最大攻击数量
         int maxCount = Mathf.Max(1, (int)GetFinalWeaponStat(StatType.MultiShotCount));
 
         if (scanTimer <= 0f)
@@ -130,24 +102,17 @@ public class WeaponModule : MonoBehaviour
             if (hits.Length > 0)
             {
                 TargetingStrategy strategy = weaponData.SourceSO.TargetingOverride;
-                if (strategy == TargetingStrategy.FollowCoreAI && ownerData != null)
-                {
-                    strategy = ownerData.TargetingLogic;
-                }
+                if (strategy == TargetingStrategy.FollowCoreAI && ownerData != null) strategy = ownerData.TargetingLogic;
 
-                // 2. 构建候选列表并执行排序
-                var targets = hits.Select(h => h.GetComponentInParent<DamageReceiver>())
+                var sorted = hits.Select(h => h.GetComponentInParent<DamageReceiver>())
                                   .Where(dr => dr != null && dr.CurrentHP > 0)
-                                  .OrderBy(dr => (strategy == TargetingStrategy.Furthest) ?
-                                      -Vector3.Distance(transform.position, dr.transform.position) :
-                                       Vector3.Distance(transform.position, dr.transform.position))
-                                  .Take(maxCount) // 👈 抓取指定数量的目标
-                                  .ToList();
+                                  .OrderBy(dr => (strategy == TargetingStrategy.Furthest) ? -Vector3.Distance(transform.position, dr.transform.position) : Vector3.Distance(transform.position, dr.transform.position))
+                                  .Take(maxCount).ToList();
 
-                if (targets.Count > 0)
+                if (targetsExist(sorted))
                 {
-                    currentMultiTargets = targets.Select(t => t.transform).ToList();
-                    lockedTarget = currentMultiTargets[0]; // 主目标用于朝向
+                    currentMultiTargets = sorted.Select(t => t.transform).ToList();
+                    lockedTarget = currentMultiTargets[0];
                 }
                 else { lockedTarget = null; currentMultiTargets.Clear(); }
             }
@@ -155,48 +120,25 @@ public class WeaponModule : MonoBehaviour
         }
     }
 
-    private void InitiateAttack(Transform target)
-    {
-        float atkSpeed = GetFinalWeaponStat(StatType.AttackSpeed);
-        totalCooldown = GameFormulas.CalcCooldown(atkSpeed);
-
-        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
-        {
-            FirePayload(); // 👈 远程同样进入多重分发
-            stateTimer = totalCooldown;
-            return;
-        }
-
-        t_Windup = totalCooldown * weaponData.SourceSO.WindupTimeRatio;
-        t_Strike = totalCooldown * weaponData.SourceSO.StrikeTimeRatio;
-        t_Recovery = totalCooldown - t_Windup - t_Strike;
-        rot_Base = Quaternion.AngleAxis(aimAngle, Vector3.forward);
-        rot_Windup = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.WindupAngle);
-        rot_Strike = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.StrikeAngle);
-        currentState = WeaponState.Windup;
-        stateTimer = t_Windup;
-        if (myAnimator != null) myAnimator.SetTrigger("Windup");
-    }
-
-    private void UpdateMeleeAnimation()
-    {
-        float progress = 0;
-        if (currentState == WeaponState.Windup) { progress = 1f - (stateTimer / t_Windup); actualHinge.rotation = Quaternion.Slerp(rot_Base, rot_Windup, progress); }
-        else if (currentState == WeaponState.Strike) { progress = 1f - (stateTimer / t_Strike); actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, progress); }
-        else if (currentState == WeaponState.Recovery) { progress = 1f - (stateTimer / t_Recovery); actualHinge.rotation = Quaternion.Slerp(rot_Strike, rot_Base, progress); }
-    }
+    private bool targetsExist(List<DamageReceiver> list) => list != null && list.Count > 0;
 
     private void FirePayload()
     {
         if (currentMultiTargets.Count == 0) return;
         if (myAnimator != null) myAnimator.SetTrigger("Fire");
 
-        // --- 阶段 A：全局开火管线 (跑一次，处理扣蓝等) ---
+        // 👇【核心修复】：在跑开火积木前，先算出基础伤害种子
+        // 这样霰弹枪积木才能拿到不为 0 的数值
+        float seedMin = GetFinalWeaponStat(StatType.MinDamage);
+        float seedMax = GetFinalWeaponStat(StatType.MaxDamage);
+        float seedBaseDmg = Random.Range(seedMin, seedMax);
+
+        // --- 阶段 A：开火管线 ---
         ECAContext fireContext = new ECAContext
         {
             ImpactPoint = muzzlePoint.position,
             PrimaryTarget = currentMultiTargets[0],
-            BaseDamage = 0, // 仅作为信号，不产生直接伤害
+            BaseDamage = seedBaseDmg, // 👈 修复：现在带上真实伤害底数了
             SourceWeapon = weaponData,
             ChassisData = ownerData,
             IsEnemyFire = false,
@@ -205,16 +147,16 @@ public class WeaponModule : MonoBehaviour
             TemporaryDamageModifier = 1.0f
         };
 
-        if (weaponData.OnFireActions != null) foreach (var a in weaponData.OnFireActions) { a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
-        if (ownerData != null && ownerData.GlobalOnFireActions != null) foreach (var a in ownerData.GlobalOnFireActions) { a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
+        if (weaponData.OnFireActions != null) foreach (var a in weaponData.OnFireActions) { if (a != null) a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
+        if (ownerData != null && ownerData.GlobalOnFireActions != null) foreach (var a in ownerData.GlobalOnFireActions) { if (a != null) a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
 
-        // --- 阶段 B：多重分发管线 (遍历每一个目标) ---
+        // --- 阶段 B：分发管线 ---
         foreach (var target in currentMultiTargets)
         {
             if (target == null) continue;
 
-            // 为每个子目标独立计算随机伤害和暴击
-            float baseDmg = Random.Range(GetFinalWeaponStat(StatType.MinDamage), GetFinalWeaponStat(StatType.MaxDamage));
+            // 再次随机独立伤害（确保多目标不共用同一个数值）
+            float baseDmg = Random.Range(seedMin, seedMax);
             float critChance = (GetFinalWeaponStat(StatType.CriticalChance) + weaponData.BonusCriticalChance) * fireContext.TemporaryCritModifier;
             bool isCrit = Random.value <= critChance;
 
@@ -222,7 +164,7 @@ public class WeaponModule : MonoBehaviour
             if (isCrit)
             {
                 float critMult = GetFinalWeaponStat(StatType.CritMultiplier);
-                if (critMult <= 0) critMult = 1.5f;
+                if (critMult <= 1.0f) critMult = 2.0f; // 1.5保底
                 damageToDeliver *= critMult;
             }
 
@@ -230,7 +172,7 @@ public class WeaponModule : MonoBehaviour
             {
                 ImpactPoint = (weaponData.DeliveryType == WeaponDeliveryType.Melee) ? target.position : muzzlePoint.position,
                 PrimaryTarget = target,
-                BaseDamage = damageToDeliver, // 👈 核心：将算好的伤害传给命中积木
+                BaseDamage = damageToDeliver,
                 SourceWeapon = weaponData,
                 ChassisData = ownerData,
                 IsEnemyFire = false,
@@ -244,16 +186,31 @@ public class WeaponModule : MonoBehaviour
                 Projectile pScript = projObj.GetComponent<Projectile>();
                 if (pScript != null)
                 {
+                    // 确保手动发射的远程子弹也带上正确伤害
                     pScript.Fire(target, damageToDeliver, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
                 }
             }
             else
             {
-                // 👇【星星法杖核心】：Melee 模式下，针对每个目标依次触发“天火打击”
                 if (weaponData.OnHitActions != null) foreach (var a in weaponData.OnHitActions) if (a != null) a.Execute(hitContext);
                 if (ownerData != null && ownerData.GlobalOnHitActions != null) foreach (var a in ownerData.GlobalOnHitActions) if (a != null) a.Execute(hitContext);
             }
         }
+    }
+
+    private void InitiateAttack(Transform target)
+    {
+        float atkSpeed = GetFinalWeaponStat(StatType.AttackSpeed);
+        totalCooldown = GameFormulas.CalcCooldown(atkSpeed);
+        if (weaponData.DeliveryType == WeaponDeliveryType.Ranged) { FirePayload(); stateTimer = totalCooldown; return; }
+        t_Windup = totalCooldown * weaponData.SourceSO.WindupTimeRatio;
+        t_Strike = totalCooldown * weaponData.SourceSO.StrikeTimeRatio;
+        t_Recovery = totalCooldown - t_Windup - t_Strike;
+        rot_Base = Quaternion.AngleAxis(aimAngle, Vector3.forward);
+        rot_Windup = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.WindupAngle);
+        rot_Strike = rot_Base * Quaternion.Euler(0f, 0f, weaponData.SourceSO.StrikeAngle);
+        currentState = WeaponState.Windup; stateTimer = t_Windup;
+        if (myAnimator != null) myAnimator.SetTrigger("Windup");
     }
 
     private float GetFinalWeaponStat(StatType statID)
@@ -267,5 +224,7 @@ public class WeaponModule : MonoBehaviour
         return val;
     }
 
-    private Transform GetActualHinge() { return (transform.name.StartsWith("Socket_") && transform.childCount > 0) ? transform.GetChild(0) : transform; }
+    private bool IsTargetInRange(Transform target) { float dM = CombatSandbox.GetDist(1f); float maxR = GetFinalWeaponStat(StatType.MaxRange) * dM; Collider2D col = target.GetComponentInChildren<Collider2D>(); if (col == null) return Vector3.Distance(muzzlePoint.position, target.position) <= maxR; return Vector2.Distance(muzzlePoint.position, col.ClosestPoint(muzzlePoint.position)) <= maxR; }
+    private Transform GetActualHinge() => (transform.name.StartsWith("Socket_") && transform.childCount > 0) ? transform.GetChild(0) : transform;
+    private void UpdateMeleeAnimation() { float prg = 0; if (currentState == WeaponState.Windup) { prg = 1f - (stateTimer / t_Windup); actualHinge.rotation = Quaternion.Slerp(rot_Base, rot_Windup, prg); } else if (currentState == WeaponState.Strike) { prg = 1f - (stateTimer / t_Strike); actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, prg); } else if (currentState == WeaponState.Recovery) { prg = 1f - (stateTimer / t_Recovery); actualHinge.rotation = Quaternion.Slerp(rot_Strike, rot_Base, prg); } }
 }

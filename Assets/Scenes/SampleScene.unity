@@ -7846,8 +7846,8 @@ MonoBehaviour:
   GlobalVisualScale: 1
   EquippedComponents:
   - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
-  - {fileID: 11400000, guid: 3b843ca9bf3f2b64d9d4299c59a62c9e, type: 2}
-  - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   previewObjects: []
@@ -7938,22 +7938,22 @@ MonoBehaviour:
   Final_TotalMass: 10
   Final_TotalEnginePower: 400
   EquippedWeapons:
-  - WeaponName: "\u9A6C\u5938\u5A01\u7279"
-    DeliveryType: 0
+  - WeaponName: "\u4EEA\u5F0F\u8721\u70DB"
+    DeliveryType: 1
     Stats:
-    - StatID: 6
-      Value: 10
-    - StatID: 7
-      Value: 10
-    - StatID: 8
-      Value: 30
-    - StatID: 9
-      Value: 0
-    - StatID: 11
-      Value: 0.05
-    - StatID: 12
-      Value: 5
     - StatID: 10
+      Value: 50
+    - StatID: 11
+      Value: 50
+    - StatID: 13
+      Value: 50
+    - StatID: 14
+      Value: 0
+    - StatID: 15
+      Value: 100
+    - StatID: 16
+      Value: 0.01
+    - StatID: 19
       Value: 100
   DebugTags: []
 --- !u!114 &923019980
@@ -7985,11 +7985,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CurrentSpeed: 0
   isStaggered: 0
-  staggerTimer: 0
   isDashing: 0
-  maxWeaponRange: 0
-  minWeaponRange: 0
-  optimalFireRange: 0
 --- !u!61 &923019982
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -15118,6 +15114,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
+  - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15153,6 +15150,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
+  - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21207,6 +21205,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SlotContainer: {fileID: 2005178322}
   SkillSlotPrefab: {fileID: 8737958129001342272, guid: bf229f34c5f7aab4ba7473c296054306, type: 3}
+  MainUIRoot: {fileID: 0}
 --- !u!114 &1973191908
 MonoBehaviour:
   m_ObjectHideFlags: 0

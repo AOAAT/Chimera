@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
-  m_Name: "WPN3_\u9730\u5F39\u67AA"
+  m_Name: "WPN16_\u4EEA\u5F0F\u8721\u70DB"
   m_EditorClassIdentifier: 
-  ComponentBaseID: WPN_003
-  ComponentName: "\u9730\u5F39\u67AA"
-  Description: "\u9730\u5F39\u67AA\u4F5C\u4E3A\u53EF\u9760\u7684\u67AA\u68B0\u7ED3\u6784\u4E4B\u4E00\uFF0C\u5728\u62B5\u5FA1\u707E\u53D8\u7684\u7B2C\u4E00\u65F6\u95F4\u5C31\u5F97\u5230\u4E86\u5E7F\u6CDB\u7684\u5E94\u7528\u3002"
-  ComponentIcon: {fileID: 21300000, guid: b6198c4fd488d78408554b3a4aa8a0fd, type: 3}
+  ComponentBaseID: WPN_016
+  ComponentName: "\u4EEA\u5F0F\u8721\u70DB"
+  Description: "\u901A\u8FC7\u7A83\u53D6\u5176\u4ED6\u65F6\u7A7A\u7684\u5149\u660E\u6765\u7167\u4EAE\u5468\u56F4\uFF0C\u5DF2\u7ECF\u6709\u65E0\u6570\u7684\u4E16\u754C\u56E0\u4E3A\u5B83\u800C\u9677\u5165\u4E86\u6C38\u4E45\u7684\u9ED1\u6697\u3002"
+  ComponentIcon: {fileID: 21300000, guid: 590115e384511f349a912881e0f27439, type: 3}
   Type: 1
-  TacticalRoleDesc: "\u8FDC\u7A0B\u55B7\u5C04"
+  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
-  MacroCategory: 0
+  MacroCategory: 2
   BaseSubTags: 
   MinDropLevel: 1
   LevelMatrix:
@@ -31,28 +31,25 @@ MonoBehaviour:
     - StatID: 4
       Value: 0
     - StatID: 10
-      Value: 15
+      Value: 50
     - StatID: 11
-      Value: 10
+      Value: 50
     - StatID: 13
-      Value: 30
+      Value: 50
     - StatID: 14
       Value: 0
     - StatID: 15
-      Value: 200
+      Value: 100
     - StatID: 16
-      Value: 0.3
+      Value: 0.01
     - StatID: 19
-      Value: 200
-    - StatID: 18
-      Value: 6
+      Value: 100
     Mechanics: []
     OnFireActions:
-    - {fileID: 11400000, guid: e86cce55e7dd419449dbb6e9321f19d7, type: 2}
-    - {fileID: 11400000, guid: 6628257c4b99b2e41b4e3378244219f1, type: 2}
-    - {fileID: 11400000, guid: 779570b02a869744d835a7ded90e6462, type: 2}
+    - {fileID: 11400000, guid: 0860f9f61b5e5624b9d1e950a73c2f5d, type: 2}
     OnHitActions:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    - {fileID: 11400000, guid: d5a2f5a9e59229442a900880b1fc7a59, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
     BonusTags: 
@@ -71,9 +68,9 @@ MonoBehaviour:
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
   TargetingOverride: 0
-  AnchorOffset: {x: -0.33591247, y: -0}
+  AnchorOffset: {x: 0.0037841797, y: -0.1947842}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 1
-  TargetingLogic: 0
+  TargetingLogic: 1
   MovementLogic: 0
   SafeDodgeDistance: 8

@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af7f07780504a8142b209e0d98e0fb5e, type: 3}
   m_Name: ApplySelfRecoil
   m_EditorClassIdentifier: 
-  RecoilForce: 200
+  RecoilForce: 50
   FireStunDuration: 0.2

@@ -67,8 +67,9 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: -0.29312897, y: -0.131136}
-  BaseRotationOffset: 60
+  BaseRotationOffset: 90
   VisualScaleMultiplier: 1
   TargetingLogic: 0
   MovementLogic: 0
