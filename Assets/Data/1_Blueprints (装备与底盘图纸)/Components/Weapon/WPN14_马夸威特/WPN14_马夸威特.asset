@@ -45,9 +45,9 @@ MonoBehaviour:
     - StatID: 10
       Value: 100
     Mechanics: []
-    OnFireActions: []
-    OnHitActions:
+    OnFireActions:
     - {fileID: 11400000, guid: 98aa8efd048e82a45a8ba38a9ed52b03, type: 2}
+    OnHitActions:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []

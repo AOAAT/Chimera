@@ -42,8 +42,18 @@ public class Projectile : MonoBehaviour
         this.speed = data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f;
         this.speed *= speedMult;
 
+        if (this.speed <= 0.01f)
+        {
+            Debug.LogError($"<color=red>【子弹故障】</color> 来源武器：{data.WeaponName} | 原始速度：{speed} | 缩放后速度：{this.speed}。速度太低导致停滞！");
+        }
+
         gameObject.layer = LayerMask.NameToLayer("Projectile");
         currentDirection = transform.right;
+
+        if (currentDirection.sqrMagnitude < 0.01f)
+        {
+            Debug.LogError($"<color=red>【子弹故障】</color> 方向向量丢失！请检查武器插槽的旋转角度。");
+        }
         lastPosition = transform.position;
     }
 

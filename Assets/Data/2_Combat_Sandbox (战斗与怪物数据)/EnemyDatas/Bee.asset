@@ -22,12 +22,12 @@ MonoBehaviour:
   SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   BaseStats:
   - StatID: 16
-    Value: 100
-  - StatID: 15
     Value: 500
   - StatID: 17
     Value: 2
   - StatID: 18
+    Value: 2
+  - StatID: 19
     Value: 2
   SanPenalties: []
   TargetingLogic: 0

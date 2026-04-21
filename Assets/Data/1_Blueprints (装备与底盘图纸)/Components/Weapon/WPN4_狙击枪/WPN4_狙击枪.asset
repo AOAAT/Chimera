@@ -40,7 +40,7 @@ MonoBehaviour:
       Value: 15
     - StatID: 10
       Value: 25
-    - StatID: 14
+    - StatID: 15
       Value: 300
     - StatID: 11
       Value: 0.5
@@ -50,6 +50,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
     - {fileID: 11400000, guid: cf4c400e919d46844b5d3eaf59b631dd, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
