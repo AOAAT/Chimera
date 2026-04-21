@@ -2,24 +2,48 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// --- 找到 GameCoreTypes.cs 里的 StatType 枚举 ---
+// ==========================================
+// 1. 核心属性枚举 (StatType)
+// 【主程预警】：此处已手动分配固定 ID，严禁修改已有数字！
+// ==========================================
 public enum StatType
 {
-    AddedHP, AddedAP, AddedMass, AddedBlock, // 👇 新增 AddedBlock
-    PowerCost, EnginePower,
-    MaxDamage, MinDamage, MaxRange, MinRange,
-    AttackSpeed, CriticalChance, CritMultiplier, ExplosionRadius, MultiShotCount, ProjectileSpeed,
-    HP, AP, Mass, MoveSpeed, Block // 👇 给怪物本体也加一个 Block
+    // --- 基础加成属性 (0~9) ---
+    AddedHP = 0,
+    AddedAP = 1,
+    AddedMass = 2,
+    AddedBlock = 3,
+    PowerCost = 4,
+    EnginePower = 5,
+
+    // --- 武器/战斗专属属性 (10~29) ---
+    MaxDamage = 10,
+    MinDamage = 11,
+    CritMultiplier = 12,     // 暴击伤害倍率 (例如 2.0 代表 200%)
+    MaxRange = 13,
+    MinRange = 14,
+    AttackSpeed = 15,
+    CriticalChance = 16,
+    ExplosionRadius = 17,
+    MultiShotCount = 18,
+    ProjectileSpeed = 19,
+
+    // --- 实体运行时实时属性 (30~49) ---
+    HP = 30,
+    AP = 31,
+    Mass = 32,
+    MoveSpeed = 33,
+    Block = 34
 }
 
 // ==========================================
-// 全新系统：阵营大类与细分标签树 (The Bazaar Style)
+// 2. 阵营与标签系统
 // ==========================================
 public enum MacroCategory
 {
     Tech,   // 科技阵营
     Flesh,  // 血肉阵营
-    Magic   // 魔法阵营 (可随时扩充)
+    Magic   // 魔法阵营
 }
 
 public enum SubTag
@@ -38,17 +62,59 @@ public enum SalvageDropType
     DraftThree  // 三选一
 }
 
-// --- 请替换 GameCoreTypes.cs 中的 WeaponDeliveryType 并增加新枚举 ---
+// ==========================================
+// 3. 战斗与 AI 策略枚举
+// ==========================================
+public enum WeaponDeliveryType
+{
+    Melee,
+    Ranged,
+    Tactical_Dash // 战术位移
+}
 
-// 在末尾加上 Tactical_Dash 战术位移
-public enum WeaponDeliveryType { Melee, Ranged, Tactical_Dash }
+public enum TacticalDashDirection
+{
+    AwayFromTarget,
+    TowardsTarget,
+    Lateral
+}
 
-// 👇【新增】：怪物的战术位移方向
-public enum TacticalDashDirection { AwayFromTarget, TowardsTarget, Lateral }
-public enum ComponentType { Core, Weapon, Support, Factory, Movement }
-public enum TargetingStrategy { Nearest, MaxHPHighest, MaxHPLowest, CurrentHPHighest, CurrentHPLowest, Furthest }
-public enum MovementStrategy { Active_Firepower, Active_Survival, Dodge }
-public enum EnemyMovementStrategy { Swarm, Artillery, IntentDriven }
+public enum ComponentType
+{
+    Core,
+    Weapon,
+    Support,
+    Factory,
+    Movement
+}
+
+public enum TargetingStrategy
+{
+    Nearest,
+    MaxHPHighest,
+    MaxHPLowest,
+    CurrentHPHighest,
+    CurrentHPLowest,
+    Furthest
+}
+
+public enum MovementStrategy
+{
+    Active_Firepower,
+    Active_Survival,
+    Dodge
+}
+
+public enum EnemyMovementStrategy
+{
+    Swarm,
+    Artillery,
+    IntentDriven
+}
+
+// ==========================================
+// 4. 数据结构体
+// ==========================================
 
 [Serializable]
 public class StatEntry
@@ -57,11 +123,6 @@ public class StatEntry
     public float Value;
 }
 
-// ==========================================
-// 全新系统：等级数据矩阵块 (Level Matrix Block)
-// ==========================================
-// --- 请替换 GameCoreTypes.cs 中的 ComponentLevelData 类 ---
-
 [Serializable]
 public class ComponentLevelData
 {
@@ -69,25 +130,27 @@ public class ComponentLevelData
     public int BasePrice = 100;
     public int ScrapValue = 10;
 
-    [Header("本级绝对数值 (非乘区)")]
+    [Header("📊 本级绝对数值 (非乘区)")]
     public List<StatEntry> Stats = new List<StatEntry>();
 
-    [Header("本级新增的基础 ECA 机制 (万能积木)")]
+    [Header("🧩 本级新增的基础 ECA 机制 (万能积木)")]
     public List<ECABlock> Mechanics = new List<ECABlock>();
 
-    [Header("本级专属生命周期动作")]
+    [Header("🎬 本级专属生命周期管线")]
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
+
+    [Tooltip("战斗开始发令枪响的那一刻触发")]
     public List<ECAAction> OnBattleStartActions = new List<ECAAction>();
 
-    [Header("本级新增的额外标签")]
+    [Header("🏷️ 本级新增的额外标签")]
     public List<SubTag> BonusTags = new List<SubTag>();
 
     [TextArea] public string SpecialMechanicDesc = "等级特效描述...";
 
-    // 👇【核心修复】：强制 new 一个对象，绝对防空！
-    [Header("=== 本级主动技能 (仅装在核心槽位生效) ===")]
+    // 👇【核心修复】：强制 new 一个对象，绝对防止 Inspector 空指针！
+    [Header("⚡ 本级主动技能 (仅装在核心槽位生效)")]
     public ActiveSkillConfig ActiveSkill = new ActiveSkillConfig();
 }
 

@@ -28,6 +28,8 @@ MonoBehaviour:
     BasePrice: 0
     ScrapValue: 0
     Stats:
+    - StatID: 4
+      Value: 3
     - StatID: 1
       Value: 100
     - StatID: 3

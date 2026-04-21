@@ -28,22 +28,27 @@ MonoBehaviour:
     BasePrice: 0
     ScrapValue: 0
     Stats:
-    - StatID: 7
-      Value: 5
-    - StatID: 6
-      Value: 15
-    - StatID: 9
+    - StatID: 4
       Value: 0
-    - StatID: 8
-      Value: 15
     - StatID: 10
+      Value: 15
+    - StatID: 11
+      Value: 5
+    - StatID: 13
+      Value: 15
+    - StatID: 14
+      Value: 0
+    - StatID: 15
       Value: 200
+    - StatID: 16
+      Value: 0.2
     Mechanics: []
     OnFireActions:
     - {fileID: 11400000, guid: 50dc2efe5ff6c414e9c575513fde4d82, type: 2}
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -73,6 +78,7 @@ MonoBehaviour:
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -102,6 +108,7 @@ MonoBehaviour:
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -115,13 +122,13 @@ MonoBehaviour:
     BasePrice: 0
     ScrapValue: 0
     Stats:
-    - StatID: 7
+    - StatID: 0
       Value: 0
-    - StatID: 6
+    - StatID: 0
       Value: 0
-    - StatID: 9
+    - StatID: 0
       Value: 0
-    - StatID: 8
+    - StatID: 0
       Value: 10
     - StatID: 10
       Value: 200
@@ -131,6 +138,7 @@ MonoBehaviour:
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:

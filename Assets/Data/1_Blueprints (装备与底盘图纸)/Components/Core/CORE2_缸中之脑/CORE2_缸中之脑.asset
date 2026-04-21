@@ -32,17 +32,11 @@ MonoBehaviour:
       Value: 0
     - StatID: 0
       Value: 0
-    - StatID: 1
-      Value: 0
-    - StatID: 3
-      Value: 0
-    - StatID: 3
-      Value: 0
     Mechanics: []
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions:
-    - {fileID: 11400000, guid: 59dedd060453976409301bc48b988cb4, type: 2}
+    - {fileID: 0}
     OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 

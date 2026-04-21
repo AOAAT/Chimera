@@ -30,20 +30,20 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
-    - StatID: 6
-      Value: 120
-    - StatID: 7
-      Value: 100
-    - StatID: 8
-      Value: 100
-    - StatID: 9
-      Value: 15
     - StatID: 10
-      Value: 25
-    - StatID: 15
-      Value: 300
+      Value: 120
     - StatID: 11
+      Value: 100
+    - StatID: 13
+      Value: 100
+    - StatID: 14
+      Value: 15
+    - StatID: 15
+      Value: 25
+    - StatID: 16
       Value: 0.5
+    - StatID: 19
+      Value: 300
     Mechanics: []
     OnFireActions: []
     OnHitActions:

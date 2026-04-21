@@ -17,4 +17,4 @@ MonoBehaviour:
   TargetMode: 1
   CenterType: 0
   FactionFilter: 0
-  Radius: 10
+  Radius: 15

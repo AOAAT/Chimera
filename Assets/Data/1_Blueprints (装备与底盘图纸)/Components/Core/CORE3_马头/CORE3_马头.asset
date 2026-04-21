@@ -27,7 +27,9 @@ MonoBehaviour:
   - Level: 1
     BasePrice: 0
     ScrapValue: 0
-    Stats: []
+    Stats:
+    - StatID: 4
+      Value: 0
     Mechanics: []
     OnFireActions: []
     OnHitActions: []

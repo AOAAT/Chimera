@@ -30,17 +30,17 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
-    - StatID: 6
-      Value: 15
-    - StatID: 7
-      Value: 10
-    - StatID: 8
-      Value: 40
-    - StatID: 9
-      Value: 0
     - StatID: 10
-      Value: 100
+      Value: 15
     - StatID: 11
+      Value: 10
+    - StatID: 13
+      Value: 40
+    - StatID: 14
+      Value: 0
+    - StatID: 15
+      Value: 100
+    - StatID: 16
       Value: 0.3
     Mechanics: []
     OnFireActions: []
@@ -48,6 +48,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
     - {fileID: 11400000, guid: b030d33fccb8d9f44b14fdd92aa350a2, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
