@@ -1,5 +1,4 @@
-﻿// --- START OF FILE RuntimeChimeraData.cs ---
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -9,16 +8,11 @@ public class RuntimeWeapon
     public ComponentDataSO SourceSO;
     public Dictionary<StatType, float> WeaponStats = new Dictionary<StatType, float>();
     public List<ECABlock> WeaponMechanics = new List<ECABlock>();
-
     public WeaponDeliveryType DeliveryType;
     public GameObject ProjectilePrefab;
-
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
-
     public float BonusCriticalChance = 0f;
-
-    // 👇【新增】：万能状态机字典，用来存弹夹余量、开火次数等！
     public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
     public float GetStat(StatType statID) { return WeaponStats.ContainsKey(statID) ? WeaponStats[statID] : 0f; }
 }
@@ -28,7 +22,6 @@ public class RuntimeChimeraData
 {
     public string UnitID;
     public string UnitName;
-
     public float MaxHP { get; private set; }
     public float MaxAP { get; private set; }
     public float TotalPowerCost { get; private set; }
@@ -46,7 +39,6 @@ public class RuntimeChimeraData
     public List<RuntimeWeapon> EquippedWeapons = new List<RuntimeWeapon>();
     public List<ComponentDataSO> AllEquippedSOs = new List<ComponentDataSO>();
 
-    // 存储本台机甲的主动技能
     public ActiveSkillConfig CoreActiveSkill;
     private Dictionary<StatType, float> cachedFlattenedStats = new Dictionary<StatType, float>();
 
@@ -54,27 +46,30 @@ public class RuntimeChimeraData
     public List<ECAAction> GlobalOnHitActions = new List<ECAAction>();
     public List<ECAAction> GlobalOnKillActions = new List<ECAAction>();
 
+    // 👇【新增】：全机开战管线
+    public List<ECAAction> GlobalOnBattleStartActions = new List<ECAAction>();
+
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
     {
         GlobalOnFireActions.Clear();
         GlobalOnHitActions.Clear();
         GlobalOnKillActions.Clear();
+        GlobalOnBattleStartActions.Clear(); // 👈 每次重装清空
+
         AllEquippedSOs.Clear();
         GlobalStats.Clear();
         Tags.Clear();
         GlobalMechanics.Clear();
         EquippedWeapons.Clear();
         MaxHP = MaxAP = TotalPowerCost = TotalMass = TotalEnginePower = 0;
-        CoreActiveSkill = null; // 每次重装前清空
+        CoreActiveSkill = null;
 
         if (chassis == null) return;
         UnitName = chassis.ChassisName;
         LogicCenterOffset = chassis.LogicCenterOffset;
 
-        // 1. 读取底盘属性
         ProcessStats(chassis.BaseStats, false, null);
 
-        // 2. 遍历所有组件
         foreach (var compInstance in components)
         {
             if (compInstance == null || compInstance.BaseData == null) continue;
@@ -90,15 +85,9 @@ public class RuntimeChimeraData
 
             if (compSO.Type == ComponentType.Weapon)
             {
-                RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = compSO.ComponentName };
-                newWeapon.SourceSO = compSO;
-                newWeapon.DeliveryType = compSO.DeliveryType;
-                newWeapon.ProjectilePrefab = compSO.ProjectilePrefab;
-
+                RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = compSO.ComponentName, SourceSO = compSO, DeliveryType = compSO.DeliveryType, ProjectilePrefab = compSO.ProjectilePrefab };
                 if (levelData.OnHitActions != null) newWeapon.OnHitActions.AddRange(levelData.OnHitActions);
                 if (levelData.OnFireActions != null) newWeapon.OnFireActions.AddRange(levelData.OnFireActions);
-                if (levelData.Mechanics != null) newWeapon.WeaponMechanics.AddRange(levelData.Mechanics);
-
                 ProcessStats(levelData.Stats, true, newWeapon);
                 EquippedWeapons.Add(newWeapon);
             }
@@ -109,48 +98,27 @@ public class RuntimeChimeraData
                     TargetingLogic = compSO.TargetingLogic;
                     MovementLogic = compSO.MovementLogic;
                     SafeDodgeDistance = compSO.SafeDodgeDistance;
-
-                    // 提取核心主动技能
-                    if (levelData.ActiveSkill == null)
-                    {
-                        Debug.LogWarning($"<color=#FFA500>[Assemble]</color> 核心 [{compSO.ComponentName}] 的 ActiveSkill 为空！");
-                    }
-                    else if (!levelData.ActiveSkill.HasActiveSkill)
-                    {
-                        Debug.LogWarning($"<color=#FFA500>[Assemble]</color> 核心 [{compSO.ComponentName}] (Lv.{compInstance.CurrentLevel}) 没有勾选 HasActiveSkill！");
-                    }
-                    else
-                    {
-                        CoreActiveSkill = levelData.ActiveSkill;
-                        Debug.Log($"<color=#00FFFF>[Assemble]</color> 成功提取主动技能: [{CoreActiveSkill.SkillName}]");
-                    }
+                    CoreActiveSkill = levelData.ActiveSkill;
                 }
-
-                if (levelData.Mechanics != null) GlobalMechanics.AddRange(levelData.Mechanics);
                 ProcessStats(levelData.Stats, false, null);
             }
-        }
-        foreach (var compInstance in components)
-        {
-            if (compInstance == null) continue;
-            var levelData = compInstance.BaseData.GetLevelData(compInstance.CurrentLevel);
 
-            // 如果是辅助/核心等非武器组件，且配了 OnHit/OnFire，则注入全局池
+            // 👇【核心新增】：如果是辅助/移动/核心组件，且配了全局效果，注入对应池
             if (compInstance.BaseData.Type != ComponentType.Weapon)
             {
                 if (levelData.OnFireActions != null) GlobalOnFireActions.AddRange(levelData.OnFireActions);
                 if (levelData.OnHitActions != null) GlobalOnHitActions.AddRange(levelData.OnHitActions);
+                if (levelData.OnBattleStartActions != null) GlobalOnBattleStartActions.AddRange(levelData.OnBattleStartActions);
             }
         }
 
-        // 3. 统计最终面板
         MaxHP = GetGlobalStat(StatType.AddedHP);
         MaxAP = GetGlobalStat(StatType.AddedAP);
         TotalPowerCost = GetGlobalStat(StatType.PowerCost);
         TotalMass = GetGlobalStat(StatType.AddedMass);
         TotalEnginePower = GetGlobalStat(StatType.EnginePower);
 
-        // 4. 执行装配 ECA 机制
+        // 执行装配瞬时效果
         foreach (var compInstance in components)
         {
             if (compInstance == null) continue;
@@ -163,43 +131,31 @@ public class RuntimeChimeraData
         }
         RefreshStatCache();
     }
+
     private void RefreshStatCache()
     {
         cachedFlattenedStats.Clear();
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType)))
-        {
-            cachedFlattenedStats[type] = GetGlobalStat(type);
-        }
+        foreach (StatType type in System.Enum.GetValues(typeof(StatType))) cachedFlattenedStats[type] = GetGlobalStat(type);
     }
-    // ==========================================
-    // 极其关键的属性读取算法 (绝对不能省略！)
-    // ==========================================
+
     private void ProcessStats(List<StatEntry> stats, bool isWeaponLocal, RuntimeWeapon weaponRef)
     {
         if (stats == null) return;
-
         foreach (var stat in stats)
         {
             if (isWeaponLocal && IsWeaponSpecificStat(stat.StatID))
             {
-                if (weaponRef.WeaponStats.ContainsKey(stat.StatID))
-                    weaponRef.WeaponStats[stat.StatID] += stat.Value;
-                else
-                    weaponRef.WeaponStats.Add(stat.StatID, stat.Value);
+                if (weaponRef.WeaponStats.ContainsKey(stat.StatID)) weaponRef.WeaponStats[stat.StatID] += stat.Value;
+                else weaponRef.WeaponStats.Add(stat.StatID, stat.Value);
             }
             else
             {
-                if (GlobalStats.ContainsKey(stat.StatID))
-                    GlobalStats[stat.StatID] += stat.Value;
-                else
-                    GlobalStats.Add(stat.StatID, stat.Value);
+                if (GlobalStats.ContainsKey(stat.StatID)) GlobalStats[stat.StatID] += stat.Value;
+                else GlobalStats.Add(stat.StatID, stat.Value);
             }
         }
     }
-    public float GetFastStat(StatType type)
-    {
-        return cachedFlattenedStats.ContainsKey(type) ? cachedFlattenedStats[type] : 0f;
-    }
+
     public void ModifyStat(ComponentDataSO targetSO, StatType stat, float delta)
     {
         if (IsWeaponSpecificStat(stat))
@@ -210,36 +166,35 @@ public class RuntimeChimeraData
                 {
                     if (weapon.WeaponStats.ContainsKey(stat)) weapon.WeaponStats[stat] += delta;
                     else weapon.WeaponStats[stat] = delta;
+
+                    switch (stat)
+                    {
+                        case StatType.MinDamage: case StatType.MaxDamage: weapon.WeaponStats[stat] = Mathf.Max(0.1f, weapon.WeaponStats[stat]); break;
+                        case StatType.AttackSpeed: weapon.WeaponStats[stat] = Mathf.Max(1.0f, weapon.WeaponStats[stat]); break;
+                        case StatType.CriticalChance: weapon.WeaponStats[stat] = Mathf.Max(0f, weapon.WeaponStats[stat]); break;
+                        case StatType.MaxRange: weapon.WeaponStats[stat] = Mathf.Max(0.5f, weapon.WeaponStats[stat]); break;
+                    }
                     return;
                 }
             }
         }
-
-        if (stat == StatType.PowerCost) TotalPowerCost += delta;
-        else if (stat == StatType.AddedHP) MaxHP += delta;
-        else if (stat == StatType.AddedAP) MaxAP += delta;
-        else if (stat == StatType.AddedMass) TotalMass += delta;
-        else if (stat == StatType.EnginePower) TotalEnginePower += delta;
-
         if (GlobalStats.ContainsKey(stat)) GlobalStats[stat] += delta;
         else GlobalStats.Add(stat, delta);
+        switch (stat)
+        {
+            case StatType.AddedHP: MaxHP = Mathf.Max(1f, GetGlobalStat(StatType.AddedHP)); break;
+            case StatType.AddedAP: MaxAP = Mathf.Max(0f, GetGlobalStat(StatType.AddedAP)); break;
+            case StatType.PowerCost: TotalPowerCost = Mathf.Max(0f, GetGlobalStat(StatType.PowerCost)); break;
+            case StatType.AddedMass: TotalMass = Mathf.Max(0.1f, GetGlobalStat(StatType.AddedMass)); break;
+        }
     }
 
     private bool IsWeaponSpecificStat(StatType type)
     {
-        return type == StatType.MaxDamage ||
-               type == StatType.MinDamage ||
-               type == StatType.MaxRange ||
-               type == StatType.MinRange ||
-               type == StatType.AttackSpeed ||
-               type == StatType.CriticalChance ||
-               type == StatType.ExplosionRadius ||
-               type == StatType.MultiShotCount ||
-               type == StatType.ProjectileSpeed;
+        return type == StatType.MaxDamage || type == StatType.MinDamage || type == StatType.MaxRange || type == StatType.MinRange ||
+               type == StatType.AttackSpeed || type == StatType.CriticalChance || type == StatType.ExplosionRadius ||
+               type == StatType.MultiShotCount || type == StatType.ProjectileSpeed;
     }
 
-    public float GetGlobalStat(StatType statID)
-    {
-        return GlobalStats.ContainsKey(statID) ? GlobalStats[statID] : 0f;
-    }
+    public float GetGlobalStat(StatType statID) { return GlobalStats.ContainsKey(statID) ? GlobalStats[statID] : 0f; }
 }

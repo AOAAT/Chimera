@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
+  m_Name: "SUP2_\u6DF7\u6C8C\u4E4B\u5FC3"
+  m_EditorClassIdentifier: 
+  ComponentBaseID: SUP_002
+  ComponentName: "\u6DF7\u6C8C\u4E4B\u5FC3"
+  Description: "\u4E00\u4E2A\u4EBA\u8715\u53D8\u4E3A\u90AA\u795E\u4F7F\u5F92\u7684\u7B2C\u4E00\u6B65\u5C31\u662F\u5728\u539F\u6709\u5FC3\u810F\u7684\u4E0B\u65B9\u751F\u957F\u51FA\u4E00\u9897\u6DF7\u6C8C\u4E4B\u5FC3\u3002\u8FD9\u9897\u6DF7\u6C8C\u4E4B\u5FC3\u5C06\u4F1A\u4E3A\u8EAB\u4F53\u5373\u5C06\u5230\u6765\u7684\u4E00\u5207\u7578\u53D8\u63D0\u4F9B\u517B\u6599\u3002"
+  ComponentIcon: {fileID: 21300000, guid: 288f734967bcba747afb0f86a058aa9d, type: 3}
+  Type: 2
+  TacticalRoleDesc: "\u6570\u503C\u4FEE\u9970"
+  AnimController: {fileID: 0}
+  MuzzleOffset: {x: 0, y: 0}
+  MacroCategory: 1
+  BaseSubTags: 
+  MinDropLevel: 1
+  LevelMatrix:
+  - Level: 1
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 0
+    - StatID: 0
+      Value: 100
+    Mechanics: []
+    OnFireActions: []
+    OnHitActions: []
+    OnAssembleActions:
+    - {fileID: 11400000, guid: 2a70b9a1ac1c8464eb267a0ebf963ae8, type: 2}
+    - {fileID: 11400000, guid: 8eb6ab21ffbced64a86b8718790898f9, type: 2}
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 0}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
+  AnchorOffset: {x: -0.008460999, y: -0.0656662}
+  BaseRotationOffset: 0
+  VisualScaleMultiplier: 1
+  TargetingLogic: 0
+  MovementLogic: 0
+  SafeDodgeDistance: 8

@@ -79,6 +79,7 @@ public class ComponentLevelData
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
+    public List<ECAAction> OnBattleStartActions = new List<ECAAction>();
 
     [Header("本级新增的额外标签")]
     public List<SubTag> BonusTags = new List<SubTag>();

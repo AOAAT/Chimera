@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
+  m_Name: BUFF_Elephant_Timer
+  m_EditorClassIdentifier: 
+  BuffID: BUFF_001
+  BuffName: "\u8C61\u817F\u51B2\u950B"
+  BuffIcon: {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
+  ParticleColor: {r: 1, g: 1, b: 1, a: 1}
+  DurationType: 0
+  BaseDuration: 10
+  StackType: 1
+  MaxStacks: 1
+  StatModifiers: []
+  OnApplyActions: []
+  TickInterval: 5
+  OnTickActions:
+  - {fileID: 11400000, guid: e292b5727f1ee1740b49490b1d4f056b, type: 2}
+  OnRemoveActions: []
+  OnMaxStacksActions: []
+  OverrideAI: 0
+  OverrideMovementLogic: 2
+  OverrideSafeDodgeDistance: 8

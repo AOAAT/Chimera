@@ -7846,10 +7846,10 @@ MonoBehaviour:
   GlobalVisualScale: 1
   EquippedComponents:
   - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
-  - {fileID: 0}
-  - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: a8a0f3751e164e3459ba36a6c1238f67, type: 2}
+  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   previewObjects: []
 --- !u!212 &923019977
 SpriteRenderer:
@@ -7932,19 +7932,36 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
-  Final_MaxHP: 100
+  Final_MaxHP: 200
   Final_MaxAP: 100
   Final_TotalPowerCost: 0
-  Final_TotalMass: 0
-  Final_TotalEnginePower: 0
+  Final_TotalMass: 10
+  Final_TotalEnginePower: 400
   EquippedWeapons:
-  - WeaponName: "\u65B0\u7EC4\u4EF6"
+  - WeaponName: "\u8840\u8089\u4E4B\u97AD"
     DeliveryType: 0
     Stats:
     - StatID: 6
-      Value: 15
+      Value: 25
     - StatID: 7
-      Value: 10
+      Value: 0.1
+    - StatID: 8
+      Value: 40
+    - StatID: 9
+      Value: 0
+    - StatID: 11
+      Value: 0.2
+    - StatID: 13
+      Value: 4
+    - StatID: 10
+      Value: 200
+  - WeaponName: "\u72EE\u5B50\u5934"
+    DeliveryType: 0
+    Stats:
+    - StatID: 6
+      Value: 25
+    - StatID: 7
+      Value: 0.1
     - StatID: 8
       Value: 20
     - StatID: 9
@@ -7952,7 +7969,7 @@ MonoBehaviour:
     - StatID: 10
       Value: 100
     - StatID: 11
-      Value: 0.3
+      Value: 0.5
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -7983,7 +8000,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CurrentSpeed: 0
   isStaggered: 0
+  staggerTimer: 0
   isDashing: 0
+  maxWeaponRange: 0
+  minWeaponRange: 0
+  optimalFireRange: 0
 --- !u!61 &923019982
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -15092,6 +15113,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
   - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
   - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
+  - {fileID: 11400000, guid: a8a0f3751e164e3459ba36a6c1238f67, type: 2}
+  - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
@@ -15103,12 +15127,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
   - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
+  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}
   - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
   - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
+  - {fileID: 11400000, guid: a8a0f3751e164e3459ba36a6c1238f67, type: 2}
+  - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
   - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
   - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
   - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
@@ -15118,6 +15146,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
   - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
   - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
@@ -15129,6 +15158,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
   - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
   - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
+  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0

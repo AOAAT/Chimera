@@ -1,5 +1,4 @@
-﻿// --- START OF FILE CombatDirector.cs ---
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -9,11 +8,12 @@ public class CombatDirector : MonoBehaviour
 {
     public static CombatDirector Instance { get; private set; }
 
-    // 【优化】：静态列表检索，O(1) 访问
+    // ==========================================
+    // 🚀 全局单位注册中心 (O(1) 检索优化)
+    // ==========================================
+    [Header("=== 运行时单位注册表 ===")]
     public static List<DamageReceiver> ActiveEnemies = new List<DamageReceiver>();
     public static List<DamageReceiver> ActivePlayerUnits = new List<DamageReceiver>();
-
-  
 
     public bool IsCombatActive { get; private set; }
     public bool IsDeploymentPhase { get; private set; }
@@ -51,35 +51,55 @@ public class CombatDirector : MonoBehaviour
     private GameObject forbiddenZonesContainer;
 
     private MapNodeData currentNodeData;
-
-    private List<DamageReceiver> activeEnemies = new List<DamageReceiver>();
-    private List<DamageReceiver> activePlayerUnits = new List<DamageReceiver>();
     private bool isCheckingWinCondition = false;
     private bool isLastCombatVictory = false;
 
-    private void Awake() { Instance = this; }
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+    }
 
-    // 【新增】：快速清理方法
+    /// <summary>
+    /// 快速清理全场注册表
+    /// </summary>
     public static void ClearUnitRegistry()
     {
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
+        Debug.Log("<color=white>【系统】</color> 战场单位注册表已清空。");
     }
 
     private void Start()
     {
-        if (StartBattleButton != null) StartBattleButton.onClick.AddListener(OnBattleStartClicked);
-        if (ReturnToMapButton != null) ReturnToMapButton.onClick.AddListener(OnReturnToMapClicked);
+        if (StartBattleButton != null)
+        {
+            StartBattleButton.onClick.AddListener(OnBattleStartClicked);
+        }
+
+        if (ReturnToMapButton != null)
+        {
+            ReturnToMapButton.onClick.AddListener(OnReturnToMapClicked);
+        }
+
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (ArenaReference != null) ArenaReference.SetActive(false);
     }
 
+    /// <summary>
+    /// 关卡入口：进入部署阶段
+    /// </summary>
     public void EnterCombatPhase(MapNodeData nodeData)
     {
         IsCombatActive = false;
         IsDeploymentPhase = true;
         isCheckingWinCondition = false;
         currentNodeData = nodeData;
+
+        // 重置注册表
+        ClearUnitRegistry();
 
         if (CombatUIPanel != null) CombatUIPanel.SetActive(true);
         if (StartBattleButton != null) StartBattleButton.interactable = true;
@@ -88,13 +108,17 @@ public class CombatDirector : MonoBehaviour
         if (NavHangarButton != null) NavHangarButton.interactable = true;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
+        if (HangarMenuUI.Instance != null)
+        {
+            HangarMenuUI.Instance.OpenHangar();
+        }
 
         if (RunManager.Instance == null) return;
 
-        int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
+        int currentStage = RunManager.Instance.CurrentStage;
         int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
 
+        // 获取遭遇战布局
         CurrentLayout = RunManager.Instance.GetNextEncounter(currentStage, currentLayer, nodeData != null ? nodeData.NodeType : MapNodeType.Enemy_Tech);
 
         if (CurrentLayout != null)
@@ -145,18 +169,18 @@ public class CombatDirector : MonoBehaviour
         foreach (var spawnData in CurrentLayout.Enemies)
         {
             if (spawnData.EnemyType == null) continue;
+
             Vector3 spawnPos = centerPos + new Vector3(spawnData.LocalPosition.x, spawnData.LocalPosition.y, 0f);
             GameObject enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, activeEnemiesContainer.transform);
             enemyObj.name = $"[Enemy] {spawnData.EnemyType.EnemyName}";
 
             EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
-            if (brain != null) brain.MyData = spawnData.EnemyType;
+            if (brain != null)
+            {
+                brain.MyData = spawnData.EnemyType;
+            }
 
-            SpriteRenderer sr = enemyObj.GetComponentInChildren<SpriteRenderer>();
-            if (sr != null && spawnData.EnemyType.EnemySprite != null) sr.sprite = spawnData.EnemyType.EnemySprite;
-
-            BuffManager buffMgr = enemyObj.GetComponent<BuffManager>();
-            if (buffMgr == null) buffMgr = enemyObj.AddComponent<BuffManager>();
+            // 敌人出生即进入注册表 (由 DamageReceiver 内部处理)
         }
     }
 
@@ -207,6 +231,186 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 【核心事件】：玩家点击“开始战斗”
+    /// </summary>
+    private void OnBattleStartClicked()
+    {
+        // 1. 强制清理并重新抓取当前存活单位进入注册表
+        ActiveEnemies.Clear();
+        ActivePlayerUnits.Clear();
+
+        DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
+        foreach (var r in allReceivers)
+        {
+            if (r.isEnemy) ActiveEnemies.Add(r);
+            else ActivePlayerUnits.Add(r);
+        }
+
+        if (ActivePlayerUnits.Count == 0)
+        {
+            Debug.LogWarning("【警告】未部署任何机甲，无法开战！");
+            return;
+        }
+
+        // 2. 👇【核心修复】：执行开战协议 (Battle Start Pipeline)
+        Debug.Log("<color=#00FFFF>【战斗导演】正在激活全军被动模组...</color>");
+        foreach (var playerUnit in ActivePlayerUnits)
+        {
+            MechUnit2D mechScript = playerUnit.GetComponent<MechUnit2D>();
+            if (mechScript != null)
+            {
+                mechScript.ExecuteBattleStartProtocol();
+            }
+        }
+
+        // 3. UI 状态锁定
+        if (StartBattleButton != null) StartBattleButton.interactable = false;
+        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
+        if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
+
+        if (NavHangarButton != null) NavHangarButton.interactable = false;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
+
+        if (forbiddenZonesContainer != null) forbiddenZonesContainer.SetActive(false);
+
+        // 4. 正式鸣枪
+        IsCombatActive = true;
+        IsDeploymentPhase = false;
+        isCheckingWinCondition = true;
+
+        // 构建主动技能栏
+        if (ActiveSkillUIManager.Instance != null)
+        {
+            ActiveSkillUIManager.Instance.BuildSkillUI(ActivePlayerUnits);
+        }
+
+        Debug.Log("<color=green>【战斗导演】全员通电完成，战斗正式开始！</color>");
+    }
+
+    private void Update()
+    {
+        if (!wallsGenerated)
+        {
+            if (ArenaReference == null) return;
+            GenerateArenaBoundaries();
+            wallsGenerated = true;
+        }
+
+        if (!IsCombatActive || !isCheckingWinCondition) return;
+
+        // 胜负判定 (利用注册表，性能极高)
+        bool allEnemiesDead = ActiveEnemies.All(e => e == null || e.CurrentHP <= 0);
+        if (allEnemiesDead)
+        {
+            TriggerSettlement(true);
+            return;
+        }
+
+        bool allPlayersDead = ActivePlayerUnits.All(p => p == null || p.CurrentHP <= 0);
+        if (allPlayersDead)
+        {
+            TriggerSettlement(false);
+        }
+    }
+
+    private void TriggerSettlement(bool isVictory)
+    {
+        IsCombatActive = false;
+        isCheckingWinCondition = false;
+        IsDeploymentPhase = false;
+        isLastCombatVictory = isVictory;
+
+        if (SettlementPanel != null)
+        {
+            SettlementPanel.SetActive(true);
+            if (SettlementTitleText != null)
+            {
+                SettlementTitleText.text = isVictory ? "战 斗 胜 利" : "任 务 失 败";
+                SettlementTitleText.color = isVictory ? Color.green : Color.red;
+            }
+        }
+
+        if (!isVictory)
+        {
+            int totalSanLoss = 0;
+            foreach (var enemy in ActiveEnemies)
+            {
+                if (enemy != null && enemy.CurrentHP > 0)
+                {
+                    float hpPercent = enemy.CurrentHP / enemy.MaxHP;
+                    EnemyBrain brain = enemy.GetComponent<EnemyBrain>();
+
+                    if (brain != null && brain.MyData != null && brain.MyData.SanPenalties != null)
+                    {
+                        var sortedTiers = brain.MyData.SanPenalties.OrderByDescending(t => t.HpThreshold).ToList();
+                        int currentLoss = 0;
+                        foreach (var tier in sortedTiers)
+                        {
+                            if (hpPercent >= tier.HpThreshold) { currentLoss = tier.SanDeduction; break; }
+                        }
+                        totalSanLoss += currentLoss;
+                    }
+                }
+            }
+            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
+        }
+    }
+
+    private void OnReturnToMapClicked()
+    {
+        Debug.Log("<color=#FFFF00>【战斗导演】正在撤收战场资源...</color>");
+
+        // 1. 清理
+        MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
+        foreach (var mech in allMechs) { if (mech != null) { mech.SyncPostCombatState(); Destroy(mech.gameObject); } }
+
+        DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
+        foreach (var r in allReceivers) { if (r != null) Destroy(r.gameObject); }
+
+        Projectile[] allBullets = FindObjectsOfType<Projectile>();
+        foreach (var b in allBullets) { if (b != null) Destroy(b.gameObject); }
+
+        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
+        if (ArenaReference != null) ArenaReference.SetActive(false);
+        if (SettlementPanel != null) SettlementPanel.SetActive(false);
+        if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
+
+        if (NavHangarButton != null) NavHangarButton.interactable = true;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
+
+        // 重置部署状态
+        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
+        {
+            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits) { if (profile != null) profile.IsDeployed = false; }
+        }
+
+        // 清理注册表
+        ClearUnitRegistry();
+
+        // 2. 走向结算
+        if (isLastCombatVictory)
+        {
+            LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
+            int currentStage = RunManager.Instance.CurrentStage;
+            int currentLayer = MapManager.Instance.CurrentLayer;
+            MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
+
+            LootSequenceSO nodeLoot = NodeLootManager.Instance != null ? NodeLootManager.Instance.GetLootForNode(currentStage, currentLayer, currentType) : null;
+            MacroCategory currentMacro = GetMacroForNodeType(currentType);
+
+            if (LootSequenceDirector.Instance != null)
+            {
+                LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer, () => ExecuteReturnToMap());
+            }
+            else ExecuteReturnToMap();
+        }
+        else
+        {
+            ExecuteReturnToMap();
+        }
+    }
+
     private void GenerateArenaBoundaries()
     {
         CurrentArenaCenter = ArenaReference != null ? ArenaReference.transform.position : Vector3.zero;
@@ -246,198 +450,15 @@ public class CombatDirector : MonoBehaviour
         wall.transform.position = pos;
         wall.layer = LayerMask.NameToLayer("Default");
         wall.transform.localScale = new Vector3(size.x, size.y, 1f);
-
         BoxCollider2D col = wall.AddComponent<BoxCollider2D>();
         col.size = Vector2.one;
         col.isTrigger = false;
-
-        SpriteRenderer sr = wall.AddComponent<SpriteRenderer>();
-        if (WhitePixelSprite != null)
-        {
-            sr.sprite = WhitePixelSprite;
-            sr.color = new Color(1f, 0f, 0f, 0.15f);
-        }
-    }
-
-    private void OnBattleStartClicked()
-    {
-        activeEnemies.Clear();
-        activePlayerUnits.Clear();
-        DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
-        foreach (var r in allReceivers)
-        {
-            if (r.isEnemy) activeEnemies.Add(r);
-            else activePlayerUnits.Add(r);
-        }
-        if (activePlayerUnits.Count == 0) return;
-
-        if (StartBattleButton != null) StartBattleButton.interactable = false;
-        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
-        if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
-        if (NavHangarButton != null) NavHangarButton.interactable = false;
-        if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
-
-        if (forbiddenZonesContainer != null) forbiddenZonesContainer.SetActive(false);
-
-        IsCombatActive = true;
-        IsDeploymentPhase = false;
-        isCheckingWinCondition = true;
-
-        if (ActiveSkillUIManager.Instance != null) ActiveSkillUIManager.Instance.BuildSkillUI(activePlayerUnits);
-    }
-
-    private void Update()
-    {
-        if (!wallsGenerated)
-        {
-            if (ArenaReference == null) return;
-            GenerateArenaBoundaries();
-            wallsGenerated = true;
-        }
-
-        if (!IsCombatActive || !isCheckingWinCondition) return;
-
-        bool allEnemiesDead = true;
-        foreach (var e in activeEnemies)
-        {
-            if (e != null && e.CurrentHP > 0) { allEnemiesDead = false; break; }
-        }
-        if (allEnemiesDead)
-        {
-            TriggerSettlement(true);
-            return;
-        }
-
-        bool allPlayersDead = true;
-        foreach (var p in activePlayerUnits)
-        {
-            if (p != null && p.CurrentHP > 0) { allPlayersDead = false; break; }
-        }
-        if (allPlayersDead)
-        {
-            TriggerSettlement(false);
-        }
-    }
-
-    private void TriggerSettlement(bool isVictory)
-    {
-        IsCombatActive = false;
-        isCheckingWinCondition = false;
-        IsDeploymentPhase = false;
-        isLastCombatVictory = isVictory;
-
-        if (SettlementPanel != null)
-        {
-            SettlementPanel.SetActive(true);
-            if (SettlementTitleText != null)
-            {
-                SettlementTitleText.text = isVictory ? "战 斗 胜 利" : "任 务 失 败";
-                SettlementTitleText.color = isVictory ? Color.green : Color.red;
-            }
-        }
-
-        if (!isVictory)
-        {
-            int totalSanLoss = 0;
-            foreach (var enemy in activeEnemies)
-            {
-                if (enemy != null && enemy.CurrentHP > 0)
-                {
-                    float hpPercent = enemy.CurrentHP / enemy.MaxHP;
-                    EnemyBrain brain = enemy.GetComponent<EnemyBrain>();
-
-                    if (brain != null && brain.MyData != null && brain.MyData.SanPenalties != null)
-                    {
-                        var sortedTiers = brain.MyData.SanPenalties.OrderByDescending(t => t.HpThreshold).ToList();
-                        int currentLoss = 0;
-                        foreach (var tier in sortedTiers)
-                        {
-                            if (hpPercent >= tier.HpThreshold) { currentLoss = tier.SanDeduction; break; }
-                        }
-                        totalSanLoss += currentLoss;
-                    }
-                }
-            }
-            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
-        }
-    }
-
-    // ==========================================
-    // 👇 彻底净化的返回逻辑（附带探照灯级 Log）
-    // ==========================================
-    private void OnReturnToMapClicked()
-    {
-        Debug.Log("<color=#FFFF00>【战斗导演】玩家点击了返回按钮，开始清理战场...</color>");
-
-        // 1. 清理战场垃圾
-        MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
-        foreach (var mech in allMechs) { if (mech != null) { mech.SyncPostCombatState(); Destroy(mech.gameObject); } }
-
-        DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
-        foreach (var r in allReceivers) { if (r != null && r.gameObject != null) Destroy(r.gameObject); }
-
-        Projectile[] allBullets = FindObjectsOfType<Projectile>();
-        foreach (var b in allBullets) { if (b != null && b.gameObject != null) Destroy(b.gameObject); }
-
-        GameObject[] allDebris = GameObject.FindGameObjectsWithTag("CombatDebris");
-        foreach (var debris in allDebris) { if (debris != null) Destroy(debris); }
-
-        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
-        if (ArenaReference != null) ArenaReference.SetActive(false);
-        if (SettlementPanel != null) SettlementPanel.SetActive(false);
-        if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
-
-        if (NavHangarButton != null) NavHangarButton.interactable = true;
-        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
-
-        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
-        {
-            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits) { if (profile != null) profile.IsDeployed = false; }
-        }
-
-        if (ActiveSkillUIManager.Instance != null)
-        {
-            foreach (Transform child in ActiveSkillUIManager.Instance.SlotContainer) Destroy(child.gameObject);
-        }
-
-        // 2. 判定走向：赢了开盲盒，输了回大厅
-        Debug.Log($"<color=#FFFF00>【战斗导演】当前胜负状态：isLastCombatVictory = {isLastCombatVictory}</color>");
-
-        if (isLastCombatVictory)
-        {
-            LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
-            int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
-            int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
-            MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
-
-            LootSequenceSO nodeLoot = NodeLootManager.Instance != null ? NodeLootManager.Instance.GetLootForNode(currentStage, currentLayer, currentType) : null;
-            MacroCategory currentMacro = GetMacroForNodeType(currentType);
-
-            Debug.Log($"<color=#FFFF00>【战斗导演】房间掉落: {(encounterLoot != null ? "有" : "空")} | 节点全局掉落: {(nodeLoot != null ? "有" : "空")}</color>");
-
-            if (LootSequenceDirector.Instance != null)
-            {
-                Debug.Log("<color=#00FF00>【战斗导演】呼叫大巴扎导演(Loot Hub)开门！</color>");
-                LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer, () => ExecuteReturnToMap());
-            }
-            else
-            {
-                Debug.LogError("<color=#FF0000>【战斗导演】致命错误！找不到 LootSequenceDirector.Instance！直接强退回地图！</color>");
-                ExecuteReturnToMap();
-            }
-        }
-        else
-        {
-            Debug.Log("<color=#FF0000>【战斗导演】战败！跳过战利品结算，直接返回大地图！</color>");
-            ExecuteReturnToMap();
-        }
     }
 
     private MacroCategory GetMacroForNodeType(MapNodeType type) { return MacroCategory.Tech; }
 
     public void ExecuteReturnToMap()
     {
-        Debug.Log("【战斗导演】系统交接完毕，将指挥权交还给大地图...");
         if (MapManager.Instance != null) MapManager.Instance.OnCombatVictory(currentNodeData);
     }
 }

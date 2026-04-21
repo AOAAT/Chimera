@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
-using System.Collections.Generic; // 必须加这个
+using System.Collections.Generic;
 
 public class ECAContext
 {
+    // --- 基础物理与身份数据 ---
     public Vector3 ImpactPoint;
     public Transform PrimaryTarget;
     public float BaseDamage;
@@ -13,9 +14,15 @@ public class ECAContext
     public bool IsEnemyFire;
     public Transform SourceEntity;
 
-    public bool ExecutionAborted = false;
+    // --- 逻辑控制开关 ---
+    public bool ExecutionAborted = false; // 熔断开关
 
-    // 👇【核心补全】：万能自定义状态字典，用于积木间通讯
+    // --- 👇【核心新增】：瞬时态演算数据 ---
+    // 默认均为 1.0 (代表不增不减)，积木可以动态修改这些倍率
+    public float TemporaryCritModifier = 1.0f;
+    public float TemporaryDamageModifier = 1.0f;
+
+    // --- 通讯字典 ---
     public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
 }
 

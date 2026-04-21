@@ -200,9 +200,8 @@ public class WeaponModule : MonoBehaviour
         if (target == null) return;
         if (myAnimator != null) myAnimator.SetTrigger("Fire");
 
+        // 1. 基础随机 (先不算暴击)
         float finalDmg = Random.Range(GetFinalWeaponStat(StatType.MinDamage), GetFinalWeaponStat(StatType.MaxDamage));
-        bool isCrit = Random.value <= (GetFinalWeaponStat(StatType.CriticalChance) + weaponData.BonusCriticalChance);
-        if (isCrit) finalDmg *= 1.5f;
 
         ECAContext context = new ECAContext
         {
@@ -211,29 +210,45 @@ public class WeaponModule : MonoBehaviour
             BaseDamage = finalDmg,
             SourceWeapon = weaponData,
             ChassisData = ownerData,
-            IsCriticalHit = isCrit,
             IsEnemyFire = false,
-            SourceEntity = mechRoot
+            SourceEntity = mechRoot,
+            TemporaryCritModifier = 1.0f, // 👈 初始化倍率
+            TemporaryDamageModifier = 1.0f
         };
 
-        // 执行开火管线
+        // 2. 执行所有 OnFire 积木 (此时狮子头积木会修改 context.TemporaryCritModifier)
         if (weaponData.OnFireActions != null) foreach (var a in weaponData.OnFireActions) { a.Execute(context); if (context.ExecutionAborted) return; }
         if (ownerData != null && ownerData.GlobalOnFireActions != null) foreach (var a in ownerData.GlobalOnFireActions) { a.Execute(context); if (context.ExecutionAborted) return; }
 
+        // 3. 【核心判定点】：根据积木运算后的“新倍率”来决定是否暴击
+        // 公式：最终暴击率 = (武器基础暴击率 + Buff暴击率) * 狮子头倍率
+        float totalCritChance = (GetFinalWeaponStat(StatType.CriticalChance) + weaponData.BonusCriticalChance) * context.TemporaryCritModifier;
+        bool isCrit = Random.value <= totalCritChance;
+
+        context.IsCriticalHit = isCrit; // 标记结果，供后续命中积木查看
+
+        // 最终伤害 = context.BaseDamage (可能已被电磁炮加过) * 狮子头伤害倍率
+        float damageToDeliver = context.BaseDamage * context.TemporaryDamageModifier;
+        if (isCrit) damageToDeliver *= 1.5f;
+
+        // 4. 正式发射
         if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
         {
             GameObject projObj = SimplePool.Spawn(weaponData.ProjectilePrefab, muzzlePoint.position, actualHinge.rotation);
             Projectile pScript = projObj.GetComponent<Projectile>();
-            if (pScript != null) pScript.Fire(target, context.BaseDamage, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
+            if (pScript != null)
+            {
+                // 注意：这里传的是已经应用了倍率的最终伤害
+                pScript.Fire(target, damageToDeliver, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
+            }
         }
         else
         {
-            // 近战直接执行命中效果
-            if (weaponData.OnHitActions != null) foreach (var a in weaponData.OnHitActions) a.Execute(context);
-            if (ownerData != null && ownerData.GlobalOnHitActions != null) foreach (var a in ownerData.GlobalOnHitActions) a.Execute(context);
+            // 近战直接传带倍率的 Context 即可
+            context.BaseDamage = damageToDeliver;
+            if (weaponData.OnHitActions != null) foreach (var a in weaponData.OnHitActions) if (a != null) a.Execute(context);
         }
     }
-
     private float GetFinalWeaponStat(StatType statID)
     {
         float val = weaponData.GetStat(statID);

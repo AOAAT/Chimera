@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b9b3e1eb3829f646a4d78eeaf9cd2f5, type: 3}
+  m_Name: "ApplyBuff_\u80BE\u4E0A\u817A"
+  m_EditorClassIdentifier: 
+  BuffToApply: {fileID: 11400000, guid: b503f435e44cf834ab020c3f2b780026, type: 2}
+  Stacks: 1
+  TargetMode: 0
+  CenterType: 0
+  FactionFilter: 0
+  Radius: 5
