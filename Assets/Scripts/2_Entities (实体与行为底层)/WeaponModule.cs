@@ -229,8 +229,14 @@ public class WeaponModule : MonoBehaviour
 
         // 最终伤害 = context.BaseDamage (可能已被电磁炮加过) * 狮子头伤害倍率
         float damageToDeliver = context.BaseDamage * context.TemporaryDamageModifier;
-        if (isCrit) damageToDeliver *= 1.5f;
+        if (isCrit)
+        {
+            // 👇【核心修改】：读取暴击倍率属性，如果没有配置，默认是 1.5f
+            float critMult = GetFinalWeaponStat(StatType.CritMultiplier);
+            if (critMult <= 0) critMult = 2.0f;
 
+            damageToDeliver *= critMult;
+        }
         // 4. 正式发射
         if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
         {

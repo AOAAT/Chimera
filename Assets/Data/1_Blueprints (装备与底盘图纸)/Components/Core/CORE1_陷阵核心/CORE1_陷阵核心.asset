@@ -36,6 +36,7 @@ MonoBehaviour:
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:

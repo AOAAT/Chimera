@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 170dc3077090809409b3557a883384c7, type: 3}
-  m_Name: ParabellumLogic
+  m_Script: {fileID: 11500000, guid: 2b1e0321b1510c14ba17e03ae041939a, type: 3}
+  m_Name: ConsumeAllCPForBuff
   m_EditorClassIdentifier: 
-  DeepenBuff: {fileID: 11400000, guid: 3b7e954f10ffb3441b5fece1dd696f68, type: 2}
-  StacksOnHit: 1
+  BuffToApply: {fileID: 11400000, guid: 3b7e954f10ffb3441b5fece1dd696f68, type: 2}
+  StacksPerCP: 1

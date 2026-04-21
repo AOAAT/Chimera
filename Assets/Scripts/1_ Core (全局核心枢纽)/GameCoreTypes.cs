@@ -8,7 +8,7 @@ public enum StatType
     AddedHP, AddedAP, AddedMass, AddedBlock, // 👇 新增 AddedBlock
     PowerCost, EnginePower,
     MaxDamage, MinDamage, MaxRange, MinRange,
-    AttackSpeed, CriticalChance, ExplosionRadius, MultiShotCount, ProjectileSpeed,
+    AttackSpeed, CriticalChance, CritMultiplier, ExplosionRadius, MultiShotCount, ProjectileSpeed,
     HP, AP, Mass, MoveSpeed, Block // 👇 给怪物本体也加一个 Block
 }
 

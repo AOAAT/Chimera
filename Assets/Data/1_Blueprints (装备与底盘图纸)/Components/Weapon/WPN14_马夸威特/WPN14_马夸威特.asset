@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
-  m_Name: "SUP3_\u53D8\u5F02\u80BE\u4E0A\u817A"
+  m_Name: "WPN14_\u9A6C\u5938\u5A01\u7279"
   m_EditorClassIdentifier: 
-  ComponentBaseID: SUP_003
-  ComponentName: "\u53D8\u5F02\u80BE\u4E0A\u817A"
-  Description: "\u7531\u80BE\u4E0A\u817A\u7A81\u53D8\u800C\u6210\u7684\u5668\u5B98\uFF0C\u6765\u81EA\u5171\u751F\u53D8\u5F02\u4F53\u79CD\u7FA4\uFF0C\u53EF\u4EE5\u7ED9\u53CB\u65B9\u6CE8\u5C04\u5F3A\u6548\u80BE\u4E0A\u817A\u7D20\u3002"
-  ComponentIcon: {fileID: 21300000, guid: bc0799896091b7d49819d9bc3388263d, type: 3}
-  Type: 2
-  TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
+  ComponentBaseID: WPN_014
+  ComponentName: "\u9A6C\u5938\u5A01\u7279"
+  Description: "\u8FD9\u6839\u6218\u68CD\u53D1\u6398\u81EA\u77F3\u91D1\u5B57\u5854\uFF0C\u4E0A\u9762\u7684\u9ED1\u66DC\u77F3\u4F1A\u5728\u91CD\u51FB\u654C\u4EBA\u65F6\u7C89\u788E\uFF0C\u53C8\u4F1A\u5728\u6218\u6597\u7ED3\u675F\u540E\u590D\u539F\u3002"
+  ComponentIcon: {fileID: 21300000, guid: 542214b6b6f042f46b6a692ee6e5f4e4, type: 3}
+  Type: 1
+  TacticalRoleDesc: "\u8FD1\u6218\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
-  MacroCategory: 1
+  MacroCategory: 2
   BaseSubTags: 
   MinDropLevel: 1
   LevelMatrix:
@@ -30,14 +30,27 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
-    - StatID: 0
-      Value: 50
+    - StatID: 6
+      Value: 10
+    - StatID: 7
+      Value: 10
+    - StatID: 8
+      Value: 30
+    - StatID: 9
+      Value: 0
+    - StatID: 11
+      Value: 0.05
+    - StatID: 12
+      Value: 5
+    - StatID: 10
+      Value: 100
     Mechanics: []
     OnFireActions: []
-    OnHitActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: 98aa8efd048e82a45a8ba38a9ed52b03, type: 2}
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
     OnAssembleActions: []
-    OnBattleStartActions:
-    - {fileID: 11400000, guid: 01304633f1820ec47ba01244195aae81, type: 2}
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -47,14 +60,14 @@ MonoBehaviour:
       CPCost: 0
       Cooldown: 0
       OnSkillCastActions: []
-  DeliveryType: 1
+  DeliveryType: 0
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
-  AnchorOffset: {x: -0.06393814, y: -0.17130554}
-  BaseRotationOffset: 0
+  AnchorOffset: {x: -0.65301514, y: -0}
+  BaseRotationOffset: 90
   VisualScaleMultiplier: 1
   TargetingLogic: 0
   MovementLogic: 0

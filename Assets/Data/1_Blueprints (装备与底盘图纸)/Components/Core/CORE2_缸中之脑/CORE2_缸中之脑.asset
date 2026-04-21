@@ -41,7 +41,9 @@ MonoBehaviour:
     Mechanics: []
     OnFireActions: []
     OnHitActions: []
-    OnAssembleActions: []
+    OnAssembleActions:
+    - {fileID: 11400000, guid: 59dedd060453976409301bc48b988cb4, type: 2}
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:

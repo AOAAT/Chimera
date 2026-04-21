@@ -7845,10 +7845,10 @@ MonoBehaviour:
   TargetChassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   GlobalVisualScale: 1
   EquippedComponents:
-  - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
-  - {fileID: 11400000, guid: a8a0f3751e164e3459ba36a6c1238f67, type: 2}
-  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
-  - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
+  - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
+  - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
+  - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
+  - {fileID: 0}
   - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   previewObjects: []
 --- !u!212 &923019977
@@ -7932,44 +7932,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   UnitName: "\u5E95\u76D81"
-  Final_MaxHP: 200
+  Final_MaxHP: 150
   Final_MaxAP: 100
   Final_TotalPowerCost: 0
   Final_TotalMass: 10
   Final_TotalEnginePower: 400
   EquippedWeapons:
-  - WeaponName: "\u8840\u8089\u4E4B\u97AD"
+  - WeaponName: "\u9A6C\u5938\u5A01\u7279"
     DeliveryType: 0
     Stats:
     - StatID: 6
-      Value: 25
+      Value: 10
     - StatID: 7
-      Value: 0.1
+      Value: 10
     - StatID: 8
-      Value: 40
+      Value: 30
     - StatID: 9
       Value: 0
     - StatID: 11
-      Value: 0.2
-    - StatID: 13
-      Value: 4
-    - StatID: 10
-      Value: 200
-  - WeaponName: "\u72EE\u5B50\u5934"
-    DeliveryType: 0
-    Stats:
-    - StatID: 6
-      Value: 25
-    - StatID: 7
-      Value: 0.1
-    - StatID: 8
-      Value: 20
-    - StatID: 9
-      Value: 0
+      Value: 0.05
+    - StatID: 12
+      Value: 5
     - StatID: 10
       Value: 100
-    - StatID: 11
-      Value: 0.5
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -15129,6 +15114,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
   - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
+  - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
+  - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15160,6 +15147,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
   - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
+  - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
+  - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0

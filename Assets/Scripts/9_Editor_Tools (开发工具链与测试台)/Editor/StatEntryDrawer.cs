@@ -34,12 +34,12 @@ public class StatEntryDrawer : PropertyDrawer
 
     // 4. 武器组件池 (武器一般不加格挡，保持原样)
     private readonly StatType[] WeaponPool = {
-        StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost,
-        StatType.MaxDamage, StatType.MinDamage, StatType.MaxRange, StatType.MinRange,
-        StatType.AttackSpeed, StatType.CriticalChance, StatType.ExplosionRadius,
-        StatType.MultiShotCount, StatType.ProjectileSpeed
-    };
-
+    StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost,
+    StatType.MaxDamage, StatType.MinDamage, StatType.MaxRange, StatType.MinRange,
+    StatType.AttackSpeed, StatType.CriticalChance,
+    StatType.CritMultiplier, // 👈 【核心新增】：让武器图纸的下拉菜单能选到它
+    StatType.ExplosionRadius, StatType.MultiShotCount, StatType.ProjectileSpeed
+};
     // 5. 辅助/工厂组件池 (加入了 AddedBlock，极品防御插件的来源！)
     private readonly StatType[] SupportPool = {
         StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost

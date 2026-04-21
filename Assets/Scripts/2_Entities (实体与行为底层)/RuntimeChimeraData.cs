@@ -173,6 +173,10 @@ public class RuntimeChimeraData
                         case StatType.AttackSpeed: weapon.WeaponStats[stat] = Mathf.Max(1.0f, weapon.WeaponStats[stat]); break;
                         case StatType.CriticalChance: weapon.WeaponStats[stat] = Mathf.Max(0f, weapon.WeaponStats[stat]); break;
                         case StatType.MaxRange: weapon.WeaponStats[stat] = Mathf.Max(0.5f, weapon.WeaponStats[stat]); break;
+                        case StatType.CritMultiplier:
+                            // 暴击伤害倍率至少是 1.0 (即不加伤)，防止配置错误导致暴击反而没伤害
+                            weapon.WeaponStats[stat] = Mathf.Max(1.0f, weapon.WeaponStats[stat]);
+                            break;
                     }
                     return;
                 }
@@ -191,9 +195,16 @@ public class RuntimeChimeraData
 
     private bool IsWeaponSpecificStat(StatType type)
     {
-        return type == StatType.MaxDamage || type == StatType.MinDamage || type == StatType.MaxRange || type == StatType.MinRange ||
-               type == StatType.AttackSpeed || type == StatType.CriticalChance || type == StatType.ExplosionRadius ||
-               type == StatType.MultiShotCount || type == StatType.ProjectileSpeed;
+        return type == StatType.MaxDamage ||
+               type == StatType.MinDamage ||
+               type == StatType.MaxRange ||
+               type == StatType.MinRange ||
+               type == StatType.AttackSpeed ||
+               type == StatType.CriticalChance ||
+               type == StatType.CritMultiplier || // 👈 【核心新增】：标记为武器私有属性
+               type == StatType.ExplosionRadius ||
+               type == StatType.MultiShotCount ||
+               type == StatType.ProjectileSpeed;
     }
 
     public float GetGlobalStat(StatType statID) { return GlobalStats.ContainsKey(statID) ? GlobalStats[statID] : 0f; }
