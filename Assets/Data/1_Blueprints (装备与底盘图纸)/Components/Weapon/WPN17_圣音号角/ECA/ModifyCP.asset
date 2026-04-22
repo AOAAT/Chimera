@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f04eeed019b26454fb8929af4aa654c8, type: 3}
-  m_Name: "\u4F24\u5BB3\u52A0\u6DF1\u6865\u6881"
+  m_Script: {fileID: 11500000, guid: 8d00335ea8fe9ec46a1420d923d42d4e, type: 3}
+  m_Name: ModifyCP
   m_EditorClassIdentifier: 
-  TargetBuffID: BUFF_004
-  BonusValuePerStack: 1
+  Amount: -0.5
+  BlockIfInsufficient: 1

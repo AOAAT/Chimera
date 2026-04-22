@@ -7847,7 +7847,7 @@ MonoBehaviour:
   EquippedComponents:
   - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
   - {fileID: 0}
-  - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
+  - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   previewObjects: []
@@ -7938,23 +7938,21 @@ MonoBehaviour:
   Final_TotalMass: 10
   Final_TotalEnginePower: 400
   EquippedWeapons:
-  - WeaponName: "\u4EEA\u5F0F\u8721\u70DB"
-    DeliveryType: 1
+  - WeaponName: "\u5723\u97F3\u53F7\u89D2"
+    DeliveryType: 0
     Stats:
     - StatID: 10
-      Value: 50
+      Value: 10
     - StatID: 11
-      Value: 50
+      Value: 10
     - StatID: 13
-      Value: 50
+      Value: 30
     - StatID: 14
       Value: 0
     - StatID: 15
-      Value: 100
-    - StatID: 16
-      Value: 0.01
-    - StatID: 19
-      Value: 100
+      Value: 0
+    - StatID: 12
+      Value: 0.2
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -15115,6 +15113,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
   - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
+  - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
   DebugChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
@@ -15151,6 +15150,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
   - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
+  - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0

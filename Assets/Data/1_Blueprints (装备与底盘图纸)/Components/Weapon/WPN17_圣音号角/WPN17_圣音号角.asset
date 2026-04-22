@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
+  m_Name: "WPN17_\u5723\u97F3\u53F7\u89D2"
+  m_EditorClassIdentifier: 
+  ComponentBaseID: WPN_017
+  ComponentName: "\u5723\u97F3\u53F7\u89D2"
+  Description: "\u4F20\u8BF4\u4E2D\uFF0C\u5723\u97F3\u7684\u7B2C\u4E09\u9636\u6CDB\u97F3\u53EF\u4EE5\u6495\u788E\u542C\u5230\u5B83\u7684\u4E00\u5207\u90AA\u795F\uFF0C\u8BA9\u6B7B\u4EBA\u518D\u6B7B\u4E00\u6B21\u3002"
+  ComponentIcon: {fileID: 21300000, guid: bfa3e0c74d96a894a866df3aee60f169, type: 3}
+  Type: 1
+  TacticalRoleDesc: "\u8FD1\u6218"
+  AnimController: {fileID: 0}
+  MuzzleOffset: {x: 0, y: 0}
+  MacroCategory: 2
+  BaseSubTags: 
+  MinDropLevel: 1
+  LevelMatrix:
+  - Level: 1
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 0
+    - StatID: 10
+      Value: 50
+    - StatID: 11
+      Value: 50
+    - StatID: 13
+      Value: 30
+    - StatID: 14
+      Value: 0
+    - StatID: 15
+      Value: 0
+    - StatID: 12
+      Value: 0.2
+    - StatID: 17
+      Value: 50
+    Mechanics: []
+    OnFireActions:
+    - {fileID: 11400000, guid: f1f827c8fbecbc2419971ad2f29debdb, type: 2}
+    - {fileID: 11400000, guid: 31aea80c88aac1d44bdd5a33d6c9199e, type: 2}
+    - {fileID: 11400000, guid: 10af810592a1b2b44a0a3a734b2b11a7, type: 2}
+    OnHitActions: []
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: 
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  DeliveryType: 0
+  ProjectilePrefab: {fileID: 0}
+  WindupAngle: -45
+  StrikeAngle: 60
+  WindupTimeRatio: 0.3
+  StrikeTimeRatio: 0.1
+  TargetingOverride: 0
+  AnchorOffset: {x: -0.23443985, y: -0.30980158}
+  BaseRotationOffset: 90
+  VisualScaleMultiplier: 1
+  TargetingLogic: 1
+  MovementLogic: 0
+  SafeDodgeDistance: 8
