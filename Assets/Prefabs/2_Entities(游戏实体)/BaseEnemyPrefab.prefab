@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 8506675233772399302}
   - component: {fileID: 8347130010029006461}
   - component: {fileID: -882036719374215997}
+  - component: {fileID: 6934166643335349407}
   m_Layer: 0
   m_Name: BaseEnemyPrefab
   m_TagString: Untagged
@@ -164,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HUDPrefab: {fileID: 9060266526716898274, guid: b67194a9620802f4d9500dff1822707d, type: 3}
-  Offset: {x: 0, y: 1.5, z: 0}
+  PaddingY: 0.5
 --- !u!114 &-882036719374215997
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -193,6 +194,21 @@ MonoBehaviour:
   VibrationIntensity: 0.03
   SquashAmount: -0.3
   SquashRecoverSpeed: 10
+  SmokePrefab: {fileID: 0}
+  PanicVibrationMultiplier: 2
+--- !u!114 &6934166643335349407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6389588871143762209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20a256331a18ffe4baa30ee9b82c5752, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShadowSprite: {fileID: 21300000, guid: a28065acc590e0d43b765590fb7b13f7, type: 3}
 --- !u!1 &6991406654251859085
 GameObject:
   m_ObjectHideFlags: 0
@@ -314,7 +330,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 0.72, y: 0.96}
+    oldSize: {x: 0.9, y: 1.2}
     newSize: {x: 0.82, y: 1.16}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

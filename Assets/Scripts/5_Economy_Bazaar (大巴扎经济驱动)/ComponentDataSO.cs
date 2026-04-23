@@ -54,6 +54,15 @@ public class ComponentDataSO : ScriptableObject
     [Range(-180f, 180f)] public float BaseRotationOffset = 0f;
     [Range(0.1f, 5f)] public float VisualScaleMultiplier = 1.0f;
 
+    [Header("=== 阴影微调 (仅对移动组件有效) ===")]
+    public bool OverrideShadow = false;
+    [Tooltip("阴影相对于该组件挂载点的偏移")]
+    public Vector2 ShadowOffset = new Vector2(0f, -0.5f);
+    [Tooltip("阴影的水平宽度")]
+    public float ShadowWidth = 1.2f;
+    [Tooltip("阴影的垂直高度")]
+    public float ShadowHeight = 0.4f;
+
     [Header("=== 核心独有 AI 设定 ===")]
     public TargetingStrategy TargetingLogic = TargetingStrategy.Nearest;
     public MovementStrategy MovementLogic = MovementStrategy.Active_Firepower;

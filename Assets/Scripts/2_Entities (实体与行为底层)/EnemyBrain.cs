@@ -125,8 +125,30 @@ public class EnemyBrain : MonoBehaviour
             DynamicDepthSorter sorter = GetComponent<DynamicDepthSorter>() ?? gameObject.AddComponent<DynamicDepthSorter>();
             sorter.YOffset = -(realSize.y / 2f);
         }
-    }
+        // --- 静态敌人阴影注入 (修正版) ---
 
+        // 获取影子组件
+        UnitFactionShadow enemyShadow = gameObject.GetComponent<UnitFactionShadow>() ?? gameObject.AddComponent<UnitFactionShadow>();
+
+        // 【修复逻辑】：必须要显式把影子塞进 sr.transform 内部
+        if (sr != null)
+        {
+            Transform sTrans = enemyShadow.GetShadowTransform();
+            sTrans.SetParent(sr.transform, false); // 认准怪物的 Sprite 节点作为爹
+            sTrans.SetAsFirstSibling();            // 确保在这个爹的子列表里排第一（最先画）
+
+            if (MyData.OverrideShadow)
+            {
+                enemyShadow.SetupManualShadow(true, MyData.ShadowWidth, MyData.ShadowHeight, MyData.ShadowOffset);
+            }
+            else
+            {
+                float eWidth = sr.bounds.size.x * MyData.VisualScaleMultiplier;
+                float eFootY = -(sr.sprite.bounds.size.y * MyData.VisualScaleMultiplier / 2f);
+                enemyShadow.SetupModularShadow(true, eWidth, eFootY);
+            }
+        }
+    }
     private void InitializeSkills()
     {
         foreach (var skillSO in MyData.Skills)

@@ -49,11 +49,14 @@ TagManager:
   - name: Floor
     uniqueID: 3180896667
     locked: 0
+  - name: DeployZone
+    uniqueID: 541385217
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: DeployZone
-    uniqueID: 541385217
+  - name: Shadows
+    uniqueID: 1926906373
     locked: 0
   - name: Entities
     uniqueID: 1154650499

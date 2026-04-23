@@ -120,7 +120,7 @@ public class Projectile : MonoBehaviour
             bool isTargetEnemy = receiver.isEnemy;
             bool isValidHit = (isEnemyFire != isTargetEnemy);
             if (hitAllies) isValidHit = (isEnemyFire == isTargetEnemy && receiver.transform != shooter);
-
+            if (receiver == null) return;
             if (isValidHit)
             {
                 this.target = receiver.transform;

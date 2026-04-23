@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 2022197922188435539}
   - component: {fileID: 854132439492194696}
   - component: {fileID: 2038896030842088896}
+  - component: {fileID: 4604755739766904801}
   m_Layer: 7
   m_Name: MechUnit
   m_TagString: Player
@@ -92,7 +93,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HUDPrefab: {fileID: 9060266526716898274, guid: b67194a9620802f4d9500dff1822707d, type: 3}
-  Offset: {x: 0, y: 1.5, z: 0}
+  PaddingY: 0.5
 --- !u!114 &2038896030842088896
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,3 +122,18 @@ MonoBehaviour:
   VibrationIntensity: 0.03
   SquashAmount: -0.3
   SquashRecoverSpeed: 10
+  SmokePrefab: {fileID: 0}
+  PanicVibrationMultiplier: 2
+--- !u!114 &4604755739766904801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20a256331a18ffe4baa30ee9b82c5752, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShadowSprite: {fileID: 21300000, guid: a28065acc590e0d43b765590fb7b13f7, type: 3}

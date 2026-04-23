@@ -84,6 +84,19 @@ public class ComponentDataSOEditor : Editor
         {
             RenderWeaponSection();
         }
+        else if (currentType == ComponentType.Movement)
+        {
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("👣 移动组件阴影微调", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("OverrideShadow"));
+            if (serializedObject.FindProperty("OverrideShadow").boolValue)
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("ShadowOffset"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("ShadowWidth"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("ShadowHeight"));
+            }
+            EditorGUILayout.EndVertical();
+        }
 
         // 3. 表现层通用配置
         RenderVisualSection();
@@ -149,6 +162,8 @@ public class ComponentDataSOEditor : Editor
             EditorGUILayout.PropertyField(strikeTimeRatio);
         }
         EditorGUILayout.EndVertical();
+
+
     }
 
     private void RenderVisualSection()

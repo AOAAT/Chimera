@@ -125,9 +125,17 @@ public class ChimeraAIController : MonoBehaviour
 
     private void FindTarget()
     {
+        bool IAmEnemy = GetComponent<DamageReceiver>().isEnemy;
+
+        // 如果我是敌人，我就找玩家；如果我是玩家，我就找敌人
+        var potentialTargets = IAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
+
         // 1. 扫描场上所有存活敌人
-        var allEnemies = CombatDirector.ActiveEnemies.Where(e => e != null && e.CurrentHP > 0).ToList();
+        var allEnemies = potentialTargets.Where(e => e != null && e.CurrentHP > 0).ToList();
         if (allEnemies.Count == 0) { currentTarget = null; return; }
+
+        
+      
 
         // 2. 获取核心大脑的策略
         TargetingStrategy strategy = runtimeData.TargetingLogic;
@@ -150,6 +158,7 @@ public class ChimeraAIController : MonoBehaviour
         }
 
         currentTarget = sorted.First().transform;
+
     }
 
     private void HandleMovement()
