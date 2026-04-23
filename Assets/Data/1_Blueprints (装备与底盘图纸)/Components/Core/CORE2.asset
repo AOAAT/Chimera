@@ -36,6 +36,7 @@ MonoBehaviour:
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -52,9 +53,14 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: -0.14762358, y: -0.2720654}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 0.9
-  TargetingLogic: 0
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
+  TargetingLogic: 1
   MovementLogic: 2
-  SafeDodgeDistance: 80
+  SafeDodgeDistance: 100

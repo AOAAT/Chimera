@@ -94,17 +94,22 @@ public class DamageReceiver : MonoBehaviour
     }
 
 
-    private void Die()
+    // --- DamageReceiver.cs 的 Die 方法 ---
 
+    private void Die()
     {
         UnregisterUnit();
-
         this.enabled = false;
+
+        // 【新增】：禁用本物体及所有子物体上的碰撞盒
+        foreach (var col in GetComponentsInChildren<Collider2D>())
+        {
+            col.enabled = false;
+        }
 
         EntityHUD hud = GetComponentInChildren<EntityHUD>();
         if (hud != null) hud.gameObject.SetActive(false);
 
-        // 呼叫大脑执行死亡剧本
         OnEntityDeath?.Invoke();
     }
 

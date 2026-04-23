@@ -1,0 +1,139 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2724532761662945261
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4923148941261226031}
+  - component: {fileID: 7225761150544584164}
+  - component: {fileID: 300368719784555950}
+  - component: {fileID: 2022197922188435539}
+  - component: {fileID: 854132439492194696}
+  - component: {fileID: 2038896030842088896}
+  - component: {fileID: 4604755739766904801}
+  m_Layer: 8
+  m_Name: ModularEnemy_Template
+  m_TagString: Enemy
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4923148941261226031
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.019277662, y: 0.25498676, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7225761150544584164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 448934cc64fee7646a2ec4cc1da8501b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  VisualRoot: {fileID: 0}
+  SortingLayerName: Default
+  BaseSortingOrder: 0
+  GlobalBattleScale: 0.7
+--- !u!114 &300368719784555950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44440bf8452be7e48a7ab8492dc828bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isEnemy: 1
+  CurrentHP: 0
+  CurrentAP: 0
+--- !u!114 &2022197922188435539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4330bca4812ac654f9c1b79efd1a5706, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &854132439492194696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7927fccb372b98c49866cf8f942345d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HUDPrefab: {fileID: 9060266526716898274, guid: b67194a9620802f4d9500dff1822707d, type: 3}
+  PaddingY: 0.5
+--- !u!114 &2038896030842088896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20fc4fe759dc638448326409f767e8fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AutoSyncWithVelocity: 1
+  WalkSpeedThreshold: 0.1
+  IsMoving: 0
+  EnableBreathing: 0
+  BreathSpeed: 2
+  BreathScaleY: 0.05
+  BreathScaleX: -0.02
+  EnableWobble: 1
+  WobbleSpeed: 10
+  WobbleAngle: 8
+  BobbingHeight: 0.1
+  EnableVibration: 1
+  VibrationSpeed: 40
+  VibrationIntensity: 0.03
+  SquashAmount: -0.3
+  SquashRecoverSpeed: 10
+  SmokePrefab: {fileID: 0}
+  PanicVibrationMultiplier: 2
+--- !u!114 &4604755739766904801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20a256331a18ffe4baa30ee9b82c5752, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShadowSprite: {fileID: 21300000, guid: a28065acc590e0d43b765590fb7b13f7, type: 3}

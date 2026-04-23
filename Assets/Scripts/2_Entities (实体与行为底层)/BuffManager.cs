@@ -87,23 +87,22 @@ public class BuffManager : MonoBehaviour
 
         bool needsRecalc = false;
 
-        // 倒序遍历，安全移除过期 Buff
         for (int i = activeBuffs.Count - 1; i >= 0; i--)
         {
             ActiveBuff buff = activeBuffs[i];
 
-            // 1. 构建每帧/每秒 Tick 的上下文
-            // 这里的 SourceEntity 赋值是“大象腿”这类被动动起来的关键！
+            // 【核心修复】：动态获取真实阵营！
+            bool amIEnemy = myReceiver != null ? myReceiver.isEnemy : false;
+
             ECAContext context = new ECAContext
             {
                 SourceEntity = this.transform,
                 PrimaryTarget = this.transform,
                 ImpactPoint = this.transform.position,
-                IsEnemyFire = false,
+                IsEnemyFire = amIEnemy, // 👈 别再骗人了，现在它是真实的
                 ChassisData = GetComponent<MechUnit2D>() != null ? null : null // 预留
             };
 
-            // 2. 更新内部计时器 (处理 TickActions)
             buff.Update(Time.deltaTime, context);
 
             // 3. 处理自然过期

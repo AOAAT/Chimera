@@ -7846,7 +7846,7 @@ MonoBehaviour:
   GlobalVisualScale: 1
   EquippedComponents:
   - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 3b843ca9bf3f2b64d9d4299c59a62c9e, type: 2}
   - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
@@ -7942,9 +7942,9 @@ MonoBehaviour:
     DeliveryType: 0
     Stats:
     - StatID: 10
-      Value: 10
+      Value: 50
     - StatID: 11
-      Value: 10
+      Value: 50
     - StatID: 13
       Value: 30
     - StatID: 14
@@ -7953,6 +7953,8 @@ MonoBehaviour:
       Value: 0
     - StatID: 12
       Value: 0.2
+    - StatID: 17
+      Value: 50
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:
@@ -13422,7 +13424,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21189,6 +21191,7 @@ MonoBehaviour:
   ArenaReference: {fileID: 989152001}
   BaseEnemyPrefab: {fileID: 6389588871143762209, guid: 8dd8ed2a30fb161449e99fbc12a1fb18, type: 3}
   WhitePixelSprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  ModularEnemyPrefab: {fileID: 2724532761662945261, guid: 6caa4bfb811f9854caf770a1920c62d6, type: 3}
   BoundaryThickness: 2
   CurrentLayout: {fileID: 0}
 --- !u!114 &1973191907

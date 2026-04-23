@@ -17,10 +17,11 @@ public class Action_FireFriendlyProjectile : ECAAction
     {
         if (context.SourceEntity == null || ProjectilePrefab == null || BuffToApply == null) return;
 
-        // 1. 寻找范围内合法的友方目标 (不含自己，且必须存活)
         float realRange = CombatSandbox.GetDist(Range);
 
-        // 判定来源阵营：如果是玩家发射的，队友就是 ActivePlayerUnits
+        // 【核心修复】：重新定义“谁是我的队友”
+        // 如果我是敌机（IsEnemyFire = true），那我的队友列表就是 ActiveEnemies
+        // 如果我是玩家机甲，我的队友就是 ActivePlayerUnits
         var allies = context.IsEnemyFire ? CombatDirector.ActiveEnemies : CombatDirector.ActivePlayerUnits;
 
         var validTargets = allies.Where(a =>
@@ -32,10 +33,9 @@ public class Action_FireFriendlyProjectile : ECAAction
 
         if (validTargets.Count == 0)
         {
-            Debug.Log($"<color=#888888>【异变肾上腺】</color> 范围内没有合适的队友，注射取消。");
+            // Debug.Log($"[{context.SourceEntity.name}] 附近没有队友，取消增益弹发射。");
             return;
         }
-
         // 2. 随机抽取一个队友
         DamageReceiver target = validTargets[Random.Range(0, validTargets.Count)];
 

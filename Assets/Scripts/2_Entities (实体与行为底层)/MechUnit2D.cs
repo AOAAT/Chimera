@@ -21,7 +21,7 @@ public class MechUnit2D : MonoBehaviour
     public float GlobalBattleScale = 1.0f;
 
     private Rigidbody2D rb;
-    private BoxCollider2D physicsCol;
+    private BoxCollider2D physicsCol; // 根节点物理推挤盒
     private bool isDragging = false;
     private Vector3 dragStartPos;
 
@@ -29,10 +29,20 @@ public class MechUnit2D : MonoBehaviour
     {
         if (VisualRoot == null)
         {
-            GameObject visualRootObj = new GameObject("UnitVisualContainer_2D");
-            visualRootObj.transform.SetParent(this.transform, false);
-            VisualRoot = visualRootObj.transform;
+            Transform found = transform.Find("UnitVisualContainer_2D");
+            if (found != null) VisualRoot = found;
+            else
+            {
+                GameObject visualRootObj = new GameObject("UnitVisualContainer_2D");
+                visualRootObj.transform.SetParent(this.transform, false);
+                VisualRoot = visualRootObj.transform;
+            }
         }
+
+        // 基础排序组初始化
+        SortingGroup sg = GetComponent<SortingGroup>();
+        if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
+        sg.sortingLayerName = SortingLayerName;
     }
 
     // ==========================================
@@ -42,16 +52,11 @@ public class MechUnit2D : MonoBehaviour
     {
         int totalSockets = data.ChassisData.Sockets.Count;
         InstancedComponent[] tempInstances = new InstancedComponent[totalSockets];
-
         for (int i = 0; i < data.SlotIndices.Count; i++)
         {
             int slotIdx = data.SlotIndices[i];
-            string compID = data.EquippedComponentIDs[i];
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (compInstance != null && slotIdx < totalSockets)
-            {
-                tempInstances[slotIdx] = compInstance;
-            }
+            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == data.EquippedComponentIDs[i]);
+            if (compInstance != null && slotIdx < totalSockets) tempInstances[slotIdx] = compInstance;
         }
         FullSetup(data, tempInstances, false);
     }
@@ -64,7 +69,6 @@ public class MechUnit2D : MonoBehaviour
         SavedUnitProfile eliteProfile = new SavedUnitProfile(new InstancedChassis(enemySO.Chassis), enemySO.EnemyName);
         int totalSockets = enemySO.Chassis.Sockets.Count;
         InstancedComponent[] comps = new InstancedComponent[totalSockets];
-
         for (int i = 0; i < enemySO.Components.Count; i++)
         {
             if (i >= totalSockets || enemySO.Components[i] == null) continue;
@@ -76,11 +80,11 @@ public class MechUnit2D : MonoBehaviour
     }
 
     // ==========================================
-    // 🛠️ 核心驱动：暴力初始化流程 (绝对防御版)
+    // 🛠️ 核心驱动：加固后的全量装配流程
     // ==========================================
     private void FullSetup(SavedUnitProfile data, InstancedComponent[] comps, bool isEnemy, EnemyDataSO enemySO = null)
     {
-        // 1. 根节点组件强制安装
+        // 1. 暴力初始化核心组件（解决所有 MissingComponentException）
         rb = GetComponent<Rigidbody2D>();
         if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
 
@@ -90,10 +94,15 @@ public class MechUnit2D : MonoBehaviour
         SortingGroup sg = GetComponent<SortingGroup>();
         if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
 
-        // 2. 基础属性锁定
+        // 2. 基础属性与阵营层级
         this.bindedData = data;
         this.name = (isEnemy ? "[ELITE] " : "[UNIT] ") + data.UnitName;
-        foreach (Transform child in VisualRoot) Destroy(child.gameObject);
+
+        // 强制同步清理视觉残骸
+        if (VisualRoot == null) Awake();
+        List<GameObject> children = new List<GameObject>();
+        foreach (Transform child in VisualRoot) children.Add(child.gameObject);
+        children.ForEach(c => DestroyImmediate(c));
 
         transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
         transform.localScale = Vector3.one * GlobalBattleScale;
@@ -105,31 +114,30 @@ public class MechUnit2D : MonoBehaviour
         physicsCol.isTrigger = false;
         sg.sortingLayerName = SortingLayerName;
 
-        // 3. 构建底盘 (Visual_ChassisBase)
+        // 3. 构建底盘视觉实体
         GameObject chassisObj = new GameObject("Visual_ChassisBase");
         chassisObj.transform.SetParent(VisualRoot, false);
-        chassisObj.layer = LayerMask.NameToLayer(isEnemy ? "Enemy_Hitbox" : "Player_Hitbox");
 
-        // 暴力安装底盘核心组件
         SpriteRenderer chassisSR = chassisObj.AddComponent<SpriteRenderer>();
-        BoxCollider2D hitboxCol = chassisObj.AddComponent<BoxCollider2D>(); // 👈 直接 Add，因为是新生成的 GameObject
+        BoxCollider2D hitboxCol = chassisObj.AddComponent<BoxCollider2D>(); // 物理受击盒
 
         chassisSR.sprite = data.ChassisData.ChassisSprite;
         chassisSR.sortingLayerName = SortingLayerName;
         chassisSR.sortingOrder = BaseSortingOrder;
 
         hitboxCol.isTrigger = true;
-        Vector2 spriteSize = chassisSR.sprite.bounds.size;
+        Vector2 spriteSize = chassisSR.sprite != null ? chassisSR.sprite.bounds.size : Vector2.one;
         hitboxCol.size = new Vector2(spriteSize.x * 0.9f, spriteSize.y * 0.9f);
 
-        // 4. 适配脚底物理碰撞板尺寸 (Root 上的 Collider)
+        // 4. 适配根节点物理碰撞板 (脚底板)
         physicsCol.size = new Vector2(spriteSize.x * 0.7f, spriteSize.y * 0.25f);
         physicsCol.offset = new Vector2(0f, -(spriteSize.y / 2f) + (physicsCol.size.y / 2f));
 
-        // 5. 动态深度排序注入
-        DynamicDepthSorter sorter = GetComponent<DynamicDepthSorter>();
-        if (sorter == null) sorter = gameObject.AddComponent<DynamicDepthSorter>();
-        sorter.YOffset = -(spriteSize.y / 2f);
+        // 5. 阴影系统层级锁定
+        UnitFactionShadow shadowComp = GetComponent<UnitFactionShadow>() ?? gameObject.AddComponent<UnitFactionShadow>();
+        shadowComp.EnsureShadowObject();
+        shadowComp.GetShadowTransform().SetParent(chassisObj.transform, false);
+        shadowComp.GetShadowTransform().SetAsFirstSibling();
 
         // 6. 零件挂载循环
         for (int i = 0; i < comps.Length; i++)
@@ -140,19 +148,16 @@ public class MechUnit2D : MonoBehaviour
 
             string typeTag = (comp.BaseData.Type == ComponentType.Movement) ? "_MovementType" : "";
             GameObject slotObj = new GameObject($"Socket_{slotDef.SlotName}{typeTag}");
-            slotObj.layer = chassisObj.layer;
             slotObj.transform.SetParent(chassisObj.transform, false);
             slotObj.transform.localPosition = slotDef.LocalPosition;
             slotObj.transform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
 
             GameObject hingeObj = new GameObject("Component_Hinge");
-            hingeObj.layer = chassisObj.layer;
             hingeObj.transform.SetParent(slotObj.transform, false);
             hingeObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
             hingeObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
 
             GameObject visObj = new GameObject("Visual_VisualSprite");
-            visObj.layer = chassisObj.layer;
             visObj.transform.SetParent(hingeObj.transform, false);
             SpriteRenderer cpSR = visObj.AddComponent<SpriteRenderer>();
             cpSR.sprite = comp.BaseData.ComponentIcon;
@@ -161,111 +166,146 @@ public class MechUnit2D : MonoBehaviour
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
 
-        // 7. 逻辑初始化
-        ActivateCombatBrainsSafe(data, comps, isEnemy);
+        // 7. 逻辑初始化（注意：这里现在会返回 receiver 引用）
+        DamageReceiver receiver = ActivateCombatBrainsSafe(data, comps, isEnemy, chassisObj.transform);
 
-        // 8. 阴影处理 (确保在逻辑加载后)
-        UnitFactionShadow shadowComp = GetComponent<UnitFactionShadow>();
-        if (shadowComp == null) shadowComp = gameObject.AddComponent<UnitFactionShadow>();
+        // 8. 阴影数据应用
+        if (isEnemy && enemySO != null && enemySO.OverrideShadow)
+            shadowComp.SetupManualShadow(true, enemySO.ShadowWidth, enemySO.ShadowHeight, enemySO.ShadowOffset);
+        else
+            shadowComp.SetupModularShadow(isEnemy, spriteSize.x, -(spriteSize.y / 2f));
 
-        shadowComp.EnsureShadowObject();
-        Transform shadowTrans = shadowComp.GetShadowTransform();
-        if (shadowTrans != null)
-        {
-            shadowTrans.SetParent(chassisObj.transform, false);
-            shadowTrans.SetAsFirstSibling();
-        }
-        ApplyFinalShadowSettings(isEnemy, enemySO, comps, chassisSR, chassisObj.transform);
+        // 9. 递归设置物理层级 (解决命中判定问题)
+        SetLayerRecursive(chassisObj, isEnemy ? LayerMask.NameToLayer("Enemy_Hitbox") : LayerMask.NameToLayer("Player_Hitbox"));
 
-        // 9. 动画初始化
-        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>();
-        if (procAnim == null) procAnim = gameObject.AddComponent<ProceduralAnimator2D>();
+        // 10. 深度排序与动画
+        DynamicDepthSorter sorter = GetComponent<DynamicDepthSorter>() ?? gameObject.AddComponent<DynamicDepthSorter>();
+        sorter.YOffset = -(spriteSize.y / 2f);
+
+        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>() ?? gameObject.AddComponent<ProceduralAnimator2D>();
         procAnim.SetTargetVisual(chassisObj.transform);
         procAnim.RefreshBaseState();
+
+        // 11. 【精英死亡剧本】：如果是敌人，订阅死亡事件
+        if (isEnemy && receiver != null)
+        {
+            receiver.OnEntityDeath += HandleEliteDeath;
+        }
     }
 
-    private void ActivateCombatBrainsSafe(SavedUnitProfile data, InstancedComponent[] comps, bool isEnemy)
+    private void SetLayerRecursive(GameObject obj, int newLayer)
+    {
+        // 如果是影子，强制保持在 Default 层，防止干扰子弹
+        if (obj.name == "Logic_Visual_Shadow")
+        {
+            obj.layer = LayerMask.NameToLayer("Default");
+        }
+        else
+        {
+            obj.layer = newLayer;
+        }
+
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursive(child.gameObject, newLayer);
+        }
+    }
+
+    private DamageReceiver ActivateCombatBrainsSafe(SavedUnitProfile data, InstancedComponent[] comps, bool isEnemy, Transform chassisRoot)
     {
         cachedCombatData = new RuntimeChimeraData();
-        cachedCombatData.UnitID = data.UnitID;
         cachedCombatData.Assemble(data.ChassisData, comps);
 
-        DamageReceiver receiver = GetComponent<DamageReceiver>();
-        if (receiver == null) receiver = gameObject.AddComponent<DamageReceiver>();
-
+        DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
         receiver.isEnemy = isEnemy;
         receiver.Initialize(cachedCombatData.MaxHP, cachedCombatData.MaxAP);
+        receiver.CurrentHP = (!isEnemy && data.CurrentHP > 0) ? Mathf.Min(data.CurrentHP, cachedCombatData.MaxHP) : cachedCombatData.MaxHP;
 
-        if (!isEnemy && data.CurrentHP > 0) receiver.CurrentHP = Mathf.Min(data.CurrentHP, cachedCombatData.MaxHP);
-        else receiver.CurrentHP = cachedCombatData.MaxHP;
-
-        // 自动补齐控制器
-        ChimeraAIController ai = GetComponent<ChimeraAIController>();
-        if (ai == null) ai = gameObject.AddComponent<ChimeraAIController>();
+        // 大脑初始化
+        var ai = GetComponent<ChimeraAIController>() ?? gameObject.AddComponent<ChimeraAIController>();
         ai.Initialize(cachedCombatData);
+        var sc = GetComponent<MechSkillController>() ?? gameObject.AddComponent<MechSkillController>();
+        sc.Initialize(cachedCombatData);
 
-        MechSkillController skillCtrl = GetComponent<MechSkillController>();
-        if (skillCtrl == null) skillCtrl = gameObject.AddComponent<MechSkillController>();
-        skillCtrl.Initialize(cachedCombatData);
-
+        // 武器火控初始化
         int weaponIndex = 0;
-        Transform chassisBase = VisualRoot.Find("Visual_ChassisBase");
         for (int i = 0; i < comps.Length; i++)
         {
             if (comps[i] != null && comps[i].BaseData.Type == ComponentType.Weapon)
             {
                 var slotDef = data.ChassisData.Sockets[i];
-                Transform socketTrans = chassisBase.FindRecursive($"Socket_{slotDef.SlotName}");
+                Transform socketTrans = chassisRoot.FindRecursive($"Socket_{slotDef.SlotName}");
                 if (socketTrans != null)
                 {
-                    WeaponModule weaponScript = socketTrans.gameObject.GetComponent<WeaponModule>();
-                    if (weaponScript == null) weaponScript = socketTrans.gameObject.AddComponent<WeaponModule>();
-                    weaponScript.Initialize(cachedCombatData.EquippedWeapons[weaponIndex], cachedCombatData, cachedCombatData.LogicCenterOffset, this.transform);
+                    WeaponModule w = socketTrans.gameObject.GetComponent<WeaponModule>() ?? socketTrans.gameObject.AddComponent<WeaponModule>();
+                    w.Initialize(cachedCombatData.EquippedWeapons[weaponIndex], cachedCombatData, cachedCombatData.LogicCenterOffset, this.transform);
                 }
                 weaponIndex++;
             }
         }
+        return receiver;
     }
 
-    private void ApplyFinalShadowSettings(bool isEnemy, EnemyDataSO enemySO, InstancedComponent[] comps, SpriteRenderer chassisSR, Transform chassisTrans)
+    private void HandleEliteDeath()
     {
-        UnitFactionShadow shadowComp = GetComponent<UnitFactionShadow>();
-        if (shadowComp == null) return;
+        Debug.Log($"<color=red>【精英战损】</color> [{this.name}] 已离线。执行清理程序...");
 
-        bool hasComponentOverride = comps.Any(c => c != null && c.BaseData.Type == ComponentType.Movement && c.BaseData.OverrideShadow);
-        ComponentDataSO moveCompSO = comps.FirstOrDefault(c => c != null && c.BaseData.Type == ComponentType.Movement && c.BaseData.OverrideShadow)?.BaseData;
+        // 1. 彻底关停逻辑核心
+        var ai = GetComponent<ChimeraAIController>();
+        if (ai != null) ai.enabled = false;
 
-        if (isEnemy && enemySO != null && enemySO.OverrideShadow)
-            shadowComp.SetupManualShadow(true, enemySO.ShadowWidth, enemySO.ShadowHeight, enemySO.ShadowOffset);
-        else if (hasComponentOverride)
-            shadowComp.SetupManualShadow(isEnemy, moveCompSO.ShadowWidth, moveCompSO.ShadowHeight, moveCompSO.ShadowOffset);
-        else
+        var sc = GetComponent<MechSkillController>();
+        if (sc != null) sc.enabled = false;
+
+        // 2. 物理停摆
+        if (rb != null)
         {
-            float finalLowestY = -(chassisSR.sprite.bounds.size.y / 2f);
-            float finalMaxWidth = chassisSR.bounds.size.x;
-            bool foundMovement = false;
-            foreach (Transform socket in chassisTrans)
-            {
-                if (socket.name.Contains("_MovementType"))
-                {
-                    SpriteRenderer moveSR = socket.GetComponentInChildren<SpriteRenderer>();
-                    if (moveSR != null && moveSR.sprite != null)
-                    {
-                        float currentBottomY = socket.localPosition.y - (moveSR.sprite.bounds.size.y * moveSR.transform.lossyScale.y / transform.lossyScale.y / 2f);
-                        if (!foundMovement) { finalLowestY = currentBottomY; finalMaxWidth = moveSR.bounds.size.x; foundMovement = true; }
-                        else { finalLowestY = Mathf.Min(finalLowestY, currentBottomY); finalMaxWidth = Mathf.Max(finalMaxWidth, moveSR.bounds.size.x); }
-                    }
-                }
-            }
-            shadowComp.SetupModularShadow(isEnemy, finalMaxWidth, finalLowestY);
+            rb.velocity = Vector2.zero;
+            rb.isKinematic = true;
+            rb.simulated = false; // 彻底停止物理交互
         }
+
+        // 3. 剥离受击能力
+        gameObject.layer = LayerMask.NameToLayer("Floor");
+        foreach (var col in GetComponentsInChildren<Collider2D>()) col.enabled = false;
+
+        // 4. 视觉淡出
+        StartCoroutine(EliteCorpseDecayRoutine());
+    }
+
+    private System.Collections.IEnumerator EliteCorpseDecayRoutine()
+    {
+        yield return new WaitForSeconds(3.0f); // 停尸时间
+        float fadeDuration = 2.0f;
+        float elapsed = 0f;
+        SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
+            foreach (var sr in srs)
+            {
+                if (sr.gameObject.name == "Logic_Visual_Shadow") continue;
+                Color c = sr.color;
+                c.a = alpha;
+                sr.color = c;
+            }
+            yield return null;
+        }
+        Destroy(gameObject);
     }
 
     public void ExecuteBattleStartProtocol()
     {
         if (this.cachedCombatData == null) return;
+
+        // 【核心修复】：动态获取当前实体的阵营，确保 ECA 积木知道是谁在开战
+        bool amIEnemy = false;
         DamageReceiver dr = GetComponent<DamageReceiver>();
-        bool isEnemyMech = dr != null && dr.isEnemy;
+        if (dr != null) amIEnemy = dr.isEnemy;
+
+        Debug.Log($"<color=#00FFFF>【协议启动】</color> [{(amIEnemy ? "精英" : "玩家")}] [{cachedCombatData.UnitName}] 被动模组通电...");
 
         ECAContext startContext = new ECAContext
         {
@@ -273,29 +313,21 @@ public class MechUnit2D : MonoBehaviour
             PrimaryTarget = this.transform,
             SourceEntity = this.transform,
             ChassisData = this.cachedCombatData,
-            IsEnemyFire = isEnemyMech
+            IsEnemyFire = amIEnemy // 👈 关键：将真实的阵营标记传给积木
         };
-        foreach (var action in this.cachedCombatData.GlobalOnBattleStartActions) if (action != null) action.Execute(startContext);
-    }
 
-    private void OnMouseDown() { if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase) return; isDragging = true; dragStartPos = transform.position; TintMech(new Color(1f, 1f, 1f, 0.5f)); if (rb != null) rb.isKinematic = true; if (physicsCol != null) physicsCol.enabled = false; }
-    private void OnMouseDrag() { if (!isDragging) return; Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition); transform.position = new Vector3(mousePos.x, mousePos.y, -0.01f); }
-    private void OnMouseUp() { if (!isDragging) return; isDragging = false; TintMech(Color.white); if (rb != null) rb.isKinematic = false; if (EventSystem.current.IsPointerOverGameObject()) { if (physicsCol != null) physicsCol.enabled = true; RecycleToHangar(); return; } int noDeployLayerMask = LayerMask.GetMask("NoDeploy"); Collider2D forbiddenHit = Physics2D.OverlapCircle(transform.position, 0.5f, noDeployLayerMask); bool isValidZone = Physics2D.OverlapPointAll(transform.position).Any(h => h.CompareTag("DeployZone")); if (forbiddenHit != null || !isValidZone) transform.position = dragStartPos; if (physicsCol != null) physicsCol.enabled = true; }
-    private void RecycleToHangar() { if (bindedData != null) bindedData.IsDeployed = false; if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar(); Destroy(gameObject); }
-    private void TintMech(Color targetColor)
-    {
-        SpriteRenderer[] allRenderers = GetComponentsInChildren<SpriteRenderer>();
-        foreach (var sr in allRenderers)
+        foreach (var action in this.cachedCombatData.GlobalOnBattleStartActions)
         {
-            // 【关键保护】：如果这个贴图是影子，直接跳过，不准改它的颜色！
-            if (sr.gameObject.name == "Logic_Visual_Shadow") continue;
-
-            sr.color = targetColor;
+            if (action != null) action.Execute(startContext);
         }
     }
-    public void SyncPostCombatState() { if (bindedData == null) return; DamageReceiver receiver = GetComponent<DamageReceiver>(); if (receiver != null) { bindedData.CurrentHP = Mathf.Max(0, receiver.CurrentHP); bindedData.CurrentAP = receiver.MaxAP; } }
-    private void LateUpdate() { EnforceArenaBounds(); }
-    private void EnforceArenaBounds() { if (CombatDirector.Instance == null || CombatDirector.Instance.CurrentArenaSize.x == 0) return; Vector2 center = CombatDirector.Instance.CurrentArenaCenter; Vector2 size = CombatDirector.Instance.CurrentArenaSize; float minX = center.x - size.x / 2f, maxX = center.x + size.x / 2f, minY = center.y - size.y / 2f, maxY = center.y + size.y / 2f; Vector3 cp = transform.position; float cx = Mathf.Clamp(cp.x, minX, maxX), cy = Mathf.Clamp(cp.y, minY, maxY); if (cp.x != cx || cp.y != cy) { transform.position = new Vector3(cx, cy, cp.z); if (rb != null) rb.velocity = Vector2.zero; } }
+    private void OnMouseDown() { if (GetComponent<DamageReceiver>().isEnemy) return; if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase) return; isDragging = true; dragStartPos = transform.position; TintMech(new Color(1f, 1f, 1f, 0.5f)); if (rb != null) rb.isKinematic = true; if (physicsCol != null) physicsCol.enabled = false; }
+    private void OnMouseDrag() { if (!isDragging) return; Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition); transform.position = new Vector3(mousePos.x, mousePos.y, -0.01f); }
+    private void OnMouseUp() { if (!isDragging) return; isDragging = false; TintMech(Color.white); if (rb != null) rb.isKinematic = false; if (EventSystem.current.IsPointerOverGameObject()) { RecycleToHangar(); return; } int noDeployLayerMask = LayerMask.GetMask("NoDeploy"); Collider2D f = Physics2D.OverlapCircle(transform.position, 0.5f, noDeployLayerMask); bool v = Physics2D.OverlapPointAll(transform.position).Any(h => h.CompareTag("DeployZone")); if (f != null || !v) transform.position = dragStartPos; if (physicsCol != null) physicsCol.enabled = true; }
+    private void RecycleToHangar() { if (bindedData != null) bindedData.IsDeployed = false; if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar(); Destroy(gameObject); }
+    private void TintMech(Color targetColor) { SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>(); foreach (var sr in srs) if (sr.gameObject.name != "Logic_Visual_Shadow") sr.color = targetColor; }
+    public void SyncPostCombatState() { if (bindedData == null) return; DamageReceiver r = GetComponent<DamageReceiver>(); if (r != null) { bindedData.CurrentHP = Mathf.Max(0, r.CurrentHP); bindedData.CurrentAP = r.MaxAP; } }
+    private void LateUpdate() { if (CombatDirector.Instance == null || CombatDirector.Instance.CurrentArenaSize.x == 0) return; Vector2 center = CombatDirector.Instance.CurrentArenaCenter; Vector2 size = CombatDirector.Instance.CurrentArenaSize; float minX = center.x - size.x / 2f, maxX = center.x + size.x / 2f, minY = center.y - size.y / 2f, maxY = center.y + size.y / 2f; Vector3 cp = transform.position; float cx = Mathf.Clamp(cp.x, minX, maxX), cy = Mathf.Clamp(cp.y, minY, maxY); if (cp.x != cx || cp.y != cy) { transform.position = new Vector3(cx, cy, cp.z); if (rb != null) rb.velocity = Vector2.zero; } }
 }
 
 public static class TransformExtensions

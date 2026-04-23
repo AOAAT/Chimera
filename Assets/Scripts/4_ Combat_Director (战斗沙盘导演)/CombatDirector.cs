@@ -37,6 +37,7 @@ public class CombatDirector : MonoBehaviour
     public GameObject ArenaReference;
     public GameObject BaseEnemyPrefab;
     public Sprite WhitePixelSprite;
+    public GameObject ModularEnemyPrefab;  // 【新增】精英组装机预制体
 
     public Vector3 CurrentArenaCenter { get; private set; }
     public Vector2 CurrentArenaSize { get; private set; }
@@ -53,6 +54,8 @@ public class CombatDirector : MonoBehaviour
     private MapNodeData currentNodeData;
     private bool isCheckingWinCondition = false;
     private bool isLastCombatVictory = false;
+
+    
 
     private void Awake()
     {
@@ -177,15 +180,31 @@ public class CombatDirector : MonoBehaviour
         {
             if (spawnData.EnemyType == null) continue;
 
-            Vector3 spawnPos = centerPos + new Vector3(spawnData.LocalPosition.x, spawnData.LocalPosition.y, 0f);
-            GameObject enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, activeEnemiesContainer.transform);
-            enemyObj.name = $"[Enemy] {spawnData.EnemyType.EnemyName}";
+            Vector3 spawnPos = CurrentArenaCenter + (Vector3)spawnData.LocalPosition;
+            GameObject enemyObj;
 
-            EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
-            if (brain != null)
+            // 【核心流控】：判断敌人类型
+            if (spawnData.EnemyType.Archetype == EnemyArchetype.Modular)
             {
-                brain.MyData = spawnData.EnemyType;
+                // A. 生成组装精英
+                enemyObj = Instantiate(ModularEnemyPrefab, spawnPos, Quaternion.identity, activeEnemiesContainer.transform);
+
+                MechUnit2D mechScript = enemyObj.GetComponent<MechUnit2D>();
+                if (mechScript != null)
+                {
+                    // 调用我们写好的 InitAsEliteEnemy，它会处理所有层级、AI和零件
+                    mechScript.InitAsEliteEnemy(spawnData.EnemyType);
+                }
             }
+            else
+            {
+                // B. 生成静态杂兵 (保持原逻辑)
+                enemyObj = Instantiate(BaseEnemyPrefab, spawnPos, Quaternion.identity, activeEnemiesContainer.transform);
+                EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
+                if (brain != null) brain.MyData = spawnData.EnemyType;
+            }
+
+            enemyObj.name = $"[Elite] {spawnData.EnemyType.EnemyName}";
         }
     }
 
@@ -241,7 +260,7 @@ public class CombatDirector : MonoBehaviour
     /// </summary>
     private void OnBattleStartClicked()
     {
-        // 1. 重新抓取当前部署在场上的存活单位
+        // 1. 重新抓取当前部署在场上的所有单位
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
 
@@ -252,17 +271,17 @@ public class CombatDirector : MonoBehaviour
             else ActivePlayerUnits.Add(r);
         }
 
-        if (ActivePlayerUnits.Count == 0)
-        {
-            Debug.LogWarning("【警告】未部署任何机甲，无法开战！");
-            return;
-        }
+        if (ActivePlayerUnits.Count == 0) return;
 
-        // 2. 执行开战协议 (激活全机被动)
-        Debug.Log("<color=#00FFFF>【战斗导演】正在激活全军被动模组...</color>");
-        foreach (var playerUnit in ActivePlayerUnits)
+        // 2. 【核心修复】：通知全战场所有“组装型”单位（包括玩家和精英敌人）执行开战协议
+        Debug.Log("<color=#00FFFF>【战斗导演】全军通电，执行开战协议...</color>");
+
+        // 同时也搜索敌人列表
+        var allModularUnits = ActivePlayerUnits.Concat(ActiveEnemies).ToList();
+
+        foreach (var unit in allModularUnits)
         {
-            MechUnit2D mechScript = playerUnit.GetComponent<MechUnit2D>();
+            MechUnit2D mechScript = unit.GetComponent<MechUnit2D>();
             if (mechScript != null)
             {
                 mechScript.ExecuteBattleStartProtocol();

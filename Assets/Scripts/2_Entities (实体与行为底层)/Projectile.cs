@@ -37,7 +37,7 @@ public class Projectile : MonoBehaviour
         this.isCritical = isCrit;
         this.generation = gen;
         this.hitAllies = targetAllies;
-
+        this.shooter = shooter; // 记录是谁开的火
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         this.speed = data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f;
         this.speed *= speedMult;
@@ -111,16 +111,31 @@ public class Projectile : MonoBehaviour
         }
     }
 
+    // --- Projectile.cs 中的碰撞逻辑 ---
+
+    // --- Projectile.cs 的 OnTriggerEnter2D 修复 ---
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
+        if (shooter != null && (collision.transform == shooter || collision.transform.IsChildOf(shooter))) return;
+
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
         if (receiver != null)
         {
             bool isTargetEnemy = receiver.isEnemy;
-            bool isValidHit = (isEnemyFire != isTargetEnemy);
-            if (hitAllies) isValidHit = (isEnemyFire == isTargetEnemy && receiver.transform != shooter);
-            if (receiver == null) return;
+            bool isValidHit = false;
+
+            if (hitAllies) // 如果是增益弹/奶弹
+            {
+                // 阵营必须一致（怪奶怪，人奶人），且不是发射者自己
+                isValidHit = (isEnemyFire == isTargetEnemy && receiver.transform != shooter);
+            }
+            else // 如果是伤害弹
+            {
+                // 阵营必须不一致（怪打人，人打怪）
+                isValidHit = (isEnemyFire != isTargetEnemy);
+            }
+
             if (isValidHit)
             {
                 this.target = receiver.transform;
@@ -128,7 +143,6 @@ public class Projectile : MonoBehaviour
             }
         }
     }
-
     private void HitTarget()
     {
         if (hasHit) return;

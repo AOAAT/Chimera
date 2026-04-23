@@ -14,7 +14,7 @@ public class Action_ElephantRam : ECAAction
 
         ChimeraAIController myAI = context.SourceEntity.GetComponent<ChimeraAIController>();
         if (myAI == null) return;
-
+        var potentialTargets = context.IsEnemyFire ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
         // 1. 寻找随机目标 (符合“针对随机敌人”的描述)
         var enemies = CombatDirector.ActiveEnemies.Where(e => e != null && e.CurrentHP > 0).ToList();
 

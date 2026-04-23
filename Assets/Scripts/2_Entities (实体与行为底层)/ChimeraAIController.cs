@@ -97,6 +97,11 @@ public class ChimeraAIController : MonoBehaviour
 
     private void Update()
     {
+        if (GetComponent<DamageReceiver>().CurrentHP <= 0)
+        {
+            if (rb != null) rb.velocity = Vector2.zero;
+            return;
+        }
         if (runtimeData == null) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
@@ -125,36 +130,33 @@ public class ChimeraAIController : MonoBehaviour
 
     private void FindTarget()
     {
+        // 1. 获取自身阵营（由 MechUnit2D 初始化时设定）
         bool IAmEnemy = GetComponent<DamageReceiver>().isEnemy;
 
-        // 如果我是敌人，我就找玩家；如果我是玩家，我就找敌人
+        // 2. 阵营反转：精英找玩家，玩家找怪
         var potentialTargets = IAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
 
-        // 1. 扫描场上所有存活敌人
-        var allEnemies = potentialTargets.Where(e => e != null && e.CurrentHP > 0).ToList();
-        if (allEnemies.Count == 0) { currentTarget = null; return; }
+        var allTargets = potentialTargets.Where(e => e != null && e.CurrentHP > 0).ToList();
+        if (allTargets.Count == 0) { currentTarget = null; return; }
 
-        
-      
-
-        // 2. 获取核心大脑的策略
+        // 【核心优先级】：这里读取的是 runtimeData (组件数据)，而不是 EnemyDataSO！
+        // 这样只要精英怪换了“核心”组件，它的索敌偏好会立刻改变。
         TargetingStrategy strategy = runtimeData.TargetingLogic;
 
-        // 👇【关键修正】：如果大脑设为了 Follow (0)，强制修正为 Nearest (1)
-        // 核心大脑本身不能“跟随核心”，它必须有一个具体的策略
+        // 纠正 FollowCoreAI 逻辑
         if (strategy == TargetingStrategy.FollowCoreAI) strategy = TargetingStrategy.Nearest;
-
         // 3. 执行排序逻辑
         IOrderedEnumerable<DamageReceiver> sorted;
         switch (strategy)
         {
-            case TargetingStrategy.MaxHPHighest: sorted = allEnemies.OrderByDescending(e => e.MaxHP); break;
-            case TargetingStrategy.MaxHPLowest: sorted = allEnemies.OrderBy(e => e.MaxHP); break;
-            case TargetingStrategy.CurrentHPHighest: sorted = allEnemies.OrderByDescending(e => e.CurrentHP); break;
-            case TargetingStrategy.CurrentHPLowest: sorted = allEnemies.OrderBy(e => e.CurrentHP); break;
-            case TargetingStrategy.Furthest: sorted = allEnemies.OrderByDescending(e => Vector3.Distance(transform.position, e.transform.position)); break;
+
+            case TargetingStrategy.MaxHPHighest: sorted = allTargets.OrderByDescending(e => e.MaxHP); break;
+            case TargetingStrategy.MaxHPLowest: sorted = allTargets.OrderBy(e => e.MaxHP); break;
+            case TargetingStrategy.CurrentHPHighest: sorted = allTargets.OrderByDescending(e => e.CurrentHP); break;
+            case TargetingStrategy.CurrentHPLowest: sorted = allTargets.OrderBy(e => e.CurrentHP); break;
+            case TargetingStrategy.Furthest: sorted = allTargets.OrderByDescending(e => Vector3.Distance(transform.position, e.transform.position)); break;
             case TargetingStrategy.Nearest:
-            default: sorted = allEnemies.OrderBy(e => Vector3.Distance(transform.position, e.transform.position)); break;
+            default: sorted = allTargets.OrderBy(e => Vector3.Distance(transform.position, e.transform.position)); break;
         }
 
         currentTarget = sorted.First().transform;
@@ -281,7 +283,8 @@ public class ChimeraAIController : MonoBehaviour
 
         float dashSpeed = CurrentSpeed * speedMultiplier;
         Vector2 velocity = direction.normalized * dashSpeed;
-
+        bool iAmEnemy = GetComponent<DamageReceiver>().isEnemy;
+        int targetMask = iAmEnemy ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
         // --- 零距离爆破判定 (解决贴脸没伤害问题) ---
         float scanDist = 1.2f * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
         int mask = LayerMask.GetMask("Enemy_Hitbox");
@@ -290,7 +293,7 @@ public class ChimeraAIController : MonoBehaviour
         foreach (var hit in hits)
         {
             DamageReceiver victim = hit.GetComponentInParent<DamageReceiver>();
-            if (victim != null && victim.isEnemy)
+            if (victim != null && victim.isEnemy != iAmEnemy)
             {
                 float eMass = hit.GetComponentInParent<EnemyBrain>()?.MyData.GetStat(StatType.Mass) ?? 5f;
                 float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, eMass, dashSpeed, 2.0f);

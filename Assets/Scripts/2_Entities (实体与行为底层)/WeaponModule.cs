@@ -125,7 +125,11 @@ public class WeaponModule : MonoBehaviour
     private void FirePayload()
     {
         if (currentMultiTargets.Count == 0) return;
-        if (myAnimator != null) myAnimator.SetTrigger("Fire");
+
+        // 【关键修复】：获取当前机甲的真实阵营
+        bool IAmEnemy = false;
+        DamageReceiver dr = mechRoot.GetComponent<DamageReceiver>();
+        if (dr != null) IAmEnemy = dr.isEnemy;
 
         // 👇【核心修复】：在跑开火积木前，先算出基础伤害种子
         // 这样霰弹枪积木才能拿到不为 0 的数值
@@ -133,15 +137,14 @@ public class WeaponModule : MonoBehaviour
         float seedMax = GetFinalWeaponStat(StatType.MaxDamage);
         float seedBaseDmg = Random.Range(seedMin, seedMax);
 
-        // --- 阶段 A：开火管线 ---
         ECAContext fireContext = new ECAContext
         {
             ImpactPoint = muzzlePoint.position,
             PrimaryTarget = currentMultiTargets[0],
-            BaseDamage = seedBaseDmg, // 👈 修复：现在带上真实伤害底数了
+            BaseDamage = seedBaseDmg,
             SourceWeapon = weaponData,
             ChassisData = ownerData,
-            IsEnemyFire = false,
+            IsEnemyFire = IAmEnemy, // 【修复】：不再是 false，而是跟随机甲阵营
             SourceEntity = mechRoot,
             TemporaryCritModifier = 1.0f,
             TemporaryDamageModifier = 1.0f
@@ -179,15 +182,23 @@ public class WeaponModule : MonoBehaviour
                 SourceEntity = mechRoot,
                 IsCriticalHit = isCrit
             };
-
             if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
             {
                 GameObject projObj = SimplePool.Spawn(weaponData.ProjectilePrefab, muzzlePoint.position, actualHinge.rotation);
                 Projectile pScript = projObj.GetComponent<Projectile>();
                 if (pScript != null)
                 {
-                    // 确保手动发射的远程子弹也带上正确伤害
-                    pScript.Fire(target, damageToDeliver, weaponData, ownerData, mechRoot, false, isCrit, 0, false);
+                    pScript.Fire(
+                        target,
+                        damageToDeliver,
+                        weaponData,
+                        ownerData,
+                        this.mechRoot,
+                        IAmEnemy, // 【修复】：传入正确的阵营标志
+                        isCrit,
+                        0,
+                        false
+                    );
                 }
             }
             else

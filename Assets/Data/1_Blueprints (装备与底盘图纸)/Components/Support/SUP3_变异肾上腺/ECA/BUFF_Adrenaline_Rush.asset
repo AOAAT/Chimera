@@ -21,13 +21,14 @@ MonoBehaviour:
   StackType: 0
   MaxStacks: 1
   StatModifiers:
-  - StatID: 10
-    Value: 100
+  - StatID: 15
+    Value: 1000
   OnApplyActions: []
   TickInterval: 1
   OnTickActions: []
   OnRemoveActions: []
   OnMaxStacksActions: []
+  OnHolderDeathActions: []
   OverrideAI: 0
   OverrideMovementLogic: 2
   OverrideSafeDodgeDistance: 8
