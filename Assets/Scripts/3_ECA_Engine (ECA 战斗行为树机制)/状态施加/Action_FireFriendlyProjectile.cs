@@ -56,12 +56,13 @@ public class Action_FireFriendlyProjectile : ECAAction
         // 4. 正式发射
         GameObject projObj = SimplePool.Spawn(ProjectilePrefab, context.SourceEntity.position, Quaternion.identity);
         Projectile pScript = projObj.GetComponent<Projectile>();
-
+        Debug.Log($"<color=#00FF00>【异变肾上腺】</color> 锁定队友 {target.name}，发射强效针剂！");
         if (pScript != null)
         {
-            Debug.Log($"<color=#00FF00>【异变肾上腺】</color> 锁定队友 {target.name}，发射强效针剂！");
+
 
             // 参数列表：目标, 伤害(0), 武器, 机甲黑盒, 开火者, 是否敌火, 是否暴击, 代际, 是否奶弹(true)
+            // --- Action_FireFriendlyProjectile.cs 约第 65 行 ---
             pScript.Fire(
                 target.transform,
                 0f,
@@ -71,7 +72,8 @@ public class Action_FireFriendlyProjectile : ECAAction
                 context.IsEnemyFire,
                 false,
                 0,
-                true
+                true,
+                ProjectilePrefab // 👈 【修复】：传入积木面板上拖入的预制体
             );
         }
     }

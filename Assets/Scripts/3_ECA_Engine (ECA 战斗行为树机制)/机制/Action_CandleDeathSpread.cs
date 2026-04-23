@@ -117,7 +117,8 @@ public class Action_CandleDeathSpread : ECAAction
                     sourceIsEnemySide,
                     false,
                     0,
-                    false
+                    false,
+                    ProjectilePrefab
                 );
             }
         }

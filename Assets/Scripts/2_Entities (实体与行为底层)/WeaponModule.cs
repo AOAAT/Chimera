@@ -25,6 +25,8 @@ public class WeaponModule : MonoBehaviour
     private List<Transform> currentMultiTargets = new List<Transform>();
     private float scanTimer = 0f;
     private const float SCAN_INTERVAL = 0.3f;
+    private bool cachedIsEnemy;
+    private DamageReceiver mechReceiver;
 
     public void Initialize(RuntimeWeapon data, RuntimeChimeraData owner, Vector2 centerOffset, Transform root)
     {
@@ -44,6 +46,8 @@ public class WeaponModule : MonoBehaviour
 
         currentState = WeaponState.Idle;
         stateTimer = 0f;
+        mechReceiver = mechRoot.GetComponent<DamageReceiver>();
+        cachedIsEnemy = mechReceiver != null ? mechReceiver.isEnemy : false;
     }
 
     private void Update()
@@ -87,6 +91,10 @@ public class WeaponModule : MonoBehaviour
             UpdateMeleeAnimation();
     }
 
+    // --- 替换 WeaponModule.cs 中的 UpdateTargetSelection 相关逻辑 ---
+
+    private Collider2D[] results = new Collider2D[20]; // 预分配数组，避免每帧 new
+
     private void UpdateTargetSelection()
     {
         float distMult = CombatSandbox.GetDist(1f);
@@ -96,38 +104,66 @@ public class WeaponModule : MonoBehaviour
         if (scanTimer <= 0f)
         {
             scanTimer = SCAN_INTERVAL;
-            int mask = LayerMask.GetMask("Enemy_Hitbox");
-            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, maxRange, mask);
 
-            if (hits.Length > 0)
+            // 1. 【性能优化】：使用 NonAlloc 版探测
+            int mask = LayerMask.GetMask("Enemy_Hitbox", "Player_Hitbox"); // 根据需要探测层级
+            int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, maxRange, results, mask);
+
+            if (hitCount > 0)
             {
                 TargetingStrategy strategy = weaponData.SourceSO.TargetingOverride;
-                if (strategy == TargetingStrategy.FollowCoreAI && ownerData != null) strategy = ownerData.TargetingLogic;
+                if (strategy == TargetingStrategy.FollowCoreAI && ownerData != null)
+                    strategy = ownerData.TargetingLogic;
 
-                var sorted = hits.Select(h => h.GetComponentInParent<DamageReceiver>())
-                                  .Where(dr => dr != null && dr.CurrentHP > 0)
-                                  .OrderBy(dr => (strategy == TargetingStrategy.Furthest) ? -Vector3.Distance(transform.position, dr.transform.position) : Vector3.Distance(transform.position, dr.transform.position))
-                                  .Take(maxCount).ToList();
+                // 2. 【核心优化】：手动筛选目标，彻底抛弃 LINQ
+                currentMultiTargets.Clear();
+                bool IAmEnemy = mechRoot.GetComponent<DamageReceiver>().isEnemy;
 
-                if (targetsExist(sorted))
+                // 寻找最符合条件的 N 个目标
+                for (int k = 0; k < maxCount; k++)
                 {
-                    currentMultiTargets = sorted.Select(t => t.transform).ToList();
-                    lockedTarget = currentMultiTargets[0];
+                    DamageReceiver bestOne = null;
+                    float bestScore = -float.MaxValue;
+
+                    for (int i = 0; i < hitCount; i++)
+                    {
+                        DamageReceiver dr = results[i].GetComponentInParent<DamageReceiver>();
+                        // 阵营过滤 & 存活检查 & 排除已选目标
+                        if (dr == null || dr.isEnemy == IAmEnemy || dr.CurrentHP <= 0) continue;
+                        if (currentMultiTargets.Contains(dr.transform)) continue;
+
+                        float dist = Vector3.Distance(transform.position, dr.transform.position);
+                        float score = (strategy == TargetingStrategy.Furthest) ? dist : -dist;
+
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestOne = dr;
+                        }
+                    }
+
+                    if (bestOne != null) currentMultiTargets.Add(bestOne.transform);
+                    else break;
                 }
-                else { lockedTarget = null; currentMultiTargets.Clear(); }
+
+                if (currentMultiTargets.Count > 0) lockedTarget = currentMultiTargets[0];
+                else lockedTarget = null;
             }
-            else { lockedTarget = null; currentMultiTargets.Clear(); }
+            else
+            {
+                lockedTarget = null;
+                currentMultiTargets.Clear();
+            }
         }
     }
-
     private bool targetsExist(List<DamageReceiver> list) => list != null && list.Count > 0;
 
     private void FirePayload()
     {
         if (currentMultiTargets.Count == 0) return;
-
+        if (myAnimator != null) myAnimator.SetTrigger("Fire");
         // 【关键修复】：获取当前机甲的真实阵营
-        bool IAmEnemy = false;
+        bool IAmEnemy = cachedIsEnemy;
         DamageReceiver dr = mechRoot.GetComponent<DamageReceiver>();
         if (dr != null) IAmEnemy = dr.isEnemy;
 
@@ -194,10 +230,11 @@ public class WeaponModule : MonoBehaviour
                         weaponData,
                         ownerData,
                         this.mechRoot,
-                        IAmEnemy, // 【修复】：传入正确的阵营标志
+                        IAmEnemy,
                         isCrit,
                         0,
-                        false
+                        false,
+                        weaponData.ProjectilePrefab // 👈 传这个用于对象池归还
                     );
                 }
             }

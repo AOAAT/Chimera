@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// --- 替换 Projectile.cs 全量代码 ---
+using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
@@ -14,19 +15,18 @@ public class Projectile : MonoBehaviour
     private bool hasHit = false;
     private bool hitAllies = false;
 
-    [Header("=== 视觉表现 ===")]
-    public bool EnableVisualPenetration = false;
-    public float PostHitLingerTime = 0f;
-
-    [Header("=== 弹道轨迹 ===")]
+    [Header("=== 轨迹配置 ===")]
     public bool EnableHoming = true;
     public float TurnSpeed = 1500f;
 
+    // 【优化】：用于归还对象池的来源引用
+    private GameObject myPrefabSource;
     private Vector2 currentDirection;
     private int generation = 0;
     private Vector3 lastPosition;
+    private float lifeTimer;
 
-    public void Fire(Transform target, float damage, RuntimeWeapon data, RuntimeChimeraData owner, Transform shooter, bool isEnemy, bool isCrit, int gen, bool targetAllies)
+    public void Fire(Transform target, float damage, RuntimeWeapon data, RuntimeChimeraData owner, Transform shooter, bool isEnemy, bool isCrit, int gen, bool targetAllies, GameObject sourcePrefab)
     {
         this.target = target;
         this.damage = damage;
@@ -37,43 +37,28 @@ public class Projectile : MonoBehaviour
         this.isCritical = isCrit;
         this.generation = gen;
         this.hitAllies = targetAllies;
-        this.shooter = shooter; // 记录是谁开的火
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
-        this.speed = data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f;
-        this.speed *= speedMult;
+        this.myPrefabSource = sourcePrefab; // 记录来源
 
-        if (this.speed <= 0.01f)
-        {
-            Debug.LogError($"<color=red>【子弹故障】</color> 来源武器：{data.WeaponName} | 原始速度：{speed} | 缩放后速度：{this.speed}。速度太低导致停滞！");
-        }
+        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+        this.speed = (data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f) * speedMult;
+
+        this.hasHit = false;
+        this.lifeTimer = 5f; // 5秒强制回收，防止飞出世界
+        currentDirection = transform.right;
+        lastPosition = transform.position;
 
         gameObject.layer = LayerMask.NameToLayer("Projectile");
-        currentDirection = transform.right;
-
-        if (currentDirection.sqrMagnitude < 0.01f)
-        {
-            Debug.LogError($"<color=red>【子弹故障】</color> 方向向量丢失！请检查武器插槽的旋转角度。");
-        }
-        lastPosition = transform.position;
-    }
-
-    private void Start()
-    {
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
-        if (rb == null) { rb = gameObject.AddComponent<Rigidbody2D>(); rb.gravityScale = 0; rb.isKinematic = true; }
-        Collider2D col = GetComponent<Collider2D>();
-        if (col == null) { col = gameObject.AddComponent<CircleCollider2D>(); col.isTrigger = true; }
-        Destroy(gameObject, 10f);
     }
 
     private void Update()
     {
-        if (hasHit)
-        {
-            if (EnableVisualPenetration) transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
-            return;
-        }
+        if (hasHit) return;
 
+        // 寿命管理
+        lifeTimer -= Time.deltaTime;
+        if (lifeTimer <= 0) { DespawnMe(); return; }
+
+        // 追踪逻辑
         if (EnableHoming && target != null && target.gameObject.activeInHierarchy)
         {
             Vector3 targetCenter = target.position;
@@ -87,13 +72,16 @@ public class Projectile : MonoBehaviour
         }
 
         transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
-        CheckCollisionPhysics();
+        CheckCollisionPhysics(); // 内部已做 NonAlloc 优化
         lastPosition = transform.position;
     }
 
     private void CheckCollisionPhysics()
     {
+        // 只有位移足够大才检测，防止慢速弹每帧浪费计算
         float displacement = Vector3.Distance(lastPosition, transform.position);
+        if (displacement < 0.1f) return;
+
         Vector3 dir = (transform.position - lastPosition).normalized;
         int layerMask = isEnemyFire ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
         if (hitAllies) layerMask = isEnemyFire ? LayerMask.GetMask("Enemy_Hitbox") : LayerMask.GetMask("Player_Hitbox");
@@ -102,7 +90,8 @@ public class Projectile : MonoBehaviour
         if (hit.collider != null)
         {
             DamageReceiver receiver = hit.collider.GetComponentInParent<DamageReceiver>();
-            if (receiver != null && receiver.transform != shooter)
+            // 排除射手本身及子物体
+            if (receiver != null && receiver.transform != shooter && !receiver.transform.IsChildOf(shooter))
             {
                 this.target = receiver.transform;
                 transform.position = hit.point;
@@ -111,30 +100,18 @@ public class Projectile : MonoBehaviour
         }
     }
 
-    // --- Projectile.cs 中的碰撞逻辑 ---
-
-    // --- Projectile.cs 的 OnTriggerEnter2D 修复 ---
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
+
+        // 排除射手本身
         if (shooter != null && (collision.transform == shooter || collision.transform.IsChildOf(shooter))) return;
 
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
         if (receiver != null)
         {
             bool isTargetEnemy = receiver.isEnemy;
-            bool isValidHit = false;
-
-            if (hitAllies) // 如果是增益弹/奶弹
-            {
-                // 阵营必须一致（怪奶怪，人奶人），且不是发射者自己
-                isValidHit = (isEnemyFire == isTargetEnemy && receiver.transform != shooter);
-            }
-            else // 如果是伤害弹
-            {
-                // 阵营必须不一致（怪打人，人打怪）
-                isValidHit = (isEnemyFire != isTargetEnemy);
-            }
+            bool isValidHit = hitAllies ? (isEnemyFire == isTargetEnemy) : (isEnemyFire != isTargetEnemy);
 
             if (isValidHit)
             {
@@ -143,29 +120,40 @@ public class Projectile : MonoBehaviour
             }
         }
     }
+
     private void HitTarget()
     {
         if (hasHit) return;
         hasHit = true;
 
-        ECAContext context = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = target, BaseDamage = damage, SourceWeapon = weaponData, ChassisData = ownerData, IsEnemyFire = this.isEnemyFire, IsCriticalHit = this.isCritical };
+        ECAContext context = new ECAContext
+        {
+            ImpactPoint = transform.position,
+            PrimaryTarget = target,
+            BaseDamage = damage,
+            SourceWeapon = weaponData,
+            ChassisData = ownerData,
+            IsEnemyFire = this.isEnemyFire,
+            IsCriticalHit = this.isCritical,
+            SourceEntity = shooter
+        };
         context.CustomStates["Gen"] = generation;
 
-        if (weaponData != null && weaponData.OnHitActions != null)
+        if (weaponData?.OnHitActions != null)
         {
             foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(context);
         }
-        if (ownerData != null && ownerData.GlobalOnHitActions != null)
+        if (ownerData?.GlobalOnHitActions != null)
         {
             foreach (var action in ownerData.GlobalOnHitActions) if (action != null) action.Execute(context);
         }
 
-        if (PostHitLingerTime > 0f)
-        {
-            Collider2D col = GetComponent<Collider2D>();
-            if (col != null) col.enabled = false;
-            Destroy(gameObject, PostHitLingerTime);
-        }
+        DespawnMe();
+    }
+
+    private void DespawnMe()
+    {
+        if (myPrefabSource != null) SimplePool.Despawn(myPrefabSource, gameObject);
         else Destroy(gameObject);
     }
 }

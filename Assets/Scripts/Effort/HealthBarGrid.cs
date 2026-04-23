@@ -20,59 +20,48 @@ public class HealthBarGrid : MonoBehaviour
 
     // --- 请替换 HealthBarGrid.cs 中的 UpdateGrid 方法 ---
 
+    // --- 替换 HealthBarGrid.cs 中的 UpdateGrid 方法 ---
+
+    private float lastInitedMaxValue = -1f; // 缓存记录上次绘制的上限
+
     public void UpdateGrid(float maxValue)
     {
         if (ValuePerGrid <= 0) return;
 
-        if (container == null)
-        {
-            container = GetComponent<RectTransform>();
-        }
+        // 【核心节流】：如果血量上限没变，说明格子不需要重绘，直接返回
+        if (Mathf.Approximately(maxValue, lastInitedMaxValue)) return;
 
-        // 1. 👇【史诗级修复】：精准打扫！只删掉名字以 "GridLine" 开头的黑线，绝不误伤背景和填充条！
+        lastInitedMaxValue = maxValue; // 更新缓存
+
+        if (container == null) container = GetComponent<RectTransform>();
+
+        // 暴力打扫黑线
         for (int i = container.childCount - 1; i >= 0; i--)
         {
             Transform child = container.GetChild(i);
-            if (child.name.StartsWith("GridLine"))
-            {
-                Destroy(child.gameObject);
-            }
+            if (child.name.StartsWith("GridLine")) Destroy(child.gameObject);
         }
 
-        // 2. 算出需要切几刀？ (比如 500血，每格100，需要 4 根线)
         int gridCount = Mathf.FloorToInt(maxValue / ValuePerGrid);
-        if (gridCount <= 1) return; // 只有 1 格就不需要切线了
+        if (gridCount <= 1) return;
 
-        int lineCount = gridCount - 1;
-        if (lineCount > MaxLines) lineCount = MaxLines;
+        int lineCount = Mathf.Min(gridCount - 1, MaxLines);
 
-        // 3. 用纯代码生成完美的切割线！
         for (int i = 1; i <= lineCount; i++)
         {
             GameObject lineObj = new GameObject($"GridLine_{i}");
             lineObj.transform.SetParent(container, false);
-
-            // 添加图片并上色
             Image img = lineObj.AddComponent<Image>();
             img.color = LineColor;
-            img.raycastTarget = false; // 绝不阻挡鼠标点击
+            img.raycastTarget = false;
 
-            // 设置绝对定位
             RectTransform rect = lineObj.GetComponent<RectTransform>();
-
-            // 计算这根线在血条上的百分比位置 (比如 0.2, 0.4, 0.6)
             float percent = (float)i / gridCount;
-
-            // 极其巧妙的锚点设置：让它横向钉死在百分比位置，纵向铺满整个血条！
             rect.anchorMin = new Vector2(percent, 0f);
             rect.anchorMax = new Vector2(percent, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-
-            // 宽度直接写死像素！高度写 0 意味着跟随锚点拉伸！
             rect.sizeDelta = new Vector2(LineThickness, 0f);
             rect.anchoredPosition = Vector2.zero;
-
-            // 👇【保险措施】：强行把生成的黑线放在最前面（遮挡住底下的颜色）
             lineObj.transform.SetAsLastSibling();
         }
     }

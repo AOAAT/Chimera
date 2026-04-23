@@ -1,8 +1,13 @@
-﻿// --- START OF FILE ProceduralAnimator2D.cs ---
+﻿// --- 替换 ProceduralAnimator2D.cs 全量代码 ---
 using UnityEngine;
 
 public class ProceduralAnimator2D : MonoBehaviour
 {
+    private Transform visualTransform;
+    private Rigidbody2D rb;
+    private DamageReceiver receiver;
+    private SpriteRenderer[] cachedRenderers; // 【新增】缓存渲染器数组
+
     [Header("=== 核心控制 ===")]
     public bool AutoSyncWithVelocity = true;
     public float WalkSpeedThreshold = 0.1f;
@@ -14,53 +19,40 @@ public class ProceduralAnimator2D : MonoBehaviour
     public float BreathScaleY = 0.05f;
     public float BreathScaleX = -0.02f;
 
-    [Header("=== 2. 移动摇摆态 (生物/履带机甲通用) ===")]
+    [Header("=== 2. 移动摇摆态 (通用) ===")]
     public bool EnableWobble = true;
     public float WobbleSpeed = 10f;
     public float WobbleAngle = 8f;
     public float BobbingHeight = 0.1f;
 
-    [Header("=== 3. 机械震动态 (柴油机专属！) ===")]
+    [Header("=== 3. 机械震动态 (柴油机) ===")]
     public bool EnableVibration = false;
-    [Tooltip("震动的频率 (推荐 30~50)")]
     public float VibrationSpeed = 40f;
-    [Tooltip("震动的幅度 (推荐 0.02~0.05)")]
     public float VibrationIntensity = 0.03f;
 
     [Header("=== 4. 受击反馈 (果冻效应) ===")]
     public float SquashAmount = -0.3f;
     public float SquashRecoverSpeed = 10f;
 
-    [Header("=== 5. 损毁表现 (Juiciness) ===")]
-    [Tooltip("血量低于 50% 时生成的烟雾/火花预制体")]
+    [Header("=== 5. 损毁表现 ===")]
     public GameObject SmokePrefab;
-    [Tooltip("血量低于 30% 时的额外震动增益")]
     public float PanicVibrationMultiplier = 2.0f;
 
     private GameObject activeSmoke;
-    private float baseVibrationSpeed;
-    private float baseVibrationIntensity;
+    private float baseVibrationSpeed, baseVibrationIntensity;
     private bool baseEnableVibration;
-
-    private Transform visualTransform;
-    private Rigidbody2D rb;
-    private DamageReceiver receiver;
-
-    private Vector3 originalScale;
-    private Vector3 originalLocalPos;
+    private Vector3 originalScale, originalLocalPos;
     private Quaternion originalLocalRot;
-
     private float currentSquash = 0f;
     private float timeOffset;
     private float lastHP = -1f;
 
-    // 👇【新增】：允许外部代码精确指定到底要摇晃哪一块贴图
     public void SetTargetVisual(Transform target)
     {
         visualTransform = target;
-        originalScale = visualTransform.localScale;
-        originalLocalPos = visualTransform.localPosition;
-        originalLocalRot = visualTransform.localRotation;
+        // 【优化】：设置目标时立即缓存所有渲染器，避免后续重复搜寻
+        cachedRenderers = visualTransform.GetComponentsInChildren<SpriteRenderer>();
+        RefreshBaseState();
     }
 
     private void Awake()
@@ -68,8 +60,6 @@ public class ProceduralAnimator2D : MonoBehaviour
         timeOffset = Random.Range(0f, 100f);
         rb = GetComponent<Rigidbody2D>();
         receiver = GetComponent<DamageReceiver>();
-
-        // 备份策划在 Inspector 填写的初始值
         baseVibrationSpeed = VibrationSpeed;
         baseVibrationIntensity = VibrationIntensity;
         baseEnableVibration = EnableVibration;
@@ -79,88 +69,70 @@ public class ProceduralAnimator2D : MonoBehaviour
     {
         if (visualTransform == null) return;
 
-        // 1. 状态同步：物理速度决定是否处于“移动态”
+        // 状态同步
         if (AutoSyncWithVelocity && rb != null)
             IsMoving = rb.velocity.sqrMagnitude > (WalkSpeedThreshold * WalkSpeedThreshold);
 
-        // 2. 状态同步：受击判定
         if (receiver != null)
         {
             if (lastHP == -1f) lastHP = receiver.CurrentHP;
             if (receiver.CurrentHP < lastHP)
             {
-                TriggerHitSquash();
+                currentSquash = SquashAmount;
                 lastHP = receiver.CurrentHP;
             }
-            HandleDamageVisuals(); // 处理烟雾和濒死震动
+            HandleDamageVisualsOptimized();
         }
 
-        // 3. 计算果冻形变恢复
+        // 形变恢复
         currentSquash = Mathf.Lerp(currentSquash, 0f, Time.deltaTime * SquashRecoverSpeed);
 
+        float t = Time.time + timeOffset;
         Vector3 targetScale = originalScale;
         Vector3 targetPos = originalLocalPos;
         Quaternion targetRot = originalLocalRot;
 
-        float t = Time.time + timeOffset;
-
-        // --- 表现层计算 ---
-
-        // A. 移动摇摆
         if (IsMoving && EnableWobble)
         {
-            float wobbleSin = Mathf.Sin(t * WobbleSpeed);
-            float bobbingCos = Mathf.Abs(Mathf.Cos(t * WobbleSpeed * 0.5f));
-
-            targetRot = originalLocalRot * Quaternion.Euler(0f, 0f, wobbleSin * WobbleAngle);
-            targetPos = originalLocalPos + new Vector3(0f, bobbingCos * BobbingHeight, 0f);
+            targetRot = originalLocalRot * Quaternion.Euler(0f, 0f, Mathf.Sin(t * WobbleSpeed) * WobbleAngle);
+            targetPos = originalLocalPos + new Vector3(0f, Mathf.Abs(Mathf.Cos(t * WobbleSpeed * 0.5f)) * BobbingHeight, 0f);
         }
-        // B. 生物呼吸 (仅在不移动时触发)
         else if (!IsMoving && EnableBreathing)
         {
             float normalizedBreath = (Mathf.Sin(t * BreathSpeed) + 1f) / 2f;
-            targetScale.y = originalScale.y * (1f + normalizedBreath * BreathScaleY);
-            targetScale.x = originalScale.x * (1f + normalizedBreath * BreathScaleX);
+            targetScale.y *= (1f + normalizedBreath * BreathScaleY);
+            targetScale.x *= (1f + normalizedBreath * BreathScaleX);
         }
 
-        // C. 机械震动 (核心损毁或待机时)
         if (EnableVibration)
         {
-            // 利用柏林噪声产生不规则的高频机械感
-            float vibX = (Mathf.PerlinNoise(t * VibrationSpeed, 0f) - 0.5f) * 2f * VibrationIntensity;
-            float vibY = (Mathf.PerlinNoise(0f, t * VibrationSpeed) - 0.5f) * 2f * VibrationIntensity;
-            targetPos += new Vector3(vibX, vibY, 0f);
+            targetPos += new Vector3((Mathf.PerlinNoise(t * VibrationSpeed, 0f) - 0.5f) * 2f * VibrationIntensity,
+                                     (Mathf.PerlinNoise(0f, t * VibrationSpeed) - 0.5f) * 2f * VibrationIntensity, 0f);
         }
 
-        // D. 应用受击形变
         targetScale.y += currentSquash;
         targetScale.x -= currentSquash * 0.5f;
 
-        // 最终应用到变换组件
         visualTransform.localScale = targetScale;
         visualTransform.localPosition = targetPos;
         visualTransform.localRotation = targetRot;
     }
 
-    private void HandleDamageVisuals()
+    private void HandleDamageVisualsOptimized()
     {
         float hpPercent = receiver.CurrentHP / receiver.MaxHP;
 
-        // --- 烟雾逻辑 (低于 50%) ---
+        // 烟雾逻辑
         if (hpPercent < 0.5f)
         {
             if (activeSmoke == null && SmokePrefab != null)
             {
                 activeSmoke = Instantiate(SmokePrefab, transform.position, Quaternion.identity, transform);
-                activeSmoke.name = "FX_DamageSmoke";
             }
         }
-        else
-        {
-            if (activeSmoke != null) Destroy(activeSmoke);
-        }
+        else if (activeSmoke != null) { Destroy(activeSmoke); }
 
-        // --- 濒死震动逻辑 (低于 30%) ---
+        // 濒死震动逻辑
         if (hpPercent < 0.3f)
         {
             EnableVibration = true;
@@ -169,24 +141,9 @@ public class ProceduralAnimator2D : MonoBehaviour
         }
         else
         {
-            // 恢复策划设定的初始震动状态
             EnableVibration = baseEnableVibration;
             VibrationSpeed = baseVibrationSpeed;
             VibrationIntensity = baseVibrationIntensity;
-        }
-    }
-
-    public void TriggerHitSquash() { currentSquash = SquashAmount; }
-
-    public void StopAnimation()
-    {
-        this.enabled = false;
-        if (activeSmoke != null) Destroy(activeSmoke);
-        if (visualTransform != null)
-        {
-            visualTransform.localScale = originalScale;
-            visualTransform.localPosition = originalLocalPos;
-            visualTransform.localRotation = originalLocalRot * Quaternion.Euler(0, 0, -90f);
         }
     }
 

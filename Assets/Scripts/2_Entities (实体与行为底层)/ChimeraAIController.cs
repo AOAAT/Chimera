@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class ChimeraAIController : MonoBehaviour
@@ -8,6 +7,12 @@ public class ChimeraAIController : MonoBehaviour
     private Transform currentTarget;
     private Rigidbody2D rb;
     private BuffManager myBuffMgr;
+    private DamageReceiver myReceiver; // 缓存自身受击组件，用于判定阵营
+
+    [Header("=== 性能优化设定 ===")]
+    [Tooltip("AI 重新搜寻目标的间隔时间 (秒)，推荐 0.1~0.2")]
+    public float SearchInterval = 0.2f;
+    private float searchTimer = 0f;
 
     [Header("=== 动态物理计算结果 ===")]
     public float CurrentSpeed;
@@ -27,6 +32,8 @@ public class ChimeraAIController : MonoBehaviour
     {
         runtimeData = data;
         rb = GetComponent<Rigidbody2D>();
+        myReceiver = GetComponent<DamageReceiver>(); // 缓存自身阵营
+
         if (rb != null) rb.drag = 5f;
 
         myBuffMgr = GetComponent<BuffManager>();
@@ -72,8 +79,9 @@ public class ChimeraAIController : MonoBehaviour
         }
         else
         {
-            foreach (var wpn in runtimeData.EquippedWeapons)
+            for (int i = 0; i < runtimeData.EquippedWeapons.Count; i++)
             {
+                var wpn = runtimeData.EquippedWeapons[i];
                 float rawMax = wpn.GetStat(StatType.MaxRange);
                 float rawMin = wpn.GetStat(StatType.MinRange);
 
@@ -97,18 +105,23 @@ public class ChimeraAIController : MonoBehaviour
 
     private void Update()
     {
-        if (GetComponent<DamageReceiver>().CurrentHP <= 0)
+        // 1. 死亡检查
+        if (myReceiver == null || myReceiver.CurrentHP <= 0)
         {
             if (rb != null) rb.velocity = Vector2.zero;
             return;
         }
+
         if (runtimeData == null) return;
+
+        // 2. 战斗状态检查
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
         {
             if (rb != null) rb.velocity = Vector2.zero;
             return;
         }
 
+        // 3. 物理硬直计时
         if (isStaggered)
         {
             staggerTimer -= Time.deltaTime;
@@ -123,44 +136,94 @@ public class ChimeraAIController : MonoBehaviour
             return;
         }
 
-        // 👇【核心修复】：每帧执行索敌，确保 currentTarget 不为空
-        FindTarget();
+        // 4. 【核心性能优化】：不再每帧暴力搜索，采用计时器+目标存活校验
+        searchTimer -= Time.deltaTime;
+
+        // 判定条件：当前没目标 OR 目标死了 OR 搜索冷却好了
+        if (currentTarget == null || !IsTargetValid(currentTarget) || searchTimer <= 0)
+        {
+            FindTargetOptimized();
+            searchTimer = SearchInterval;
+        }
+
         HandleMovement();
     }
 
-    private void FindTarget()
+    // 高性能目标有效性校验
+    private bool IsTargetValid(Transform target)
     {
-        // 1. 获取自身阵营（由 MechUnit2D 初始化时设定）
-        bool IAmEnemy = GetComponent<DamageReceiver>().isEnemy;
+        if (target == null) return false;
+        DamageReceiver dr = target.GetComponentInParent<DamageReceiver>();
+        return dr != null && dr.CurrentHP > 0 && target.gameObject.activeInHierarchy;
+    }
 
-        // 2. 阵营反转：精英找玩家，玩家找怪
-        var potentialTargets = IAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
+    private void FindTargetOptimized()
+    {
+        // 1. 获取阵营及对应的列表
+        bool iAmEnemy = myReceiver != null && myReceiver.isEnemy;
+        var targetList = iAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
 
-        var allTargets = potentialTargets.Where(e => e != null && e.CurrentHP > 0).ToList();
-        if (allTargets.Count == 0) { currentTarget = null; return; }
+        if (targetList.Count == 0) { currentTarget = null; return; }
 
-        // 【核心优先级】：这里读取的是 runtimeData (组件数据)，而不是 EnemyDataSO！
-        // 这样只要精英怪换了“核心”组件，它的索敌偏好会立刻改变。
+        // 2. 准备策略
         TargetingStrategy strategy = runtimeData.TargetingLogic;
-
-        // 纠正 FollowCoreAI 逻辑
         if (strategy == TargetingStrategy.FollowCoreAI) strategy = TargetingStrategy.Nearest;
-        // 3. 执行排序逻辑
-        IOrderedEnumerable<DamageReceiver> sorted;
-        switch (strategy)
-        {
 
-            case TargetingStrategy.MaxHPHighest: sorted = allTargets.OrderByDescending(e => e.MaxHP); break;
-            case TargetingStrategy.MaxHPLowest: sorted = allTargets.OrderBy(e => e.MaxHP); break;
-            case TargetingStrategy.CurrentHPHighest: sorted = allTargets.OrderByDescending(e => e.CurrentHP); break;
-            case TargetingStrategy.CurrentHPLowest: sorted = allTargets.OrderBy(e => e.CurrentHP); break;
-            case TargetingStrategy.Furthest: sorted = allTargets.OrderByDescending(e => Vector3.Distance(transform.position, e.transform.position)); break;
-            case TargetingStrategy.Nearest:
-            default: sorted = allTargets.OrderBy(e => Vector3.Distance(transform.position, e.transform.position)); break;
+        // 3. 【核心循环】：不使用 LINQ，通过单次遍历寻找最佳分值
+        DamageReceiver bestCandidate = null;
+        float bestScore = -float.MaxValue;
+
+        for (int i = 0; i < targetList.Count; i++)
+        {
+            DamageReceiver potential = targetList[i];
+
+            // 基础过滤
+            if (potential == null || potential.CurrentHP <= 0) continue;
+
+            float dist = Vector3.Distance(transform.position, potential.transform.position);
+            float currentScore = 0f;
+
+            // 策略打分系统
+            switch (strategy)
+            {
+                case TargetingStrategy.Nearest:
+                    currentScore = -dist; // 距离越短分数越高
+                    break;
+                case TargetingStrategy.Furthest:
+                    currentScore = dist; // 距离越长分数越高
+                    break;
+                case TargetingStrategy.MaxHPHighest:
+                    currentScore = potential.MaxHP;
+                    break;
+                case TargetingStrategy.MaxHPLowest:
+                    currentScore = -potential.MaxHP;
+                    break;
+                case TargetingStrategy.CurrentHPHighest:
+                    currentScore = potential.CurrentHP;
+                    break;
+                case TargetingStrategy.CurrentHPLowest:
+                    currentScore = -potential.CurrentHP;
+                    break;
+                default:
+                    currentScore = -dist;
+                    break;
+            }
+
+            if (currentScore > bestScore)
+            {
+                bestScore = currentScore;
+                bestCandidate = potential;
+            }
         }
 
-        currentTarget = sorted.First().transform;
-
+        if (bestCandidate != null)
+        {
+            currentTarget = bestCandidate.transform;
+        }
+        else
+        {
+            currentTarget = null;
+        }
     }
 
     private void HandleMovement()
@@ -177,7 +240,7 @@ public class ChimeraAIController : MonoBehaviour
 
         Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
 
-        // 考虑碰撞盒表面的真实距离
+        // 考虑碰撞盒表面的真实距离 (ClosestPoint 性能尚可)
         float dist = Vector3.Distance(logicCenter, currentTarget.position);
         Collider2D targetCol = currentTarget.GetComponentInChildren<Collider2D>();
         if (targetCol != null) dist = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
@@ -197,7 +260,16 @@ public class ChimeraAIController : MonoBehaviour
         else if (activeLogic == MovementStrategy.Active_Firepower)
         {
             // 为近战单位增加侵入缓冲区
-            float engagementBuffer = runtimeData.EquippedWeapons.Any(w => w.DeliveryType == WeaponDeliveryType.Melee) ? 0.8f : 0f;
+            bool hasMelee = false;
+            for (int i = 0; i < runtimeData.EquippedWeapons.Count; i++)
+            {
+                if (runtimeData.EquippedWeapons[i].DeliveryType == WeaponDeliveryType.Melee)
+                {
+                    hasMelee = true;
+                    break;
+                }
+            }
+            float engagementBuffer = hasMelee ? 0.8f : 0f;
 
             if (dist > (optimalFireRange - engagementBuffer))
             {
@@ -209,7 +281,7 @@ public class ChimeraAIController : MonoBehaviour
             }
             else
             {
-                targetVelocity = Vector2.zero; // 完美就位
+                targetVelocity = Vector2.zero; // 到达射程
             }
         }
 
@@ -220,9 +292,6 @@ public class ChimeraAIController : MonoBehaviour
     // 物理引擎交互接口 (由碰撞和积木调用)
     // ==========================================
 
-    /// <summary>
-    /// 常规物理打击（如爆炸击退、怪物殴打）
-    /// </summary>
     public void ApplyImpulse(Vector2 dir, float impulse, bool ignoreStun = false)
     {
         float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
@@ -248,9 +317,6 @@ public class ChimeraAIController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 开火后坐力专用：大推力，但只产生极短僵直
-    /// </summary>
     public void ApplyRecoil(Vector2 dir, float impulse, float manualStunTime)
     {
         if (rb == null) return;
@@ -258,22 +324,15 @@ public class ChimeraAIController : MonoBehaviour
         float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
 
-        // 1. 设置人工僵直，拦截 AI 控制
         isStaggered = true;
         staggerTimer = manualStunTime;
-
-        // 2. 物理调优：降低阻力让它滑得更远
         rb.drag = 1.0f;
 
-        // 3. 计算并施加即时速度
         float deltaV = (impulse / mass) * speedMult;
         rb.velocity = dir * deltaV;
         rb.AddForce(dir * impulse * speedMult, ForceMode2D.Impulse);
     }
 
-    /// <summary>
-    /// 执行战术冲刺（如马头、大象腿）
-    /// </summary>
     public void ExecuteDash(Vector2 direction, float speedMultiplier, float duration)
     {
         if (rb == null) return;
@@ -283,24 +342,26 @@ public class ChimeraAIController : MonoBehaviour
 
         float dashSpeed = CurrentSpeed * speedMultiplier;
         Vector2 velocity = direction.normalized * dashSpeed;
-        bool iAmEnemy = GetComponent<DamageReceiver>().isEnemy;
+        bool iAmEnemy = myReceiver != null && myReceiver.isEnemy;
         int targetMask = iAmEnemy ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
-        // --- 零距离爆破判定 (解决贴脸没伤害问题) ---
-        float scanDist = 1.2f * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
-        int mask = LayerMask.GetMask("Enemy_Hitbox");
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, scanDist, mask);
 
-        foreach (var hit in hits)
+        // 扫描碰撞
+        float scanDist = 1.2f * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, scanDist, targetMask);
+
+        for (int i = 0; i < hits.Length; i++)
         {
-            DamageReceiver victim = hit.GetComponentInParent<DamageReceiver>();
+            DamageReceiver victim = hits[i].GetComponentInParent<DamageReceiver>();
             if (victim != null && victim.isEnemy != iAmEnemy)
             {
-                float eMass = hit.GetComponentInParent<EnemyBrain>()?.MyData.GetStat(StatType.Mass) ?? 5f;
+                float eMass = 5f;
+                EnemyBrain eb = hits[i].GetComponentInParent<EnemyBrain>();
+                if (eb != null && eb.MyData != null) eMass = eb.MyData.GetStat(StatType.Mass);
+
                 float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, eMass, dashSpeed, 2.0f);
 
                 if (rawDamage > 10f)
                 {
-                    Debug.Log($"<color=#FFD700>【零距离冲撞】</color> 对 {victim.name} 造成 {rawDamage:F0} 瞬发伤害");
                     float enemyShare = runtimeData.TotalMass / (runtimeData.TotalMass + eMass);
                     victim.TakeDamage(rawDamage * enemyShare, runtimeData.UnitName + " (零距离爆破)");
 
@@ -310,7 +371,6 @@ public class ChimeraAIController : MonoBehaviour
             }
         }
 
-        // 执行物理滑行
         rb.drag = 0.5f;
         rb.velocity = velocity;
     }
@@ -325,14 +385,14 @@ public class ChimeraAIController : MonoBehaviour
         float relVelocity = col.relativeVelocity.magnitude;
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
 
-        // 撞击速度阈值
         if (relVelocity > 5.0f * speedMult)
         {
             DamageReceiver victim = col.gameObject.GetComponentInParent<DamageReceiver>();
             if (victim != null && victim.isEnemy)
             {
+                float enemyMass = 5f;
                 EnemyBrain enemyAI = victim.GetComponent<EnemyBrain>();
-                float enemyMass = enemyAI != null && enemyAI.MyData != null ? enemyAI.MyData.GetStat(StatType.Mass) : 5f;
+                if (enemyAI != null && enemyAI.MyData != null) enemyMass = enemyAI.MyData.GetStat(StatType.Mass);
 
                 float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, enemyMass, relVelocity, 2.0f);
 
@@ -343,14 +403,12 @@ public class ChimeraAIController : MonoBehaviour
 
                     victim.TakeDamage(rawDamage * enemyShare, runtimeData.UnitName + " (泥头车碾压)");
 
-                    // 只有够重的撞击才会卡肉
                     if (rawDamage > 30f)
                     {
                         if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.08f, 0.01f);
                         if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(rawDamage / 250f, 0.15f);
                     }
 
-                    // 自身反噬伤害
                     DamageReceiver self = GetComponent<DamageReceiver>();
                     if (self != null) self.TakeDamage(rawDamage * myShare, "撞击反弹");
                 }
@@ -363,15 +421,12 @@ public class ChimeraAIController : MonoBehaviour
         if (runtimeData == null) return;
         Vector3 logicCenter = Application.isPlaying ? transform.TransformPoint(runtimeData.LogicCenterOffset) : transform.position;
 
-        // 黄色：最优火力停车线
         Gizmos.color = new Color(1f, 0.9f, 0f, 0.5f);
         Gizmos.DrawWireSphere(logicCenter, optimalFireRange);
 
-        // 蓝色：生存模式保持线
         Gizmos.color = new Color(0f, 0.5f, 1f, 0.2f);
         Gizmos.DrawWireSphere(logicCenter, maxWeaponRange);
 
-        // 红色：死角警告线
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         Gizmos.DrawWireSphere(logicCenter, minWeaponRange);
     }

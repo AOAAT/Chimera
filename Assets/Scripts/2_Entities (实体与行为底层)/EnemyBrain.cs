@@ -342,8 +342,18 @@ public class EnemyBrain : MonoBehaviour
             Projectile pScript = projObj.GetComponent<Projectile>();
             if (pScript != null)
             {
-                // 参数对齐：目标, 伤害, 武器, 玩家黑盒(怪物传null), 自身, 是否怪弹, 是否暴击, 代际, 是否奶弹
-                pScript.Fire(actualTarget, finalDmg, rSkill.DummyWeapon, null, this.transform, true, isCrit, 0, false);
+                pScript.Fire(
+                    actualTarget,
+                    finalDmg,
+                    rSkill.DummyWeapon,
+                    null,
+                    this.transform,
+                    true,
+                    isCrit,
+                    0,
+                    false,
+                    skillData.ProjectilePrefab // 👈 【修复】：传入怪物技能配置里的子弹预制体
+                );
             }
         }
         else if (skillData.DeliveryType == WeaponDeliveryType.Melee)

@@ -48,6 +48,7 @@ public class Action_BurstFire : ECAAction
             if (pScript != null)
             {
                 // 👇【参数完全对齐】：9 个参数
+                // --- Action_BurstFire.cs 约第 51 行 ---
                 pScript.Fire(
                     target,
                     finalDmgPerShot,
@@ -57,7 +58,8 @@ public class Action_BurstFire : ECAAction
                     isEnemy,
                     crit,
                     0,
-                    false
+                    false,
+                    weapon.ProjectilePrefab // 👈 【修复】：传入武器自带的子弹预制体
                 );
             }
 

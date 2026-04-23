@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// --- 替换 DynamicDepthSorter.cs 全量代码 ---
+using UnityEngine;
 using UnityEngine.Rendering;
 
 [RequireComponent(typeof(SortingGroup))]
@@ -7,29 +8,35 @@ public class DynamicDepthSorter : MonoBehaviour
     private SortingGroup sortingGroup;
     public bool IsStatic = false;
     public float YOffset = 0f;
+    private float lastY; // 【新增】缓存上次的 Y 坐标
 
-    // 【新增】：定义该物件所属的绝对图层
     [SerializeField] private string targetSortingLayer = "Entities";
 
     private void Awake()
     {
         sortingGroup = GetComponent<SortingGroup>();
-
-        // --- 核心修复：强制注入图层，无视编辑器的手误 ---
-        sortingGroup.sortingLayerName = targetSortingLayer; //
+        sortingGroup.sortingLayerName = targetSortingLayer;
     }
 
-    private void Start() { UpdateSorting(); }
+    private void Start()
+    {
+        UpdateSorting(true); // 初始强制刷一次
+    }
 
     private void LateUpdate()
     {
-        if (!IsStatic) UpdateSorting();
+        // 如果是静态物体，或者 Y 轴没动，直接跳过计算
+        if (IsStatic) return;
+
+        if (Mathf.Abs(transform.position.y - lastY) > 0.01f) // 【性能闸门】
+        {
+            UpdateSorting(false);
+        }
     }
 
-    private void UpdateSorting()
+    private void UpdateSorting(bool force)
     {
-        // 依然保留 Y 轴排序逻辑，但它现在只在 Entities 图层内部进行“内战”
-        // 即使这里的数值跌破 0，也不会被 Floor 图层的地块遮挡
-        sortingGroup.sortingOrder = -(int)((transform.position.y + YOffset) * 100f); //
+        lastY = transform.position.y;
+        sortingGroup.sortingOrder = -(int)((lastY + YOffset) * 100f);
     }
 }

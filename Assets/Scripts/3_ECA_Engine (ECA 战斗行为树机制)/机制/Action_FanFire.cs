@@ -38,16 +38,18 @@ public class Action_FanFire : ECAAction
                 pScript.EnableHoming = false; // 扇面通常不追踪
 
                 // 👇【参数完全对齐】：9 个参数。此时 isCrit 已由 WeaponModule 算好并存在 context 里
+                // --- Action_FanFire.cs 约第 41 行 ---
                 pScript.Fire(
-                    null,                  // target
-                    finalDamage,           // damage (已缩放)
-                    context.SourceWeapon,  // weaponData
-                    context.ChassisData,   // ownerData
-                    context.SourceEntity,  // shooter
-                    context.IsEnemyFire,   // isEnemy
-                    context.IsCriticalHit, // isCrit (由 context 提供)
-                    0,                     // gen
-                    false                  // targetAllies
+                    null,
+                    finalDamage,
+                    context.SourceWeapon,
+                    context.ChassisData,
+                    context.SourceEntity,
+                    context.IsEnemyFire,
+                    context.IsCriticalHit,
+                    0,
+                    false,
+                    prefab // 👈 【修复】：传入当前循环使用的子弹预制体
                 );
             }
         }
