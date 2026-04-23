@@ -25,8 +25,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}
   - {fileID: 0}
   - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
-  - {fileID: 0}
-  - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
+  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   EliteComponentLevel: 1
   VisualScaleMultiplier: 1
   OverrideShadow: 0

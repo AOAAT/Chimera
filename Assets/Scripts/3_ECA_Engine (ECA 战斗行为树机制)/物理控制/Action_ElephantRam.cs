@@ -14,22 +14,22 @@ public class Action_ElephantRam : ECAAction
 
         ChimeraAIController myAI = context.SourceEntity.GetComponent<ChimeraAIController>();
         if (myAI == null) return;
-        var potentialTargets = context.IsEnemyFire ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
-        // 1. 寻找随机目标 (符合“针对随机敌人”的描述)
-        var enemies = CombatDirector.ActiveEnemies.Where(e => e != null && e.CurrentHP > 0).ToList();
+
+        // 【核心修复】：根据 context 识别谁才是真正的敌人
+        // 如果 context.IsEnemyFire 为 true，说明发动者是精英怪，对手就是 PlayerUnits
+        // 如果 context.IsEnemyFire 为 false，说明发动者是玩家，对手就是 Enemies
+        var opponentList = context.IsEnemyFire ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
+
+        var enemies = opponentList.Where(e => e != null && e.CurrentHP > 0).ToList();
 
         if (enemies.Count == 0) return;
 
-        // 随机抽一个倒霉蛋
+        // 随机抽一个倒霉蛋（对手阵营的人）
         DamageReceiver target = enemies[Random.Range(0, enemies.Count)];
         Vector2 dashDir = (target.transform.position - context.SourceEntity.position).normalized;
 
-        // 2. 执行物理冲刺
-        // 使用我们之前加固过的 ExecuteDash，它自带“贴脸爆破”判定
+        // 执行物理冲刺
         myAI.ExecuteDash(dashDir, SpeedMultiplier, Duration);
-
-        // 3. 视觉反馈
-        Debug.Log($"<color=#FFFFFF>【大象腿】</color> 锁定了随机目标 {target.name}，发起泥头车冲撞！");
 
         if (ScreenEffectManager.Instance != null)
             ScreenEffectManager.Instance.TriggerShake(0.3f, 0.2f);
