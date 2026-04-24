@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ArenaReference: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
   Enemies:
-  - EnemyType: {fileID: 11400000, guid: d2d32080ec52a0b4ea7b4af2b47c25e4, type: 2}
-    LocalPosition: {x: 4.5, y: 3.5}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: 1, y: 1}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: 3, y: 0.5}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: 1, y: 3}
+  - EnemyType: {fileID: 11400000, guid: d2d32080ec52a0b4ea7b4af2b47c25e4, type: 2}
+    LocalPosition: {x: 6, y: 4.5}
   ForbiddenZones:
   - serializedVersion: 2
     x: 0

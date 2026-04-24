@@ -31,9 +31,9 @@ MonoBehaviour:
     - StatID: 4
       Value: 0
     - StatID: 10
-      Value: 50
+      Value: 300
     - StatID: 11
-      Value: 50
+      Value: 300
     - StatID: 13
       Value: 50
     - StatID: 14
@@ -71,6 +71,10 @@ MonoBehaviour:
   AnchorOffset: {x: 0.0037841797, y: -0.1947842}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 1
   MovementLogic: 0
   SafeDodgeDistance: 8

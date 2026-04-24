@@ -50,29 +50,43 @@ public class Projectile : MonoBehaviour
         gameObject.layer = LayerMask.NameToLayer("Projectile");
     }
 
+    // --- Projectile.cs 优化追踪代码 ---
     private void Update()
     {
         if (hasHit) return;
 
-        // 寿命管理
         lifeTimer -= Time.deltaTime;
         if (lifeTimer <= 0) { DespawnMe(); return; }
 
-        // 追踪逻辑
         if (EnableHoming && target != null && target.gameObject.activeInHierarchy)
         {
-            Vector3 targetCenter = target.position;
+            Vector3 targetPos = target.position;
             Collider2D col = target.GetComponentInChildren<Collider2D>();
-            if (col != null) targetCenter = col.bounds.center;
+            if (col != null) targetPos = col.bounds.center;
 
-            Vector2 directionToTarget = (targetCenter - transform.position).normalized;
+            float dist = Vector2.Distance(transform.position, targetPos);
+
+            // --- 👇【核心修复：距离引信】---
+            // 如果距离目标中心非常近（例如 0.4 个单位），直接判定为命中
+            // 这样可以解决子弹“贴身不爆炸”和“绕圈不命中”的所有弹道问题
+            if (dist < 0.4f)
+            {
+                HitTarget();
+                return;
+            }
+
+            // 原有的转向逻辑保持...
+            Vector2 directionToTarget = (targetPos - transform.position).normalized;
             currentDirection = Vector3.RotateTowards(currentDirection, directionToTarget, TurnSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
+
             float angle = Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
         }
 
         transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
-        CheckCollisionPhysics(); // 内部已做 NonAlloc 优化
+
+        // 原有的物理检测（作为中远距离的补充）
+        CheckCollisionPhysics();
         lastPosition = transform.position;
     }
 
