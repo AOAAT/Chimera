@@ -7,140 +7,89 @@ public class ChimeraAIController : MonoBehaviour
     private Transform currentTarget;
     private Rigidbody2D rb;
     private BuffManager myBuffMgr;
-    private DamageReceiver myReceiver; // 缓存自身受击组件，用于判定阵营
+    private DamageReceiver myReceiver;
 
-    [Header("=== 性能优化设定 ===")]
-    [Tooltip("AI 重新搜寻目标的间隔时间 (秒)，推荐 0.1~0.2")]
+    [Header("=== 性能设定 ===")]
     public float SearchInterval = 0.2f;
     private float searchTimer = 0f;
 
-    [Header("=== 动态物理计算结果 ===")]
+    [Header("=== 动态物理数据 ===")]
     public float CurrentSpeed;
 
-    [Header("=== 物理状态 ===")]
+    [Header("=== 状态控制 ===")]
     public bool isStaggered = false;
     private float staggerTimer = 0f;
     public bool isDashing = false;
     private float dashTimer = 0f;
 
-    // AI 走位核心阈值
-    private float maxWeaponRange = 0f;
-    private float minWeaponRange = 0f;
-    private float optimalFireRange = 0f;
+    // --- 👇 指挥官手动覆写字段 ---
+    private Vector2? manualMovePoint = null;
+    private Transform manualAttackTarget = null;
+    private float manualOverrideTimer = 0f;
+
+    private float maxWeaponRange, minWeaponRange, optimalFireRange;
 
     public void Initialize(RuntimeChimeraData data)
     {
         runtimeData = data;
         rb = GetComponent<Rigidbody2D>();
-        myReceiver = GetComponent<DamageReceiver>(); // 缓存自身阵营
-
+        myReceiver = GetComponent<DamageReceiver>();
         if (rb != null) rb.drag = 5f;
-
         myBuffMgr = GetComponent<BuffManager>();
         if (myBuffMgr != null) myBuffMgr.OnBuffsChanged += RecalculateSpeedAndRanges;
-
         RecalculateSpeedAndRanges();
     }
 
-    private void OnDestroy()
-    {
-        if (myBuffMgr != null)
-        {
-            myBuffMgr.OnBuffsChanged -= RecalculateSpeedAndRanges;
-        }
-    }
+    private void OnDestroy() { if (myBuffMgr != null) myBuffMgr.OnBuffsChanged -= RecalculateSpeedAndRanges; }
 
-    /// <summary>
-    /// 核心计算：基于当前装备和 Buff 算出机甲的物理性能上限
-    /// </summary>
+    public void SetManualMovePoint(Vector2 point) { manualMovePoint = point; manualAttackTarget = null; manualOverrideTimer = 10f; }
+    public void SetManualTarget(Transform target) { manualAttackTarget = target; manualMovePoint = null; manualOverrideTimer = 15f; }
+    public bool HasManualTarget() => manualAttackTarget != null;
+    public Transform GetManualTarget() => manualAttackTarget;
+
     public void RecalculateSpeedAndRanges()
     {
         if (runtimeData == null) return;
+        float speedMult = CombatSandbox.GetSpeed(1f);
+        float distMult = CombatSandbox.GetDist(1f);
+        float pwr = runtimeData.TotalEnginePower;
+        if (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.EnginePower)) pwr += myBuffMgr.BuffStatModifiers[StatType.EnginePower];
+        CurrentSpeed = GameFormulas.CalcMoveSpeed(pwr, runtimeData.TotalMass, speedMult);
 
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
-        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
-
-        float currentEnginePower = runtimeData.TotalEnginePower;
-        if (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.EnginePower))
-        {
-            currentEnginePower += myBuffMgr.BuffStatModifiers[StatType.EnginePower];
-        }
-
-        CurrentSpeed = GameFormulas.CalcMoveSpeed(currentEnginePower, runtimeData.TotalMass, speedMult);
-
-        // --- 重新计算射程阈值 ---
-        maxWeaponRange = 0f;
-        minWeaponRange = 0f;
-        optimalFireRange = float.MaxValue;
-
-        if (runtimeData.EquippedWeapons.Count == 0)
-        {
-            optimalFireRange = 1.5f * distMult;
-        }
+        maxWeaponRange = 0f; minWeaponRange = 0f; optimalFireRange = float.MaxValue;
+        if (runtimeData.EquippedWeapons.Count == 0) optimalFireRange = 1.5f * distMult;
         else
         {
-            for (int i = 0; i < runtimeData.EquippedWeapons.Count; i++)
+            foreach (var wpn in runtimeData.EquippedWeapons)
             {
-                var wpn = runtimeData.EquippedWeapons[i];
-                float rawMax = wpn.GetStat(StatType.MaxRange);
-                float rawMin = wpn.GetStat(StatType.MinRange);
-
-                // 叠加 Buff 影响
+                float rMax = wpn.GetStat(StatType.MaxRange); float rMin = wpn.GetStat(StatType.MinRange);
                 if (myBuffMgr != null)
                 {
-                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) rawMax += myBuffMgr.BuffStatModifiers[StatType.MaxRange];
-                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) rawMin += myBuffMgr.BuffStatModifiers[StatType.MinRange];
+                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) rMax += myBuffMgr.BuffStatModifiers[StatType.MaxRange];
+                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) rMin += myBuffMgr.BuffStatModifiers[StatType.MinRange];
                 }
-
-                if (rawMax * distMult > maxWeaponRange) maxWeaponRange = rawMax * distMult;
-                if (rawMin * distMult > minWeaponRange) minWeaponRange = rawMin * distMult;
-                if (rawMax * distMult < optimalFireRange) optimalFireRange = rawMax * distMult;
+                if (rMax * distMult > maxWeaponRange) maxWeaponRange = rMax * distMult;
+                if (rMin * distMult > minWeaponRange) minWeaponRange = rMin * distMult;
+                if (rMax * distMult < optimalFireRange) optimalFireRange = rMax * distMult;
             }
         }
-
         if (optimalFireRange < minWeaponRange) optimalFireRange = minWeaponRange + 0.5f;
         if (optimalFireRange == float.MaxValue) optimalFireRange = 5f * distMult;
     }
 
-
     private void Update()
     {
-        // 1. 死亡检查
-        if (myReceiver == null || myReceiver.CurrentHP <= 0)
-        {
-            if (rb != null) rb.velocity = Vector2.zero;
-            return;
-        }
+        if (myReceiver == null || myReceiver.CurrentHP <= 0) { if (rb != null) rb.velocity = Vector2.zero; return; }
+        if (runtimeData == null || (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)) { if (rb != null) rb.velocity = Vector2.zero; return; }
 
-        if (runtimeData == null) return;
+        if (isStaggered) { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; } return; }
+        if (isDashing) { dashTimer -= Time.deltaTime; if (dashTimer <= 0) { isDashing = false; rb.drag = 5f; } return; }
 
-        // 2. 战斗状态检查
-        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)
-        {
-            if (rb != null) rb.velocity = Vector2.zero;
-            return;
-        }
+        // 指令耗时更新
+        if (manualOverrideTimer > 0) manualOverrideTimer -= Time.deltaTime;
 
-        // 3. 物理硬直计时
-        if (isStaggered)
-        {
-            staggerTimer -= Time.deltaTime;
-            if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; }
-            return;
-        }
-
-        if (isDashing)
-        {
-            dashTimer -= Time.deltaTime;
-            if (dashTimer <= 0) { isDashing = false; rb.drag = 5f; }
-            return;
-        }
-
-        // 4. 【核心性能优化】：不再每帧暴力搜索，采用计时器+目标存活校验
         searchTimer -= Time.deltaTime;
-
-        // 判定条件：当前没目标 OR 目标死了 OR 搜索冷却好了
-        if (currentTarget == null || !IsTargetValid(currentTarget) || searchTimer <= 0)
+        if (searchTimer <= 0 || currentTarget == null || !IsTargetValid(currentTarget))
         {
             FindTargetOptimized();
             searchTimer = SearchInterval;
@@ -149,185 +98,109 @@ public class ChimeraAIController : MonoBehaviour
         HandleMovement();
     }
 
-    // 高性能目标有效性校验
-    private bool IsTargetValid(Transform target)
+    private bool IsTargetValid(Transform t)
     {
-        if (target == null) return false;
-        DamageReceiver dr = target.GetComponentInParent<DamageReceiver>();
-        return dr != null && dr.CurrentHP > 0 && target.gameObject.activeInHierarchy;
+        if (t == null) return false;
+        DamageReceiver dr = t.GetComponentInParent<DamageReceiver>();
+        return dr != null && dr.CurrentHP > 0 && t.gameObject.activeInHierarchy;
     }
 
     private void FindTargetOptimized()
     {
-        // 1. 获取阵营及对应的列表
-        bool iAmEnemy = myReceiver != null && myReceiver.isEnemy;
-        var targetList = iAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
+        // 手动目标优先
+        if (manualOverrideTimer > 0 && manualAttackTarget != null && IsTargetValid(manualAttackTarget))
+        {
+            currentTarget = manualAttackTarget;
+            return;
+        }
 
+        bool iAmEnemy = myReceiver.isEnemy;
+        var targetList = iAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
         if (targetList.Count == 0) { currentTarget = null; return; }
 
-        // 2. 准备策略
-        TargetingStrategy strategy = runtimeData.TargetingLogic;
+        TargetingStrategy strategy = (manualOverrideTimer > 0 && manualAttackTarget != null) ? TargetingStrategy.Nearest : runtimeData.TargetingLogic;
         if (strategy == TargetingStrategy.FollowCoreAI) strategy = TargetingStrategy.Nearest;
 
-        // 3. 【核心循环】：不使用 LINQ，通过单次遍历寻找最佳分值
-        DamageReceiver bestCandidate = null;
-        float bestScore = -float.MaxValue;
-
+        DamageReceiver bestCandidate = null; float bestScore = -float.MaxValue;
         for (int i = 0; i < targetList.Count; i++)
         {
             DamageReceiver potential = targetList[i];
-
-            // 基础过滤
             if (potential == null || potential.CurrentHP <= 0) continue;
-
             float dist = Vector3.Distance(transform.position, potential.transform.position);
             float currentScore = 0f;
-
-            // 策略打分系统
             switch (strategy)
             {
-                case TargetingStrategy.Nearest:
-                    currentScore = -dist; // 距离越短分数越高
-                    break;
-                case TargetingStrategy.Furthest:
-                    currentScore = dist; // 距离越长分数越高
-                    break;
-                case TargetingStrategy.MaxHPHighest:
-                    currentScore = potential.MaxHP;
-                    break;
-                case TargetingStrategy.MaxHPLowest:
-                    currentScore = -potential.MaxHP;
-                    break;
-                case TargetingStrategy.CurrentHPHighest:
-                    currentScore = potential.CurrentHP;
-                    break;
-                case TargetingStrategy.CurrentHPLowest:
-                    currentScore = -potential.CurrentHP;
-                    break;
-                default:
-                    currentScore = -dist;
-                    break;
+                case TargetingStrategy.Nearest: currentScore = -dist; break;
+                case TargetingStrategy.Furthest: currentScore = dist; break;
+                case TargetingStrategy.MaxHPHighest: currentScore = potential.MaxHP; break;
+                default: currentScore = -dist; break;
             }
-
-            if (currentScore > bestScore)
-            {
-                bestScore = currentScore;
-                bestCandidate = potential;
-            }
+            if (currentScore > bestScore) { bestScore = currentScore; bestCandidate = potential; }
         }
-
-        if (bestCandidate != null)
-        {
-            currentTarget = bestCandidate.transform;
-        }
-        else
-        {
-            currentTarget = null;
-        }
+        currentTarget = bestCandidate != null ? bestCandidate.transform : null;
     }
 
     private void HandleMovement()
     {
-        if (currentTarget == null)
+        // 优先级 A：手动位移点指令
+        if (manualOverrideTimer > 0 && manualMovePoint.HasValue)
         {
-            if (rb != null) rb.velocity = Vector2.zero;
-            return;
+            float dist = Vector2.Distance(transform.position, manualMovePoint.Value);
+            if (dist < 0.4f) { manualMovePoint = null; rb.velocity = Vector2.zero; }
+            else { rb.velocity = (manualMovePoint.Value - (Vector2)transform.position).normalized * CurrentSpeed; }
+            return; // 拦截 AI
         }
 
-        // 判定 AI 覆写
+        if (currentTarget == null) { if (rb != null) rb.velocity = Vector2.zero; return; }
+
+        // 优先级 B：AI 或 手动集火拉扯逻辑
         MovementStrategy activeLogic = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
         float activeDodgeDist = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
 
         Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
-
-        // 考虑碰撞盒表面的真实距离 (ClosestPoint 性能尚可)
-        float dist = Vector3.Distance(logicCenter, currentTarget.position);
+        float distToTarget = Vector3.Distance(logicCenter, currentTarget.position);
         Collider2D targetCol = currentTarget.GetComponentInChildren<Collider2D>();
-        if (targetCol != null) dist = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
+        if (targetCol != null) distToTarget = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
 
         Vector2 dirToTarget = (currentTarget.position - logicCenter).normalized;
         Vector2 targetVelocity = Vector2.zero;
 
-        // --- 基于策略的位移决策 ---
-        if (activeLogic == MovementStrategy.Dodge && dist < activeDodgeDist)
+        // 集火模式强制使用 Firepower 逻辑以确保在射程内
+        if (activeLogic == MovementStrategy.Dodge && distToTarget < activeDodgeDist) targetVelocity = -dirToTarget * CurrentSpeed;
+        else if (activeLogic == MovementStrategy.Active_Survival && distToTarget > maxWeaponRange) targetVelocity = dirToTarget * CurrentSpeed;
+        else
         {
-            targetVelocity = -dirToTarget * CurrentSpeed;
-        }
-        else if (activeLogic == MovementStrategy.Active_Survival && dist > maxWeaponRange)
-        {
-            targetVelocity = dirToTarget * CurrentSpeed;
-        }
-        else if (activeLogic == MovementStrategy.Active_Firepower)
-        {
-            // 为近战单位增加侵入缓冲区
-            bool hasMelee = false;
-            for (int i = 0; i < runtimeData.EquippedWeapons.Count; i++)
-            {
-                if (runtimeData.EquippedWeapons[i].DeliveryType == WeaponDeliveryType.Melee)
-                {
-                    hasMelee = true;
-                    break;
-                }
-            }
-            float engagementBuffer = hasMelee ? 0.8f : 0f;
-
-            if (dist > (optimalFireRange - engagementBuffer))
-            {
-                targetVelocity = dirToTarget * CurrentSpeed;
-            }
-            else if (dist < minWeaponRange)
-            {
-                targetVelocity = -dirToTarget * (CurrentSpeed * 0.5f);
-            }
-            else
-            {
-                targetVelocity = Vector2.zero; // 到达射程
-            }
+            // 火力优先逻辑
+            if (distToTarget > optimalFireRange) targetVelocity = dirToTarget * CurrentSpeed;
+            else if (distToTarget < minWeaponRange) targetVelocity = -dirToTarget * (CurrentSpeed * 0.5f);
         }
 
         if (rb != null) rb.velocity = targetVelocity;
     }
 
     // ==========================================
-    // 物理引擎交互接口 (由碰撞和积木调用)
+    // 物理接口与碰撞逻辑 (保持原有逻辑不变)
     // ==========================================
 
     public void ApplyImpulse(Vector2 dir, float impulse, bool ignoreStun = false)
     {
         float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
-
         if (!ignoreStun)
         {
             float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
-            if (stunTime > 0f)
-            {
-                isStaggered = true;
-                staggerTimer = stunTime;
-            }
+            if (stunTime > 0f) { isStaggered = true; staggerTimer = stunTime; }
         }
-
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+        float speedMult = CombatSandbox.GetSpeed(1f);
         float clampedDeltaV = Mathf.Clamp((impulse / mass) * speedMult, 0f, 25f);
-
-        if (rb != null)
-        {
-            rb.drag = 5f;
-            if (!ignoreStun) rb.velocity = Vector2.zero;
-            rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse);
-        }
+        if (rb != null) { rb.drag = 5f; if (!ignoreStun) rb.velocity = Vector2.zero; rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse); }
     }
 
     public void ApplyRecoil(Vector2 dir, float impulse, float manualStunTime)
     {
         if (rb == null) return;
-
         float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
-
-        isStaggered = true;
-        staggerTimer = manualStunTime;
-        rb.drag = 1.0f;
-
+        float speedMult = CombatSandbox.GetSpeed(1f);
+        isStaggered = true; staggerTimer = manualStunTime; rb.drag = 1.0f;
         float deltaV = (impulse / mass) * speedMult;
         rb.velocity = dir * deltaV;
         rb.AddForce(dir * impulse * speedMult, ForceMode2D.Impulse);
@@ -336,19 +209,14 @@ public class ChimeraAIController : MonoBehaviour
     public void ExecuteDash(Vector2 direction, float speedMultiplier, float duration)
     {
         if (rb == null) return;
-
-        isDashing = true;
-        dashTimer = duration;
-
+        isDashing = true; dashTimer = duration;
         float dashSpeed = CurrentSpeed * speedMultiplier;
         Vector2 velocity = direction.normalized * dashSpeed;
         bool iAmEnemy = myReceiver != null && myReceiver.isEnemy;
         int targetMask = iAmEnemy ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
 
-        // 扫描碰撞
-        float scanDist = 1.2f * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
+        float scanDist = 1.2f * CombatSandbox.GetDist(1f);
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, scanDist, targetMask);
-
         for (int i = 0; i < hits.Length; i++)
         {
             DamageReceiver victim = hits[i].GetComponentInParent<DamageReceiver>();
@@ -357,34 +225,26 @@ public class ChimeraAIController : MonoBehaviour
                 float eMass = 5f;
                 EnemyBrain eb = hits[i].GetComponentInParent<EnemyBrain>();
                 if (eb != null && eb.MyData != null) eMass = eb.MyData.GetStat(StatType.Mass);
-
                 float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, eMass, dashSpeed, 2.0f);
-
                 if (rawDamage > 10f)
                 {
                     float enemyShare = runtimeData.TotalMass / (runtimeData.TotalMass + eMass);
                     victim.TakeDamage(rawDamage * enemyShare, runtimeData.UnitName + " (零距离爆破)");
-
                     if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.08f);
                     if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(0.3f, 0.15f);
                 }
             }
         }
-
-        rb.drag = 0.5f;
-        rb.velocity = velocity;
+        rb.drag = 0.5f; rb.velocity = velocity;
     }
 
     private void OnCollisionEnter2D(Collision2D col)
     {
         if (runtimeData == null || rb == null) return;
-
         Rigidbody2D targetRb = col.gameObject.GetComponent<Rigidbody2D>();
         if (targetRb == null) return;
-
         float relVelocity = col.relativeVelocity.magnitude;
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
-
+        float speedMult = CombatSandbox.GetSpeed(1f);
         if (relVelocity > 5.0f * speedMult)
         {
             DamageReceiver victim = col.gameObject.GetComponentInParent<DamageReceiver>();
@@ -393,22 +253,17 @@ public class ChimeraAIController : MonoBehaviour
                 float enemyMass = 5f;
                 EnemyBrain enemyAI = victim.GetComponent<EnemyBrain>();
                 if (enemyAI != null && enemyAI.MyData != null) enemyMass = enemyAI.MyData.GetStat(StatType.Mass);
-
                 float rawDamage = GameFormulas.CalcKineticRamDamage(runtimeData.TotalMass, enemyMass, relVelocity, 2.0f);
-
                 if (rawDamage > 5f)
                 {
                     float myShare = enemyMass / (runtimeData.TotalMass + enemyMass);
                     float enemyShare = runtimeData.TotalMass / (runtimeData.TotalMass + enemyMass);
-
                     victim.TakeDamage(rawDamage * enemyShare, runtimeData.UnitName + " (泥头车碾压)");
-
                     if (rawDamage > 30f)
                     {
                         if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.08f, 0.01f);
                         if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(rawDamage / 250f, 0.15f);
                     }
-
                     DamageReceiver self = GetComponent<DamageReceiver>();
                     if (self != null) self.TakeDamage(rawDamage * myShare, "撞击反弹");
                 }
@@ -420,13 +275,10 @@ public class ChimeraAIController : MonoBehaviour
     {
         if (runtimeData == null) return;
         Vector3 logicCenter = Application.isPlaying ? transform.TransformPoint(runtimeData.LogicCenterOffset) : transform.position;
-
         Gizmos.color = new Color(1f, 0.9f, 0f, 0.5f);
         Gizmos.DrawWireSphere(logicCenter, optimalFireRange);
-
         Gizmos.color = new Color(0f, 0.5f, 1f, 0.2f);
         Gizmos.DrawWireSphere(logicCenter, maxWeaponRange);
-
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         Gizmos.DrawWireSphere(logicCenter, minWeaponRange);
     }

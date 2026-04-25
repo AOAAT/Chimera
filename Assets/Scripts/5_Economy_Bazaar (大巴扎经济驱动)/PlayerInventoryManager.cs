@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
+
 // ==========================================
 // 1. 底盘实体的“身份证”
 // ==========================================
@@ -103,6 +105,16 @@ public class PlayerInventoryManager : MonoBehaviour
     public ChassisDataSO DebugChassisBlueprint;
     public List<ComponentDataSO> DebugComponentBundle = new List<ComponentDataSO>();
 
+    [Tooltip("预设的机甲名称库，玩家新建机甲时会从中随机抽取")]
+    public List<string> DefaultNamePool = new List<string> {
+    "苍穹破裂者", "铁肺", "苦难摇篮", "西西弗斯", "黑匣子",
+    "零号病人", "柴油之心", "锈蚀审判", "无声呐喊", "利维坦",
+    "赤红风暴","小小","哈基米","故障机器人","危险流浪者","高达"
+};
+
+    // 运行时剩余可用的名称
+    private List<string> runtimeAvailableNames;
+
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -134,8 +146,10 @@ public class PlayerInventoryManager : MonoBehaviour
             }
         }
         HangarUnits = new SavedUnitProfile[MaxUnitSlots];
-    }
 
+        InitNamePool();
+}
+  
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.T))
@@ -154,14 +168,36 @@ public class PlayerInventoryManager : MonoBehaviour
             }
         }
     }
+    public string GetNextAvailableName()
+    {
+        if (runtimeAvailableNames == null) InitNamePool();
 
+        if (runtimeAvailableNames.Count == 0)
+        {
+            // 如果池子抽干了，返回一个带编号的保底名
+            return $"未知型号-{UnityEngine.Random.Range(100, 999)}";
+        }
+
+        int randomIndex = UnityEngine.Random.Range(0, runtimeAvailableNames.Count);
+        string selectedName = runtimeAvailableNames[randomIndex];
+
+        // 从池子中移除，防止重复
+        runtimeAvailableNames.RemoveAt(randomIndex);
+        return selectedName;
+    }
     public static float GetStatValue(List<StatEntry> stats, StatType targetStat)
     {
         if (stats == null) return 0f;
         foreach (var stat in stats) if (stat.StatID == targetStat) return stat.Value;
         return 0f;
     }
-
+    public void ReturnNameToPool(string oldName)
+    {
+        if (DefaultNamePool.Contains(oldName) && !runtimeAvailableNames.Contains(oldName))
+        {
+            runtimeAvailableNames.Add(oldName);
+        }
+    }
     public List<InstancedComponent> GetFilteredInventory(ComponentType requiredType, SubTag? requiredTag = null)
     {
         var query = ComponentInventory.Where(c => c.BaseData.Type == requiredType);
@@ -189,7 +225,10 @@ public class PlayerInventoryManager : MonoBehaviour
         if (currentHP <= 0) return false;
         return true;
     }
-
+    private void InitNamePool()
+    {
+        runtimeAvailableNames = new List<string>(DefaultNamePool);
+    }
     public void AddComponentToInventory(ComponentDataSO so, int level = 1)
     {
         var newItem = new InstancedComponent(so, level);

@@ -104,23 +104,51 @@ public class WeaponModule : MonoBehaviour
         if (scanTimer <= 0f)
         {
             scanTimer = SCAN_INTERVAL;
+            currentMultiTargets.Clear();
 
-            // 1. 【性能优化】：使用 NonAlloc 版探测
-            int mask = LayerMask.GetMask("Enemy_Hitbox", "Player_Hitbox"); // 根据需要探测层级
+            // 1. 获取阵营环境
+            bool IAmEnemy = false;
+            if (mechRoot != null)
+            {
+                DamageReceiver dr = mechRoot.GetComponent<DamageReceiver>();
+                IAmEnemy = (dr != null) ? dr.isEnemy : false;
+            }
+
+            // --- 👇【核心重构：指挥官手动集火判定】---
+            ChimeraAIController parentAI = mechRoot.GetComponent<ChimeraAIController>();
+            if (parentAI != null && parentAI.HasManualTarget())
+            {
+                Transform manualT = parentAI.GetManualTarget();
+
+                // 判定手动目标是否有效 (存活、在射程内)
+                if (IsTargetValid(manualT))
+                {
+                    float distToManual = Vector3.Distance(transform.position, manualT.position);
+                    if (distToManual <= maxRange)
+                    {
+                        currentMultiTargets.Add(manualT);
+                        lockedTarget = manualT;
+
+                        // 如果是单发武器，锁定完直接下班
+                        if (maxCount <= 1) return;
+                    }
+                }
+            }
+            // ------------------------------------------
+
+            // 2. 【扫描阶段】：寻找周边的潜在线索 (NonAlloc)
+            int mask = IAmEnemy ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
             int hitCount = Physics2D.OverlapCircleNonAlloc(transform.position, maxRange, results, mask);
 
             if (hitCount > 0)
             {
+                // 确定当前的 AI 策略
                 TargetingStrategy strategy = weaponData.SourceSO.TargetingOverride;
                 if (strategy == TargetingStrategy.FollowCoreAI && ownerData != null)
                     strategy = ownerData.TargetingLogic;
 
-                // 2. 【核心优化】：手动筛选目标，彻底抛弃 LINQ
-                currentMultiTargets.Clear();
-                bool IAmEnemy = mechRoot.GetComponent<DamageReceiver>().isEnemy;
-
-                // 寻找最符合条件的 N 个目标
-                for (int k = 0; k < maxCount; k++)
+                // 循环寻找，直到填满多重射击的配额 (maxCount)
+                for (int k = currentMultiTargets.Count; k < maxCount; k++)
                 {
                     DamageReceiver bestOne = null;
                     float bestScore = -float.MaxValue;
@@ -128,12 +156,21 @@ public class WeaponModule : MonoBehaviour
                     for (int i = 0; i < hitCount; i++)
                     {
                         DamageReceiver dr = results[i].GetComponentInParent<DamageReceiver>();
-                        // 阵营过滤 & 存活检查 & 排除已选目标
-                        if (dr == null || dr.isEnemy == IAmEnemy || dr.CurrentHP <= 0) continue;
-                        if (currentMultiTargets.Contains(dr.transform)) continue;
+
+                        // 过滤：空引用、死亡、已在目标列表中（防止重复选中）
+                        if (dr == null || dr.CurrentHP <= 0 || currentMultiTargets.Contains(dr.transform)) continue;
 
                         float dist = Vector3.Distance(transform.position, dr.transform.position);
-                        float score = (strategy == TargetingStrategy.Furthest) ? dist : -dist;
+                        float score = 0f;
+
+                        // 执行 AI 评分策略
+                        switch (strategy)
+                        {
+                            case TargetingStrategy.Furthest: score = dist; break;
+                            case TargetingStrategy.MaxHPHighest: score = dr.MaxHP; break;
+                            case TargetingStrategy.CurrentHPHighest: score = dr.CurrentHP; break;
+                            default: score = -dist; break; // 默认就近
+                        }
 
                         if (score > bestScore)
                         {
@@ -143,18 +180,22 @@ public class WeaponModule : MonoBehaviour
                     }
 
                     if (bestOne != null) currentMultiTargets.Add(bestOne.transform);
-                    else break;
+                    else break; // 没怪了，跳出
                 }
+            }
 
-                if (currentMultiTargets.Count > 0) lockedTarget = currentMultiTargets[0];
-                else lockedTarget = null;
-            }
-            else
-            {
-                lockedTarget = null;
-                currentMultiTargets.Clear();
-            }
+            // 3. 更新主目标引用 (用于转向)
+            if (currentMultiTargets.Count > 0) lockedTarget = currentMultiTargets[0];
+            else lockedTarget = null;
         }
+    }
+
+    // 辅助方法：确保目标的有效性
+    private bool IsTargetValid(Transform t)
+    {
+        if (t == null) return false;
+        DamageReceiver dr = t.GetComponentInParent<DamageReceiver>();
+        return dr != null && dr.CurrentHP > 0 && t.gameObject.activeInHierarchy;
     }
     private bool targetsExist(List<DamageReceiver> list) => list != null && list.Count > 0;
 

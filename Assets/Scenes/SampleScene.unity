@@ -13425,7 +13425,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9407338
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -15154,6 +15154,23 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
   - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
   - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
+  DefaultNamePool:
+  - "\u82CD\u7A79\u7834\u88C2\u8005"
+  - "\u94C1\u80BA"
+  - "\u82E6\u96BE\u6447\u7BEE"
+  - "\u897F\u897F\u5F17\u65AF"
+  - "\u9ED1\u5323\u5B50"
+  - "\u96F6\u53F7\u75C5\u4EBA"
+  - "\u67F4\u6CB9\u4E4B\u5FC3"
+  - "\u9508\u8680\u5BA1\u5224"
+  - "\u65E0\u58F0\u5450\u558A"
+  - "\u5229\u7EF4\u5766"
+  - "\u8D64\u7EA2\u98CE\u66B4"
+  - "\u5C0F\u5C0F"
+  - "\u54C8\u57FA\u7C73"
+  - "\u6545\u969C\u673A\u5668\u4EBA"
+  - "\u5371\u9669\u6D41\u6D6A\u8005"
+  - "\u9AD8\u8FBE"
 --- !u!114 &1436878913
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21108,6 +21125,7 @@ GameObject:
   - component: {fileID: 1973191907}
   - component: {fileID: 1973191908}
   - component: {fileID: 1973191909}
+  - component: {fileID: 1973191910}
   m_Layer: 0
   m_Name: '[3. Combat & Feedback]'
   m_TagString: Untagged
@@ -21239,6 +21257,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35f543fde9c49ad4e8e1268529e7de26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1973191910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1973191901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3569c9d4057bf48be2fae9e98b2560, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SelectedUnit: {fileID: 0}
+  ClickVFXPrefab: {fileID: 7899862863469927639, guid: e49b6359003f9304281eff2592b14977, type: 3}
 --- !u!1 &1977254741
 GameObject:
   m_ObjectHideFlags: 0

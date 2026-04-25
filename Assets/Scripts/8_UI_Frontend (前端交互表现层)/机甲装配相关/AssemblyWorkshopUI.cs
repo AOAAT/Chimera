@@ -289,7 +289,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
-        currentEditingProfile = new SavedUnitProfile(selectedChassis, "特制原型机");
+        // 👇【核心修改】：从池子中抓取一个不重复的名字
+        string mechName = PlayerInventoryManager.Instance.GetNextAvailableName();
+
+        currentEditingProfile = new SavedUnitProfile(selectedChassis, mechName);
         selectedChassis.EquippedUnitID = currentEditingProfile.UnitID;
         isCreatingNew = true;
         RightInventoryPanel.SetActive(false);
@@ -370,6 +373,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         {
             if (isCreatingNew)
             {
+                PlayerInventoryManager.Instance.ReturnNameToPool(currentEditingProfile.UnitName);
                 var chassis = PlayerInventoryManager.Instance.ChassisInventory.Find(c => c.InstanceID == currentEditingProfile.ChassisInstanceID);
                 if (chassis != null) chassis.EquippedUnitID = string.Empty;
                 foreach (var compID in currentEditingProfile.EquippedComponentIDs)
