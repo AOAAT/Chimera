@@ -21126,6 +21126,7 @@ GameObject:
   - component: {fileID: 1973191908}
   - component: {fileID: 1973191909}
   - component: {fileID: 1973191910}
+  - component: {fileID: 1973191911}
   m_Layer: 0
   m_Name: '[3. Combat & Feedback]'
   m_TagString: Untagged
@@ -21271,6 +21272,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SelectedUnit: {fileID: 0}
   ClickVFXPrefab: {fileID: 7899862863469927639, guid: e49b6359003f9304281eff2592b14977, type: 3}
+--- !u!114 &1973191911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1973191901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 969f5ce86c4c24c4384bc157c5c4eb35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxHeavyTokens: 2
+  MaxControlTokens: 1
+  MaxSummonTokens: 1
 --- !u!1 &1977254741
 GameObject:
   m_ObjectHideFlags: 0

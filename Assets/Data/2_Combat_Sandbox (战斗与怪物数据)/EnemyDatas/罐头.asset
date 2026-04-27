@@ -10,20 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79fb6de9a3b07c243ada44a32898984e, type: 3}
-  m_Name: Bee
+  m_Name: "\u7F50\u5934"
   m_EditorClassIdentifier: 
-  EnemyID: ENM_000
-  EnemyName: "\u8702\u5DE2"
+  EnemyID: ENM_001
+  EnemyName: "\u7F50\u5934"
+  Archetype: 0
   Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
-  EnemySprite: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
+  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
+  EnemySprite: {fileID: 21300000, guid: 877dda118ba2ad844abc23587571b625, type: 3}
   AnimController: {fileID: 0}
+  VisualScaleMultiplier: 1
   CorpseLingerTime: 5
   OverrideShadow: 0
   ShadowOffset: {x: 0, y: -0.8}
   ShadowWidth: 20
   ShadowHeight: 10
-  VisualScaleMultiplier: 1
-  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
+  Chassis: {fileID: 0}
+  Components: []
+  EliteComponentLevel: 1
   BaseStats:
   - StatID: 31
     Value: 400
@@ -36,7 +40,7 @@ MonoBehaviour:
   - StatID: 33
     Value: 2
   SanPenalties: []
-  TargetingLogic: 0
+  TargetingLogic: 1
   MovementLogic: 0
   HoverDistance: 5
   MoveType: 0
@@ -47,10 +51,9 @@ MonoBehaviour:
   DashDuration: 0.3
   TeleportDistance: 30
   Skills:
-  - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
   - {fileID: 11400000, guid: 2e75894cdf92071468eb62da5879122b, type: 2}
   OnSpawnActions: []
-  OnDeathActions:
-  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
   OnTakeDamageActions:
+  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
+  OnDeathActions:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
