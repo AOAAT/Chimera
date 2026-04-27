@@ -16,35 +16,28 @@ MonoBehaviour:
   EnemyID: ENM_011
   EnemyName: "\u7CBE\u82F1"
   Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
-  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   EnemySprite: {fileID: 0}
   AnimController: {fileID: 0}
   CorpseLingerTime: 5
   Chassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   Components:
-  - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+  - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}
   - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
-  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 0}
   - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   EliteComponentLevel: 1
+  MovementLogic: 0
+  TargetingLogic: 1
+  StopDistance: 0.5
+  HoverDistance: 5
+  BaseStats: []
+  SanPenalties: []
   VisualScaleMultiplier: 1
   OverrideShadow: 0
   ShadowOffset: {x: 0, y: -0.8}
   ShadowWidth: 1.5
   ShadowHeight: 0.5
-  BaseStats: []
-  SanPenalties: []
-  TargetingLogic: 1
-  MovementLogic: 0
-  HoverDistance: 5
-  MoveType: 0
-  StopDistance: 0.5
-  MoveChargeTime: 1
-  MoveCooldown: 1.5
-  DashSpeedMultiplier: 4
-  DashDuration: 0.3
-  TeleportDistance: 5
   Skills: []
   OnSpawnActions: []
   OnDeathActions: []

@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkillName: "\u6CD5\u7403"
   SelectionWeight: 10
-  AttackSpeed: 200
+  AttackSpeed: 100
   OverrideTargeting: 0
-  SkillTargetingLogic: 3
+  SkillTargetingLogic: 1
   MaxRange: 100
   MinRange: 50
   MinDamage: 0
@@ -25,9 +25,17 @@ MonoBehaviour:
   DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   ProjectileSpeed: 100
-  KnockbackForce: 2000
+  KnockbackForce: 0
   DashDirection: 0
   DashImpulse: 400
   OnFireActions: []
   OnHitActions:
   - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+  BaseScore: 10
+  Evaluators: []
+  RequiresToken: 0
+  TokenType: 0
+  ShowIntent: 0
+  IntentIcon: {fileID: 0}
+  ChargeTime: 10
+  NextComboSkill: {fileID: 0}
