@@ -6,12 +6,32 @@ public class EnemySkillSO : ScriptableObject
 {
     [Header("=== 技能基础信息 ===")]
     public string SkillName = "撕咬";
-    public float SelectionWeight = 10f; // 基础权重
     public float AttackSpeed = 50f;
 
-    [Header("=== 独立索敌覆写 ===")]
+    [Header("=== 冷却配置 (AI 2.0) ===")]
+    [Tooltip("冷却时间 = (由当前攻速算出的时间间隔) * 冷却系数")]
+    public float CooldownMultiplier = 1.0f;
+
+    // --- 👇 修复报错的关键：独立索敌相关字段 ---
+    [Header("=== 独立索敌覆写 (Targeting Override) ===")]
+    [Tooltip("勾选后，这个技能会无视怪物本身的索敌，去寻找特定的目标！")]
     public bool OverrideTargeting = false;
     public TargetingStrategy SkillTargetingLogic = TargetingStrategy.MaxHPLowest;
+
+    [Header("=== 决策系统 (Utility AI) ===")]
+    public float BaseScore = 10f;
+    public List<SkillEvaluator> Evaluators = new List<SkillEvaluator>();
+
+    [Header("=== 令牌系统 ===")]
+    public bool RequiresToken = false;
+    public EnemyTokenType TokenType = EnemyTokenType.HeavyAttack;
+
+    [Header("=== 意图预告 ===")]
+    public bool ShowIntent = false;
+    public Sprite IntentIcon;
+
+    [Header("=== 连招逻辑 (Next) ===")]
+    public EnemySkillSO NextComboSkill;
 
     [Header("=== 射程限制 ===")]
     public float MaxRange = 2f;
@@ -35,23 +55,4 @@ public class EnemySkillSO : ScriptableObject
     [Header("=== ECA 魔法机制 ===")]
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
-
-    // ==========================================
-    // 🆕 【主程：以下是 AI 2.0 新增字段，请确保补齐】
-    // ==========================================
-    [Header("=== 决策系统 (Utility AI) ===")]
-    public float BaseScore = 10f;
-    public List<SkillEvaluator> Evaluators = new List<SkillEvaluator>();
-
-    [Header("=== 令牌系统 ===")]
-    public bool RequiresToken = false;
-    public EnemyTokenType TokenType = EnemyTokenType.HeavyAttack;
-
-    [Header("=== 意图预告 ===")]
-    public bool ShowIntent = false;
-    public Sprite IntentIcon;
-    public float ChargeTime = 1.0f;
-
-    [Header("=== 连招逻辑 (Next) ===")]
-    public EnemySkillSO NextComboSkill;
 }

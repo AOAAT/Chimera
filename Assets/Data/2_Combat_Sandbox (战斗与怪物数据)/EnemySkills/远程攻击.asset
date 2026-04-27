@@ -13,10 +13,17 @@ MonoBehaviour:
   m_Name: "\u8FDC\u7A0B\u653B\u51FB"
   m_EditorClassIdentifier: 
   SkillName: "\u6CD5\u7403"
-  SelectionWeight: 10
-  AttackSpeed: 100
+  AttackSpeed: 20
+  CooldownMultiplier: 0
   OverrideTargeting: 0
   SkillTargetingLogic: 1
+  BaseScore: 10
+  Evaluators: []
+  RequiresToken: 0
+  TokenType: 0
+  ShowIntent: 0
+  IntentIcon: {fileID: 0}
+  NextComboSkill: {fileID: 0}
   MaxRange: 100
   MinRange: 50
   MinDamage: 0
@@ -31,11 +38,3 @@ MonoBehaviour:
   OnFireActions: []
   OnHitActions:
   - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
-  BaseScore: 10
-  Evaluators: []
-  RequiresToken: 0
-  TokenType: 0
-  ShowIntent: 0
-  IntentIcon: {fileID: 0}
-  ChargeTime: 10
-  NextComboSkill: {fileID: 0}

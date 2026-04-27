@@ -30,49 +30,37 @@ public class EnemyBrain : MonoBehaviour
 
     private RuntimeEnemySkill currentSkill = null;
     private bool hasActiveToken = false;
+    private float currentActionInterval = 0f; // 缓存由全局公式算出的秒数
 
     private float stateTimer = 0f;
     private float globalActionTimer = 0f;
     private float lastFrameHP;
     private bool isDead = false;
-
     private bool isStaggered = false;
     private float staggerTimer = 0f;
 
     private void Start()
     {
         if (MyData == null) { enabled = false; return; }
-
         myReceiver = GetComponent<DamageReceiver>();
         rb = GetComponent<Rigidbody2D>();
         myHUD = GetComponentInChildren<EntityHUD>();
 
-        float initialHP = MyData.GetStat(StatType.HP);
-        float initialAP = MyData.GetStat(StatType.AP);
-        myReceiver.Initialize(initialHP > 0 ? initialHP : 1f, initialAP);
+        myReceiver.Initialize(Mathf.Max(MyData.GetStat(StatType.HP), 1f), MyData.GetStat(StatType.AP));
         myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
 
         SetupVisuals();
         SetupPhysics();
         InitializeSkills();
-
         ExecuteECAActions(MyData.OnSpawnActions, null);
         myReceiver.OnEntityDeath += HandleDeathSequence;
-
-        CurrentState = AIState.Thinking;
     }
 
     private void Update()
     {
         if (isDead) return;
-
-        if (myReceiver.CurrentHP < lastFrameHP)
-        {
-            ExecuteECAActions(MyData.OnTakeDamageActions, null);
-            lastFrameHP = myReceiver.CurrentHP;
-        }
-
+        if (myReceiver.CurrentHP < lastFrameHP) { ExecuteECAActions(MyData.OnTakeDamageActions, null); lastFrameHP = myReceiver.CurrentHP; }
         if (myReceiver.CurrentHP <= 0) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) { rb.velocity = Vector2.zero; return; }
 
@@ -88,7 +76,6 @@ public class EnemyBrain : MonoBehaviour
     private void HandleTacticalStateMachine()
     {
         if (currentTarget == null) { rb.velocity = Vector2.zero; return; }
-
         switch (CurrentState)
         {
             case AIState.Thinking: DecideNextIntent(); break;
@@ -101,9 +88,8 @@ public class EnemyBrain : MonoBehaviour
     private void DecideNextIntent()
     {
         if (runtimeSkills.Count == 0 || globalActionTimer > 0) return;
-
-        float totalScore = 0f;
         List<KeyValuePair<RuntimeEnemySkill, float>> candidatePool = new List<KeyValuePair<RuntimeEnemySkill, float>>();
+        float totalScore = 0f;
 
         foreach (var s in runtimeSkills)
         {
@@ -111,21 +97,14 @@ public class EnemyBrain : MonoBehaviour
             float score = s.SkillData.BaseScore;
             if (s.SkillData.Evaluators != null)
                 foreach (var eval in s.SkillData.Evaluators) if (eval != null) score += eval.CalculateScore(this, s.SkillData, currentTarget);
-
             score = Mathf.Max(0, score);
             s.LastCalculatedScore = score;
             if (score > 0) { candidatePool.Add(new KeyValuePair<RuntimeEnemySkill, float>(s, score)); totalScore += score; }
         }
 
         if (candidatePool.Count == 0) return;
-
         float roll = Random.Range(0, totalScore);
-        foreach (var pair in candidatePool)
-        {
-            roll -= pair.Value;
-            if (roll <= 0) { currentSkill = pair.Key; break; }
-        }
-
+        foreach (var pair in candidatePool) { roll -= pair.Value; if (roll <= 0) { currentSkill = pair.Key; break; } }
         if (currentSkill != null) CurrentState = AIState.Positioning;
     }
 
@@ -137,7 +116,6 @@ public class EnemyBrain : MonoBehaviour
         float dist = CalculateDistanceToTarget(currentTarget, out Vector2 dir);
         float moveSpeed = GetFinalStat(StatType.MoveSpeed, MyData.GetStat(StatType.MoveSpeed)) * CombatSandbox.GetSpeed(1f);
 
-        // 使用受 Buff 修正后的射程
         float maxR = GetFinalStat(StatType.MaxRange, currentSkill.SkillData.MaxRange) * dMult;
         float minR = GetFinalStat(StatType.MinRange, currentSkill.SkillData.MinRange) * dMult;
 
@@ -154,8 +132,15 @@ public class EnemyBrain : MonoBehaviour
                 }
                 hasActiveToken = true;
             }
-            if (currentSkill.SkillData.ShowIntent && myHUD != null) myHUD.ShowIntent(currentSkill.SkillData.IntentIcon, currentSkill.SkillData.ChargeTime);
-            stateTimer = currentSkill.SkillData.ChargeTime;
+
+            // --- 👇【统一调用全局攻速公式】---
+            float finalAtkScore = GetFinalStat(StatType.AttackSpeed, currentSkill.SkillData.AttackSpeed);
+            currentActionInterval = GameFormulas.CalcCooldown(finalAtkScore); // 此时得到秒数
+
+            if (currentSkill.SkillData.ShowIntent && myHUD != null)
+                myHUD.ShowIntent(currentSkill.SkillData.IntentIcon, currentActionInterval);
+
+            stateTimer = currentActionInterval;
             CurrentState = AIState.Channelling;
         }
     }
@@ -178,20 +163,16 @@ public class EnemyBrain : MonoBehaviour
         Transform target = data.OverrideTargeting ? GetTargetByStrategy(data.SkillTargetingLogic) : currentTarget;
         if (target == null) { FinishSkillExecution(); return; }
 
-        // --- 核心修复：更新 DummyWeapon 内部属性，确保后续积木和子弹能读到 Buff ---
-        float finalMaxDmg = GetFinalStat(StatType.MaxDamage, data.MaxDamage);
-        float finalMinDmg = GetFinalStat(StatType.MinDamage, data.MinDamage);
-        float finalProjSpeed = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed);
-        float finalAtkSpeed = GetFinalStat(StatType.AttackSpeed, data.AttackSpeed);
+        // 同步 DummyWeapon 属性，确保子弹和 ECA 拿到受 Buff 后的数值
+        float fMaxDmg = GetFinalStat(StatType.MaxDamage, data.MaxDamage);
+        float fMinDmg = GetFinalStat(StatType.MinDamage, data.MinDamage);
+        float fProjSpd = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed);
+        float fAtkScore = GetFinalStat(StatType.AttackSpeed, data.AttackSpeed);
 
-        rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = finalMaxDmg;
-        rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = finalMinDmg;
-        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = finalProjSpeed;
-        rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = finalAtkSpeed;
-
-        float cd = GameFormulas.CalcCooldown(finalAtkSpeed);
-        rSkill.CurrentCooldown = cd;
-        globalActionTimer = 0.4f;
+        rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = fMaxDmg;
+        rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = fMinDmg;
+        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = fProjSpd;
+        rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = fAtkScore;
 
         Vector3 spawnPos = myHitboxCollider != null ? myHitboxCollider.bounds.center : transform.position;
 
@@ -202,7 +183,7 @@ public class EnemyBrain : MonoBehaviour
             SourceEntity = this.transform,
             IsEnemyFire = true,
             SourceWeapon = rSkill.DummyWeapon,
-            BaseDamage = Random.Range(finalMinDmg, finalMaxDmg)
+            BaseDamage = Random.Range(fMinDmg, fMaxDmg)
         };
 
         foreach (var action in data.OnFireActions) action.Execute(context);
@@ -218,8 +199,6 @@ public class EnemyBrain : MonoBehaviour
             Vector2 attackDir = (target.position - spawnPos).normalized;
             float angle = Mathf.Atan2(attackDir.y, attackDir.x) * Mathf.Rad2Deg;
             GameObject proj = Instantiate(data.ProjectilePrefab, spawnPos, Quaternion.AngleAxis(angle, Vector3.forward));
-
-            // 此时子弹内部 Fire 读到的 rSkill.DummyWeapon 已经是包含 Buff 的数据了
             proj.GetComponent<Projectile>()?.Fire(target, context.BaseDamage, rSkill.DummyWeapon, null, this.transform, true, false, 0, false, data.ProjectilePrefab);
         }
 
@@ -236,23 +215,34 @@ public class EnemyBrain : MonoBehaviour
 
     private void FinishSkillExecution()
     {
-        if (hasActiveToken && EnemyActionDirector.Instance != null) EnemyActionDirector.Instance.ReturnToken(currentSkill.SkillData.TokenType);
+        if (currentSkill != null)
+        {
+            // --- 👇【冷却统一公式】：动作间隔 * 策划填写的系数 ---
+            currentSkill.CurrentCooldown = currentActionInterval * currentSkill.SkillData.CooldownMultiplier;
+
+            if (hasActiveToken && EnemyActionDirector.Instance != null)
+                EnemyActionDirector.Instance.ReturnToken(currentSkill.SkillData.TokenType);
+        }
+
+        globalActionTimer = 0.4f; // 公共 GCD
         hasActiveToken = false; currentSkill = null; CurrentState = AIState.Thinking;
     }
 
+    // ==========================================
+    // ⚙️ 还原物理与视觉支持
+    // ==========================================
     private void SetupVisuals()
     {
         if (MyData.Archetype == EnemyArchetype.Modular) { myHitboxCollider = GetComponentInChildren<BoxCollider2D>(); return; }
-        GameObject vNode = null;
-        SpriteRenderer existingChildSr = GetComponentInChildren<SpriteRenderer>();
-        if (existingChildSr != null && existingChildSr.gameObject != this.gameObject) { vNode = existingChildSr.gameObject; }
-        else { vNode = new GameObject("VisualAndHitbox"); vNode.transform.SetParent(this.transform, false); vNode.AddComponent<SpriteRenderer>(); }
-        if (MyData.EnemySprite != null) vNode.GetComponent<SpriteRenderer>().sprite = MyData.EnemySprite;
+        GameObject vNode = transform.Find("VisualAndHitbox")?.gameObject;
+        if (vNode == null) { vNode = new GameObject("VisualAndHitbox"); vNode.transform.SetParent(this.transform, false); vNode.AddComponent<SpriteRenderer>(); }
+        SpriteRenderer sr = vNode.GetComponent<SpriteRenderer>();
+        if (MyData.EnemySprite != null) sr.sprite = MyData.EnemySprite;
         vNode.layer = LayerMask.NameToLayer("Enemy_Hitbox");
         vNode.transform.localScale = Vector3.one * MyData.VisualScaleMultiplier;
         myHitboxCollider = vNode.GetComponent<BoxCollider2D>() ?? vNode.AddComponent<BoxCollider2D>();
         myHitboxCollider.isTrigger = true;
-        if (MyData.AnimController != null) { Animator anim = vNode.GetComponent<Animator>() ?? vNode.AddComponent<Animator>(); anim.runtimeAnimatorController = MyData.AnimController; }
+        if (MyData.AnimController != null) { vNode.GetComponent<Animator>().runtimeAnimatorController = MyData.AnimController; }
         ProceduralAnimator2D proc = GetComponent<ProceduralAnimator2D>() ?? gameObject.AddComponent<ProceduralAnimator2D>();
         proc.SetTargetVisual(vNode.transform); proc.RefreshBaseState();
     }
@@ -266,10 +256,10 @@ public class EnemyBrain : MonoBehaviour
         if (sr != null && sr.sprite != null)
         {
             Vector2 realSize = sr.sprite.bounds.size * MyData.VisualScaleMultiplier;
-            BoxCollider2D physicsCol = GetComponent<BoxCollider2D>() ?? gameObject.AddComponent<BoxCollider2D>();
-            physicsCol.isTrigger = false;
-            physicsCol.size = new Vector2(realSize.x * 0.8f, realSize.y * 0.3f);
-            physicsCol.offset = new Vector2(0f, -(realSize.y / 2f) + (physicsCol.size.y / 2f));
+            BoxCollider2D phys = GetComponent<BoxCollider2D>() ?? gameObject.AddComponent<BoxCollider2D>();
+            phys.isTrigger = false;
+            phys.size = new Vector2(realSize.x * 0.8f, realSize.y * 0.3f);
+            phys.offset = new Vector2(0f, -(realSize.y / 2f) + (phys.size.y / 2f));
             DynamicDepthSorter sorter = GetComponent<DynamicDepthSorter>() ?? gameObject.AddComponent<DynamicDepthSorter>();
             sorter.YOffset = -(realSize.y / 2f);
         }
@@ -308,7 +298,6 @@ public class EnemyBrain : MonoBehaviour
         StartCoroutine(CorpseDecayRoutine());
     }
 
-    // --- 核心修复：完整复制所有 Actions 和数值到运行时武器 ---
     private void InitializeSkills()
     {
         runtimeSkills.Clear();
@@ -316,23 +305,9 @@ public class EnemyBrain : MonoBehaviour
         {
             if (skillSO == null) continue;
             var rSkill = new RuntimeEnemySkill { SkillData = skillSO, CurrentCooldown = 0f };
-            rSkill.DummyWeapon = new RuntimeWeapon
-            {
-                WeaponName = skillSO.SkillName,
-                DeliveryType = skillSO.DeliveryType,
-                ProjectilePrefab = skillSO.ProjectilePrefab,
-                SourceSO = null
-            };
-            // 必须把积木管线也接好，否则精英给的 Buff 触发不了后续机制
+            rSkill.DummyWeapon = new RuntimeWeapon { WeaponName = skillSO.SkillName, DeliveryType = skillSO.DeliveryType, ProjectilePrefab = skillSO.ProjectilePrefab };
             rSkill.DummyWeapon.OnHitActions.AddRange(skillSO.OnHitActions);
             rSkill.DummyWeapon.OnFireActions.AddRange(skillSO.OnFireActions);
-
-            // 初始填入图纸数值
-            rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = skillSO.MaxDamage;
-            rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = skillSO.MinDamage;
-            rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = skillSO.ProjectileSpeed;
-            rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = skillSO.AttackSpeed;
-
             runtimeSkills.Add(rSkill);
         }
     }
@@ -379,10 +354,7 @@ public class EnemyBrain : MonoBehaviour
     {
         float finalVal = baseVal;
         var m = GetComponent<BuffManager>();
-        if (m != null && m.BuffStatModifiers.ContainsKey(t))
-        {
-            finalVal += m.BuffStatModifiers[t];
-        }
+        if (m != null && m.BuffStatModifiers.ContainsKey(t)) finalVal += m.BuffStatModifiers[t];
         return finalVal;
     }
 }

@@ -940,7 +940,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &1767064794383780482
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -977,3 +977,6 @@ MonoBehaviour:
   MechNameText: {fileID: 5290845696712033155}
   HPGrid: {fileID: 650812309442278136}
   APGrid: {fileID: 4748171878539664950}
+  IntentRoot: {fileID: 0}
+  IntentIconImage: {fileID: 0}
+  IntentFillImage: {fileID: 0}
