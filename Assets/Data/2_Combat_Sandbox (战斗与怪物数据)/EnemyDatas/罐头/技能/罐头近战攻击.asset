@@ -10,30 +10,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c585269d6ff8ee499577ea1af6bc860, type: 3}
-  m_Name: "\u8FDC\u7A0B\u653B\u51FB"
+  m_Name: "\u7F50\u5934\u8FD1\u6218\u653B\u51FB"
   m_EditorClassIdentifier: 
-  SkillName: "\u6CD5\u7403"
-  AttackSpeed: 25
+  SkillName: "\u7F50\u5934\u8FD1\u6218\u653B\u51FB"
+  AttackSpeed: 60
   CooldownMultiplier: 0
   OverrideTargeting: 0
-  SkillTargetingLogic: 1
-  BaseScore: 10
+  SkillTargetingLogic: 3
+  BaseScore: 20
   Evaluators: []
   RequiresToken: 0
   TokenType: 0
-  ShowIntent: 1
-  IntentIcon: {fileID: 21300000, guid: bfa3e0c74d96a894a866df3aee60f169, type: 3}
+  ShowIntent: 0
+  IntentIcon: {fileID: 0}
   NextComboSkill: {fileID: 0}
-  MaxRange: 100
-  MinRange: 50
-  MinDamage: 0
-  MaxDamage: 1
+  MaxRange: 50
+  MinRange: 0
+  MinDamage: 10
+  MaxDamage: 10
   CriticalChance: 0.05
-  DeliveryType: 1
-  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
-  ProjectileSpeed: 100
+  DeliveryType: 0
+  ProjectilePrefab: {fileID: 0}
+  ProjectileSpeed: 10
   DashDirection: 0
-  DashImpulse: 400
+  DashImpulse: 300
   OnFireActions: []
   OnHitActions:
-  - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
+  - {fileID: 11400000, guid: 204b27b20a6b1bd48861c3c17bedaa95, type: 2}

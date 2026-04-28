@@ -114,9 +114,14 @@ public class EntityHUD : MonoBehaviour
     /// </summary>
     /// <param name="icon">技能图标</param>
     /// <param name="duration">蓄力/持续时间</param>
+    // --- 修改 EntityHUD.cs ---
+
     public void ShowIntent(Sprite icon, float duration)
     {
         if (IntentRoot == null) return;
+
+        // 👇【核心加固】：如果已经在显示同一个意图，直接跳过，防止每帧重复计算
+        if (isShowingIntent && IntentIconImage.sprite == icon) return;
 
         IntentRoot.SetActive(true);
         if (IntentIconImage != null) IntentIconImage.sprite = icon;
