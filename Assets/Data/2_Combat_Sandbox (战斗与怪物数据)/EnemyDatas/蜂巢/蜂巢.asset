@@ -43,7 +43,8 @@ MonoBehaviour:
   ShadowOffset: {x: 0, y: -0.8}
   ShadowWidth: 20
   ShadowHeight: 10
-  Skills: []
+  Skills:
+  - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
   OnSpawnActions: []
   OnDeathActions:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}

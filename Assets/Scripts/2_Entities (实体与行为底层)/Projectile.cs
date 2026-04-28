@@ -1,5 +1,4 @@
-﻿// --- 替换 Projectile.cs 全量代码 ---
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
@@ -19,12 +18,14 @@ public class Projectile : MonoBehaviour
     public bool EnableHoming = true;
     public float TurnSpeed = 1500f;
 
-    // 【优化】：用于归还对象池的来源引用
     private GameObject myPrefabSource;
     private Vector2 currentDirection;
     private int generation = 0;
     private Vector3 lastPosition;
     private float lifeTimer;
+
+    // 【新增】：射线检测的缓存数组，避免每帧分配内存
+    private RaycastHit2D[] hitResults = new RaycastHit2D[5];
 
     public void Fire(Transform target, float damage, RuntimeWeapon data, RuntimeChimeraData owner, Transform shooter, bool isEnemy, bool isCrit, int gen, bool targetAllies, GameObject sourcePrefab)
     {
@@ -37,20 +38,20 @@ public class Projectile : MonoBehaviour
         this.isCritical = isCrit;
         this.generation = gen;
         this.hitAllies = targetAllies;
-        this.myPrefabSource = sourcePrefab; // 记录来源
+        this.myPrefabSource = sourcePrefab;
 
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+        float speedMult = CombatSandbox.GetSpeed(1f);
         this.speed = (data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f) * speedMult;
 
         this.hasHit = false;
-        this.lifeTimer = 5f; // 5秒强制回收，防止飞出世界
+        this.lifeTimer = 5f;
         currentDirection = transform.right;
-        lastPosition = transform.position;
 
+        // --- 核心修复 1：初始化位置时，立即记录当前位置 ---
+        lastPosition = transform.position;
         gameObject.layer = LayerMask.NameToLayer("Projectile");
     }
 
-    // --- Projectile.cs 优化追踪代码 ---
     private void Update()
     {
         if (hasHit) return;
@@ -58,72 +59,75 @@ public class Projectile : MonoBehaviour
         lifeTimer -= Time.deltaTime;
         if (lifeTimer <= 0) { DespawnMe(); return; }
 
+        // 1. 处理追踪转向
         if (EnableHoming && target != null && target.gameObject.activeInHierarchy)
         {
-            Vector3 targetPos = target.position;
+            Vector3 targetCenter = target.position;
             Collider2D col = target.GetComponentInChildren<Collider2D>();
-            if (col != null) targetPos = col.bounds.center;
+            if (col != null) targetCenter = col.bounds.center;
 
-            float dist = Vector2.Distance(transform.position, targetPos);
-
-            // --- 👇【核心修复：距离引信】---
-            // 如果距离目标中心非常近（例如 0.4 个单位），直接判定为命中
-            // 这样可以解决子弹“贴身不爆炸”和“绕圈不命中”的所有弹道问题
-            if (dist < 0.4f)
-            {
-                HitTarget();
-                return;
-            }
-
-            // 原有的转向逻辑保持...
-            Vector2 directionToTarget = (targetPos - transform.position).normalized;
+            Vector2 directionToTarget = (targetCenter - transform.position).normalized;
             currentDirection = Vector3.RotateTowards(currentDirection, directionToTarget, TurnSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
 
             float angle = Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
         }
 
-        transform.position += (Vector3)currentDirection * speed * Time.deltaTime;
+        // 2. 计算本帧期望位移
+        Vector3 nextPosition = transform.position + (Vector3)currentDirection * speed * Time.deltaTime;
 
-        // 原有的物理检测（作为中远距离的补充）
-        CheckCollisionPhysics();
-        lastPosition = transform.position;
+        // --- 核心修复 2：全量路径扫描（解决穿隧问题） ---
+        // 我们不再依赖 OnTriggerEnter，而是手动扫描从 lastPosition 到 nextPosition 的所有障碍物
+        CheckPathCollision(lastPosition, nextPosition);
+
+        if (!hasHit)
+        {
+            transform.position = nextPosition;
+            lastPosition = transform.position;
+        }
     }
 
-    private void CheckCollisionPhysics()
+    private void CheckPathCollision(Vector3 start, Vector3 end)
     {
-        // 只有位移足够大才检测，防止慢速弹每帧浪费计算
-        float displacement = Vector3.Distance(lastPosition, transform.position);
-        if (displacement < 0.1f) return;
+        Vector2 dir = (end - start).normalized;
+        float dist = Vector3.Distance(start, end);
 
-        Vector3 dir = (transform.position - lastPosition).normalized;
+        // 判定攻击层级
         int layerMask = isEnemyFire ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
         if (hitAllies) layerMask = isEnemyFire ? LayerMask.GetMask("Enemy_Hitbox") : LayerMask.GetMask("Player_Hitbox");
 
-        RaycastHit2D hit = Physics2D.Raycast(lastPosition, dir, displacement, layerMask);
-        if (hit.collider != null)
+        // 使用 RaycastAll 扫描这段路径上所有的碰撞体
+        int hits = Physics2D.RaycastNonAlloc(start, dir, hitResults, dist, layerMask);
+
+        for (int i = 0; i < hits; i++)
         {
+            RaycastHit2D hit = hitResults[i];
+            if (hit.collider == null) continue;
+
             DamageReceiver receiver = hit.collider.GetComponentInParent<DamageReceiver>();
-            // 排除射手本身及子物体
+
+            // 排除射手自己
             if (receiver != null && receiver.transform != shooter && !receiver.transform.IsChildOf(shooter))
             {
+                // 击中目标！
                 this.target = receiver.transform;
-                transform.position = hit.point;
+                transform.position = hit.point; // 将子弹停在撞击点
                 HitTarget();
+                return;
             }
         }
     }
 
+    // 原有的 OnTriggerEnter2D 作为第二重保险（处理静止物体重叠）
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
 
-        // 排除射手本身
-        if (shooter != null && (collision.transform == shooter || collision.transform.IsChildOf(shooter))) return;
-
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
-        if (receiver != null)
+        if (receiver != null && shooter != null)
         {
+            if (receiver.transform == shooter || receiver.transform.IsChildOf(shooter)) return;
+
             bool isTargetEnemy = receiver.isEnemy;
             bool isValidHit = hitAllies ? (isEnemyFire == isTargetEnemy) : (isEnemyFire != isTargetEnemy);
 

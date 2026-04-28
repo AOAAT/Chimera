@@ -61,7 +61,7 @@ MonoBehaviour:
       Cooldown: 0
       OnSkillCastActions: []
   DeliveryType: 1
-  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: 7d4115f0f0c96e94dab685eea367208a, type: 3}
   WindupAngle: -45
   StrikeAngle: 60
   WindupTimeRatio: 0.3

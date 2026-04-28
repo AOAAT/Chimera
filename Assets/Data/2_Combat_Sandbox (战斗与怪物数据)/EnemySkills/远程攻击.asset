@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: "\u8FDC\u7A0B\u653B\u51FB"
   m_EditorClassIdentifier: 
   SkillName: "\u6CD5\u7403"
-  AttackSpeed: 100
+  AttackSpeed: 25
   CooldownMultiplier: 0
   OverrideTargeting: 0
   SkillTargetingLogic: 1
@@ -21,8 +21,8 @@ MonoBehaviour:
   Evaluators: []
   RequiresToken: 0
   TokenType: 0
-  ShowIntent: 0
-  IntentIcon: {fileID: 0}
+  ShowIntent: 1
+  IntentIcon: {fileID: 21300000, guid: bfa3e0c74d96a894a866df3aee60f169, type: 3}
   NextComboSkill: {fileID: 0}
   MaxRange: 100
   MinRange: 50

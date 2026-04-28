@@ -65,7 +65,7 @@ MonoBehaviour:
       Cooldown: 0
       OnSkillCastActions: []
   DeliveryType: 1
-  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: d05c1dd32f639394a90271076d33ca45, type: 3}
   WindupAngle: -45
   StrikeAngle: 60
   WindupTimeRatio: 0.3
@@ -74,6 +74,10 @@ MonoBehaviour:
   AnchorOffset: {x: -0.33591247, y: -0}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

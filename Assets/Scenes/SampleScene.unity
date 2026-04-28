@@ -7983,7 +7983,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac98eeb9cb7695c409be4bbe2d3b0b71, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SearchInterval: 0.2
   CurrentSpeed: 0
   isStaggered: 0
   isDashing: 0
@@ -21284,7 +21283,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a80b5edacba0eed4cb10e53aa58c0656, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Pools: []
+  ConfiguredPools: []
 --- !u!1 &1977254741
 GameObject:
   m_ObjectHideFlags: 0

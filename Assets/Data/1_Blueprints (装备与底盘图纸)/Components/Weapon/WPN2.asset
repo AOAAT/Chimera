@@ -30,11 +30,11 @@ MonoBehaviour:
     Stats:
     - StatID: 0
       Value: 20
-    - StatID: 6
+    - StatID: 0
       Value: 10
-    - StatID: 7
+    - StatID: 0
       Value: 10
-    - StatID: 8
+    - StatID: 0
       Value: 20
     - StatID: 10
       Value: 200
@@ -43,6 +43,7 @@ MonoBehaviour:
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
+    OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
     ActiveSkill:
@@ -58,9 +59,14 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.4
   StrikeTimeRatio: 0.4
+  TargetingOverride: 0
   AnchorOffset: {x: -0.15108718, y: -0.14150307}
   BaseRotationOffset: 45
   VisualScaleMultiplier: 0.9
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

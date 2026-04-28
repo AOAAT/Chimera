@@ -119,6 +119,11 @@ public class EnemyBrain : MonoBehaviour
 
         if (currentSkill != null) CurrentState = AIState.Positioning;
     }
+
+    public void SetHUD(EntityHUD hud)
+    {
+        myHUD = hud;
+    }
     private void ExecutePositioning()
     {
         if (currentSkill == null || currentTarget == null) { CurrentState = AIState.Thinking; return; }
@@ -144,6 +149,12 @@ public class EnemyBrain : MonoBehaviour
                 hasActiveToken = true;
             }
 
+            if (myHUD == null) myHUD = GetComponentInChildren<EntityHUD>();
+
+            if (currentSkill.SkillData.ShowIntent && myHUD != null)
+            {
+                myHUD.ShowIntent(currentSkill.SkillData.IntentIcon, currentActionInterval);
+            }
             // --- 👇【统一调用全局攻速公式】---
             float finalAtkScore = GetFinalStat(StatType.AttackSpeed, currentSkill.SkillData.AttackSpeed);
             currentActionInterval = GameFormulas.CalcCooldown(finalAtkScore); // 此时得到秒数
@@ -153,6 +164,10 @@ public class EnemyBrain : MonoBehaviour
 
             stateTimer = currentActionInterval;
             CurrentState = AIState.Channelling;
+        }
+        if (currentSkill.SkillData.ShowIntent)
+        {
+            Debug.Log($"<color=yellow>【意图尝试显示】</color> 目标HUD: {(myHUD != null ? "已连接" : "丢失")}, 技能: {currentSkill.SkillData.SkillName}");
         }
     }
 

@@ -24,6 +24,8 @@ public class EntityHUDSpawner : MonoBehaviour
         // 2. 👇【核心修复 1】：智能计算贴图的最高点 (Bounding Box Top)
         float heightOffset = 1.5f; // 兜底高度
 
+
+
         // 尝试寻找身上所有的贴图组件，取最高的一个边界
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
         if (srs.Length > 0)
@@ -48,10 +50,18 @@ public class EntityHUDSpawner : MonoBehaviour
         hudObj.transform.localPosition = new Vector3(0, heightOffset, 0);
 
         // 3. 初始化数据与监听
+        // 3. 初始化数据与监听
         EntityHUD hudScript = hudObj.GetComponent<EntityHUD>();
         if (hudScript != null)
         {
             hudScript.Initialize(GetComponent<DamageReceiver>(), GetComponent<BuffManager>());
+
+            // 👇 【关键新增】：主动把生成的 HUD 引用传给大脑
+            EnemyBrain brain = GetComponent<EnemyBrain>();
+            if (brain != null)
+            {
+                brain.SetHUD(hudScript);
+            }
         }
 
         // 4. 👇【核心修复 2】：接管深度排序！

@@ -22,10 +22,10 @@ MonoBehaviour:
   Chassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   Components:
   - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
-  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
+  - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
   - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
   - {fileID: 0}
-  - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
+  - {fileID: 11400000, guid: aae027251feb331419616b3264c730ea, type: 2}
   EliteComponentLevel: 1
   MovementLogic: 0
   TargetingLogic: 1
