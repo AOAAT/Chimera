@@ -13,6 +13,7 @@ public class EntityHUDSpawner : MonoBehaviour
     public float PaddingY = 0.5f;
 
     private GameObject hudObj;
+    // --- 修改 EntityHUDSpawner.cs 的 Start 方法 ---
 
     private void Start()
     {
@@ -21,63 +22,58 @@ public class EntityHUDSpawner : MonoBehaviour
         // 1. 实例化血条
         hudObj = Instantiate(HUDPrefab, this.transform);
 
-        // 2. 👇【核心修复 1】：智能计算贴图的最高点 (Bounding Box Top)
-        float heightOffset = 1.5f; // 兜底高度
+        // ==========================================
+        // 👇【核心修正】：基于原始缩放的补偿
+        // ==========================================
+        // 获取预制体身上那个 0.01 左右的原始微小缩放
+        Vector3 originalTinyScale = HUDPrefab.transform.localScale;
+        // 获取单位（怪物/机甲）当前的全局缩放
+        Vector3 unitLossyScale = transform.lossyScale;
 
+        // 最终缩放 = 原始微小缩放 / 单位缩放
+        // 这样 0.01 (原始) / 1.5 (单位) = 0.0066... (在视觉上看起来就是 0.01)
+        hudObj.transform.localScale = new Vector3(
+            originalTinyScale.x / unitLossyScale.x,
+            originalTinyScale.y / unitLossyScale.y,
+            originalTinyScale.z / unitLossyScale.z
+        );
+        // ==========================================
 
-
-        // 尝试寻找身上所有的贴图组件，取最高的一个边界
+        // 2. 智能计算高度偏移（原有逻辑保持不变）
+        float heightOffset = 1.5f;
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
         if (srs.Length > 0)
         {
             float maxY = float.MinValue;
             foreach (var sr in srs)
             {
-                // 如果是血条自己的部件（比如 Buff 图标），跳过
                 if (sr.transform.IsChildOf(hudObj.transform)) continue;
-
-                // 计算该贴图在局部坐标系下的最高点 (bounds.max.y 换算到 local)
+                // 注意：这里需要反向应用缩放，否则位置会飘
                 float localTop = transform.InverseTransformPoint(sr.bounds.max).y;
                 if (localTop > maxY) maxY = localTop;
             }
-            if (maxY != float.MinValue)
-            {
-                heightOffset = maxY + PaddingY;
-            }
+            if (maxY != float.MinValue) heightOffset = maxY + PaddingY;
         }
 
-        // 应用自适应高度！无论是巨型 Boss 还是矮小履带，血条永远恰好在头顶！
+        // 应用自适应高度
         hudObj.transform.localPosition = new Vector3(0, heightOffset, 0);
 
-        // 3. 初始化数据与监听
         // 3. 初始化数据与监听
         EntityHUD hudScript = hudObj.GetComponent<EntityHUD>();
         if (hudScript != null)
         {
             hudScript.Initialize(GetComponent<DamageReceiver>(), GetComponent<BuffManager>());
-
-            // 👇 【关键新增】：主动把生成的 HUD 引用传给大脑
             EnemyBrain brain = GetComponent<EnemyBrain>();
-            if (brain != null)
-            {
-                brain.SetHUD(hudScript);
-            }
+            if (brain != null) brain.SetHUD(hudScript);
         }
 
-        // 4. 👇【核心修复 2】：接管深度排序！
-        // 为血条的 Canvas 增加 SortingGroup，让它和本体共进退！
+        // 4. 深度排序（这里如果还贴脸，可能是层级问题，建议 Sorting Order 设为 50-100 即可）
         Canvas canvas = hudObj.GetComponent<Canvas>();
         if (canvas != null)
         {
-            // 确保它是 World Space，并覆盖其默认的 Order in Layer
             canvas.overrideSorting = true;
-            canvas.sortingLayerName = "Entities"; // 必须和机甲/怪物同层
-            canvas.sortingOrder = 50; // 给一个较高的基础 Order，保证在本体之上
+            canvas.sortingLayerName = "Entities";
+            canvas.sortingOrder = 100; // 调高一点，确保在最上层
         }
-
-        // 给血条挂一个动态排序脚本，YOffset 设为负的当前高度，这样它计算出的深度和脚底板完全一致！
-        DynamicDepthSorter sorter = hudObj.AddComponent<DynamicDepthSorter>();
-        sorter.IsStatic = false;
-        sorter.YOffset = -heightOffset;
     }
 }

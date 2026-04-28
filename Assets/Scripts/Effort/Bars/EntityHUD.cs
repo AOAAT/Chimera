@@ -168,28 +168,34 @@ public class EntityHUD : MonoBehaviour
         }
     }
 
+    // --- EntityHUD.cs 内部片段 ---
     private void UpdateBuffs()
     {
         if (targetBuffMgr == null || BuffGrid == null || BuffIconPrefab == null) return;
 
-        // 1. 暴力清理旧的 Buff 图标 (未来单位多且 Buff 频繁时建议使用对象池优化)
+        // 1. 清理旧图标
         for (int i = BuffGrid.childCount - 1; i >= 0; i--)
             Destroy(BuffGrid.GetChild(i).gameObject);
 
-        // 2. 重新渲染当前所有活跃 Buff
+        // 2. 遍历当前 Buff 列表
         foreach (var buff in targetBuffMgr.GetActiveBuffs())
         {
             if (buff.Blueprint == null || buff.Blueprint.BuffIcon == null) continue;
 
             GameObject iconObj = Instantiate(BuffIconPrefab, BuffGrid);
-            Image img = iconObj.GetComponent<Image>();
-            TMP_Text stackTxt = iconObj.GetComponentInChildren<TMP_Text>();
 
-            img.sprite = buff.Blueprint.BuffIcon;
-
-            // 层数大于 1 时才显示数字
-            if (stackTxt != null)
-                stackTxt.text = (buff.CurrentStacks > 1) ? buff.CurrentStacks.ToString() : "";
+            // 👇【核心修改】：寻找新脚本并进行初始化
+            BuffIconUI buffScript = iconObj.GetComponent<BuffIconUI>();
+            if (buffScript != null)
+            {
+                buffScript.Initialize(buff);
+            }
+            else
+            {
+                // 兼容性兜底：如果还没挂脚本，就执行原有逻辑
+                Image img = iconObj.GetComponent<Image>();
+                if (img != null) img.sprite = buff.Blueprint.BuffIcon;
+            }
         }
     }
 }
