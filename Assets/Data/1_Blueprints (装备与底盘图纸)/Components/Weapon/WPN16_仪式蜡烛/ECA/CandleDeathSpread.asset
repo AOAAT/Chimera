@@ -16,4 +16,4 @@ MonoBehaviour:
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   CandleWeaponSO: {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
   TransferRatio: 0.5
-  DamagePerBullet: 10
+  DamageRatio: 1

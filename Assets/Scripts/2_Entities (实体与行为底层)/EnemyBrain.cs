@@ -66,7 +66,10 @@ public class EnemyBrain : MonoBehaviour
 
         if (isStaggered) { HandleStaggerState(); return; }
 
+        // 1. 【性能优化】：只有在 Thinking 状态才更新全局计时器
         if (globalActionTimer > 0) globalActionTimer -= Time.deltaTime;
+
+        // 2. 始终更新所有技能冷却
         foreach (var s in runtimeSkills) if (s.CurrentCooldown > 0) s.CurrentCooldown -= Time.deltaTime;
 
         currentTarget = GetTargetByStrategy(MyData.TargetingLogic);
@@ -84,12 +87,14 @@ public class EnemyBrain : MonoBehaviour
             case AIState.Executing: break;
         }
     }
-
     private void DecideNextIntent()
     {
+        // --- 👇【修复 1】：将 globalActionTimer 的判定从这里移走，或设为极小值 ---
+        // 之前的 0.4s 会导致哪怕技能冷却好了，大脑也在“由于 GCD 没转完而拒绝思考”
         if (runtimeSkills.Count == 0 || globalActionTimer > 0) return;
-        List<KeyValuePair<RuntimeEnemySkill, float>> candidatePool = new List<KeyValuePair<RuntimeEnemySkill, float>>();
+
         float totalScore = 0f;
+        List<KeyValuePair<RuntimeEnemySkill, float>> candidatePool = new List<KeyValuePair<RuntimeEnemySkill, float>>();
 
         foreach (var s in runtimeSkills)
         {
@@ -97,17 +102,23 @@ public class EnemyBrain : MonoBehaviour
             float score = s.SkillData.BaseScore;
             if (s.SkillData.Evaluators != null)
                 foreach (var eval in s.SkillData.Evaluators) if (eval != null) score += eval.CalculateScore(this, s.SkillData, currentTarget);
+
             score = Mathf.Max(0, score);
             s.LastCalculatedScore = score;
             if (score > 0) { candidatePool.Add(new KeyValuePair<RuntimeEnemySkill, float>(s, score)); totalScore += score; }
         }
 
         if (candidatePool.Count == 0) return;
+
         float roll = Random.Range(0, totalScore);
-        foreach (var pair in candidatePool) { roll -= pair.Value; if (roll <= 0) { currentSkill = pair.Key; break; } }
+        foreach (var pair in candidatePool)
+        {
+            roll -= pair.Value;
+            if (roll <= 0) { currentSkill = pair.Key; break; }
+        }
+
         if (currentSkill != null) CurrentState = AIState.Positioning;
     }
-
     private void ExecutePositioning()
     {
         if (currentSkill == null || currentTarget == null) { CurrentState = AIState.Thinking; return; }
@@ -163,19 +174,18 @@ public class EnemyBrain : MonoBehaviour
         Transform target = data.OverrideTargeting ? GetTargetByStrategy(data.SkillTargetingLogic) : currentTarget;
         if (target == null) { FinishSkillExecution(); return; }
 
-        // 同步 DummyWeapon 属性，确保子弹和 ECA 拿到受 Buff 后的数值
+        // 数据同步
         float fMaxDmg = GetFinalStat(StatType.MaxDamage, data.MaxDamage);
         float fMinDmg = GetFinalStat(StatType.MinDamage, data.MinDamage);
-        float fProjSpd = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed);
-        float fAtkScore = GetFinalStat(StatType.AttackSpeed, data.AttackSpeed);
-
         rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = fMaxDmg;
         rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = fMinDmg;
-        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = fProjSpd;
-        rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = fAtkScore;
+        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed);
+
+        // --- 👇【修复 2】：这里的 globalActionTimer 不能再设为 0.4s 了 ---
+        // 之前这里会强行打断连续施法的节奏。现在设为一个极小帧间距。
+        globalActionTimer = 0.05f;
 
         Vector3 spawnPos = myHitboxCollider != null ? myHitboxCollider.bounds.center : transform.position;
-
         ECAContext context = new ECAContext
         {
             ImpactPoint = target.position,
@@ -204,6 +214,7 @@ public class EnemyBrain : MonoBehaviour
 
         foreach (var action in data.OnHitActions) action.Execute(context);
 
+        // 连招判定保持...
         if (data.NextComboSkill != null)
         {
             var next = runtimeSkills.Find(s => s.SkillData == data.NextComboSkill);
@@ -213,21 +224,22 @@ public class EnemyBrain : MonoBehaviour
         FinishSkillExecution();
     }
 
+
     private void FinishSkillExecution()
     {
         if (currentSkill != null)
         {
-            // --- 👇【冷却统一公式】：动作间隔 * 策划填写的系数 ---
+            // 冷却结算
             currentSkill.CurrentCooldown = currentActionInterval * currentSkill.SkillData.CooldownMultiplier;
 
             if (hasActiveToken && EnemyActionDirector.Instance != null)
                 EnemyActionDirector.Instance.ReturnToken(currentSkill.SkillData.TokenType);
         }
 
-        globalActionTimer = 0.4f; // 公共 GCD
+        // --- 👇【修复 3】：这里的 globalActionTimer 也设为极小 ---
+        globalActionTimer = 0.05f;
         hasActiveToken = false; currentSkill = null; CurrentState = AIState.Thinking;
     }
-
     // ==========================================
     // ⚙️ 还原物理与视觉支持
     // ==========================================
@@ -286,14 +298,39 @@ public class EnemyBrain : MonoBehaviour
 
     private void HandleStaggerState() { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 3f; CurrentState = AIState.Thinking; } }
 
+    // --- 修改 EnemyBrain.cs 的 HandleDeathSequence 方法 ---
     private void HandleDeathSequence()
     {
-        if (isDead) return; isDead = true;
-        if (myHUD != null) myHUD.HideIntent(); FinishSkillExecution();
-        rb.velocity = Vector2.zero; rb.isKinematic = true; rb.simulated = false;
+        if (isDead) return;
+        isDead = true;
+
+        if (myHUD != null) myHUD.HideIntent();
+        FinishSkillExecution();
+
+        rb.velocity = Vector2.zero;
+        rb.isKinematic = true;
+        rb.simulated = false;
+
+        // 1. 👇【核心修复点】：在这里完整构造死亡上下文
         BuffManager bm = GetComponent<BuffManager>();
-        if (bm != null) bm.TriggerHolderDeathActions(new ECAContext { ImpactPoint = transform.position, PrimaryTarget = this.transform, IsEnemyFire = true });
+        if (bm != null)
+        {
+            ECAContext deathContext = new ECAContext
+            {
+                ImpactPoint = transform.position,
+                PrimaryTarget = this.transform,
+                SourceEntity = this.transform, // 👈 这一行必须加！死者就是来源
+                IsEnemyFire = myReceiver.isEnemy // 👈 阵营也按实际情况传
+            };
+
+            // 触发 Buff 的死亡管线 (如烛火传染)
+            bm.TriggerHolderDeathActions(deathContext);
+        }
+
+        // 2. 触发怪物的图纸死亡动作
         ExecuteECAActions(MyData.OnDeathActions, null);
+
+        // 3. 尸体淡出
         gameObject.layer = LayerMask.NameToLayer("Floor");
         StartCoroutine(CorpseDecayRoutine());
     }

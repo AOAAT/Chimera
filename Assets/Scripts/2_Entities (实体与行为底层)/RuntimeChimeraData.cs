@@ -49,7 +49,7 @@ public class RuntimeChimeraData
 
     // 👇【新增】：全机开战管线
     public List<ECAAction> GlobalOnBattleStartActions = new List<ECAAction>();
-
+    public bool CanFireWhileManualMoving = false;
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
     {
         GlobalOnFireActions.Clear();

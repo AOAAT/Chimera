@@ -9,10 +9,6 @@ public class ChimeraAIController : MonoBehaviour
     private BuffManager myBuffMgr;
     private DamageReceiver myReceiver;
 
-    [Header("=== 性能设定 ===")]
-    public float SearchInterval = 0.2f;
-    private float searchTimer = 0f;
-
     [Header("=== 动态物理数据 ===")]
     public float CurrentSpeed;
 
@@ -22,10 +18,12 @@ public class ChimeraAIController : MonoBehaviour
     public bool isDashing = false;
     private float dashTimer = 0f;
 
-    // --- 👇 指挥官手动覆写字段 ---
     private Vector2? manualMovePoint = null;
     private Transform manualAttackTarget = null;
-    private float manualOverrideTimer = 0f;
+
+    // 向武器模块暴露：当前是否正处于手控位移中
+    public bool IsManuallyMoving => manualMovePoint.HasValue;
+
 
     private float maxWeaponRange, minWeaponRange, optimalFireRange;
 
@@ -42,8 +40,15 @@ public class ChimeraAIController : MonoBehaviour
 
     private void OnDestroy() { if (myBuffMgr != null) myBuffMgr.OnBuffsChanged -= RecalculateSpeedAndRanges; }
 
-    public void SetManualMovePoint(Vector2 point) { manualMovePoint = point; manualAttackTarget = null; manualOverrideTimer = 10f; }
-    public void SetManualTarget(Transform target) { manualAttackTarget = target; manualMovePoint = null; manualOverrideTimer = 15f; }
+    public void SetManualMovePoint(Vector2 point)
+    {
+        manualMovePoint = point;
+        // 注意：移动和攻击不互斥，移动时依然可以锁定目标，只是能否开火由 WeaponModule 决定
+    }
+    public void SetManualTarget(Transform target)
+    {
+        manualAttackTarget = target;
+    }
     public bool HasManualTarget() => manualAttackTarget != null;
     public Transform GetManualTarget() => manualAttackTarget;
 
@@ -80,19 +85,26 @@ public class ChimeraAIController : MonoBehaviour
     private void Update()
     {
         if (myReceiver == null || myReceiver.CurrentHP <= 0) { if (rb != null) rb.velocity = Vector2.zero; return; }
-        if (runtimeData == null || (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive)) { if (rb != null) rb.velocity = Vector2.zero; return; }
+        if (runtimeData == null || (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive))
+        { if (rb != null) rb.velocity = Vector2.zero; return; }
 
         if (isStaggered) { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; } return; }
         if (isDashing) { dashTimer -= Time.deltaTime; if (dashTimer <= 0) { isDashing = false; rb.drag = 5f; } return; }
 
-        // 指令耗时更新
-        if (manualOverrideTimer > 0) manualOverrideTimer -= Time.deltaTime;
-
-        searchTimer -= Time.deltaTime;
-        if (searchTimer <= 0 || currentTarget == null || !IsTargetValid(currentTarget))
+        // 1. 索敌逻辑：手控目标具有绝对持久性
+        if (manualAttackTarget != null && !IsTargetValid(manualAttackTarget))
         {
-            FindTargetOptimized();
-            searchTimer = SearchInterval;
+            manualAttackTarget = null; // 目标死亡或消失，清除锁定
+        }
+
+        // 2. 只有在没有有效手控目标时，才跑自动索敌
+        if (manualAttackTarget != null)
+        {
+            currentTarget = manualAttackTarget;
+        }
+        else
+        {
+            FindTargetAuto();
         }
 
         HandleMovement();
@@ -105,78 +117,56 @@ public class ChimeraAIController : MonoBehaviour
         return dr != null && dr.CurrentHP > 0 && t.gameObject.activeInHierarchy;
     }
 
-    private void FindTargetOptimized()
+    private void FindTargetAuto()
     {
-        // 手动目标优先
-        if (manualOverrideTimer > 0 && manualAttackTarget != null && IsTargetValid(manualAttackTarget))
-        {
-            currentTarget = manualAttackTarget;
-            return;
-        }
-
         bool iAmEnemy = myReceiver.isEnemy;
         var targetList = iAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
         if (targetList.Count == 0) { currentTarget = null; return; }
 
-        TargetingStrategy strategy = (manualOverrideTimer > 0 && manualAttackTarget != null) ? TargetingStrategy.Nearest : runtimeData.TargetingLogic;
-        if (strategy == TargetingStrategy.FollowCoreAI) strategy = TargetingStrategy.Nearest;
-
-        DamageReceiver bestCandidate = null; float bestScore = -float.MaxValue;
+        // 自动索敌逻辑 (按距离找最近)
+        DamageReceiver bestCandidate = null; float minDist = float.MaxValue;
         for (int i = 0; i < targetList.Count; i++)
         {
             DamageReceiver potential = targetList[i];
             if (potential == null || potential.CurrentHP <= 0) continue;
             float dist = Vector3.Distance(transform.position, potential.transform.position);
-            float currentScore = 0f;
-            switch (strategy)
-            {
-                case TargetingStrategy.Nearest: currentScore = -dist; break;
-                case TargetingStrategy.Furthest: currentScore = dist; break;
-                case TargetingStrategy.MaxHPHighest: currentScore = potential.MaxHP; break;
-                default: currentScore = -dist; break;
-            }
-            if (currentScore > bestScore) { bestScore = currentScore; bestCandidate = potential; }
+            if (dist < minDist) { minDist = dist; bestCandidate = potential; }
         }
         currentTarget = bestCandidate != null ? bestCandidate.transform : null;
     }
 
     private void HandleMovement()
     {
-        // 优先级 A：手动位移点指令
-        if (manualOverrideTimer > 0 && manualMovePoint.HasValue)
+        // 优先级 A：手控位移 (手动风筝/撤离)
+        if (manualMovePoint.HasValue)
         {
             float dist = Vector2.Distance(transform.position, manualMovePoint.Value);
-            if (dist < 0.4f) { manualMovePoint = null; rb.velocity = Vector2.zero; }
-            else { rb.velocity = (manualMovePoint.Value - (Vector2)transform.position).normalized * CurrentSpeed; }
-            return; // 拦截 AI
+            if (dist < 0.4f)
+            {
+                manualMovePoint = null;
+                rb.velocity = Vector2.zero;
+            }
+            else
+            {
+                rb.velocity = (manualMovePoint.Value - (Vector2)transform.position).normalized * CurrentSpeed;
+            }
+            return;
         }
 
         if (currentTarget == null) { if (rb != null) rb.velocity = Vector2.zero; return; }
 
-        // 优先级 B：AI 或 手动集火拉扯逻辑
-        MovementStrategy activeLogic = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideMovement : runtimeData.MovementLogic;
-        float activeDodgeDist = (myBuffMgr != null && myBuffMgr.HasAIOverride) ? myBuffMgr.CurrentOverrideDodgeDist : runtimeData.SafeDodgeDistance;
+        // 优先级 B：AI 自动位移
+        // (如果当前是锁定目标打，AI 也会尝试根据射程自动拉扯)
+        Vector2 dirToTarget = (currentTarget.position - transform.position).normalized;
+        float distToTarget = Vector2.Distance(transform.position, currentTarget.position);
 
-        Vector3 logicCenter = transform.TransformPoint(runtimeData.LogicCenterOffset);
-        float distToTarget = Vector3.Distance(logicCenter, currentTarget.position);
-        Collider2D targetCol = currentTarget.GetComponentInChildren<Collider2D>();
-        if (targetCol != null) distToTarget = Vector2.Distance(logicCenter, targetCol.ClosestPoint(logicCenter));
-
-        Vector2 dirToTarget = (currentTarget.position - logicCenter).normalized;
         Vector2 targetVelocity = Vector2.zero;
-
-        // 集火模式强制使用 Firepower 逻辑以确保在射程内
-        if (activeLogic == MovementStrategy.Dodge && distToTarget < activeDodgeDist) targetVelocity = -dirToTarget * CurrentSpeed;
-        else if (activeLogic == MovementStrategy.Active_Survival && distToTarget > maxWeaponRange) targetVelocity = dirToTarget * CurrentSpeed;
-        else
-        {
-            // 火力优先逻辑
-            if (distToTarget > optimalFireRange) targetVelocity = dirToTarget * CurrentSpeed;
-            else if (distToTarget < minWeaponRange) targetVelocity = -dirToTarget * (CurrentSpeed * 0.5f);
-        }
+        if (distToTarget > optimalFireRange) targetVelocity = dirToTarget * CurrentSpeed;
+        else if (distToTarget < minWeaponRange) targetVelocity = -dirToTarget * (CurrentSpeed * 0.5f);
 
         if (rb != null) rb.velocity = targetVelocity;
     }
+
 
     // ==========================================
     // 物理接口与碰撞逻辑 (保持原有逻辑不变)

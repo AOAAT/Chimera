@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "CandleDeathSpread", menuName = "Chimera Protocol/2. ECA 机制积木/特殊 - 烛火死后传染")]
+[CreateAssetMenu(fileName = "CandleDeathSpread", menuName = "Chimera Protocol/2. ECA 机制积木/特殊 - 烛火死后全场传染(溯源版)")]
 public class Action_CandleDeathSpread : ECAAction
 {
     [Header("=== 资源引用 ===")]
@@ -11,11 +11,8 @@ public class Action_CandleDeathSpread : ECAAction
     public ComponentDataSO CandleWeaponSO;
 
     [Header("=== 传染参数 ===")]
-    [Tooltip("层数与弹丸数量的转化比")]
-    [Range(0.1f, 2.0f)] public float TransferRatio = 0.5f;
-
-    [Tooltip("传染弹继承武器基础伤害的比例 (1.0 = 100%)")]
-    [Range(0.1f, 2.0f)] public float DamageRatio = 0.5f; // 👈 新增：伤害系数
+    [Range(0.1f, 5.0f)] public float TransferRatio = 1.0f;
+    [Range(0.1f, 2.0f)] public float DamageRatio = 0.5f;
 
     public override void Execute(ECAContext context)
     {
@@ -27,50 +24,36 @@ public class Action_CandleDeathSpread : ECAAction
         int stacks = deadBuffMgr.GetBuffStacks(CandleBuff.BuffID);
         if (stacks <= 0) return;
 
-        // 1. 获取死者阵营
+        // 1. 确定谁才是“凶手”阵营 (如果死的是怪，凶手就是玩家)
         DamageReceiver deadReceiver = context.SourceEntity.GetComponent<DamageReceiver>();
-        bool deadUnitIsEnemy = deadReceiver != null ? deadReceiver.isEnemy : true;
+        bool deadUnitIsEnemy = (deadReceiver != null) ? deadReceiver.isEnemy : true;
 
-        // 2. 寻找下个受害者
-        var allies = deadUnitIsEnemy ? CombatDirector.ActiveEnemies : CombatDirector.ActivePlayerUnits;
-        var nextVictim = allies
-            .Where(e => e != null && e.CurrentHP > 0 && e.transform != context.SourceEntity)
-            .OrderBy(e => Vector3.Distance(context.SourceEntity.position, e.transform.position))
-            .FirstOrDefault();
-
-        if (nextVictim == null) return;
-
-        // 3. 回溯获取武器等级
-        int currentWeaponLevel = 1;
-        if (context.ChassisData != null)
+        // 2. 👇【核心溯源】：寻找凶手阵营中等级最高的烛火武器
+        RuntimeWeapon masterWeapon = FindMasterCandleWeapon(!deadUnitIsEnemy);
+        if (masterWeapon == null)
         {
-            var runtimeWeapon = context.ChassisData.EquippedWeapons.FirstOrDefault(w => w.SourceSO == CandleWeaponSO);
-            if (runtimeWeapon != null) currentWeaponLevel = runtimeWeapon.CurrentLevel;
+            Debug.LogWarning("【烛火中断】全场找不到来源武器，无法产生传染苗。");
+            return;
         }
 
-        // 4. 构造虚拟武器数据（用于提取属性）
-        RuntimeWeapon dummyWeapon = new RuntimeWeapon { WeaponName = "遗志烛火", SourceSO = CandleWeaponSO, CurrentLevel = currentWeaponLevel };
-        var levelData = CandleWeaponSO.GetLevelData(currentWeaponLevel);
-        if (levelData != null)
+        // 3. 构造虚拟武器 (基于凶手的最高等级)
+        RuntimeWeapon infectorWeapon = ConstructInfectorWeapon(masterWeapon);
+
+        // 4. 寻找下一批同僚受害者 (死者的队友)
+        var potentialTargets = deadUnitIsEnemy ?
+            CombatDirector.ActiveEnemies.Where(e => e != null && e.CurrentHP > 0 && e.transform != context.SourceEntity).ToList() :
+            CombatDirector.ActivePlayerUnits.Where(p => p != null && p.CurrentHP > 0 && p.transform != context.SourceEntity).ToList();
+
+        if (potentialTargets.Count == 0) return;
+
+        // 5. 计算弹丸与发射
+        float weaponBaseDmg = infectorWeapon.GetStat(StatType.MaxDamage);
+        float finalBulletDamage = (weaponBaseDmg > 0 ? weaponBaseDmg : 10f) * DamageRatio;
+        int totalProjectiles = Mathf.Max(1, Mathf.FloorToInt(stacks * TransferRatio));
+
+        for (int i = 0; i < totalProjectiles; i++)
         {
-            foreach (var entry in levelData.Stats) dummyWeapon.WeaponStats[entry.StatID] = entry.Value;
-            if (levelData.OnHitActions != null) dummyWeapon.OnHitActions.AddRange(levelData.OnHitActions);
-        }
-
-        // --- 👇【核心修改：动态抓取伤害】---
-        // 从图纸中抓取 MaxDamage，如果没有配攻击力，则给 10 点保底
-        float weaponBaseDmg = dummyWeapon.GetStat(StatType.MaxDamage);
-        if (weaponBaseDmg <= 0) weaponBaseDmg = 10f;
-
-        // 计算最终每发火苗的威力：武器攻击力 * 伤害系数
-        float finalBulletDamage = weaponBaseDmg * DamageRatio;
-        // ----------------------------------
-
-        // 5. 暴力喷射
-        int bulletCount = Mathf.Max(1, Mathf.FloorToInt(stacks * TransferRatio));
-
-        for (int i = 0; i < bulletCount; i++)
-        {
+            DamageReceiver target = potentialTargets[Random.Range(0, potentialTargets.Count)];
             Quaternion randomRot = Quaternion.Euler(0, 0, Random.Range(0, 360f));
             GameObject projObj = SimplePool.Spawn(ProjectilePrefab, context.SourceEntity.position, randomRot);
             Projectile pScript = projObj.GetComponent<Projectile>();
@@ -78,18 +61,79 @@ public class Action_CandleDeathSpread : ECAAction
             if (pScript != null)
             {
                 pScript.Fire(
-                    nextVictim.transform,
-                    finalBulletDamage, // 👈 传入动态计算出的伤害
-                    dummyWeapon,
-                    context.ChassisData,
+                    target.transform,
+                    finalBulletDamage,
+                    infectorWeapon,
+                    null, // 此时由于是死后触发，不再强挂 ChassisData
                     context.SourceEntity,
-                    !deadUnitIsEnemy,
+                    deadUnitIsEnemy,  // 维持死者的阵营层级，确保物理碰撞能打到它的队友
                     false,
                     0,
-                    false,
+                    true,             // 允许命中同僚
                     ProjectilePrefab
                 );
             }
         }
+    }
+
+    /// <summary>
+    /// 【全场扫描】：找到指定阵营中等级最高的烛火武器
+    /// </summary>
+    private RuntimeWeapon FindMasterCandleWeapon(bool isEnemySide)
+    {
+        // 根据阵营获取所有可能的持有者
+        var owners = isEnemySide ? CombatDirector.ActiveEnemies : CombatDirector.ActivePlayerUnits;
+
+        RuntimeWeapon highestLevelWeapon = null;
+        int maxLv = -1;
+
+        foreach (var owner in owners)
+        {
+            // 尝试通过 MechUnit2D 或直接访问运行时数据获取武器列表
+            // 无论是玩家机甲还是精英怪机甲，都挂有 MechUnit2D 
+            var mech = owner.GetComponent<MechUnit2D>();
+            if (mech == null) continue;
+
+            // 这里需要我们能访问到 MechUnit2D 里的 cachedCombatData
+            // (主程：如果 cachedCombatData 是私有的，建议将其改为 internal 或 public，或者加个 getter)
+
+            // 暴力搜索该单位身上所有的武器
+            // 我们通过导出接口获取：
+            var rw = owner.GetComponentsInChildren<WeaponModule>()
+                     .Select(w => w.GetWeaponData()) // 假设 WeaponModule 暴露了数据
+                     .FirstOrDefault(d => d.SourceSO == CandleWeaponSO);
+
+            if (rw != null && rw.CurrentLevel > maxLv)
+            {
+                maxLv = rw.CurrentLevel;
+                highestLevelWeapon = rw;
+            }
+        }
+        return highestLevelWeapon;
+    }
+
+    private RuntimeWeapon ConstructInfectorWeapon(RuntimeWeapon master)
+    {
+        RuntimeWeapon dummy = new RuntimeWeapon
+        {
+            WeaponName = "遗志烛火",
+            SourceSO = master.SourceSO,
+            CurrentLevel = master.CurrentLevel,
+            DeliveryType = WeaponDeliveryType.Ranged
+        };
+
+        // 直接镜像最高等级武器的数值
+        foreach (var statKey in master.WeaponStats.Keys)
+            dummy.WeaponStats[statKey] = master.WeaponStats[statKey];
+
+        // 注入扣血与上Buff双积木
+        Action_DealDamage damageAction = ScriptableObject.CreateInstance<Action_DealDamage>();
+        dummy.OnHitActions.Add(damageAction);
+
+        Action_ApplyBuff applyInfection = ScriptableObject.CreateInstance<Action_ApplyBuff>();
+        applyInfection.BuffToApply = CandleBuff;
+        dummy.OnHitActions.Add(applyInfection);
+
+        return dummy;
     }
 }

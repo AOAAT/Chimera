@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: "\u8FDC\u7A0B\u653B\u51FB"
   m_EditorClassIdentifier: 
   SkillName: "\u6CD5\u7403"
-  AttackSpeed: 20
+  AttackSpeed: 100
   CooldownMultiplier: 0
   OverrideTargeting: 0
   SkillTargetingLogic: 1
@@ -32,7 +32,6 @@ MonoBehaviour:
   DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
   ProjectileSpeed: 100
-  KnockbackForce: 0
   DashDirection: 0
   DashImpulse: 400
   OnFireActions: []

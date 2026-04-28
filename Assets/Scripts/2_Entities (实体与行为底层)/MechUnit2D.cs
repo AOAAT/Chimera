@@ -246,30 +246,59 @@ public class MechUnit2D : MonoBehaviour
         return receiver;
     }
 
+    // --- 修改 MechUnit2D.cs 中的 HandleEliteDeath 方法 ---
+    // --- 修改 MechUnit2D.cs 中的 HandleEliteDeath 方法 ---
     private void HandleEliteDeath()
     {
         Debug.Log($"<color=red>【精英战损】</color> [{this.name}] 已离线。执行清理程序...");
 
-        // 1. 彻底关停逻辑核心
+        // 1. 👇【核心修复】：在逻辑关停前，触发所有 Buff 的死亡管线（如：烛火传染）
+        BuffManager bm = GetComponent<BuffManager>();
+        DamageReceiver dr = GetComponent<DamageReceiver>();
+        if (bm != null)
+        {
+            ECAContext deathContext = new ECAContext
+            {
+                ImpactPoint = transform.position,
+                PrimaryTarget = this.transform,
+                SourceEntity = this.transform, // 👈 极其关键：告诉积木火苗从哪喷出来
+                IsEnemyFire = (dr != null) ? dr.isEnemy : true, // 按照精英怪的真实阵营判定
+                ChassisData = this.cachedCombatData // 传入底盘数据，方便积木追溯武器等级
+            };
+
+            // 呼叫总线，让烛火、自爆等 Buff 效果爆发
+            bm.TriggerHolderDeathActions(deathContext);
+        }
+
+        // 2. 彻底关停逻辑核心
         var ai = GetComponent<ChimeraAIController>();
         if (ai != null) ai.enabled = false;
+
+        var eb = GetComponent<EnemyBrain>();
+        if (eb != null) eb.enabled = false;
 
         var sc = GetComponent<MechSkillController>();
         if (sc != null) sc.enabled = false;
 
-        // 2. 物理停摆
+        // 3. 禁用所有挂载的武器模块
+        foreach (var w in GetComponentsInChildren<WeaponModule>())
+        {
+            w.enabled = false;
+        }
+
+        // 4. 物理停摆
         if (rb != null)
         {
             rb.velocity = Vector2.zero;
             rb.isKinematic = true;
-            rb.simulated = false; // 彻底停止物理交互
+            rb.simulated = false;
         }
 
-        // 3. 剥离受击能力
+        // 5. 剥离受击能力
         gameObject.layer = LayerMask.NameToLayer("Floor");
         foreach (var col in GetComponentsInChildren<Collider2D>()) col.enabled = false;
 
-        // 4. 视觉淡出
+        // 6. 视觉淡出
         StartCoroutine(EliteCorpseDecayRoutine());
     }
 

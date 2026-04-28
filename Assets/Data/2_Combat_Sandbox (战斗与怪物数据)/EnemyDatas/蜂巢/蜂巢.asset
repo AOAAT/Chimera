@@ -16,18 +16,16 @@ MonoBehaviour:
   EnemyID: ENM_000
   EnemyName: "\u8702\u5DE2"
   Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
-  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
   EnemySprite: {fileID: 21300000, guid: 1d5957a97e00ed14a8c51a2e671bf4fe, type: 3}
   AnimController: {fileID: 0}
   CorpseLingerTime: 5
   Chassis: {fileID: 0}
   Components: []
   EliteComponentLevel: 1
-  VisualScaleMultiplier: 1
-  OverrideShadow: 0
-  ShadowOffset: {x: 0, y: -0.8}
-  ShadowWidth: 20
-  ShadowHeight: 10
+  MovementLogic: 1
+  TargetingLogic: 1
+  StopDistance: 30
+  HoverDistance: 60
   BaseStats:
   - StatID: 31
     Value: 400
@@ -40,18 +38,12 @@ MonoBehaviour:
   - StatID: 33
     Value: 2
   SanPenalties: []
-  TargetingLogic: 1
-  MovementLogic: 1
-  HoverDistance: 60
-  MoveType: 0
-  StopDistance: 30
-  MoveChargeTime: 1
-  MoveCooldown: 1.5
-  DashSpeedMultiplier: 4
-  DashDuration: 0.3
-  TeleportDistance: 5
-  Skills:
-  - {fileID: 11400000, guid: 3c01c0c7bf93d7f44ba81868c8dd7122, type: 2}
+  VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.8}
+  ShadowWidth: 20
+  ShadowHeight: 10
+  Skills: []
   OnSpawnActions: []
   OnDeathActions:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}

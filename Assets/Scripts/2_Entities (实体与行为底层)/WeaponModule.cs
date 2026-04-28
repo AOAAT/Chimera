@@ -55,6 +55,23 @@ public class WeaponModule : MonoBehaviour
         if (weaponData == null || actualHinge == null) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
 
+        if (!cachedIsEnemy) // 只限制玩家单位
+        {
+            ChimeraAIController parentAI = mechRoot.GetComponent<ChimeraAIController>();
+            if (parentAI != null && parentAI.IsManuallyMoving)
+            {
+                // 除非黑盒数据里开启了“边跑边打”豁免权
+                if (ownerData != null && !ownerData.CanFireWhileManualMoving)
+                {
+                    // 如果当前正在动作中，可以考虑是否强行打断，或者干脆不允许开始新动作
+                    if (currentState == WeaponState.Idle)
+                    {
+                        lockedTarget = null; // 停止索敌转向
+                        return;
+                    }
+                }
+            }
+        }
         UpdateTargetSelection();
 
         if (lockedTarget != null)
@@ -312,7 +329,10 @@ public class WeaponModule : MonoBehaviour
         }
         return val;
     }
-
+    public RuntimeWeapon GetWeaponData()
+    {
+        return this.weaponData;
+    }
     private bool IsTargetInRange(Transform target) { float dM = CombatSandbox.GetDist(1f); float maxR = GetFinalWeaponStat(StatType.MaxRange) * dM; Collider2D col = target.GetComponentInChildren<Collider2D>(); if (col == null) return Vector3.Distance(muzzlePoint.position, target.position) <= maxR; return Vector2.Distance(muzzlePoint.position, col.ClosestPoint(muzzlePoint.position)) <= maxR; }
     private Transform GetActualHinge() => (transform.name.StartsWith("Socket_") && transform.childCount > 0) ? transform.GetChild(0) : transform;
     private void UpdateMeleeAnimation() { float prg = 0; if (currentState == WeaponState.Windup) { prg = 1f - (stateTimer / t_Windup); actualHinge.rotation = Quaternion.Slerp(rot_Base, rot_Windup, prg); } else if (currentState == WeaponState.Strike) { prg = 1f - (stateTimer / t_Strike); actualHinge.rotation = Quaternion.Slerp(rot_Windup, rot_Strike, prg); } else if (currentState == WeaponState.Recovery) { prg = 1f - (stateTimer / t_Recovery); actualHinge.rotation = Quaternion.Slerp(rot_Strike, rot_Base, prg); } }

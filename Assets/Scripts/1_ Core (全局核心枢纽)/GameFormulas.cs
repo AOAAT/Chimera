@@ -38,7 +38,7 @@ public static class GameFormulas
     public static float CalcCooldown(float attackSpeedScore)
     {
         float baseCooldown = 2.0f;
-        float minCooldown = 0.2f;
+        float minCooldown = 0.1f;
 
         // 👇【架构师级修改：动态锚点解算】
         // 策划需求：评分达到 100 时，冷却必须精准等于 1.0 秒
