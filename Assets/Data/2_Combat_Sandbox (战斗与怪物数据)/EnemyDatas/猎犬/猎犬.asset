@@ -10,44 +10,43 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79fb6de9a3b07c243ada44a32898984e, type: 3}
-  m_Name: "\u8702\u5DE2"
+  m_Name: "\u730E\u72AC"
   m_EditorClassIdentifier: 
   Archetype: 0
-  EnemyID: ENM_002
-  EnemyName: "\u8702\u5DE2"
-  Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
-  EnemySprite: {fileID: 21300000, guid: 1d5957a97e00ed14a8c51a2e671bf4fe, type: 3}
+  EnemyID: ENM_004
+  EnemyName: "\u730E\u72AC"
+  Description: "\u98CE\u5473\u63CF\u8FF0..."
+  EnemySprite: {fileID: 21300000, guid: 14892077a066aec4cbecaa5b66978165, type: 3}
   AnimController: {fileID: 0}
   CorpseLingerTime: 5
   Chassis: {fileID: 0}
   Components: []
   EliteComponentLevel: 1
-  MovementLogic: 1
+  MovementLogic: 0
   TargetingLogic: 1
-  StopDistance: 30
-  HoverDistance: 60
+  StopDistance: 10
+  HoverDistance: 5
   BaseStats:
   - StatID: 31
     Value: 400
   - StatID: 30
-    Value: 500
-  - StatID: 34
-    Value: 2
+    Value: 100
   - StatID: 32
-    Value: 2
+    Value: 10
   - StatID: 33
-    Value: 2
+    Value: 3
   SanPenalties: []
   VisualScaleMultiplier: 1
   OverrideShadow: 0
   ShadowOffset: {x: 0, y: -0.8}
-  ShadowWidth: 20
-  ShadowHeight: 10
+  ShadowWidth: 1.5
+  ShadowHeight: 0.5
   Skills:
-  - {fileID: 11400000, guid: 8ea7c27125a2df14e9fbe004118aea9f, type: 2}
-  - {fileID: 11400000, guid: fc3c6cf7d63e993418370f73d5b49454, type: 2}
+  - {fileID: 11400000, guid: 724d81a770ac7294d8965893df0c475d, type: 2}
+  - {fileID: 11400000, guid: 0c182b5e534178845a57fe4b7ccd34c8, type: 2}
+  - {fileID: 11400000, guid: 45766aaf4c812384c86c0bed9a41de61, type: 2}
+  - {fileID: 11400000, guid: 5ec83059a82fe1d40903169d72bd1858, type: 2}
+  - {fileID: 11400000, guid: 6d20a8b41f884cd4da337dce2598b1ad, type: 2}
   OnSpawnActions: []
-  OnDeathActions:
-  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
-  OnTakeDamageActions:
-  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
+  OnDeathActions: []
+  OnTakeDamageActions: []

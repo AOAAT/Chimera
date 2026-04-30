@@ -126,34 +126,84 @@ public class EnemyBrain : MonoBehaviour
         foreach (var pair in candidatePool) { roll -= pair.Value; if (roll <= 0) { selected = pair.Key; break; } }
         if (selected != null) { currentSkill = selected; CurrentState = AIState.Positioning; }
     }
-
     private void ExecutePositioning()
     {
         if (currentSkill == null || currentTarget == null) { CurrentState = AIState.Thinking; return; }
-        float dMult = CombatSandbox.GetDist(1f);
-        float dist = CalculateDistanceToTarget(currentTarget, out Vector2 dir);
-        float moveSpeed = GetFinalStat(StatType.MoveSpeed, MyData.GetStat(StatType.MoveSpeed)) * CombatSandbox.GetSpeed(1f);
 
+        // 1. 统一调用度量衡缩放
+        float dMult = CombatSandbox.GetDist(1f);
+        float sMult = CombatSandbox.GetSpeed(1f);
+        float dist = CalculateDistanceToTarget(currentTarget, out Vector2 dir);
+        float moveSpeed = GetFinalStat(StatType.MoveSpeed, MyData.GetStat(StatType.MoveSpeed)) * sMult;
+
+        // --- 👇【核心修复 A】：全域技能处理 ---
+        if (currentSkill.SkillData.IgnoreRange)
+        {
+            // 如果是全域技能，不干扰基础位移，怪物继续按照底盘逻辑（蜂拥/炮台）移动
+            ApplyBaseMovement(dist, dir, moveSpeed, dMult);
+
+            // 但逻辑上，它已经完成了“定位”，直接进入申请令牌和蓄力流程
+            EnterChannellingPhase();
+            return;
+        }
+
+        // 2. 常规射程判定 (已应用度量衡)
         float maxR = GetFinalStat(StatType.MaxRange, currentSkill.SkillData.MaxRange) * dMult;
         float minR = GetFinalStat(StatType.MinRange, currentSkill.SkillData.MinRange) * dMult;
 
-        if (dist > maxR) rb.velocity = dir * moveSpeed;
-        else if (dist < minR) rb.velocity = -dir * moveSpeed;
+        if (dist > maxR)
+        {
+            rb.velocity = dir * moveSpeed;
+        }
+        else if (dist < minR)
+        {
+            rb.velocity = -dir * moveSpeed;
+        }
         else
         {
+            // 成功进入特定射程区间
             rb.velocity = Vector2.zero;
-            if (currentSkill.SkillData.RequiresToken)
+            EnterChannellingPhase();
+        }
+    }
+    private void EnterChannellingPhase()
+    {
+        // 令牌申请
+        if (currentSkill.SkillData.RequiresToken)
+        {
+            if (EnemyActionDirector.Instance != null && !EnemyActionDirector.Instance.TryRequestToken(currentSkill.SkillData.TokenType))
             {
-                if (EnemyActionDirector.Instance != null && !EnemyActionDirector.Instance.TryRequestToken(currentSkill.SkillData.TokenType))
-                {
-                    currentSkill = null; globalActionTimer = 0.2f; CurrentState = AIState.Thinking; return;
-                }
-                hasActiveToken = true;
+                currentSkill = null;
+                globalActionTimer = 0.2f;
+                CurrentState = AIState.Thinking;
+                return;
             }
-            currentActionInterval = GameFormulas.CalcCooldown(GetFinalStat(StatType.AttackSpeed, currentSkill.SkillData.AttackSpeed));
-            if (currentSkill.SkillData.ShowIntent && myHUD != null) myHUD.ShowIntent(currentSkill.SkillData.IntentIcon, currentActionInterval);
-            stateTimer = currentActionInterval;
-            CurrentState = AIState.Channelling;
+            hasActiveToken = true;
+        }
+
+        // 攻速计算
+        currentActionInterval = GameFormulas.CalcCooldown(GetFinalStat(StatType.AttackSpeed, currentSkill.SkillData.AttackSpeed));
+        if (currentSkill.SkillData.ShowIntent && myHUD != null)
+            myHUD.ShowIntent(currentSkill.SkillData.IntentIcon, currentActionInterval);
+
+        stateTimer = currentActionInterval;
+        CurrentState = AIState.Channelling;
+    }
+
+    // 辅助方法：基础位移逻辑（供全域技能使用，防止原地罚站）
+    private void ApplyBaseMovement(float dist, Vector2 dir, float speed, float dMult)
+    {
+        if (MyData.MovementLogic == EnemyMovementStrategy.Swarm)
+        {
+            if (dist > MyData.StopDistance * dMult) rb.velocity = dir * speed;
+            else rb.velocity = Vector2.zero;
+        }
+        else if (MyData.MovementLogic == EnemyMovementStrategy.Artillery)
+        {
+            float hDist = MyData.HoverDistance * dMult;
+            if (dist > hDist + 0.5f) rb.velocity = dir * speed;
+            else if (dist < hDist - 0.5f) rb.velocity = -dir * speed;
+            else rb.velocity = Vector2.zero;
         }
     }
 
@@ -168,17 +218,32 @@ public class EnemyBrain : MonoBehaviour
     {
         CurrentState = AIState.Executing;
         var data = rSkill.SkillData;
-        Transform target = data.OverrideTargeting ? GetTargetByStrategy(data.SkillTargetingLogic) : currentTarget;
-        if (target == null) { FinishSkillExecution(); return; }
 
-        // 数值对齐
+        // 1. 确定最终目标 (独立索敌 vs 默认目标)
+        Transform target = data.OverrideTargeting ? GetTargetByStrategy(data.SkillTargetingLogic) : currentTarget;
+
+        if (target == null)
+        {
+            FinishSkillExecution();
+            return;
+        }
+
+        // 2. 数值同步：将受 Buff 影响的最终数值注入 DummyWeapon 字典
         float fMaxDmg = GetFinalStat(StatType.MaxDamage, data.MaxDamage);
         float fMinDmg = GetFinalStat(StatType.MinDamage, data.MinDamage);
+        float fProjSpd = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed) * CombatSandbox.GetSpeed(1f); // 👈 对齐度量衡
+
         rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = fMaxDmg;
         rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = fMinDmg;
-        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed);
+        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = fProjSpd;
 
+        // 攻速也同步一下，防止 ECA 积木需要查询
+        rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = GetFinalStat(StatType.AttackSpeed, data.AttackSpeed);
+
+        // 3. 确定发射点 (视觉中心)
         Vector3 spawnPos = myHitboxCollider != null ? myHitboxCollider.bounds.center : transform.position;
+
+        // 4. 构造 ECA 上下文
         ECAContext context = new ECAContext
         {
             ImpactPoint = target.position,
@@ -189,41 +254,76 @@ public class EnemyBrain : MonoBehaviour
             BaseDamage = Random.Range(fMinDmg, fMaxDmg)
         };
 
-        foreach (var action in data.OnFireActions) action.Execute(context);
+        // 5. 触发开火管线 (表现、消耗等)
+        foreach (var action in data.OnFireActions)
+        {
+            if (action != null) action.Execute(context);
+        }
 
-        // --- 👇【修复】：对接图纸的 DashDuration 持续时间 ---
+        // 6. 根据投递方式执行核心逻辑
         if (data.DeliveryType == WeaponDeliveryType.Tactical_Dash)
         {
+            // --- 持续位移逻辑 ---
             Vector2 attackDir = (target.position - transform.position).normalized;
-            Vector2 dir = (data.DashDirection == TacticalDashDirection.AwayFromTarget) ? -attackDir : (data.DashDirection == TacticalDashDirection.TowardsTarget ? attackDir : new Vector2(-attackDir.y, attackDir.x));
+            Vector2 dir = (data.DashDirection == TacticalDashDirection.AwayFromTarget) ? -attackDir :
+                         (data.DashDirection == TacticalDashDirection.TowardsTarget ? attackDir : new Vector2(-attackDir.y, attackDir.x));
 
             isDashing = true;
-            dashTimer = data.DashDuration; // 👈 使用 SO 字段
+            dashTimer = data.DashDuration; // 使用图纸配置的持续时间
 
-            // 将 DashImpulse 作为速度系数 (基础 5m/s 的倍率)
-            float baseRefSpeed = GetFinalStat(StatType.MoveSpeed, 5f);
+            // 将 DashImpulse 作为速度系数 (基于当前移动速度的加成)
+            float baseRefSpeed = GetFinalStat(StatType.MoveSpeed, MyData.GetStat(StatType.MoveSpeed)) * CombatSandbox.GetSpeed(1f);
             float dashSpeed = (data.DashImpulse / 100f) * baseRefSpeed;
             dashVelocity = dir * dashSpeed;
 
+            // 位移通常伴随即时判定
             TriggerHitPipeline(context, data);
         }
         else if (data.DeliveryType == WeaponDeliveryType.Melee)
         {
+            // --- 近战逻辑：直接触发命中管线 ---
             TriggerHitPipeline(context, data);
         }
         else if (data.DeliveryType == WeaponDeliveryType.Ranged && data.ProjectilePrefab != null)
         {
+            // --- 远程逻辑：实例化并赋予受度量衡修正的速度 ---
             Vector2 attackDir = (target.position - spawnPos).normalized;
             float angle = Mathf.Atan2(attackDir.y, attackDir.x) * Mathf.Rad2Deg;
+
             GameObject proj = Instantiate(data.ProjectilePrefab, spawnPos, Quaternion.AngleAxis(angle, Vector3.forward));
-            proj.GetComponent<Projectile>()?.Fire(target, context.BaseDamage, rSkill.DummyWeapon, null, this.transform, true, false, 0, false, data.ProjectilePrefab);
+            Projectile pScript = proj.GetComponent<Projectile>();
+
+            if (pScript != null)
+            {
+                // 子弹 Fire 内部会读取 rSkill.DummyWeapon 里我们刚刚同步好的 fProjSpd
+                pScript.Fire(
+                    target,
+                    context.BaseDamage,
+                    rSkill.DummyWeapon,
+                    null,
+                    this.transform,
+                    true,
+                    false,
+                    0,
+                    false,
+                    data.ProjectilePrefab
+                );
+            }
         }
 
+        // 7. 连招检查 (如果存在连招，直接跳过 FinishSkillExecution 的清理阶段)
         if (data.NextComboSkill != null)
         {
             var next = runtimeSkills.Find(s => s.SkillData == data.NextComboSkill);
-            if (next != null) { currentSkill = next; CurrentState = AIState.Positioning; return; }
+            if (next != null)
+            {
+                currentSkill = next;
+                CurrentState = AIState.Positioning;
+                return;
+            }
         }
+
+        // 8. 正常结束技能，进入冷却
         FinishSkillExecution();
     }
 
@@ -266,7 +366,27 @@ public class EnemyBrain : MonoBehaviour
     private void InitializeSkills() { runtimeSkills.Clear(); foreach (var skillSO in MyData.Skills) { if (skillSO == null) continue; var rSkill = new RuntimeEnemySkill { SkillData = skillSO, CurrentCooldown = 0f }; rSkill.DummyWeapon = new RuntimeWeapon { WeaponName = skillSO.SkillName, DeliveryType = skillSO.DeliveryType, ProjectilePrefab = skillSO.ProjectilePrefab }; rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = skillSO.AttackSpeed; rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = skillSO.MaxDamage; rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = skillSO.MinDamage; rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = skillSO.ProjectileSpeed; rSkill.DummyWeapon.OnHitActions.AddRange(skillSO.OnHitActions); rSkill.DummyWeapon.OnFireActions.AddRange(skillSO.OnFireActions); runtimeSkills.Add(rSkill); } }
     private void ExecuteECAActions(List<ECAAction> actions, RuntimeWeapon w) { if (actions == null) return; ECAContext c = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = this.transform, SourceWeapon = w, IsEnemyFire = true, SourceEntity = this.transform }; foreach (var a in actions) if (a != null) a.Execute(c); }
     private IEnumerator CorpseDecayRoutine() { yield return new WaitForSeconds(MyData.CorpseLingerTime); float f = 2f, e = 0f; var srs = GetComponentsInChildren<SpriteRenderer>(); while (e < f) { e += Time.deltaTime; float a = Mathf.Lerp(1f, 0f, e / f); foreach (var s in srs) { if (s.gameObject.name == "Logic_Visual_Shadow") continue; Color c = s.color; c.a = a; s.color = c; } yield return null; } Destroy(gameObject); }
-    private float CalculateDistanceToTarget(Transform t, out Vector2 dir) { Vector2 myC = myHitboxCollider != null ? (Vector2)myHitboxCollider.bounds.center : (Vector2)transform.position; Collider2D tc = t.GetComponentInChildren<Collider2D>(); if (tc != null) { Vector2 edge = tc.ClosestPoint(myC); dir = (edge - myC).normalized; if (dir == Vector2.zero) dir = (Vector2)(t.position - transform.position).normalized; return Vector2.Distance(myC, edge); } dir = (Vector2)(t.position - transform.position).normalized; return Vector2.Distance(myC, t.position); }
+    private float CalculateDistanceToTarget(Transform t, out Vector2 dir)
+    {
+        // 如果 Collider 被禁用了（处于虚空维度），直接用 transform.position 计算，不再查 bounds
+        if (myHitboxCollider == null || !myHitboxCollider.enabled)
+        {
+            dir = (Vector2)(t.position - transform.position).normalized;
+            return Vector2.Distance(transform.position, t.position);
+        }
+
+        Vector2 myC = (Vector2)myHitboxCollider.bounds.center;
+        Collider2D tc = t.GetComponentInChildren<Collider2D>();
+        if (tc != null)
+        {
+            Vector2 edge = tc.ClosestPoint(myC);
+            dir = (edge - myC).normalized;
+            if (dir == Vector2.zero) dir = (Vector2)(t.position - transform.position).normalized;
+            return Vector2.Distance(myC, edge);
+        }
+        dir = (Vector2)(t.position - transform.position).normalized;
+        return Vector2.Distance(myC, t.position);
+    }
     private Transform GetTargetByStrategy(TargetingStrategy s) { var p = CombatDirector.ActivePlayerUnits.Where(r => r != null && r.CurrentHP > 0).ToList(); if (p.Count == 0) return null; switch (s) { case TargetingStrategy.MaxHPHighest: return p.OrderByDescending(x => x.MaxHP).First().transform; default: return p.OrderBy(x => Vector3.Distance(transform.position, x.transform.position)).First().transform; } }
     private float GetFinalStat(StatType t, float baseVal = 0) { float finalVal = baseVal; var m = GetComponent<BuffManager>(); if (m != null && m.BuffStatModifiers.ContainsKey(t)) finalVal += m.BuffStatModifiers[t]; return finalVal; }
 }

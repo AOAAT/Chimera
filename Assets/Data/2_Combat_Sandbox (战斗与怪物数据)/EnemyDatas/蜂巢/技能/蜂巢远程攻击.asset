@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c585269d6ff8ee499577ea1af6bc860, type: 3}
+  m_Name: "\u8702\u5DE2\u8FDC\u7A0B\u653B\u51FB"
+  m_EditorClassIdentifier: 
+  SkillName: "\u8702\u5DE2\u8FDC\u7A0B\u653B\u51FB"
+  AttackSpeed: 100
+  CooldownMultiplier: 0
+  OverrideTargeting: 0
+  SkillTargetingLogic: 3
+  BaseScore: 10
+  Evaluators: []
+  RequiresToken: 0
+  TokenType: 0
+  ShowIntent: 0
+  IntentIcon: {fileID: 0}
+  NextComboSkill: {fileID: 0}
+  MaxRange: 70
+  MinRange: 0
+  MinDamage: 10
+  MaxDamage: 10
+  CriticalChance: 0.05
+  DeliveryType: 1
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: c8158aef75ecd6248b615b7dac49ac49, type: 3}
+  ProjectileSpeed: 100
+  DashDirection: 0
+  DashImpulse: 300
+  DashDuration: 0.5
+  OnFireActions: []
+  OnHitActions:
+  - {fileID: 11400000, guid: 204b27b20a6b1bd48861c3c17bedaa95, type: 2}

@@ -30,7 +30,11 @@ public class EnemySkillSO : ScriptableObject
     [Header("=== 连招逻辑 (Next) ===")]
     public EnemySkillSO NextComboSkill;
 
-    [Header("=== 射程限制 ===")]
+    // --- 在 EnemySkillSO.cs 中补全 ---
+    [Header("=== 射程控制 ===")]
+    [Tooltip("如果勾选，该技能将忽略射程判定，只要抽取成功就立即在原地进入蓄力/释放")]
+    public bool IgnoreRange = false; // 👈 召唤、自爆、强化、瞬移类技能勾选此项
+
     public float MaxRange = 2f;
     public float MinRange = 0f;
 
