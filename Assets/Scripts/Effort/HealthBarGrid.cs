@@ -27,15 +27,12 @@ public class HealthBarGrid : MonoBehaviour
     public void UpdateGrid(float maxValue)
     {
         if (ValuePerGrid <= 0) return;
-
-        // 【核心节流】：如果血量上限没变，说明格子不需要重绘，直接返回
         if (Mathf.Approximately(maxValue, lastInitedMaxValue)) return;
 
-        lastInitedMaxValue = maxValue; // 更新缓存
-
+        lastInitedMaxValue = maxValue;
         if (container == null) container = GetComponent<RectTransform>();
 
-        // 暴力打扫黑线
+        // 1. 清理
         for (int i = container.childCount - 1; i >= 0; i--)
         {
             Transform child = container.GetChild(i);
@@ -57,10 +54,15 @@ public class HealthBarGrid : MonoBehaviour
 
             RectTransform rect = lineObj.GetComponent<RectTransform>();
             float percent = (float)i / gridCount;
-            rect.anchorMin = new Vector2(percent, 0f);
-            rect.anchorMax = new Vector2(percent, 1f);
+
+            // --- 👇【关键修复】：垂直拉伸模式 ---
+            rect.anchorMin = new Vector2(percent, 0f); // 底部对齐
+            rect.anchorMax = new Vector2(percent, 1f); // 顶部对齐
             rect.pivot = new Vector2(0.5f, 0.5f);
+
+            // 宽度设为固定像素（比如 2），高度设为 0（因为锚点已经负责了 100% 拉伸）
             rect.sizeDelta = new Vector2(LineThickness, 0f);
+
             rect.anchoredPosition = Vector2.zero;
             lineObj.transform.SetAsLastSibling();
         }

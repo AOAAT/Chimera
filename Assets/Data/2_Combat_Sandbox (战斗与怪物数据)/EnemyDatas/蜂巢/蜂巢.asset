@@ -18,14 +18,13 @@ MonoBehaviour:
   Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
   EnemySprite: {fileID: 21300000, guid: 1d5957a97e00ed14a8c51a2e671bf4fe, type: 3}
   AnimController: {fileID: 0}
-  CorpseLingerTime: 5
   Chassis: {fileID: 0}
   Components: []
   EliteComponentLevel: 1
   MovementLogic: 1
   TargetingLogic: 1
   StopDistance: 30
-  HoverDistance: 60
+  HoverDistance: 70
   BaseStats:
   - StatID: 31
     Value: 400
@@ -36,7 +35,7 @@ MonoBehaviour:
   - StatID: 32
     Value: 2
   - StatID: 33
-    Value: 2
+    Value: 5
   SanPenalties: []
   VisualScaleMultiplier: 1
   OverrideShadow: 0
@@ -51,3 +50,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
   OnTakeDamageActions:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
+  CorpseLingerTime: 0
+  FadeDuration: 0.2

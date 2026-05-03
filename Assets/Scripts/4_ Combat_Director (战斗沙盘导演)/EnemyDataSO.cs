@@ -24,7 +24,6 @@ public class EnemyDataSO : ScriptableObject
     [Header("=== 静态模式视觉 (Archetype = Static) ===")]
     public Sprite EnemySprite;
     public RuntimeAnimatorController AnimController;
-    public float CorpseLingerTime = 5f;
 
     [Header("=== 组装模式配置 (Archetype = Modular) ===")]
     public ChassisDataSO Chassis;
@@ -59,6 +58,13 @@ public class EnemyDataSO : ScriptableObject
     public List<ECAAction> OnDeathActions = new List<ECAAction>();
     public List<ECAAction> OnTakeDamageActions = new List<ECAAction>();
 
+    // --- 在 EnemyDataSO.cs 中修改 ---
+    [Header("=== 死亡表现 (Corpse) ===")]
+    [Tooltip("死亡后，尸体在原地完全静止的时长 (秒)")]
+    public float CorpseLingerTime = 2.0f;
+
+    [Tooltip("尸体从可见到完全透明的过渡时长 (秒)")]
+    public float FadeDuration = 1.5f; // 👈 新增：在 Unity 里直接控制渐变快慢
     public float GetStat(StatType type)
     {
         if (BaseStats == null) return 0f;

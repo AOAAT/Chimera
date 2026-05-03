@@ -25,6 +25,9 @@ public class MechUnit2D : MonoBehaviour
     private bool isDragging = false;
     private Vector3 dragStartPos;
 
+    private float eliteLingerTime = 2f;
+    private float eliteFadeTime = 1.5f;
+
     private void Awake()
     {
         if (VisualRoot == null)
@@ -76,6 +79,8 @@ public class MechUnit2D : MonoBehaviour
             eliteProfile.SlotIndices.Add(i);
             eliteProfile.EquippedComponentIDs.Add("ELITE_TEMP_" + i);
         }
+        this.eliteLingerTime = enemySO.CorpseLingerTime; // 👈 注入停留时长
+        this.eliteFadeTime = enemySO.FadeDuration;       // 👈 注入渐变时长
         FullSetup(eliteProfile, comps, true, enemySO);
     }
 
@@ -304,15 +309,16 @@ public class MechUnit2D : MonoBehaviour
 
     private System.Collections.IEnumerator EliteCorpseDecayRoutine()
     {
-        yield return new WaitForSeconds(3.0f); // 停尸时间
-        float fadeDuration = 2.0f;
+        // 1. 使用动态注入的停留时长
+        yield return new WaitForSeconds(this.eliteLingerTime);
+
         float elapsed = 0f;
         SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>();
 
-        while (elapsed < fadeDuration)
+        while (elapsed < this.eliteFadeTime) // 👈 使用动态注入的渐变时长
         {
             elapsed += Time.deltaTime;
-            float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
+            float alpha = Mathf.Lerp(1f, 0f, elapsed / this.eliteFadeTime);
             foreach (var sr in srs)
             {
                 if (sr.gameObject.name == "Logic_Visual_Shadow") continue;
