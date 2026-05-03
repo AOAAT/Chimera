@@ -20,7 +20,7 @@ MonoBehaviour:
     LocalPosition: {x: 3.5, y: 1.5}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: 1, y: 3}
-  - EnemyType: {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
+  - EnemyType: {fileID: 11400000, guid: 24e2f021283bb48408271339c3c53d00, type: 2}
     LocalPosition: {x: 3, y: 3.5}
   ForbiddenZones:
   - serializedVersion: 2

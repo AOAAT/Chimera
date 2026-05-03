@@ -231,15 +231,15 @@ public class EnemyBrain : MonoBehaviour
         // 2. 数值同步：将受 Buff 影响的最终数值注入 DummyWeapon 字典
         float fMaxDmg = GetFinalStat(StatType.MaxDamage, data.MaxDamage);
         float fMinDmg = GetFinalStat(StatType.MinDamage, data.MinDamage);
-        float fProjSpd = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed) * CombatSandbox.GetSpeed(1f); // 👈 对齐度量衡
-
+        float fProjSpd = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed); // 👈 对齐度量衡
+        float fMaxRange = GetFinalStat(StatType.MaxRange, data.MaxRange);
+        rSkill.DummyWeapon.WeaponStats[StatType.MaxRange] = fMaxRange;
         rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = fMaxDmg;
         rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = fMinDmg;
         rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = fProjSpd;
 
         // 攻速也同步一下，防止 ECA 积木需要查询
-        rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = GetFinalStat(StatType.AttackSpeed, data.AttackSpeed);
-
+        rSkill.DummyWeapon.WeaponStats[StatType.MaxRange] = GetFinalStat(StatType.MaxRange, rSkill.SkillData.MaxRange);
         // 3. 确定发射点 (视觉中心)
         Vector3 spawnPos = myHitboxCollider != null ? myHitboxCollider.bounds.center : transform.position;
 

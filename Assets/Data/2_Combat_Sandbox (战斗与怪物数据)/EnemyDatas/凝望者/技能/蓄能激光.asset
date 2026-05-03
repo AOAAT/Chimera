@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c585269d6ff8ee499577ea1af6bc860, type: 3}
+  m_Name: "\u84C4\u80FD\u6FC0\u5149"
+  m_EditorClassIdentifier: 
+  SkillName: "\u84C4\u80FD\u6FC0\u5149"
+  AttackSpeed: 25
+  CooldownMultiplier: 2
+  OverrideTargeting: 0
+  SkillTargetingLogic: 3
+  BaseScore: 10
+  Evaluators: []
+  RequiresToken: 0
+  TokenType: 0
+  ShowIntent: 1
+  IntentIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+  NextComboSkill: {fileID: 0}
+  IgnoreRange: 0
+  MaxRange: 80000
+  MinRange: 0
+  MinDamage: 100
+  MaxDamage: 100
+  CriticalChance: 0.05
+  DeliveryType: 0
+  ProjectilePrefab: {fileID: 0}
+  ProjectileSpeed: 10
+  DashDirection: 0
+  DashImpulse: 300
+  DashDuration: 0.5
+  OnFireActions:
+  - {fileID: 11400000, guid: 225c4badcc8dd1b45a0e589873ff97db, type: 2}
+  OnHitActions:
+  - {fileID: 11400000, guid: 204b27b20a6b1bd48861c3c17bedaa95, type: 2}
