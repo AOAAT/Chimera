@@ -319,15 +319,21 @@ public class WeaponModule : MonoBehaviour
         if (myAnimator != null) myAnimator.SetTrigger("Windup");
     }
 
+    // --- 请找到 WeaponModule.cs 中的 GetFinalWeaponStat 并替换 ---
     private float GetFinalWeaponStat(StatType statID)
     {
-        float val = weaponData.GetStat(statID);
+        float baseVal = weaponData.GetStat(statID);
+
         if (mechRoot != null)
         {
             var b = mechRoot.GetComponent<BuffManager>();
-            if (b != null && b.BuffStatModifiers.ContainsKey(statID)) val += b.BuffStatModifiers[statID];
+            // 👇【核心系统调用】：使用新的公式合并绝对值与百分比
+            if (b != null)
+            {
+                return b.GetAdjustedStat(statID, baseVal);
+            }
         }
-        return val;
+        return baseVal;
     }
     public RuntimeWeapon GetWeaponData()
     {

@@ -10,6 +10,8 @@ public class BuffManager : MonoBehaviour
     private DamageReceiver myReceiver;
 
     public Dictionary<StatType, float> BuffStatModifiers = new Dictionary<StatType, float>();
+    public Dictionary<StatType, float> AdditiveModifiers = new Dictionary<StatType, float>();
+    public Dictionary<StatType, float> MultiplierModifiers = new Dictionary<StatType, float>();
     public bool HasAIOverride { get; private set; }
     public MovementStrategy CurrentOverrideMovement { get; private set; }
     public float CurrentOverrideDodgeDist { get; private set; }
@@ -99,25 +101,50 @@ public class BuffManager : MonoBehaviour
 
     private void RecalculateModifiers()
     {
-        BuffStatModifiers.Clear();
+        AdditiveModifiers.Clear();
+        MultiplierModifiers.Clear();
         HasAIOverride = false;
+
         foreach (var buff in activeBuffs)
         {
             if (buff.Blueprint.StatModifiers != null)
             {
-                int multiplier = (buff.Blueprint.StackType == BuffStackType.LinearScaling) ? buff.CurrentStacks : 1;
+                int stackCount = (buff.Blueprint.StackType == BuffStackType.LinearScaling) ? buff.CurrentStacks : 1;
+
                 foreach (var mod in buff.Blueprint.StatModifiers)
                 {
-                    float totalValue = mod.Value * multiplier;
-                    if (BuffStatModifiers.ContainsKey(mod.StatID)) BuffStatModifiers[mod.StatID] += totalValue;
-                    else BuffStatModifiers.Add(mod.StatID, totalValue);
+                    float totalValue = mod.Value * stackCount;
+
+                    if (mod.ModType == BuffModifierType.Additive)
+                    {
+                        if (AdditiveModifiers.ContainsKey(mod.StatID)) AdditiveModifiers[mod.StatID] += totalValue;
+                        else AdditiveModifiers.Add(mod.StatID, totalValue);
+                    }
+                    else // Multiplier 模式
+                    {
+                        // 我们采用加法叠乘 (1 + 0.2 + 0.1 = 1.3倍)，这是最稳健的数值平衡方案
+                        if (MultiplierModifiers.ContainsKey(mod.StatID)) MultiplierModifiers[mod.StatID] += totalValue;
+                        else MultiplierModifiers.Add(mod.StatID, totalValue);
+                    }
                 }
             }
-            if (buff.Blueprint.OverrideAI) { HasAIOverride = true; CurrentOverrideMovement = buff.Blueprint.OverrideMovementLogic; CurrentOverrideDodgeDist = buff.Blueprint.OverrideSafeDodgeDistance; }
+            if (buff.Blueprint.OverrideAI)
+            {
+                HasAIOverride = true;
+                CurrentOverrideMovement = buff.Blueprint.OverrideMovementLogic;
+                CurrentOverrideDodgeDist = buff.Blueprint.OverrideSafeDodgeDistance;
+            }
         }
         OnBuffsChanged?.Invoke();
     }
+    public float GetAdjustedStat(StatType type, float baseValue)
+    {
+        float add = AdditiveModifiers.ContainsKey(type) ? AdditiveModifiers[type] : 0;
+        float mul = MultiplierModifiers.ContainsKey(type) ? MultiplierModifiers[type] : 0;
 
+        // 公式：(基础值 + 绝对值和) * (1 + 百分比和)
+        return (baseValue + add) * (1f + mul);
+    }
     public int GetBuffStacks(string buffID)
     {
         ActiveBuff b = activeBuffs.Find(x => x.Blueprint.BuffID == buffID);

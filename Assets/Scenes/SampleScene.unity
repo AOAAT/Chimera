@@ -7943,18 +7943,25 @@ MonoBehaviour:
     Stats:
     - StatID: 10
       Value: 50
+      ModType: 0
     - StatID: 11
       Value: 50
+      ModType: 0
     - StatID: 13
       Value: 30
+      ModType: 0
     - StatID: 14
       Value: 0
+      ModType: 0
     - StatID: 15
       Value: 0
+      ModType: 0
     - StatID: 12
       Value: 0.2
+      ModType: 0
     - StatID: 17
       Value: 50
+      ModType: 0
   DebugTags: []
 --- !u!114 &923019980
 MonoBehaviour:

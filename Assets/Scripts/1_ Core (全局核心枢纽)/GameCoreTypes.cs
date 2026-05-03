@@ -42,8 +42,21 @@ public enum ComponentType { Core, Weapon, Support, Factory, Movement }
 // ==========================================
 // 4. 数据结构体 (保持现状)
 // ==========================================
+// --- 在 GameCoreTypes.cs 中追加 ---
+public enum BuffModifierType
+{
+    Additive,   // 绝对值加减 (如: HP +50)
+    Multiplier  // 百分比乘率 (如: 伤害 +20%)
+}
+
 [Serializable]
-public class StatEntry { public StatType StatID; public float Value; }
+public class StatEntry
+{
+    public StatType StatID;
+    public float Value;
+    // 👇【核心新增】：区分加法还是乘法，默认为加法以兼容旧数据
+    public BuffModifierType ModType = BuffModifierType.Additive;
+}
 
 [Serializable]
 public class ComponentLevelData

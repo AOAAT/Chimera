@@ -60,24 +60,37 @@ public class ChimeraAIController : MonoBehaviour
     public void RecalculateSpeedAndRanges()
     {
         if (runtimeData == null) return;
+
         float speedMult = CombatSandbox.GetSpeed(1f);
         float distMult = CombatSandbox.GetDist(1f);
+
+        // 1. 计算引擎出力 (支持 Buff 修正)
         float pwr = runtimeData.TotalEnginePower;
-        if (myBuffMgr != null && myBuffMgr.BuffStatModifiers.ContainsKey(StatType.EnginePower)) pwr += myBuffMgr.BuffStatModifiers[StatType.EnginePower];
+        if (myBuffMgr != null)
+        {
+            pwr = myBuffMgr.GetAdjustedStat(StatType.EnginePower, pwr);
+        }
+
         CurrentSpeed = GameFormulas.CalcMoveSpeed(pwr, runtimeData.TotalMass, speedMult);
 
+        // 2. 计算射程区间 (支持 Buff 修正)
         maxWeaponRange = 0f; minWeaponRange = 0f; optimalFireRange = float.MaxValue;
+
         if (runtimeData.EquippedWeapons.Count == 0) optimalFireRange = 1.5f * distMult;
         else
         {
             foreach (var wpn in runtimeData.EquippedWeapons)
             {
-                float rMax = wpn.GetStat(StatType.MaxRange); float rMin = wpn.GetStat(StatType.MinRange);
+                float rMax = wpn.GetStat(StatType.MaxRange);
+                float rMin = wpn.GetStat(StatType.MinRange);
+
                 if (myBuffMgr != null)
                 {
-                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MaxRange)) rMax += myBuffMgr.BuffStatModifiers[StatType.MaxRange];
-                    if (myBuffMgr.BuffStatModifiers.ContainsKey(StatType.MinRange)) rMin += myBuffMgr.BuffStatModifiers[StatType.MinRange];
+                    // 👇【核心系统调用】
+                    rMax = myBuffMgr.GetAdjustedStat(StatType.MaxRange, rMax);
+                    rMin = myBuffMgr.GetAdjustedStat(StatType.MinRange, rMin);
                 }
+
                 if (rMax * distMult > maxWeaponRange) maxWeaponRange = rMax * distMult;
                 if (rMin * distMult > minWeaponRange) minWeaponRange = rMin * distMult;
                 if (rMax * distMult < optimalFireRange) optimalFireRange = rMax * distMult;

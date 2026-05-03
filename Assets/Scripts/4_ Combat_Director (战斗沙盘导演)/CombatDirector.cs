@@ -309,6 +309,11 @@ public class CombatDirector : MonoBehaviour
             ActiveSkillUIManager.Instance.BuildSkillUI(ActivePlayerUnits);
         }
 
+
+        if (GlobalProtocolRegistry.Instance != null)
+        {
+            GlobalProtocolRegistry.Instance.ApplyProtocolsToUnits(ActivePlayerUnits);
+        }
         Debug.Log("<color=green>【战斗导演】全员通电完成，战斗正式开始！</color>");
     }
 
@@ -375,6 +380,10 @@ public class CombatDirector : MonoBehaviour
                         totalSanLoss += currentLoss;
                     }
                 }
+            }
+            if (isVictory && GlobalProtocolRegistry.Instance != null)
+            {
+                GlobalProtocolRegistry.Instance.TickProtocolDurations();
             }
             if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
         }
