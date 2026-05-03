@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 
 // ==========================================
-// 1. ECA 通讯上下文
+// 1. ECA 通讯上下文 (全功能集成版)
 // ==========================================
 public class ECAContext
 {
+    // --- 基础战斗数据 ---
     public Vector3 ImpactPoint;
     public Transform PrimaryTarget;
     public float BaseDamage;
@@ -15,24 +16,35 @@ public class ECAContext
     public ComponentDataSO SourceComponentSO;
     public bool IsEnemyFire;
     public Transform SourceEntity;
-    public bool ExecutionAborted = false;
 
+    // --- 逻辑控制 ---
+    public bool ExecutionAborted = false;
     public float TemporaryCritModifier = 1.0f;
     public float TemporaryDamageModifier = 1.0f;
 
+    // --- 👇【系统化扩展 A】：线性穿透参数 (用于凝望者/轨道炮) ---
     public int PiercingIndex = 0;
     public Vector2 StrikeDirection;
 
+    // --- 👇【系统化扩展 B】：动能物理参数 (用于牛牛/冲撞) ---
+    public float ImpactVelocity;         // 碰撞瞬间的相对速度
+    public float ImpactMass;             // 发动者的质量
+    public Vector2 ImpactNormal;         // 碰撞法线
+
+    // --- 通讯字典 ---
     public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
 }
 
+// ==========================================
+// 2. ECA 行为基类
+// ==========================================
 public abstract class ECAAction : ScriptableObject
 {
     public abstract void Execute(ECAContext context);
 }
 
 // ==========================================
-// 2. 线性激光标准配置 (Linear Strike Standard)
+// 3. 系统化配置：线性激光标准
 // ==========================================
 [System.Serializable]
 public class LinearLaserConfig
@@ -46,7 +58,7 @@ public class LinearLaserConfig
     public bool IsSustainedDamage = true;
     public float TickRate = 10f;
 
-    [Header("=== 3. 穿透与射程 (核心改动) ===")]
+    [Header("=== 3. 穿透与射程 ===")]
     public float BeamWidth = 0.5f;
     [Tooltip("如果武器/技能没配射程，则使用此默认距离 (米)")]
     public float MaxDistance = 15f;
@@ -59,4 +71,8 @@ public class LinearLaserConfig
     public int SubdivisionPoints = 20;
     public Color TrackingColor = new Color(0.5f, 0f, 1f, 0.3f);
     public Color FiringColor = new Color(0.8f, 0.3f, 1f, 1f);
+
+    [Header("=== 5. 稳定性控制 ===")]
+    [Tooltip("如果勾选，激光在追踪和锁定阶段免疫打断")]
+    public bool IsUnstoppable = false;
 }

@@ -19,7 +19,7 @@ public class LinearLaserController : MonoBehaviour
     private Vector2 lockDirection;
     private Transform shooter;
     private float finalRange;
-
+    public bool IsUnstoppable => config != null && config.IsUnstoppable;
     public void Initialize(ECAContext context, LinearLaserConfig config, List<ECAAction> hitActions, float duration)
     {
         this.originalContext = context;

@@ -48,14 +48,6 @@ public class EnemySkillSO : ScriptableObject
     public GameObject ProjectilePrefab;
     public float ProjectileSpeed = 10f;
 
-    [Header("=== 战术位移专属 (仅 Tactical_Dash 生效) ===")]
-    public TacticalDashDirection DashDirection = TacticalDashDirection.AwayFromTarget;
-
-    [Tooltip("位移速度加成系数。例如 500 代表冲刺速度是基础移速的 5 倍")]
-    public float DashImpulse = 300f;
-
-    [Tooltip("持续匀速位移的时间 (秒)")]
-    public float DashDuration = 0.5f; // 👈 【核心新增】
 
     [Header("=== ECA 魔法机制 ===")]
     public List<ECAAction> OnFireActions = new List<ECAAction>();

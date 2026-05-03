@@ -30,12 +30,9 @@ MonoBehaviour:
   MinDamage: 5
   MaxDamage: 10
   CriticalChance: 0.05
-  DeliveryType: 0
+  DeliveryType: 2
   ProjectilePrefab: {fileID: 0}
   ProjectileSpeed: 10
-  DashDirection: 0
-  DashImpulse: 300
-  DashDuration: 0.5
   OnFireActions:
   - {fileID: 11400000, guid: 7482dce1744019644954b72e1ae2901c, type: 2}
   - {fileID: 11400000, guid: 581db84f30ad7344b8507e35e06250b2, type: 2}

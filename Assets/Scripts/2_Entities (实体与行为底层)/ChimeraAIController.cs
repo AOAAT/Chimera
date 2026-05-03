@@ -26,7 +26,12 @@ public class ChimeraAIController : MonoBehaviour
 
 
     private float maxWeaponRange, minWeaponRange, optimalFireRange;
-
+    public void AbortDash()
+    {
+        isDashing = false;
+        if (rb != null) rb.velocity = Vector2.zero;
+        rb.drag = 5f; // 恢复正常摩擦力
+    }
     public void Initialize(RuntimeChimeraData data)
     {
         runtimeData = data;
