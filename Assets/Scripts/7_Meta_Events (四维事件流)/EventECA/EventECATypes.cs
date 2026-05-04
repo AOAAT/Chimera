@@ -1,0 +1,17 @@
+﻿public enum EventResourceType
+{
+    CurrentSAN,
+    MaxSAN,
+    CurrentScrap,      // 废料
+    CurrentCP,         // 指挥点
+    MaxCP,             // 指挥点上限
+    MaxPowerCapacity,  // 电网产能上限
+    MapDepth           // 当前探索层数 (只读)
+}
+
+public enum ComparisonType
+{
+    GreaterThan,
+    LessThan,
+    InRange
+}
