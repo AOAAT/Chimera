@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc17ecfff5028cd4598c5c10e7f53a23, type: 3}
+  m_Name: "\u524D\u5385\u63A2\u7D22"
+  m_EditorClassIdentifier: 
+  AppearanceConditions: []
+  EventTitle: "\u524D\u5385\u63A2\u7D22"
+  EventDescription: "\u4F60\u63A8\u5F00\u4E86\u6C89\u91CD\u7684\u6A61\u6728\u95E8\uFF0C\u5185\u90E8\u7684\u7A7A\u6C14\u6DF7\u6742\u7740\u7070\u5C18\u548C\u8840\u8089\u8150\u70C2\u7684\u5473\u9053..."
+  EventIllustration: {fileID: 0}
+  Options:
+  - OptionText: "\u6DF1\u5165"
+    FlavorText: "\u201D\u5728\u524D\u5385\u8FDB\u884C\u641C\u7D22\u3002\uFF0860%\u6210\u529F\u7387\uFF09\u201C"
+    Conditions: []
+    Actions:
+    - {fileID: 11400000, guid: 2ea1e7d28e64dca4d83ca003ecd0413d, type: 2}
+    NextEventNode: {fileID: 0}
+  - OptionText: "\u79BB\u5F00"
+    FlavorText: "\u201D\u9274\u4E8E\u8FD9\u5EA7\u5EFA\u7B51\u7269\u7684\u8001\u5316\u7A0B\u5EA6\uFF0C\u6211\u4EEC\u8FD8\u662F\u64A4\u9000\u4E3A\u597D\u201C"
+    Conditions: []
+    Actions:
+    - {fileID: 0}
+    NextEventNode: {fileID: 0}

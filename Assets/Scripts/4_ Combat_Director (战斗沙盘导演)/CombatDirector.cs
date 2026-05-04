@@ -94,42 +94,37 @@ public class CombatDirector : MonoBehaviour
     /// <summary>
     /// 关卡入口：进入部署阶段
     /// </summary>
+
     public void EnterCombatPhase(MapNodeData nodeData)
     {
+        PerformFullCleanup(); // 强制先清空一次，防止上一关残留
+
         IsCombatActive = false;
         IsDeploymentPhase = true;
         isCheckingWinCondition = false;
-        currentNodeData = nodeData;
 
-        // 1. 重置注册表
-        ClearUnitRegistry();
-
-        // 2. 👇【核心修复】：进入部署阶段，立即彻底清理并隐藏技能栏
-        // 杜绝上一场战斗的 UI 残留
-        if (ActiveSkillUIManager.Instance != null)
+        // --- 👇【加固逻辑】：节点记录 ---
+        if (nodeData != null)
         {
-            ActiveSkillUIManager.Instance.ClearUI();
+            currentNodeData = nodeData;
+            Debug.Log($"<color=green>【导演】</color> 已锁定当前作战节点: {currentNodeData.NodeID}");
         }
+        // ------------------------------------------
 
         if (CombatUIPanel != null) CombatUIPanel.SetActive(true);
-        if (StartBattleButton != null) StartBattleButton.interactable = true;
-        if (SettlementPanel != null) SettlementPanel.SetActive(false);
-
-        if (NavHangarButton != null) NavHangarButton.interactable = true;
-        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
-
-        if (HangarMenuUI.Instance != null)
-        {
-            HangarMenuUI.Instance.OpenHangar();
-        }
+        if (StartBattleButton != null) { StartBattleButton.gameObject.SetActive(true); StartBattleButton.interactable = true; }
+        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
 
         if (RunManager.Instance == null) return;
 
-        int currentStage = RunManager.Instance.CurrentStage;
-        int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
-
-        // 获取遭遇战布局
-        CurrentLayout = RunManager.Instance.GetNextEncounter(currentStage, currentLayer, nodeData != null ? nodeData.NodeType : MapNodeType.Enemy_Tech);
+        if (CurrentLayout == null)
+        {
+            int stage = RunManager.Instance.CurrentStage;
+            int layer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+            // 兜底判定
+            MapNodeType combatType = (currentNodeData != null) ? currentNodeData.HiddenRealType : MapNodeType.Enemy_Mixed;
+            CurrentLayout = RunManager.Instance.GetNextEncounter(stage, layer, combatType);
+        }
 
         if (CurrentLayout != null)
         {
@@ -138,7 +133,6 @@ public class CombatDirector : MonoBehaviour
             GenerateForbiddenZones();
         }
     }
-
     private void SetupArenaVisuals()
     {
         if (ArenaReference == null) return;
@@ -389,11 +383,49 @@ public class CombatDirector : MonoBehaviour
         }
     }
 
+
     private void OnReturnToMapClicked()
     {
-        Debug.Log("<color=#FFFF00>【战斗导演】正在撤收战场资源...</color>");
+        // --- 👇【系统化清理入口】：无论是普通还是特殊战斗，离开时必须执行 ---
+        PerformFullCleanup();
 
-        // 1. 清理物理实体
+        if (isLastCombatVictory)
+        {
+            LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
+            if (encounterLoot != null && LootSequenceDirector.Instance != null)
+            {
+                LootSequenceDirector.Instance.StartLootHub(encounterLoot, null, MacroCategory.Tech, 1, () => ExecuteReturnToMap());
+                return;
+            }
+        }
+
+        ExecuteReturnToMap();
+    }
+
+    public void ExecuteReturnToMap()
+    {
+        // 再次保底执行清理，防止从不同路径跳回（比如直接点结算）
+        PerformFullCleanup();
+
+        if (MapManager.Instance != null && currentNodeData != null)
+        {
+            MapManager.Instance.OnCombatVictory(currentNodeData);
+            currentNodeData = null;
+        }
+        else
+        {
+            if (MapManager.Instance != null) MapManager.Instance.MapUIPanel.SetActive(true);
+        }
+
+        CurrentLayout = null;
+    }
+
+    // --- 👇【核心新增】：工业级大扫除方法 ---
+    private void PerformFullCleanup()
+    {
+        Debug.Log("<color=#FF00FF>【系统大扫除】</color> 正在注销战场资源，重置机组状态...");
+
+        // 1. 物理实体清理
         MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
         foreach (var mech in allMechs) { if (mech != null) { mech.SyncPostCombatState(); Destroy(mech.gameObject); } }
 
@@ -403,47 +435,27 @@ public class CombatDirector : MonoBehaviour
         Projectile[] allBullets = FindObjectsOfType<Projectile>();
         foreach (var b in allBullets) { if (b != null) Destroy(b.gameObject); }
 
-        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
+        // 2. 状态机重置：机库机甲必须设为“未部署”才能在下一场使用
+        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
+        {
+            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
+            {
+                if (profile != null) profile.IsDeployed = false;
+            }
+        }
+
+        // 3. UI 彻底清理
+        if (ActiveSkillUIManager.Instance != null) ActiveSkillUIManager.Instance.ClearUI();
+        if (BattleCommandManager.Instance != null) BattleCommandManager.Instance.SelectedUnit = null;
+
         if (ArenaReference != null) ArenaReference.SetActive(false);
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
+        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
 
-        if (NavHangarButton != null) NavHangarButton.interactable = true;
-        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
-
-        if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
-        {
-            foreach (var profile in PlayerInventoryManager.Instance.HangarUnits) { if (profile != null) profile.IsDeployed = false; }
-        }
-
-        // 2. 👇【核心修复】：返回时彻底清理并关闭技能栏
-        if (ActiveSkillUIManager.Instance != null)
-        {
-            ActiveSkillUIManager.Instance.ClearUI();
-        }
-
-        ClearUnitRegistry();
-
-        if (isLastCombatVictory)
-        {
-            LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
-            int currentStage = RunManager.Instance.CurrentStage;
-            int currentLayer = MapManager.Instance.CurrentLayer;
-            MapNodeType currentType = currentNodeData != null ? currentNodeData.NodeType : MapNodeType.Enemy_Tech;
-
-            LootSequenceSO nodeLoot = NodeLootManager.Instance != null ? NodeLootManager.Instance.GetLootForNode(currentStage, currentLayer, currentType) : null;
-            MacroCategory currentMacro = GetMacroForNodeType(currentType);
-
-            if (LootSequenceDirector.Instance != null)
-            {
-                LootSequenceDirector.Instance.StartLootHub(encounterLoot, nodeLoot, currentMacro, currentLayer, () => ExecuteReturnToMap());
-            }
-            else ExecuteReturnToMap();
-        }
-        else
-        {
-            ExecuteReturnToMap();
-        }
+        // 4. 重置战斗发令枪状态
+        IsCombatActive = false;
+        IsDeploymentPhase = false;
     }
 
     private void GenerateArenaBoundaries()
@@ -492,8 +504,5 @@ public class CombatDirector : MonoBehaviour
 
     private MacroCategory GetMacroForNodeType(MapNodeType type) { return MacroCategory.Tech; }
 
-    public void ExecuteReturnToMap()
-    {
-        if (MapManager.Instance != null) MapManager.Instance.OnCombatVictory(currentNodeData);
-    }
+   
 }

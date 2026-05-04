@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc17ecfff5028cd4598c5c10e7f53a23, type: 3}
+  m_Name: "\u66D9\u5149"
+  m_EditorClassIdentifier: 
+  EventTitle: "\u66D9\u5149"
+  EventDescription: "\u4F60\u770B\u5230\u592A\u9633\u5728\u8FDC\u5904\u5192\u51FA\u4E86\u6697\u7EA2\u7684\u5C16\u5C16\uFF0C\u90A3\u662F\u5C5E\u4E8E\u9ECE\u660E\u7684\u82CF\u9192\u3002\n               
+    \n\u6A21\u7CCA\u7684\u5929\u5149\u4E0B\uFF0C\u7FA4\u5C71\u6062\u590D\u4E86\u547C\u5438\uFF0C\u5730\u5E73\u7EBF\u4E0A\u7684\u5EFA\u7B51\u5E9F\u589F\u90FD\u88AB\u6668\u96FE\u539A\u6D82\u6210\u4E86\u7B80\u5355\u7684\u6CB9\u753B\u8272\u5757\u3002\n               
+    \n\u4E0D\u77E5\u4F55\u65F6\uFF0C\u5929\u4E0A\u98D8\u8D77\u4E86\u6BDB\u6BDB\u96E8\u3002\u7EC6\u5BC6\u7684\u96E8\u73E0\u4E0D\u65AD\u5730\u843D\u4E0B\u53C8\u84B8\u53D1\uFF0C\u4E3A\u5929\u5730\u95F4\u6D17\u5237\u51FA\u4E00\u7247\u6E05\u723D\u3002\n\n\u5468\u56F4\u7EC8\u4E8E\u6CA1\u6709\u864E\u89C6\u7708\u7708\u7B49\u5F85\u96C6\u7ED3\u7684\u7578\u53D8\u602A\u7269\u4E86\u3002\u6B64\u65F6\u6B64\u523B\u4F60\u7684\u5934\u8111\u5F02\u5E38\u6E05\u660E\u3002"
+  EventIllustration: {fileID: 21300000, guid: 22c94b3be12ec1c4ba1f84bdcdff6881, type: 3}
+  Options:
+  - OptionText: "\u68C0\u4FEE"
+    FlavorText: "\u201C\u4F60\u6C38\u4E45\u6027\u5730\u4F18\u5316\u4E86\u7535\u7F51\u7ED3\u6784\u3002\uFF08\u6700\u5927\u7535\u91CF\u6C38\u4E45\u589E\u52A0
+      20\uFF09\u201D"
+    Conditions: []
+    Actions:
+    - {fileID: 11400000, guid: 6099fa51dd14ab74aa539ed79be8803c, type: 2}
+    NextEventNode: {fileID: 0}
+  - OptionText: "\u505C\u7559"
+    FlavorText: "\u201C\u8BA9\u81EA\u5DF1\u505C\u7559\u5728\u6B64\u65F6\u6B64\u523B\u3002\uFF08\u6062\u590D30\u70B9SAN\uFF09\u201D"
+    Conditions: []
+    Actions:
+    - {fileID: 11400000, guid: ff3fa0a40bc57ba49a59713d9561016d, type: 2}
+    NextEventNode: {fileID: 0}

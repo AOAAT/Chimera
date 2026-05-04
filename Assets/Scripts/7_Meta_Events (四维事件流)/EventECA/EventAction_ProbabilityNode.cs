@@ -1,33 +1,33 @@
-﻿// --- EventAction_ProbabilityNode.cs ---
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "Act_ProbCheck", menuName = "Chimera Protocol/Event ECA/多重概率判定")]
+[CreateAssetMenu(fileName = "Act_ProbCheck", menuName = "Chimera Protocol/Event ECA/双向概率跳转")]
 public class EventAction_ProbabilityNode : EventAction
 {
     [Range(0f, 1f)] public float SuccessChance = 0.5f;
 
-    [Header("成功后的动作(给钱/给零件)")]
+    [Header("=== 成功分支 ===")]
     public List<EventAction> OnSuccess;
-
-    [Header("成功后跳转的下一个事件(厄舍府-深处)")]
     public EventNodeSO NextSuccessEvent;
 
-    [Header("失败后的后果(扣SAN/降速)")]
+    [Header("=== 失败分支 ===")]
     public List<EventAction> OnFail;
+    public EventNodeSO NextFailEvent;
 
     public override void Execute()
     {
         if (Random.value <= SuccessChance)
         {
-            foreach (var a in OnSuccess) a.Execute();
+            Debug.Log("<color=green>【判定成功】</color>");
+            if (OnSuccess != null) foreach (var a in OnSuccess) a.Execute();
             if (NextSuccessEvent != null) EventDirector.Instance.PlayEvent(NextSuccessEvent);
         }
         else
         {
-            foreach (var a in OnFail) a.Execute();
-            // 失败不跳转，依然停留在当前厄舍府界面，让玩家决定是否继续
-            EventDirector.Instance.RefreshCurrentOptions();
+            Debug.Log("<color=red>【判定失败】</color>");
+            if (OnFail != null) foreach (var a in OnFail) a.Execute();
+            // 👇 现在失败也会跳转到指定的反馈页面
+            if (NextFailEvent != null) EventDirector.Instance.PlayEvent(NextFailEvent);
         }
     }
 }

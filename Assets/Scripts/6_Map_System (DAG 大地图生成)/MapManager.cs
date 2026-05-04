@@ -44,29 +44,49 @@ public class MapManager : MonoBehaviour
 
     public void TrySelectNode(string targetNodeID)
     {
-        if (!mapGenerator.GeneratedMap.ContainsKey(targetNodeID)) return;
-        MapNodeData targetData = mapGenerator.GeneratedMap[targetNodeID];
+        var mapData = mapGenerator.GeneratedMap;
+        if (!mapData.ContainsKey(targetNodeID)) return;
+        MapNodeData targetData = mapData[targetNodeID];
 
+        // --- 👇【关键修复 A：路径合法性检查】 ---
+        // 1. 状态必须是 Selectable (这个状态现在只在上一关打完后，给直连的节点点亮)
         if (targetData.NodeState != MapNodeState.Selectable) return;
 
-        // 👇【核心修复】：调用下面的辅助方法，判断是不是战斗节点
-        if (IsCombatNode(targetData.NodeType))
+        // 2. 强校验：目标节点必须是当前所在节点的“后继节点”
+        // 处理第0层的特殊情况（CurrentNodeID 为空时）
+        if (!string.IsNullOrEmpty(CurrentNodeID))
+        {
+            MapNodeData currentNode = mapData[CurrentNodeID];
+            if (!currentNode.NextNodeIDs.Contains(targetNodeID))
+            {
+                Debug.LogWarning("【路径非法】只能进入当前位置直连的下一个房间！");
+                return;
+            }
+        }
+        // ------------------------------------------
+
+        // 获取真实的判定类型 (如果是问号，则读取真实的内核)
+        targetData.IsRevealed = true;
+
+        // 2. 获取真实内核
+        MapNodeType activeType = (targetData.NodeType == MapNodeType.Unknown)
+                                 ? targetData.HiddenRealType
+                                 : targetData.NodeType;
+
+        // 3. 路由分发 (保持不变)
+        if (IsCombatNode(activeType))
         {
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
             CombatDirector.Instance.EnterCombatPhase(targetData);
         }
-        else if (targetData.NodeType == MapNodeType.Event) // 👇 专门处理事件节点
+        else if (activeType == MapNodeType.Event)
         {
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
-            Debug.Log("【地图管控】进入事件节点，启动文字冒险...");
-            // 呼叫事件导演接管！
             EventDirector.Instance.EnterEventPhase(targetData);
         }
-        else if (targetData.NodeType == MapNodeType.Workshop) // 👇 商店节点
+        else if (activeType == MapNodeType.Workshop)
         {
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
-            Debug.Log("【地图管控】进入黑市商店，启动大巴扎引擎...");
-            // 呼叫商店导演接管！
             ShopDirector.Instance.EnterShopPhase(targetData);
         }
     }
@@ -83,45 +103,27 @@ public class MapManager : MonoBehaviour
     }
 
     // 👇【新增】：打赢了回来，继续地图结算
+
     public void OnCombatVictory(MapNodeData nodeData)
     {
-        // 1. 重新显示地图 UI
         if (MapUIPanel != null) MapUIPanel.SetActive(true);
 
-        // 2. 核心状态机结算（打勾，点亮下一层）
-        MoveToNode(nodeData);
-
-        // 3. 👇【核心修复】：不能在自己身上找，要去 UI 节点里找 MapVisualizer！
-        MapVisualizer visualizer = null;
-        if (MapUIPanel != null)
+        if (nodeData != null)
         {
-            // true 代表即使它是隐藏的也能找到
-            visualizer = MapUIPanel.GetComponentInChildren<MapVisualizer>(true);
+            // 只有这里调用了 MoveToNode，节点状态才会变灰，前路才会亮起
+            MoveToNode(nodeData);
         }
 
-        // 兜底防呆：如果上面没找到，就全宇宙广播找一下
-        if (visualizer == null)
-        {
-            visualizer = FindObjectOfType<MapVisualizer>(true);
-        }
-
-        // 找到后命令 UI 刷新颜色
-        if (visualizer != null)
-        {
-            visualizer.RefreshAllVisuals();
-            Debug.Log("【系统广播】地图视觉已刷新，请长官选择下一节点！");
-        }
-        else
-        {
-            Debug.LogError("【严重警报】长官，找不到 MapVisualizer，地图颜色可能无法更新！");
-        }
+        MapVisualizer visualizer = MapUIPanel.GetComponentInChildren<MapVisualizer>(true);
+        if (visualizer != null) visualizer.RefreshAllVisuals();
     }
-
     // 玩家实际到达该节点后的逻辑处理
     // 玩家实际到达该节点后的逻辑处理
     private void MoveToNode(MapNodeData newNode)
     {
         // 1. 把刚才站的节点状态设为“已通过”
+        if (newNode == null) return; // 👈 终极保底，防止 line 154 崩溃
+
         if (!string.IsNullOrEmpty(CurrentNodeID))
         {
             mapGenerator.GeneratedMap[CurrentNodeID].NodeState = MapNodeState.Passed;

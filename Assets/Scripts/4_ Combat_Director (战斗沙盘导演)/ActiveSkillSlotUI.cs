@@ -83,13 +83,20 @@ public class ActiveSkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void Update()
     {
-        if (bindedController == null) return;
+
+        if (bindedController == null || bindedController.gameObject == null)
+        {
+            return;
+        }
+        // ------------------------------------------
+
         if (bindedController.IsDead)
         {
             DeathOverlay.SetActive(true);
             CooldownFill.fillAmount = 0;
             return;
         }
+
 
         float cd = bindedController.CurrentCooldown;
         float maxCd = bindedController.SkillConfig.Cooldown;

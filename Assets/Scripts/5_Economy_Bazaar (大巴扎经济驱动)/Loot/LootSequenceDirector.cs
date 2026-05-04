@@ -161,4 +161,28 @@ public class LootSequenceDirector : MonoBehaviour
         if (roll < w1 + w2 + w3) return 3;
         return 4;
     }
+
+    // --- 请在 LootSequenceDirector.cs 中追加以下方法 ---
+
+    public void StartImmediateLoot(InstancedComponent item, System.Action onComplete = null)
+    {
+        Debug.Log($"<color=#FFD700>【定向打捞】</color> 正在展示特定奖励: {item.BaseData.ComponentName}");
+
+        // 1. 构建一个临时的、运行时的任务数据
+        LootTaskConfig mockConfig = new LootTaskConfig
+        {
+            Mode = LootDropMode.CustomPoolDrop // 使用自定义模式，不进行随机 Roll
+        };
+
+        ActiveLootTask task = new ActiveLootTask
+        {
+            Config = mockConfig,
+            IsBoxOpened = true, // 强制标记为已开启，防止再次 Roll
+            GeneratedItems = new List<InstancedComponent> { item } // 塞入那件特定奖励
+        };
+
+        // 2. 包装成任务列表并开启 UI
+        List<ActiveLootTask> tasks = new List<ActiveLootTask> { task };
+        LootUIManager.Instance.OpenHub(tasks, onComplete);
+    }
 }

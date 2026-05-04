@@ -18,16 +18,20 @@ public class EventDirector : MonoBehaviour
     public Image IllustrationImage;
     public Transform OptionsRoot;
     public GameObject OptionButtonPrefab;
-
+    public MapNodeData CurrentNodeData => currentNodeData;
     private MapNodeData currentNodeData;
     private EventNodeSO currentEventNode;
     private List<EventOptionUI> activeOptionUIs = new List<EventOptionUI>();
+
+    // --- 👇【关键修复】：流程打断标志位 ---
+    private bool isFlowHijackedByAction = false;
 
     private void Awake() { Instance = this; }
 
     private void Start()
     {
-        EventPanel.SetActive(false);
+        if (EventPanel != null) EventPanel.SetActive(false);
+
         if (GlobalResourceManager.Instance != null)
             GlobalResourceManager.Instance.OnResourceChanged += RefreshCurrentOptions;
         if (PlayerInventoryManager.Instance != null)
@@ -53,29 +57,65 @@ public class EventDirector : MonoBehaviour
         ).ToList();
 
         if (validPools.Count == 0) { ExecuteReturnToMap(); return; }
-        var selectedPool = validPools[Random.Range(0, validPools.Count)];
-        PlayEvent(selectedPool.Events[Random.Range(0, selectedPool.Events.Count)]);
+
+        var selectedPool = PickPoolByWeight(validPools);
+
+        var qualifiedEvents = selectedPool.Events.Where(e =>
+        {
+            if (e == null) return false;
+            if (e.AppearanceConditions == null || e.AppearanceConditions.Count == 0) return true;
+            string dummyReason;
+            foreach (var cond in e.AppearanceConditions)
+            {
+                if (cond != null && !cond.Evaluate(out dummyReason)) return false;
+            }
+            return true;
+        }).ToList();
+
+        if (qualifiedEvents.Count == 0) { ExecuteReturnToMap(); return; }
+
+        EventNodeSO chosenEvent = qualifiedEvents[Random.Range(0, qualifiedEvents.Count)];
+        PlayEvent(chosenEvent);
+    }
+
+    private EventPoolConfigSO PickPoolByWeight(List<EventPoolConfigSO> pools)
+    {
+        float totalWeight = pools.Sum(p => p.PoolWeight);
+        float roll = Random.Range(0f, totalWeight);
+        foreach (var pool in pools)
+        {
+            if (roll < pool.PoolWeight) return pool;
+            roll -= pool.PoolWeight;
+        }
+        return pools.Last();
     }
 
     public void PlayEvent(EventNodeSO eventNode)
     {
-        currentEventNode = eventNode;
-        EventPanel.SetActive(true);
-        TitleText.text = eventNode.EventTitle;
-        DescriptionText.text = eventNode.EventDescription;
+        // --- 👇【关键修复】：只要调用了 PlayEvent，就标记流程已被劫持 ---
+        isFlowHijackedByAction = true;
 
-        if (eventNode.EventIllustration != null)
+        currentEventNode = eventNode;
+        if (EventPanel != null) EventPanel.SetActive(true);
+        if (TitleText != null) TitleText.text = eventNode.EventTitle;
+        if (DescriptionText != null) DescriptionText.text = eventNode.EventDescription;
+
+        if (IllustrationImage != null)
         {
-            IllustrationImage.sprite = eventNode.EventIllustration;
-            IllustrationImage.gameObject.SetActive(true);
+            if (eventNode.EventIllustration != null)
+            {
+                IllustrationImage.sprite = eventNode.EventIllustration;
+                IllustrationImage.gameObject.SetActive(true);
+            }
+            else IllustrationImage.gameObject.SetActive(false);
         }
-        else IllustrationImage.gameObject.SetActive(false);
 
         foreach (Transform child in OptionsRoot) Destroy(child.gameObject);
         activeOptionUIs.Clear();
 
         foreach (var option in eventNode.Options)
         {
+            if (option == null) continue;
             GameObject btnObj = Instantiate(OptionButtonPrefab, OptionsRoot);
             EventOptionUI optionUI = btnObj.GetComponent<EventOptionUI>();
             EventOption capturedOption = option;
@@ -87,9 +127,10 @@ public class EventDirector : MonoBehaviour
 
     public void RefreshCurrentOptions()
     {
-        if (!EventPanel.activeSelf || currentEventNode == null || activeOptionUIs.Count == 0) return;
+        if (EventPanel == null || !EventPanel.activeSelf || currentEventNode == null || activeOptionUIs.Count == 0) return;
         for (int i = 0; i < currentEventNode.Options.Count; i++)
         {
+            if (i >= activeOptionUIs.Count) break;
             var option = currentEventNode.Options[i];
             var ui = activeOptionUIs[i];
             bool canAfford = true;
@@ -107,8 +148,14 @@ public class EventDirector : MonoBehaviour
         }
     }
 
+
     private void OnOptionClicked(EventOption option)
     {
+        if (option == null) return;
+
+        isFlowHijackedByAction = false;
+
+        // 执行积木
         foreach (var action in option.Actions) if (action != null) action.Execute();
 
         if (option.NextEventNode != null)
@@ -117,19 +164,29 @@ public class EventDirector : MonoBehaviour
         }
         else
         {
-            // --- 👇【关键修复】：检查是否触发了会导致 UI 跳转的“万能奖励”积木 ---
-            bool triggeredLootHub = option.Actions.Any(a =>
-                a is EventAction_UniversalGrant ug && ug.Mode == RewardType.RandomLootBox);
+            // --- 👇【逻辑适配】：判定是否开启了任何会展示物品的 UI ---
+            bool isUIHijacked = option.Actions.Any(a =>
+                a is EventAction_UniversalGrant ug &&
+                (ug.Mode == RewardType.RandomLootBox || ug.Mode == RewardType.SpecificComponent));
 
-            EventPanel.SetActive(false);
+            bool isBattleActive = CombatDirector.Instance != null && CombatDirector.Instance.IsDeploymentPhase;
 
-            // 如果没开启大巴扎 UI，才立即返回地图
-            if (!triggeredLootHub) ExecuteReturnToMap();
+            if (!isFlowHijackedByAction && !isBattleActive && !isUIHijacked)
+            {
+                if (EventPanel != null) EventPanel.SetActive(false);
+                ExecuteReturnToMap();
+            }
+            else
+            {
+                // 如果开启了展示 UI，我们只关掉文字面板，等待展示 UI 的回调
+                if (EventPanel != null) EventPanel.SetActive(false);
+            }
         }
     }
 
     public void ExecuteReturnToMap()
     {
-        MapManager.Instance.OnCombatVictory(currentNodeData);
+        if (MapManager.Instance != null)
+            MapManager.Instance.OnCombatVictory(currentNodeData);
     }
 }

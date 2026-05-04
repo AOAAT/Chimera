@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc17ecfff5028cd4598c5c10e7f53a23, type: 3}
+  m_Name: "\u4FB5\u8680"
+  m_EditorClassIdentifier: 
+  AppearanceConditions:
+  - {fileID: 11400000, guid: 22ad6f501b967f84ba18cd415642777c, type: 2}
+  EventTitle: "\u4FB5\u8680"
+  EventDescription: "\u4E5F\u8BB8\u662F\u7814\u7A76\u672C\u4E0A\u4E00\u4E2A\u7B14\u753B\u7684\u5931\u8BEF\uFF0C\u4E5F\u8BB8\u662F\u68C0\u67E5\u90E8\u4EF6\u65F6\u4E00\u4E2A\u96F6\u4EF6\u7684\u4E22\u5931\uFF0C\u65E0\u8BBA\u5982\u4F55\uFF0C\u4F60\u7684\u7406\u667A\u8FCE\u6765\u4E86\u538B\u6B7B\u5B83\u7684\u6700\u540E\u4E00\u6839\u7A3B\u8349\u3002\u4F60\u65E0\u6CD5\u518D\u5BF9\u591A\u65E5\u4EE5\u6765\u8033\u8FB9\u7684\u4F4E\u8BED\u548C\u8111\u6D77\u4E2D\u7684\u90AA\u6DEB\u753B\u9762\u88C5\u4F5C\u6BEB\u4E0D\u5728\u610F\u4E86\uFF0C\u4F60\u611F\u53D7\u5230\u4E86\u5B83\u7684\u547C\u5524\uFF0C\u4F60\u7684\u610F\u5FD7\u6574\u5728\u88AB\u9010\u6E10*\u4FB5\u8680*\u3002\r\n\r\n\u5728\u7EDD\u671B\u4E4B\u9645\uFF0C\u5404\u4E2A\u89D2\u843D\u4E2D\u7684\u9ED1\u6697\u60F3\u4E2D\u6C47\u805A\uFF0C\u6210\u4E3A\u4E86\u4E00\u4E2A\u7578\u53D8\u7684\u5B9E\u4F53\uFF0C\u5B83\u5411\u4F60\u63D0\u51FA\u4E86\u4E00\u7B14\u4EA4\u6613\u3002\r\n\r\n\u201C\u4E00\u70B9\u7075\u9B42\u800C\u5DF2\u2026\u2026\u4F60\u4E0D\u4F1A\u540E\u6094\u7684\u2026\u2026\u5475\u5475\u5475\u201D\r\n\u58F0\u97F3\u5982\u540C\u4E00\u7FA4\u88AB\u56F0\u5728\u623F\u95F4\u91CC\u4E71\u98DE\u7684\u60CA\u9E1F\uFF0C\u597D\u51E0\u79CD\u97F3\u8272\u4EA4\u7EC7\u5728\u4E00\u8D77\uFF0C\u56DE\u8361\u5728\u5B83\u90A3\u7D27\u95ED\u7740\u7684\u9ED1\u888D\u91CC\u3002"
+  EventIllustration: {fileID: 21300000, guid: 590115e384511f349a912881e0f27439, type: 3}
+  Options:
+  - OptionText: "\u7406\u667A\u91CD\u6784"
+    FlavorText: "\u201C\u5931\u53BB30SAN\u503C\u4E0A\u9650\uFF0C\u6062\u590D\u5230\u6EE1SAN\u3002\u201D"
+    Conditions:
+    - {fileID: 11400000, guid: 22ad6f501b967f84ba18cd415642777c, type: 2}
+    Actions:
+    - {fileID: 11400000, guid: 853ca8ad986dc5f469ee07264c4412d5, type: 2}
+    - {fileID: 11400000, guid: 82735715c6019f043a39cb7bd50a1b94, type: 2}
+    NextEventNode: {fileID: 0}
+  - OptionText: "\u62E5\u62B1\u9ED1\u6697"
+    FlavorText: "\u201C\u5931\u53BB30SAN\u503C\u4E0A\u9650\uFF0C\u83B7\u5F97\u968F\u673A\u5F3A\u529B\u7EC4\u4EF6\u3002\u201D"
+    Conditions:
+    - {fileID: 11400000, guid: 22ad6f501b967f84ba18cd415642777c, type: 2}
+    Actions:
+    - {fileID: 11400000, guid: 853ca8ad986dc5f469ee07264c4412d5, type: 2}
+    - {fileID: 11400000, guid: 0408e9d565a2db64a9e62439baf7c59b, type: 2}
+    NextEventNode: {fileID: 0}

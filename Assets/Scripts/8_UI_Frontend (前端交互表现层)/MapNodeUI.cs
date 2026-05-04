@@ -5,9 +5,9 @@ using UnityEngine.EventSystems;
 public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("=== UI 组件引用 ===")]
-    public Image NodeIcon;       // 中间的图标 (骷髅头/问号等)
-    public Image OutlineImage;   // 外圈高亮/打勾的框
-    public Button ClickArea;     // 按钮组件
+    public Image NodeIcon;
+    public Image OutlineImage;
+    public Button ClickArea;
 
     [Header("=== 视觉配置 ===")]
     public Color LockedColor = new Color(0.3f, 0.3f, 0.3f, 1f);
@@ -20,65 +20,74 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     private void Awake()
     {
         originalScale = transform.localScale;
-        ClickArea.onClick.AddListener(OnNodeClicked);
+        if (ClickArea != null) ClickArea.onClick.AddListener(OnNodeClicked);
     }
 
-    // 接收上帝视角的注入
-    public void Initialize(MapNodeData data, Sprite myIcon)
+    public void Initialize(MapNodeData data, Sprite defaultIcon)
     {
         myData = data;
         gameObject.name = $"UI_{data.NodeID}";
-
-        // 👇【核心替换】：把传进来的贴图赋给 Image 组件
-        if (myIcon != null && NodeIcon != null)
-        {
-            NodeIcon.sprite = myIcon;
-        }
-
         RefreshVisualState();
     }
 
-    // 刷新颜色和表现
     public void RefreshVisualState()
     {
         if (myData == null) return;
 
-        // 根据不同类型换图标 (这里您可以未来接您的 Sprite 库)
-        // NodeIcon.sprite = ... 
+        // --- 👇【加固：安全获取视觉引用】 ---
+        MapVisualizer viz = FindObjectOfType<MapVisualizer>();
+        if (viz == null) return;
 
+        Sprite iconToDisplay = null;
+
+        if (myData.NodeType == MapNodeType.Unknown && !myData.IsRevealed)
+        {
+            // 如果是问号房且未探明
+            iconToDisplay = viz.GetIconForType(MapNodeType.Unknown);
+        }
+        else
+        {
+            // 否则显示真实的内核图标
+            iconToDisplay = viz.GetIconForType(myData.HiddenRealType);
+        }
+
+        if (NodeIcon != null)
+        {
+            NodeIcon.sprite = iconToDisplay;
+            // 如果没配图标，先隐藏 Image 组件防止显示白块
+            NodeIcon.enabled = (iconToDisplay != null);
+        }
+
+        // --- 状态视觉处理 ---
         switch (myData.NodeState)
         {
             case MapNodeState.Locked:
-                NodeIcon.color = LockedColor;
-                OutlineImage.enabled = false;
-                ClickArea.interactable = false;
+                if (NodeIcon != null) NodeIcon.color = LockedColor;
+                if (OutlineImage != null) OutlineImage.enabled = false;
+                if (ClickArea != null) ClickArea.interactable = false;
                 break;
             case MapNodeState.Selectable:
-                NodeIcon.color = SelectableColor;
-                OutlineImage.enabled = true;
-                OutlineImage.color = SelectableColor; // 这里未来可以挂个 Animator 做呼吸动画
-                ClickArea.interactable = true;
+                if (NodeIcon != null) NodeIcon.color = SelectableColor;
+                if (OutlineImage != null) { OutlineImage.enabled = true; OutlineImage.color = SelectableColor; }
+                if (ClickArea != null) ClickArea.interactable = true;
                 break;
             case MapNodeState.Passed:
-                NodeIcon.color = PassedColor;
-                OutlineImage.enabled = true;
-                OutlineImage.color = PassedColor; // 打个勾或者变暗
-                ClickArea.interactable = false;
+                if (NodeIcon != null) NodeIcon.color = PassedColor;
+                if (OutlineImage != null) { OutlineImage.enabled = true; OutlineImage.color = PassedColor; }
+                if (ClickArea != null) ClickArea.interactable = false;
                 break;
         }
     }
 
     private void OnNodeClicked()
     {
-        // 呼叫全局管理器：玩家请求进入这个节点！
-        MapManager.Instance.TrySelectNode(myData.NodeID);
+        if (MapManager.Instance != null) MapManager.Instance.TrySelectNode(myData.NodeID);
     }
 
-    // --- 悬停放大效果 (极佳的交互反馈) ---
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (myData.NodeState == MapNodeState.Selectable)
-            transform.localScale = originalScale * 1.2f;
+        if (myData != null && myData.NodeState == MapNodeState.Selectable)
+            transform.localScale = originalScale * 1.15f;
     }
 
     public void OnPointerExit(PointerEventData eventData)

@@ -1702,15 +1702,23 @@ MonoBehaviour:
   TotalLayers: 15
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
-  NormalEnemyWeight: 1
-  EventWeight: 0
-  EliteWeight: 0
-  WorkshopWeight: 0
+  Weight_NormalEnemy: 0
+  Weight_Unknown: 0
+  Weight_Event: 1
+  Weight_Elite: 0
+  Weight_Workshop: 0
+  InnerWeight_Event: 1
+  InnerWeight_Workshop: 0
+  InnerWeight_Elite: 0
+  InnerWeight_TechBattle: 1
+  InnerWeight_FleshBattle: 0
+  InnerWeight_MagicBattle: 0
+  InnerWeight_MixedBattle: 0
   BufferFactor: 0.2
-  TechBaseWeight: 10
-  FleshBaseWeight: 0
-  MagicBaseWeight: 0
-  MixedBaseWeight: 0
+  TechBase: 10
+  FleshBase: 10
+  MagicBase: 10
+  MixedBase: 2
   JitterX: 0.3
   JitterY: 0.2
 --- !u!1 &295039106
@@ -2098,7 +2106,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 0
-  m_Spacing: 10
+  m_Spacing: 5
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 1
@@ -4644,7 +4652,7 @@ MonoBehaviour:
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 18
+  m_fontSizeMin: 6
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -10869,11 +10877,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
+  m_fontSize: 72
   m_fontSizeBase: 36
   m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
+  m_enableAutoSizing: 1
+  m_fontSizeMin: 6
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -14926,7 +14934,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   GlobalEventPools:
-  - {fileID: 11400000, guid: 3318c86ee6f63794a810bf21c2184770, type: 2}
+  - {fileID: 11400000, guid: 577474f213e9de444b2ebad980d19f45, type: 2}
   EventPanel: {fileID: 1479550579}
   TitleText: {fileID: 561901665}
   DescriptionText: {fileID: 1150433280}
@@ -15013,6 +15021,10 @@ MonoBehaviour:
     IconSprite: {fileID: 21300000, guid: d90bfac6071d040478b1a20594229c7f, type: 3}
   - Type: 8
     IconSprite: {fileID: 21300000, guid: 9b9bee1be361e0341a8579b7661a10b2, type: 3}
+  - Type: 9
+    IconSprite: {fileID: 21300000, guid: 080e1bd1efce80b41a52cc0712a14c38, type: 3}
+  - Type: 0
+    IconSprite: {fileID: 21300000, guid: 080e1bd1efce80b41a52cc0712a14c38, type: 3}
 --- !u!1 &1436878910
 GameObject:
   m_ObjectHideFlags: 0
@@ -20564,7 +20576,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 360}
+  m_AnchoredPosition: {x: 1, y: 350}
   m_SizeDelta: {x: 640, y: 360}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1843990704

@@ -35,9 +35,11 @@ public class MapVisualizer : MonoBehaviour
         {
             if (config.Type == type) return config.IconSprite;
         }
-        return null;
-    }
 
+        // 如果找不到，尝试返回 Start 节点的图标作为保底，防止崩溃
+        Debug.LogWarning($"【地图视觉】未在 IconConfigs 中找到类型 [{type}] 的图标配置！请检查 Inspector 面板。");
+        return IconConfigs.Count > 0 ? IconConfigs[0].IconSprite : null;
+    }
     private List<MapNodeUI> spawnedNodes = new List<MapNodeUI>();
     private List<MapLineDrawer> spawnedLines = new List<MapLineDrawer>();
 

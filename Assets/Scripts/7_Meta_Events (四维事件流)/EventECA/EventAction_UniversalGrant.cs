@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-// 确保枚举在命名空间可见范围内
 public enum RewardType { SpecificComponent, RandomLootBox, GlobalProtocol }
 
 [CreateAssetMenu(fileName = "Act_UniversalGrant", menuName = "Chimera Protocol/Event ECA/万能奖励发放")]
@@ -25,19 +24,32 @@ public class EventAction_UniversalGrant : EventAction
         {
             case RewardType.SpecificComponent:
                 if (ComponentBlueprint != null)
-                    PlayerInventoryManager.Instance.AddComponentToInventory(ComponentBlueprint, Level);
+                {
+                    // 生成一个带星级的零件实例，但不直接存入背包
+                    InstancedComponent newItem = new InstancedComponent(ComponentBlueprint, Level);
+
+                    // --- 👇【关键重构：仪式感展示】 ---
+                    if (LootSequenceDirector.Instance != null)
+                    {
+                        LootSequenceDirector.Instance.StartImmediateLoot(newItem, () => {
+                            // 展示界面关闭后，通知事件导演回地图
+                            if (EventDirector.Instance != null) EventDirector.Instance.ExecuteReturnToMap();
+                        });
+                    }
+                }
                 break;
 
             case RewardType.RandomLootBox:
                 if (LootPool != null)
-                    LootSequenceDirector.Instance.StartLootHub(LootPool, null, MacroCategory.Tech, MapManager.Instance.CurrentLayer, () => {
-                        // 大巴扎结束后，手动通知事件导演返回地图
+                {
+                    LootSequenceDirector.Instance.StartLootHub(LootPool, null, MacroCategory.Tech, 1, () => {
                         if (EventDirector.Instance != null) EventDirector.Instance.ExecuteReturnToMap();
                     });
+                }
                 break;
 
             case RewardType.GlobalProtocol:
-                if (ProtocolBuff != null && GlobalProtocolRegistry.Instance != null)
+                if (ProtocolBuff != null)
                     GlobalProtocolRegistry.Instance.AddProtocol(ProtocolBuff, ProtocolDuration);
                 break;
         }
