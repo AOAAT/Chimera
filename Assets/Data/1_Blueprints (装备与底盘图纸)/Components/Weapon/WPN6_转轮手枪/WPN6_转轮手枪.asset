@@ -30,23 +30,31 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
+      ModType: 0
     - StatID: 10
       Value: 15
+      ModType: 0
     - StatID: 11
       Value: 10
+      ModType: 0
     - StatID: 13
       Value: 50
+      ModType: 0
     - StatID: 14
       Value: 0
+      ModType: 0
     - StatID: 15
       Value: 200
+      ModType: 0
     - StatID: 16
       Value: 0.3
+      ModType: 0
     - StatID: 19
       Value: 100
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 9f6893738cddd52459a95e628dd79cc3, type: 2}
+    - {fileID: 11400000, guid: 674fa11ad3a136e46939bc671826fcbf, type: 2}
     - {fileID: 11400000, guid: 2639bd7ff5990a44cba6891232a291fa, type: 2}
     OnHitActions:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}

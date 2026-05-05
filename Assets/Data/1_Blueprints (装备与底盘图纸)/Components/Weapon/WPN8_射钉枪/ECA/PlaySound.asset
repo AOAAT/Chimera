@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5de0082cbbcff748bcf5d9f0bdf11fd, type: 3}
+  m_Name: PlaySound
+  m_EditorClassIdentifier: 
+  ClipsToPlay:
+  - {fileID: 8300000, guid: b9c3cc127e9b11442a1529365dfd76b5, type: 3}
+  CriticalClipsOverride: []
+  Volume: 0.1
+  PitchJitter: 0.1

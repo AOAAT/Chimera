@@ -28,12 +28,16 @@ MonoBehaviour:
   BaseStats:
   - StatID: 30
     Value: 10
+    ModType: 0
   - StatID: 31
     Value: 10
+    ModType: 0
   - StatID: 33
     Value: 10
+    ModType: 0
   - StatID: 32
     Value: 1
+    ModType: 0
   SanPenalties: []
   VisualScaleMultiplier: 1
   OverrideShadow: 0
@@ -43,7 +47,9 @@ MonoBehaviour:
   Skills:
   - {fileID: 11400000, guid: b1809430457af5c41ab9f1b48a5cdfa1, type: 2}
   OnSpawnActions: []
-  OnDeathActions: []
+  OnDeathActions:
+  - {fileID: 11400000, guid: 959a7c9575c80bb4984caf8b69c77c3e, type: 2}
+  - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}
   OnTakeDamageActions: []
   CorpseLingerTime: 0
   FadeDuration: 0.2

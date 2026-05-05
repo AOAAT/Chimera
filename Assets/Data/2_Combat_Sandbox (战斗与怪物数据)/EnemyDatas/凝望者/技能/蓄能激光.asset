@@ -33,10 +33,8 @@ MonoBehaviour:
   DeliveryType: 0
   ProjectilePrefab: {fileID: 0}
   ProjectileSpeed: 10
-  DashDirection: 0
-  DashImpulse: 300
-  DashDuration: 0.5
   OnFireActions:
   - {fileID: 11400000, guid: 225c4badcc8dd1b45a0e589873ff97db, type: 2}
+  - {fileID: 11400000, guid: 83ff0db5745ce374da4ea2531885e091, type: 2}
   OnHitActions:
   - {fileID: 11400000, guid: 204b27b20a6b1bd48861c3c17bedaa95, type: 2}

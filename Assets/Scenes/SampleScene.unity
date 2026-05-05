@@ -1702,9 +1702,9 @@ MonoBehaviour:
   TotalLayers: 15
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
-  Weight_NormalEnemy: 0
+  Weight_NormalEnemy: 1
   Weight_Unknown: 0
-  Weight_Event: 1
+  Weight_Event: 0
   Weight_Elite: 0
   Weight_Workshop: 0
   InnerWeight_Event: 1
@@ -1715,10 +1715,10 @@ MonoBehaviour:
   InnerWeight_MagicBattle: 0
   InnerWeight_MixedBattle: 0
   BufferFactor: 0.2
-  TechBase: 10
-  FleshBase: 10
-  MagicBase: 10
-  MixedBase: 2
+  TechBase: 1
+  FleshBase: 0
+  MagicBase: 0
+  MixedBase: 0
   JitterX: 0.3
   JitterY: 0.2
 --- !u!1 &295039106
