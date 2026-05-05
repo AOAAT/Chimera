@@ -55,5 +55,11 @@ public class ComponentUpgradeManager : MonoBehaviour
 
         OnComponentUpgraded?.Invoke(previewData.TargetItem);
         PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
+
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.UI_UpgradeSuccess);
+
+        // 配合一点打击感：震下屏幕
+        if (ScreenEffectManager.Instance != null)
+            ScreenEffectManager.Instance.TriggerShake(0.2f, 0.2f);
     }
 }

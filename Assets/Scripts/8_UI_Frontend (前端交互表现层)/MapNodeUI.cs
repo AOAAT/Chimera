@@ -81,7 +81,13 @@ public class MapNodeUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     private void OnNodeClicked()
     {
-        if (MapManager.Instance != null) MapManager.Instance.TrySelectNode(myData.NodeID);
+        if (MapManager.Instance != null)
+        {
+            // --- 👇【注入音效】---
+            GlobalAudioManager.Instance.PlayUISound(UISoundType.Map_NodeSelect);
+
+            MapManager.Instance.TrySelectNode(myData.NodeID);
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)

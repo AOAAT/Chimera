@@ -1,44 +1,66 @@
-﻿// --- START OF FILE GlobalAudioManager.cs ---
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class GlobalAudioManager : MonoBehaviour
 {
     public static GlobalAudioManager Instance;
 
-    [Header("=== 音频对象池配置 ===")]
-    public int PoolSize = 15;
+    [Header("=== UI 音效索引库 ===")]
+    public UISoundAtlasSO UIAtlas;
+
+    [Header("=== 对象池配置 ===")]
+    public int PoolSize = 20;
     private Queue<AudioSource> audioPool = new Queue<AudioSource>();
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
+        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
         else { Destroy(gameObject); return; }
-
         InitializePool();
     }
 
     private void InitializePool()
     {
-        GameObject poolRoot = new GameObject("[AudioPool]");
+        GameObject poolRoot = new GameObject("[AudioPool_Final]");
         poolRoot.transform.SetParent(this.transform);
 
         for (int i = 0; i < PoolSize; i++)
         {
-            GameObject obj = new GameObject($"AudioSource_{i}");
+            GameObject obj = new GameObject($"Source_{i}");
             obj.transform.SetParent(poolRoot.transform);
-
-            AudioSource source = obj.AddComponent<AudioSource>();
-            source.playOnAwake = false;
-            source.spatialBlend = 0.5f; // 50%的 3D 效果，有轻微的近大远小
-            source.rolloffMode = AudioRolloffMode.Linear;
-            source.maxDistance = 30f;
-
+            AudioSource s = obj.AddComponent<AudioSource>();
+            s.playOnAwake = false;
             obj.SetActive(false);
-            audioPool.Enqueue(source);
+            audioPool.Enqueue(s);
         }
     }
 
+    // ==========================================
+    // 1. UI 系统接口：播放预设好的类型
+    // ==========================================
+    public void PlayUISound(UISoundType type)
+    {
+        if (UIAtlas == null) return;
+        AudioProfileSO profile = UIAtlas.GetProfile(type);
+        if (profile != null) PlayProfile(profile, Vector3.zero, true);
+    }
+
+    public void PlayProfile(AudioProfileSO profile, Vector3 position, bool isUI = false)
+    {
+        if (profile == null || audioPool.Count == 0) return;
+
+        AudioSource source = audioPool.Dequeue();
+        source.gameObject.SetActive(true);
+        source.transform.position = position;
+        source.spatialBlend = isUI ? 0f : 0.5f;
+
+        profile.Play(source);
+        StartCoroutine(ReturnToPool(source, 2.0f));
+    }
+
+    // ==========================================
+    // 2. 战斗 ECA 接口：补回缺失的直接播放方法
+    // ==========================================
     public void PlaySound(AudioClip clip, Vector3 position, float volume = 1.0f, float pitchJitter = 0.1f)
     {
         if (clip == null || audioPool.Count == 0) return;
@@ -46,21 +68,19 @@ public class GlobalAudioManager : MonoBehaviour
         AudioSource source = audioPool.Dequeue();
         source.gameObject.SetActive(true);
         source.transform.position = position;
+        source.spatialBlend = 0.5f; // 战斗音效默认带 3D 距离感
 
         source.clip = clip;
         source.volume = volume;
-        // 有机浮动：给音高加一点随机变化，让连续播放的同一个音效听起来不一样！
         source.pitch = 1.0f + Random.Range(-pitchJitter, pitchJitter);
-
         source.Play();
 
-        // 使用协程在播放结束后自动回收
-        StartCoroutine(ReturnToPool(source, clip.length));
+        StartCoroutine(ReturnToPool(source, clip.length + 0.1f));
     }
 
     private System.Collections.IEnumerator ReturnToPool(AudioSource source, float delay)
     {
-        yield return new WaitForSeconds(delay);
+        yield return new WaitForSecondsRealtime(delay);
         source.Stop();
         source.gameObject.SetActive(false);
         audioPool.Enqueue(source);

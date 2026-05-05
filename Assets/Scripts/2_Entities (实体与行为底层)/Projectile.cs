@@ -106,14 +106,19 @@ public class Projectile : MonoBehaviour
 
             DamageReceiver receiver = hit.collider.GetComponentInParent<DamageReceiver>();
 
-            // 排除射手自己
-            if (receiver != null && receiver.transform != shooter && !receiver.transform.IsChildOf(shooter))
+            // 👇【核心修复点】：增加 shooter != null 的判定
+            if (receiver != null)
             {
-                // 击中目标！
-                this.target = receiver.transform;
-                transform.position = hit.point; // 将子弹停在撞击点
-                HitTarget();
-                return;
+                // 如果射手已经不在了，或者目标不是射手本人且不是射手的子对象
+                bool isSelf = (shooter != null) && (receiver.transform == shooter || receiver.transform.IsChildOf(shooter));
+
+                if (!isSelf)
+                {
+                    this.target = receiver.transform;
+                    transform.position = hit.point;
+                    HitTarget();
+                    return;
+                }
             }
         }
     }

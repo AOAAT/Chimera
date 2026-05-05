@@ -280,6 +280,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         if (activeConduitMap.ContainsKey(slotIndex)) activeConduitMap[slotIndex].TriggerPulse();
         if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.05f);
         if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(0.1f, 0.1f);
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Attach);
     }
 
     public void OnClickGhostChassis()

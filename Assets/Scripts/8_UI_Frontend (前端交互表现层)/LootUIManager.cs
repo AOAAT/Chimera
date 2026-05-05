@@ -264,8 +264,8 @@ public class LootUIManager : MonoBehaviour
         // 播放发射音效
         if (GlobalAudioManager.Instance != null)
             // 找一个清脆的机械弹出声
-            // GlobalAudioManager.Instance.PlaySound(EjectClip, transform.position);
-
+           
+            GlobalAudioManager.Instance.PlayUISound(UISoundType.Loot_ItemEject);
             while (elapsed < EjectDuration)
             {
                 elapsed += Time.unscaledDeltaTime; // 即使卡肉时间，UI 也要动

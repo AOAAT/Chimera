@@ -257,7 +257,7 @@ public class CombatDirector : MonoBehaviour
         // 1. 重新抓取当前部署在场上的所有单位
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
-
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
         foreach (var r in allReceivers)
         {
@@ -381,6 +381,14 @@ public class CombatDirector : MonoBehaviour
             }
             if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
         }
+        if (isVictory)
+        {
+            GlobalAudioManager.Instance.PlayUISound(UISoundType.Combat_Victory);
+        }
+        else
+        {
+            GlobalAudioManager.Instance.PlayUISound(UISoundType.Combat_Failure);
+        }
     }
 
 
@@ -452,7 +460,11 @@ public class CombatDirector : MonoBehaviour
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
         if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
+        if (NavHangarButton != null) NavHangarButton.interactable = true;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
+        // 如果之前有关闭过 StartBattleButton 的交互，也在这里恢复
+        if (StartBattleButton != null) StartBattleButton.interactable = true;
         // 4. 重置战斗发令枪状态
         IsCombatActive = false;
         IsDeploymentPhase = false;
