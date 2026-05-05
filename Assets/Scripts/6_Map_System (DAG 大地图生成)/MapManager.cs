@@ -40,6 +40,7 @@ public class MapManager : MonoBehaviour
         // 找到第0层的起点，把玩家扔上去
         var startNode = mapGenerator.GeneratedMap["Node_0_0"];
         MoveToNode(startNode);
+        MusicManager.Instance.SwitchState(MusicState.Map);
     }
 
     public void TrySelectNode(string targetNodeID)

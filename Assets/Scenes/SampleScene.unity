@@ -5969,6 +5969,7 @@ GameObject:
   - component: {fileID: 665219467}
   - component: {fileID: 665219466}
   - component: {fileID: 665219465}
+  - component: {fileID: 665219468}
   m_Layer: 5
   m_Name: "\u67E5\u770B\u673A\u7532\u6309\u94AE"
   m_TagString: Untagged
@@ -6090,6 +6091,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 665219463}
   m_CullTransparentMesh: 1
+--- !u!114 &665219468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 665219463}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b23c347ef63f5e4bb7111b1517a5d53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HoverSound: 0
+  ClickSound: 1
+  UseHover: 1
+  UseClick: 1
 --- !u!1 &669366137
 GameObject:
   m_ObjectHideFlags: 0
@@ -6798,6 +6815,7 @@ GameObject:
   - component: {fileID: 749304244}
   - component: {fileID: 749304243}
   - component: {fileID: 749304242}
+  - component: {fileID: 749304245}
   m_Layer: 5
   m_Name: "\u8FDB\u5165\u4ED3\u5E93\u6309\u94AE"
   m_TagString: Untagged
@@ -6919,6 +6937,22 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 749304240}
   m_CullTransparentMesh: 1
+--- !u!114 &749304245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749304240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b23c347ef63f5e4bb7111b1517a5d53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  HoverSound: 0
+  ClickSound: 1
+  UseHover: 1
+  UseClick: 1
 --- !u!1 &750070698
 GameObject:
   m_ObjectHideFlags: 0
@@ -13439,7 +13473,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -21139,6 +21173,7 @@ GameObject:
   - component: {fileID: 1973191906}
   - component: {fileID: 1973191905}
   - component: {fileID: 1973191904}
+  - component: {fileID: 1973191913}
   - component: {fileID: 1973191903}
   - component: {fileID: 1973191907}
   - component: {fileID: 1973191908}
@@ -21193,6 +21228,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f166c90b836528045a0e96ee0beaa204, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  UIAtlas: {fileID: 11400000, guid: 1abb550a1533c9a438175fb8150be203, type: 2}
   PoolSize: 15
 --- !u!114 &1973191905
 MonoBehaviour:
@@ -21303,6 +21339,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ConfiguredPools: []
+--- !u!114 &1973191913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1973191901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a16cf8fba76a8e4e9b71dcdcfe252c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BGM_Hangar: {fileID: 0}
+  BGM_Map: {fileID: 0}
+  BGM_Combat: {fileID: 0}
+  BGM_Erosion: {fileID: 0}
+  FadeDuration: 1.5
+  MaxVolume: 0.6
 --- !u!1 &1977254741
 GameObject:
   m_ObjectHideFlags: 0

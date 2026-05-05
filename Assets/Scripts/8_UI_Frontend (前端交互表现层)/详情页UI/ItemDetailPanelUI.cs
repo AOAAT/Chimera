@@ -545,4 +545,13 @@ public class ItemDetailPanelUI : MonoBehaviour
             HidePanel();
         }
     }
+
+    public void OnEnable()
+    {
+        if (MusicManager.Instance != null) MusicManager.Instance.SetImmersionMode(true);
+    }
+    public void OnDisable()
+    {
+        if (MusicManager.Instance != null) MusicManager.Instance.SetImmersionMode(false);
+    }
 }

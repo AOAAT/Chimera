@@ -21,3 +21,9 @@ MonoBehaviour:
     Profile: {fileID: 11400000, guid: df3d7f817d999c0449080b8c5ed976c6, type: 2}
   - Type: 8
     Profile: {fileID: 11400000, guid: a7a787a9c6f517848b3c5c427d835a39, type: 2}
+  - Type: 10
+    Profile: {fileID: 11400000, guid: 0944a29e3b7915c48a528085c90e2cd0, type: 2}
+  - Type: 11
+    Profile: {fileID: 11400000, guid: 77216f61d75bc4e4e95f0953d99fc477, type: 2}
+  - Type: 12
+    Profile: {fileID: 11400000, guid: aeb67d7e6aac38e498abc254ffc1fe05, type: 2}

@@ -132,6 +132,8 @@ public class CombatDirector : MonoBehaviour
             SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
         }
+
+        MusicManager.Instance.SwitchState(MusicState.Combat);
     }
     private void SetupArenaVisuals()
     {
