@@ -19,6 +19,13 @@ public class EnemySkillSO : ScriptableObject
     public float BaseScore = 10f;
     public List<SkillEvaluator> Evaluators = new List<SkillEvaluator>();
 
+    [Header("=== 霸体与打断设置 ===")]
+    [Tooltip("受到伤害时，是否会打断此技能的蓄力/引导？")]
+    public bool CanBeInterruptedByDamage = true;
+
+    [Tooltip("受到击退或引力拉扯时，是否会打断此技能？(勾选 False 则表现为位移免疫)")]
+    public bool CanBeInterruptedByForce = true;
+
     [Header("=== 令牌系统 ===")]
     public bool RequiresToken = false;
     public EnemyTokenType TokenType = EnemyTokenType.HeavyAttack;

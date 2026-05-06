@@ -52,12 +52,28 @@ public class EnemyBrain : MonoBehaviour
     private void Update()
     {
         if (isDead || CurrentState == AIState.Dead) return;
-        if (myReceiver.CurrentHP < lastFrameHP) { ExecuteECAActions(MyData.OnTakeDamageActions, null); CheckInterrupt(); lastFrameHP = myReceiver.CurrentHP; }
+
+        if (myReceiver.CurrentHP < lastFrameHP)
+        {
+            ExecuteECAActions(MyData.OnTakeDamageActions, null);
+
+            // --- 👇【关键修复点】：只有在允许伤害打断时，才执行 CheckInterrupt ---
+            if (currentSkill != null && currentSkill.SkillData.CanBeInterruptedByDamage)
+            {
+                CheckInterrupt();
+            }
+
+            lastFrameHP = myReceiver.CurrentHP;
+        }
+        // ------------------------------------------
+
         if (myReceiver.CurrentHP <= 0) return;
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) { rb.velocity = Vector2.zero; return; }
         if (isStaggered) { HandleStaggerState(); return; }
+
         foreach (var s in runtimeSkills) if (s.CurrentCooldown > 0) s.CurrentCooldown -= Time.deltaTime;
         if (globalActionTimer > 0) globalActionTimer -= Time.deltaTime;
+
         currentTarget = GetTargetByStrategy(MyData.TargetingLogic);
         HandleTacticalStateMachine();
     }
@@ -170,26 +186,25 @@ public class EnemyBrain : MonoBehaviour
 
     private void CheckInterrupt()
     {
-        var handler = GetComponent<KineticCollisionHandler>();
-        if (handler != null && handler.IsUnstoppable) return;
+        // 只有在“走位准备”或“蓄力引导”阶段才会被打断
         if (CurrentState == AIState.Channelling || CurrentState == AIState.Positioning)
         {
             // 1. 寻找身上是否正在引导激光
             var activeLaser = GetComponentInChildren<LinearLaserController>();
 
-            // --- 👇【关键修复】：增加霸体判定 ---
+            // 🌟 如果激光开启了霸体（IsUnstoppable），则无视此打断指令
             if (activeLaser != null && activeLaser.IsUnstoppable)
             {
-                Debug.Log($"<color=white>【稳态】</color> {gameObject.name} 依靠霸体维持了激光引导！");
-                return; // 霸体生效，不执行下方的销毁和重置逻辑
+                return;
             }
-            // ------------------------------------
 
-            // 2. 如果没霸体，或者是其他可打断技能，则执行强制中止
+            // 2. 如果没霸体，执行清理逻辑
             if (activeLaser != null) Destroy(activeLaser.gameObject);
-
             if (myHUD != null) myHUD.HideIntent();
-            Debug.Log($"<color=yellow>【打断】</color> {gameObject.name} 的引导因冲击而中止");
+
+            Debug.Log($"<color=yellow>【系统】</color> {gameObject.name} 的技能引导被外力中止。");
+
+            // 3. 强制结算当前技能（重置 AI 状态至 Thinking 态）
             FinishSkillExecution();
         }
     }
@@ -209,29 +224,47 @@ public class EnemyBrain : MonoBehaviour
     {
         if (isDead) return;
 
-        // 同时兼容激光霸体和冲撞霸体
-        var laser = GetComponentInChildren<LinearLaserController>();
-        var kinetic = GetComponent<KineticCollisionHandler>();
-
-        bool hasSuperArmor = (laser != null && laser.IsUnstoppable) || (kinetic != null && kinetic.IsUnstoppable);
-
-        if (hasSuperArmor)
-        {
-            return; // 不产生硬直，不产生位移
-        }
-
         float mass = Mathf.Max(rb.mass, 0.5f);
         float deltaV = impulse / mass;
-        if (deltaV < 1.0f) return;
+        if (deltaV < 0.5f) return; // 极小冲量忽略
 
-        CheckInterrupt();
-        isStaggered = true;
-        staggerTimer = Mathf.Max(deltaV * 0.05f, 0.1f);
-        rb.drag = 5f;
-        rb.velocity = Vector2.zero;
+        // --- 1. 判定是否打断技能 (逻辑判定) ---
+        bool shouldInterrupt = true;
+
+        // 检查当前技能的霸体配置
+        if (currentSkill != null && !currentSkill.SkillData.CanBeInterruptedByForce)
+            shouldInterrupt = false;
+
+        // 检查功能模块（如激光）的霸体配置
+        var laser = GetComponentInChildren<LinearLaserController>();
+        var kinetic = GetComponent<KineticCollisionHandler>();
+        if ((laser != null && laser.IsUnstoppable) || (kinetic != null && kinetic.IsUnstoppable))
+            shouldInterrupt = false;
+
+        // --- 2. 执行状态机干预 ---
+        if (shouldInterrupt)
+        {
+            // 如果没有霸体：执行招式清理，并进入硬直状态
+            CheckInterrupt();
+            isStaggered = true;
+            staggerTimer = Mathf.Max(deltaV * 0.05f, 0.1f);
+            rb.drag = 5f;
+            rb.velocity = Vector2.zero; // 先清空当前速度，再施加冲量，打击感更明确
+        }
+        else
+        {
+            // 🌟 如果有霸体：不执行 CheckInterrupt，不设置 isStaggered。
+            // 这意味着：Update 里的计时器继续走，AI 状态不重置。
+            // 物理惯性会和 AI 原有的速度叠加，产生“边被推边蓄力”的效果。
+
+            // 降低摩擦力，让推挤更丝滑，不会因为 AI 强行修正速度而瞬间停下
+            rb.drag = 1.0f;
+        }
+
+        // --- 3. 🌟 物理冲量无条件生效 ---
+        // 无论是杂兵还是霸体精英，只要被推了，身体必须动
         rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
-
     private void HandleDeathSequence() { if (isDead) return; isDead = true; CurrentState = AIState.Dead; if (myHUD != null) myHUD.HideIntent(); FinishSkillExecution(); rb.velocity = Vector2.zero; rb.isKinematic = true; rb.simulated = false; ExecuteECAActions(MyData.OnDeathActions, null); gameObject.layer = LayerMask.NameToLayer("Floor"); StartCoroutine(CorpseDecayRoutine()); }
     private void InitializeSkills() { runtimeSkills.Clear(); foreach (var skillSO in MyData.Skills) { if (skillSO == null) continue; var rSkill = new RuntimeEnemySkill { SkillData = skillSO, CurrentCooldown = 0f }; rSkill.DummyWeapon = new RuntimeWeapon { WeaponName = skillSO.SkillName, DeliveryType = skillSO.DeliveryType, ProjectilePrefab = skillSO.ProjectilePrefab }; rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = skillSO.AttackSpeed; rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = skillSO.MaxDamage; rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = skillSO.MinDamage; rSkill.DummyWeapon.WeaponStats[StatType.MaxRange] = skillSO.MaxRange; rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = skillSO.ProjectileSpeed; rSkill.DummyWeapon.OnHitActions.AddRange(skillSO.OnHitActions); rSkill.DummyWeapon.OnFireActions.AddRange(skillSO.OnFireActions); runtimeSkills.Add(rSkill); } }
     private void ExecuteECAActions(List<ECAAction> actions, RuntimeWeapon w) { if (actions == null) return; ECAContext c = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = this.transform, SourceWeapon = w, IsEnemyFire = true, SourceEntity = this.transform }; foreach (var a in actions) if (a != null) a.Execute(c); }

@@ -19,6 +19,8 @@ MonoBehaviour:
   SkillTargetingLogic: 3
   BaseScore: 10
   Evaluators: []
+  CanBeInterruptedByDamage: 0
+  CanBeInterruptedByForce: 0
   RequiresToken: 0
   TokenType: 0
   ShowIntent: 0
@@ -33,9 +35,6 @@ MonoBehaviour:
   DeliveryType: 0
   ProjectilePrefab: {fileID: 0}
   ProjectileSpeed: 10
-  DashDirection: 0
-  DashImpulse: 300
-  DashDuration: 0.5
   OnFireActions:
   - {fileID: 11400000, guid: 7e3a4e86f52bf5242a81884c77bc0167, type: 2}
   OnHitActions: []

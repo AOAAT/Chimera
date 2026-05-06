@@ -19,11 +19,14 @@ MonoBehaviour:
   SkillTargetingLogic: 3
   BaseScore: 10
   Evaluators: []
+  CanBeInterruptedByDamage: 0
+  CanBeInterruptedByForce: 0
   RequiresToken: 0
   TokenType: 0
   ShowIntent: 0
   IntentIcon: {fileID: 0}
   NextComboSkill: {fileID: 0}
+  IgnoreRange: 0
   MaxRange: 70
   MinRange: 0
   MinDamage: 10
@@ -32,9 +35,6 @@ MonoBehaviour:
   DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: c8158aef75ecd6248b615b7dac49ac49, type: 3}
   ProjectileSpeed: 100
-  DashDirection: 0
-  DashImpulse: 300
-  DashDuration: 0.5
   OnFireActions: []
   OnHitActions:
   - {fileID: 11400000, guid: 204b27b20a6b1bd48861c3c17bedaa95, type: 2}

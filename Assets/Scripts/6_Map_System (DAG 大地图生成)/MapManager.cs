@@ -158,21 +158,7 @@ public class MapManager : MonoBehaviour
         {
             GlobalResourceManager.Instance.AdvanceDay();
         }
+
     }
-
-     //🗑️ 注意：原来那个单独的 private void LockUnselectedSiblings() 方法可以彻底删掉了！
-
-    private void LockUnselectedSiblings()
-    {
-        // 遍历所有节点，如果它和我在同一层，但不是我刚才选的那个，就把它彻底锁死
-        foreach (var node in mapGenerator.GeneratedMap.Values)
-        {
-            if (node.LayerIndex == CurrentLayer && node.NodeID != CurrentNodeID)
-            {
-                node.NodeState = MapNodeState.Locked;
-            }
-        }
-    }
-
 
 }

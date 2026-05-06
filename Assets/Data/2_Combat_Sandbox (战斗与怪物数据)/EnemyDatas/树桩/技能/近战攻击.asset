@@ -19,13 +19,15 @@ MonoBehaviour:
   SkillTargetingLogic: 3
   BaseScore: 10
   Evaluators: []
+  CanBeInterruptedByDamage: 0
+  CanBeInterruptedByForce: 0
   RequiresToken: 0
   TokenType: 0
   ShowIntent: 0
   IntentIcon: {fileID: 0}
   NextComboSkill: {fileID: 0}
   IgnoreRange: 0
-  MaxRange: 15
+  MaxRange: 10
   MinRange: 0
   MinDamage: 10
   MaxDamage: 10

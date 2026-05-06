@@ -39,7 +39,7 @@ MonoBehaviour:
     Value: 4
     ModType: 0
   - StatID: 33
-    Value: 2
+    Value: 3
     ModType: 0
   SanPenalties: []
   VisualScaleMultiplier: 1
@@ -47,7 +47,9 @@ MonoBehaviour:
   ShadowOffset: {x: 0, y: -0.8}
   ShadowWidth: 1.5
   ShadowHeight: 0.5
-  Skills: []
+  Skills:
+  - {fileID: 11400000, guid: 69c058be754272745b4d7747e472b28b, type: 2}
+  - {fileID: 11400000, guid: 231be42ba71fe014dbc4df100d75ed16, type: 2}
   OnSpawnActions: []
   OnDeathActions:
   - {fileID: 11400000, guid: 959a7c9575c80bb4984caf8b69c77c3e, type: 2}

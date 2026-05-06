@@ -53,26 +53,32 @@ public class StatEntryDrawer : PropertyDrawer
 
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
-        // 开始绘制属性
+        // 🌟【核心修复点】：编辑器安全检查
+        // 如果序列化对象已经被销毁或为空，立即停止绘制，防止触发 Unity 内部异常
+        if (property == null || property.serializedObject == null || property.serializedObject.targetObject == null)
+        {
+            return;
+        }
+
         EditorGUI.BeginProperty(position, label, property);
 
-        // 获取内部的两个变量：StatID 和 Value
         SerializedProperty statIdProp = property.FindPropertyRelative("StatID");
         SerializedProperty valueProp = property.FindPropertyRelative("Value");
 
-        // --- 核心魔法 1：感知宿主身份 ---
+        // 再次检查内部属性
+        if (statIdProp == null || valueProp == null)
+        {
+            EditorGUI.EndProperty();
+            return;
+        }
+
         UnityEngine.Object targetObject = property.serializedObject.targetObject;
         StatType[] allowedPool = GetAllowedPool(targetObject);
 
-        // --- 核心魔法 2：构建动态下拉菜单 ---
-        // 把允许的枚举转换成字符串数组，供下拉菜单显示
         string[] displayOptions = allowedPool.Select(s => s.ToString()).ToArray();
-
-        // 查找当前已经选中的值，在我们的允许池里排第几个？
         StatType currentStat = (StatType)statIdProp.intValue;
         int currentIndex = Array.IndexOf(allowedPool, currentStat);
 
-        // 防呆：如果当前值被剔除了（比如你把武器改成了核心），强制变成池子里的第一个，并标红警告！
         bool isInvalid = false;
         if (currentIndex == -1)
         {
@@ -80,24 +86,20 @@ public class StatEntryDrawer : PropertyDrawer
             isInvalid = true;
         }
 
-        // --- 排版计算 (极其舒爽的左右分栏比例 6:4) ---
         Rect dropdownRect = new Rect(position.x, position.y, position.width * 0.6f - 5f, position.height);
         Rect valueRect = new Rect(position.x + position.width * 0.6f, position.y, position.width * 0.4f, position.height);
 
-        // --- 绘制下拉菜单 ---
-        if (isInvalid) GUI.backgroundColor = Color.red; // 脏数据标红！
+        if (isInvalid) GUI.backgroundColor = Color.red;
 
         int newIndex = EditorGUI.Popup(dropdownRect, currentIndex, displayOptions);
 
-        GUI.backgroundColor = Color.white; // 恢复颜色
+        GUI.backgroundColor = Color.white;
 
-        // 保存玩家的选择
         if (newIndex >= 0 && newIndex < allowedPool.Length)
         {
             statIdProp.intValue = (int)allowedPool[newIndex];
         }
 
-        // --- 绘制数值输入框 ---
         EditorGUI.PropertyField(valueRect, valueProp, GUIContent.none);
 
         EditorGUI.EndProperty();
@@ -106,27 +108,19 @@ public class StatEntryDrawer : PropertyDrawer
     // 智能大脑：判断当前在谁的肚子里？
     private StatType[] GetAllowedPool(UnityEngine.Object targetObject)
     {
-        // 宿主是底盘图纸？
-        if (targetObject is ChassisDataSO) return ChassisPool;
-
-        // 宿主是敌人图纸？
-        if (targetObject is EnemyDataSO) return EnemyPool;
-
-        // 宿主是机甲组件图纸？
+        if (targetObject is ChassisDataSO) return new StatType[] { StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower };
+        if (targetObject is EnemyDataSO) return new StatType[] { StatType.HP, StatType.AP, StatType.Block, StatType.Mass, StatType.MoveSpeed };
         if (targetObject is ComponentDataSO comp)
         {
             switch (comp.Type)
             {
-                case ComponentType.Core: return CorePool;
-                case ComponentType.Weapon: return WeaponPool;
-                case ComponentType.Movement: return MovementPool;
+                case ComponentType.Core: return new StatType[] { StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower };
+                case ComponentType.Weapon: return new StatType[] { StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost, StatType.MaxDamage, StatType.MinDamage, StatType.MaxRange, StatType.MinRange, StatType.AttackSpeed, StatType.CriticalChance, StatType.CritMultiplier, StatType.ExplosionRadius, StatType.MultiShotCount, StatType.ProjectileSpeed };
+                case ComponentType.Movement: return new StatType[] { StatType.AddedHP, StatType.AddedAP, StatType.AddedMass, StatType.PowerCost, StatType.EnginePower };
                 case ComponentType.Support:
-                case ComponentType.Factory: return SupportPool;
+                case ComponentType.Factory: return new StatType[] { StatType.AddedHP, StatType.AddedAP, StatType.AddedBlock, StatType.AddedMass, StatType.PowerCost };
             }
         }
-
-        // 宿主是 ECA 万能修饰器？(Action_ModifyComponentStat)
-        // 这种情况下，修饰器可能要修改任何属性，所以开放所有权限！
         return (StatType[])Enum.GetValues(typeof(StatType));
     }
 }

@@ -19,6 +19,8 @@ MonoBehaviour:
   SkillTargetingLogic: 3
   BaseScore: 0
   Evaluators: []
+  CanBeInterruptedByDamage: 0
+  CanBeInterruptedByForce: 0
   RequiresToken: 0
   TokenType: 0
   ShowIntent: 0
