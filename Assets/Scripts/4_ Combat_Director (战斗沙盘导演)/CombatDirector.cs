@@ -98,7 +98,7 @@ public class CombatDirector : MonoBehaviour
     public void EnterCombatPhase(MapNodeData nodeData)
     {
         PerformFullCleanup(); // 强制先清空一次，防止上一关残留
-
+        MusicManager.Instance?.SwitchState(MusicState.Combat);
         IsCombatActive = false;
         IsDeploymentPhase = true;
         isCheckingWinCondition = false;
@@ -254,12 +254,15 @@ public class CombatDirector : MonoBehaviour
     /// <summary>
     /// 【核心事件】：玩家点击“开始战斗”
     /// </summary>
+    /// <summary>
+    /// 【核心事件】：玩家点击“开始战斗”
+    /// </summary>
     private void OnBattleStartClicked()
     {
         // 1. 重新抓取当前部署在场上的所有单位
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
-        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
+
         DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
         foreach (var r in allReceivers)
         {
@@ -267,12 +270,16 @@ public class CombatDirector : MonoBehaviour
             else ActivePlayerUnits.Add(r);
         }
 
-        if (ActivePlayerUnits.Count == 0) return;
+        // 判定：如果场上一台机甲都没有，不允许开战
+        if (ActivePlayerUnits.Count == 0)
+        {
+            Debug.LogWarning("【战斗导演】警告：未部署任何单位，无法开战！");
+            return;
+        }
 
-        // 2. 【核心修复】：通知全战场所有“组装型”单位（包括玩家和精英敌人）执行开战协议
-        Debug.Log("<color=#00FFFF>【战斗导演】全军通电，执行开战协议...</color>");
+      
 
-        // 同时也搜索敌人列表
+        // 2. 通知全战场所有“组装型”单位执行开战协议 (包括玩家和精英敌人)
         var allModularUnits = ActivePlayerUnits.Concat(ActiveEnemies).ToList();
 
         foreach (var unit in allModularUnits)
@@ -284,35 +291,39 @@ public class CombatDirector : MonoBehaviour
             }
         }
 
-        // 3. UI 状态锁定
+        // 3. UI 状态锁定：防止战斗中进行非法操作
         if (StartBattleButton != null) StartBattleButton.interactable = false;
+
+        // 强制关闭已打开的整备界面
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
         if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
 
+        // 锁死主导航栏
         if (NavHangarButton != null) NavHangarButton.interactable = false;
         if (NavWarehouseButton != null) NavWarehouseButton.interactable = false;
 
+        // 隐藏部署禁区提示
         if (forbiddenZonesContainer != null) forbiddenZonesContainer.SetActive(false);
 
-        // 4. 正式鸣枪：进入战斗状态
+        // 4. 正式鸣枪：变更导演状态
         IsCombatActive = true;
         IsDeploymentPhase = false;
         isCheckingWinCondition = true;
 
-        // 5. 👇【核心修复】：仅在鸣枪这一刻，构建并显示主动技能栏
+        // 5. 构建并显示主动技能栏
         if (ActiveSkillUIManager.Instance != null)
         {
             ActiveSkillUIManager.Instance.BuildSkillUI(ActivePlayerUnits);
         }
 
-
+        // 6. 应用全局协议 (Protocols)
         if (GlobalProtocolRegistry.Instance != null)
         {
             GlobalProtocolRegistry.Instance.ApplyProtocolsToUnits(ActivePlayerUnits);
         }
-        Debug.Log("<color=green>【战斗导演】全员通电完成，战斗正式开始！</color>");
-    }
 
+        Debug.Log("<color=green>【战斗导演】全员通电完成，逻辑闭环已启动，战斗正式开始！</color>");
+    }
     private void Update()
     {
         if (!wallsGenerated)
@@ -414,7 +425,10 @@ public class CombatDirector : MonoBehaviour
 
     public void ExecuteReturnToMap()
     {
-        // 再次保底执行清理，防止从不同路径跳回（比如直接点结算）
+        // 🌟【核心修复点 1】：把切歌指令提到最前面，且放在判定之外
+        // 只要执行“返回地图”逻辑，必须无条件切回地图 BGM
+        MusicManager.Instance?.SwitchState(MusicState.Map);
+
         PerformFullCleanup();
 
         if (MapManager.Instance != null && currentNodeData != null)
@@ -424,6 +438,7 @@ public class CombatDirector : MonoBehaviour
         }
         else
         {
+            // 兜底逻辑：即使没有节点数据，也要把地图 UI 屏显打开
             if (MapManager.Instance != null) MapManager.Instance.MapUIPanel.SetActive(true);
         }
 

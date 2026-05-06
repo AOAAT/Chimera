@@ -29,6 +29,7 @@ public class ShopDirector : MonoBehaviour
 
     public void EnterShopPhase(MapNodeData nodeData)
     {
+        MusicManager.Instance?.SwitchState(MusicState.Shop);
         currentNodeData = nodeData;
 
         int stage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
@@ -45,6 +46,7 @@ public class ShopDirector : MonoBehaviour
 
         var pool = validPools[Random.Range(0, validPools.Count)];
         GenerateShopGoods(pool);
+        MusicManager.Instance?.SetImmersionMode(true);
     }
 
     private void GenerateShopGoods(ShopPoolConfigSO pool)
@@ -155,5 +157,6 @@ public class ShopDirector : MonoBehaviour
     {
         ShopPanel.SetActive(false);
         MapManager.Instance.OnCombatVictory(currentNodeData); // 复用地图切回逻辑
+        MusicManager.Instance?.SetImmersionMode(false);
     }
 }

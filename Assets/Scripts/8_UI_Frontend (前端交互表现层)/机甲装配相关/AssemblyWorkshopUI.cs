@@ -60,6 +60,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OpenEmptyWorkshop(int slotIndex)
     {
+        MusicManager.Instance?.SetImmersionMode(true);
         gameObject.SetActive(true);
         currentEditingProfile = null;
         isCreatingNew = true;
@@ -72,6 +73,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OpenWorkshopWithUnit(int slotIndex, SavedUnitProfile unitProfile)
     {
+        MusicManager.Instance?.SetImmersionMode(true);
         gameObject.SetActive(true);
         currentEditingProfile = unitProfile;
         isCreatingNew = false;
@@ -400,5 +402,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
         gameObject.SetActive(false);
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.gameObject.SetActive(true);
         HangarMenuUI.Instance.RefreshHangar();
+        MusicManager.Instance?.SetImmersionMode(false);
     }
 }

@@ -15,5 +15,5 @@ MonoBehaviour:
   ClipsToPlay:
   - {fileID: 8300000, guid: 67cb0c705dda9b149b45d8f3c02c575b, type: 3}
   CriticalClipsOverride: []
-  Volume: 0.03
+  Volume: 0.1
   PitchJitter: 0.1

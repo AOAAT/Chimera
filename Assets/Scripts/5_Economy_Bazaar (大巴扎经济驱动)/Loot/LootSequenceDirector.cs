@@ -19,8 +19,9 @@ public class LootSequenceDirector : MonoBehaviour
     {
         currentMacroContext = macro;
         currentDepthContext = mapDepth;
+        MusicManager.Instance?.SwitchState(MusicState.Loot);
 
-        Debug.Log("<color=#FFD700>【打捞管线启动】</color> 正在合并双源战利品并重排优先级...");
+        Debug.Log("<color=#FFD700>【打捞管线启动】</color> 正在合并双源战利品...");
 
         // 1. 熔炉合并 (将微观遭遇战和宏观节点补偿合并)
         List<LootTaskConfig> combinedConfigs = new List<LootTaskConfig>();

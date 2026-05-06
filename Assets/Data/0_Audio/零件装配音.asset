@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: "\u96F6\u4EF6\u88C5\u914D\u97F3"
   m_EditorClassIdentifier: 
   Clips:
-  - {fileID: 8300000, guid: b615d34bb4e7d1948bbbb8d8aaaf75ae, type: 3}
+  - {fileID: 8300000, guid: 64d1bd5fae437044ea3f4ce983754343, type: 3}
   Volume: 1
   BasePitch: 1
   PitchJitter: 0.1

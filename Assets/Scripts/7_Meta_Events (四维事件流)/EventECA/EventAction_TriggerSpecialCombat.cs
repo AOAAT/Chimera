@@ -15,7 +15,7 @@ public class EventAction_TriggerSpecialCombat : EventAction
 
         // 1. 设置布局
         CombatDirector.Instance.CurrentLayout = SpecialLayout;
-
+        MusicManager.Instance?.SwitchState(MusicState.Combat);
         // --- 👇【关键修复】：显式交接节点数据 ---
         // 这样战斗导演就会记住这个节点，打完后能正确结账
         CombatDirector.Instance.EnterCombatPhase(EventDirector.Instance.CurrentNodeData);

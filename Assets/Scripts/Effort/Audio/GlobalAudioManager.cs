@@ -12,6 +12,8 @@ public class GlobalAudioManager : MonoBehaviour
     public int PoolSize = 20;
     private Queue<AudioSource> audioPool = new Queue<AudioSource>();
 
+    private Dictionary<UISoundType, float> lastPlayedTime = new Dictionary<UISoundType, float>();
+    private const float MIN_SFX_INTERVAL = 0.08f; // 两次同类音效之间的最小间隔（秒）
     private void Awake()
     {
         if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
@@ -41,10 +43,22 @@ public class GlobalAudioManager : MonoBehaviour
     public void PlayUISound(UISoundType type)
     {
         if (UIAtlas == null) return;
+
+        // --- 👇【核心优化：防抖逻辑】---
+        // 如果是悬停类音效，进行高频拦截
+        if (type == UISoundType.Generic_Hover)
+        {
+            if (lastPlayedTime.ContainsKey(type) && (Time.unscaledTime - lastPlayedTime[type]) < MIN_SFX_INTERVAL)
+            {
+                return; // 还没到 CD，直接拦截，保护耳朵和 BGM
+            }
+            lastPlayedTime[type] = Time.unscaledTime;
+        }
+        // ----------------------------------
+
         AudioProfileSO profile = UIAtlas.GetProfile(type);
         if (profile != null) PlayProfile(profile, Vector3.zero, true);
     }
-
     public void PlayProfile(AudioProfileSO profile, Vector3 position, bool isUI = false)
     {
         if (profile == null || audioPool.Count == 0) return;

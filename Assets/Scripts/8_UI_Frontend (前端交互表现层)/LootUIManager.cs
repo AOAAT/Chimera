@@ -76,6 +76,7 @@ public class LootUIManager : MonoBehaviour
         onHubClosedCallback = onClose;
         RefreshHubUI();
         HubPanel.SetActive(true);
+        MusicManager.Instance?.SetImmersionMode(true);
     }
 
     private void RefreshHubUI()
@@ -343,6 +344,10 @@ private void OnConfirmClicked()
     private void OnLeaveHubClicked()
     {
         CloseAllPanels();
+
+        // 🌟 确保在这里恢复正常音质
+        MusicManager.Instance?.SetImmersionMode(false);
+
         if (onHubClosedCallback != null) onHubClosedCallback.Invoke();
     }
 

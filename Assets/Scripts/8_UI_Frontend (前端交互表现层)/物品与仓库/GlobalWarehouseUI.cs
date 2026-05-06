@@ -47,12 +47,14 @@ public class GlobalWarehouseUI : MonoBehaviour
     public void OpenWarehouse()
     {
         gameObject.SetActive(true);
+        MusicManager.Instance?.SetImmersionMode(true); // 👈 开启闷声
         RefreshWarehouse();
     }
 
     public void CloseWarehouse()
     {
         gameObject.SetActive(false);
+        MusicManager.Instance?.SetImmersionMode(false); // 👈 恢复清亮
         ItemDetailPanelUI.Instance?.HidePanel();
     }
 

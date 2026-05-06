@@ -93,6 +93,7 @@ public class EventDirector : MonoBehaviour
     public void PlayEvent(EventNodeSO eventNode)
     {
         // --- 👇【关键修复】：只要调用了 PlayEvent，就标记流程已被劫持 ---
+        MusicManager.Instance?.PlayEventMusic(eventNode.CustomBGM);
         isFlowHijackedByAction = true;
 
         currentEventNode = eventNode;

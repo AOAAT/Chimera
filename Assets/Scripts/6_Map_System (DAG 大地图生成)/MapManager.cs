@@ -36,11 +36,10 @@ public class MapManager : MonoBehaviour
     public void StartNewExpedition()
     {
         mapGenerator.GenerateNewMap();
-
+        MusicManager.Instance?.SwitchState(MusicState.Map);
         // 找到第0层的起点，把玩家扔上去
         var startNode = mapGenerator.GeneratedMap["Node_0_0"];
         MoveToNode(startNode);
-        MusicManager.Instance.SwitchState(MusicState.Map);
     }
 
     public void TrySelectNode(string targetNodeID)
@@ -108,6 +107,9 @@ public class MapManager : MonoBehaviour
     public void OnCombatVictory(MapNodeData nodeData)
     {
         if (MapUIPanel != null) MapUIPanel.SetActive(true);
+
+        // --- 👇【核心加固】：这是唯一的“回地图音乐”触发点 ---
+        MusicManager.Instance?.SwitchState(MusicState.Map);
 
         if (nodeData != null)
         {

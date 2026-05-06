@@ -33,4 +33,8 @@ public class EventNodeSO : ScriptableObject
 
     [Header("=== 交互选项 ===")]
     public List<EventOption> Options = new List<EventOption>();
+
+    [Header("=== 叙事音乐控制 ===")]
+    [Tooltip("如果此处留空，则播放 MusicManager 里的默认事件音乐")]
+    public AudioClip CustomBGM;
 }
