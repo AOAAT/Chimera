@@ -296,20 +296,41 @@ public class LootUIManager : MonoBehaviour
         rect.localScale = Vector3.one;
         rect.localRotation = Quaternion.identity;
     }
-// ==========================================
-// 核心交互：收下 / 粉碎 / 返回
-// ==========================================
-private void OnConfirmClicked()
+    // ==========================================
+    // 核心交互：收下 / 粉碎 / 返回
+    // ==========================================
+    private void OnConfirmClicked()
     {
         if (selectedItem != null)
         {
+            // 1. 获取当前选中的格子视觉位置
+            Vector3 startPos = Input.mousePosition; // 默认位置
+
+            // 尝试获取精准的格子坐标
+            foreach (var slot in FixedItemSlots)
+            {
+                if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
+                {
+                    startPos = slot.transform.position;
+                    break;
+                }
+            }
+
+            // 2. 触发飞行特效
+            if (JuicyLootEffectManager.Instance != null)
+            {
+                JuicyLootEffectManager.Instance.SpawnFlyEffect(selectedItem.BaseData.ComponentIcon, startPos);
+            }
+
+            // 3. 逻辑先行：数据入库（原有的逻辑保持不变）
             PlayerInventoryManager.Instance.ComponentInventory.Add(selectedItem);
             PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
+
             Debug.Log($"【打捞成功】获得了 Lv.{selectedItem.CurrentLevel} [{selectedItem.BaseData.ComponentName}]");
+
             ConcludeTask();
         }
     }
-
     private void OnSalvageClicked()
     {
         if (selectedItem != null)

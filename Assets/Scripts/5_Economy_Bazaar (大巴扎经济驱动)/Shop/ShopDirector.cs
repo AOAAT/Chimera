@@ -114,9 +114,22 @@ public class ShopDirector : MonoBehaviour
         if (GlobalResourceManager.Instance.Materials < price)
         {
             Debug.LogWarning($"【余额不足】需要 {price} 废料，当前只有 {GlobalResourceManager.Instance.Materials}！");
-            // TODO: 未来可以在这让 priceTxt 闪红字
             return;
         }
+
+        // --- 👇【核心新增】：触发飞入动画 ---
+        if (JuicyLootEffectManager.Instance != null)
+        {
+            Sprite iconToFly = null;
+            if (comp != null) iconToFly = comp.BaseData.ComponentIcon;
+            else if (chassis != null) iconToFly = chassis.BaseData.ChassisSprite;
+
+            // 起点：直接取当前这个商品 UI 槽位（widget）的位置
+            Vector3 startPos = widget.transform.position;
+
+            JuicyLootEffectManager.Instance.SpawnFlyEffect(iconToFly, startPos);
+        }
+        // ----------------------------------
 
         // 1. 扣钱！
         GlobalResourceManager.Instance.ModifyMaterials(-price);
@@ -132,11 +145,10 @@ public class ShopDirector : MonoBehaviour
 
         var canvasGroup = widget.GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = widget.AddComponent<CanvasGroup>();
-        canvasGroup.alpha = 0.4f; // 整个商品变暗变透明
+        canvasGroup.alpha = 0.4f;
 
         Debug.Log("<color=#FFD700>【交易成功】</color> 银货两讫！");
     }
-
     private int RollLevel(ComponentDataSO bp, ShopPoolConfigSO pool)
     {
         int w1 = pool.Weight_Lv1; int w2 = pool.Weight_Lv2;
