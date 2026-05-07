@@ -18,5 +18,3 @@ MonoBehaviour:
   MaxDepth: 15
   Events:
   - {fileID: 11400000, guid: f5c5eff2b02257d4480d81d5b4031e68, type: 2}
-  - {fileID: 11400000, guid: 5da16265188bd1d4aa5306fc85e0a650, type: 2}
-  - {fileID: 11400000, guid: c195cc94b29b0a54d91d85f00c03a3e5, type: 2}
