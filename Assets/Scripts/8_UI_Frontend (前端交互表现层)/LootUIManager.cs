@@ -339,9 +339,24 @@ public class LootUIManager : MonoBehaviour
             var lvData = blueprint.GetLevelData(selectedItem.CurrentLevel);
             int scrapVal = lvData != null ? lvData.ScrapValue : 5;
 
-            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifyMaterials(scrapVal);
+            // --- 👇【核心新增】：触发喷涌动画 ---
+            if (JuicyLootEffectManager.Instance != null)
+            {
+                // 获取当前选中格子的位置
+                Vector3 startPos = Input.mousePosition;
+                foreach (var slot in FixedItemSlots)
+                {
+                    if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
+                    {
+                        startPos = slot.transform.position;
+                        break;
+                    }
+                }
+                JuicyLootEffectManager.Instance.SpawnScrapExplosion(startPos, scrapVal);
+            }
+            // ----------------------------------
 
-            Debug.Log($"【粉碎资源】残骸已粉碎，获得了 {scrapVal} 点废料！");
+            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifyMaterials(scrapVal);
             ConcludeTask();
         }
     }

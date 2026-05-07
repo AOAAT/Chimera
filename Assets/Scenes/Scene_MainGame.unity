@@ -3144,6 +3144,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FlyPrefab: {fileID: 79121891166735006, guid: d161c8f3050cddd4395d2ab877424370, type: 3}
   InventoryTarget: {fileID: 749304241}
+  ScrapPrefab: {fileID: 3735553004298014096, guid: ca0afe060686fcc4b90a3be5bd62c72a, type: 3}
+  ScrapSprites:
+  - {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
+  - {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}
+  - {fileID: 21300000, guid: da0376b5ab9478b45a2123747e34d9b4, type: 3}
+  ScrapHUDTarget: {fileID: 1686067515}
 --- !u!1 &416345481
 GameObject:
   m_ObjectHideFlags: 0
@@ -14297,7 +14303,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9407338
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

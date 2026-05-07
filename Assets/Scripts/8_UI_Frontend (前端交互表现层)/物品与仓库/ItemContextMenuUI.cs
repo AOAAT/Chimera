@@ -115,7 +115,11 @@ public class ItemContextMenuUI : MonoBehaviour
             GlobalResourceManager.Instance.ModifyMaterials(scrapValue);
             Debug.Log($"<color=#FFD700>【废品回收】</color> 成功熔毁了 [{itemName}]，获得了 {scrapValue} 点废料！");
         }
-
+        if (JuicyLootEffectManager.Instance != null)
+        {
+            // 直接在鼠标点击位置喷发
+            JuicyLootEffectManager.Instance.SpawnScrapExplosion(MenuRect.position, scrapValue);
+        }
         // 4. 强制刷新大仓库 UI 并关闭菜单
         PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
         HideMenu();
