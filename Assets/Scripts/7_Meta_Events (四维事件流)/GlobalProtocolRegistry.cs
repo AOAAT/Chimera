@@ -18,8 +18,15 @@ public class GlobalProtocolRegistry : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
-        else Destroy(gameObject);
+        // 修改点：去掉了 DontDestroyOnLoad
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
     }
 
     // 由事件积木调用

@@ -85,4 +85,13 @@ public class ActiveSkillUIManager : MonoBehaviour
             SetVisibility(true);
         }
     }
+
+    // 在 UI 脚本中加入这个，确保场景卸载后，单例引用被正确清理
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
 }

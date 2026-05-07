@@ -16,9 +16,17 @@ public class GlobalAudioManager : MonoBehaviour
     private const float MIN_SFX_INTERVAL = 0.08f; // 两次同类音效之间的最小间隔（秒）
     private void Awake()
     {
-        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
-        else { Destroy(gameObject); return; }
-        InitializePool();
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // 保留：音频不断档
+            InitializePool();
+        }
+        else if (Instance != this)
+        {
+            // 核心修改：如果场景里已经有一个持久的 Instance 了，新的直接自杀
+            Destroy(gameObject);
+        }
     }
 
     private void InitializePool()

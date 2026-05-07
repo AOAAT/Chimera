@@ -404,4 +404,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
         HangarMenuUI.Instance.RefreshHangar();
         MusicManager.Instance?.SetImmersionMode(false);
     }
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
 }

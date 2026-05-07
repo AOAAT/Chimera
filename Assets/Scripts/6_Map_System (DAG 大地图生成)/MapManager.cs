@@ -21,12 +21,18 @@ public class MapManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
-        else { Destroy(gameObject); return; }
+        // 修改点：去掉了 DontDestroyOnLoad
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
 
         mapGenerator = GetComponent<MapGenerator>();
     }
-
     private void Start()
     {
         // 测试发车！生成新地图

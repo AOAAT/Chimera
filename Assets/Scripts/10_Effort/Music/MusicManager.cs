@@ -34,8 +34,15 @@ public class MusicManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) { Instance = this; DontDestroyOnLoad(gameObject); }
-        else { Destroy(gameObject); return; }
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
 
         // 🌟【核心修复】：物理隔离初始化
         // 我们在物体下方动态创建两个纯净的子物体来承载音频

@@ -40,6 +40,10 @@ public class GlobalWarehouseUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
         if (PlayerInventoryManager.Instance != null)
             PlayerInventoryManager.Instance.OnInventoryChanged -= RefreshWarehouse;
     }
@@ -178,4 +182,7 @@ public class GlobalWarehouseUI : MonoBehaviour
             default: return tag.ToString();
         }
     }
+
+    // 在 UI 脚本中加入这个，确保场景卸载后，单例引用被正确清理
+
 }
