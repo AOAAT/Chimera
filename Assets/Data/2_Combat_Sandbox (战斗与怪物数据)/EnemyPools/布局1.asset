@@ -15,7 +15,19 @@ MonoBehaviour:
   ArenaReference: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
   Enemies:
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
-    LocalPosition: {x: 4, y: 3}
+    LocalPosition: {x: -5, y: 3.5}
+  - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
+    LocalPosition: {x: -2.5, y: 3.5}
+  - EnemyType: {fileID: 11400000, guid: 24e2f021283bb48408271339c3c53d00, type: 2}
+    LocalPosition: {x: -5, y: 0.5}
+  - EnemyType: {fileID: 11400000, guid: 7eb969159f934094abc09ad8cc374746, type: 2}
+    LocalPosition: {x: -2, y: 0.5}
+  - EnemyType: {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
+    LocalPosition: {x: -5, y: -2.5}
+  - EnemyType: {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
+    LocalPosition: {x: -2, y: -2.5}
+  - EnemyType: {fileID: 11400000, guid: 57bc7134f8cc7ef4fbdd05a99ad90628, type: 2}
+    LocalPosition: {x: 1.5, y: -2.5}
   ForbiddenZones:
   - serializedVersion: 2
     x: 0.5

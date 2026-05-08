@@ -43,10 +43,10 @@ MonoBehaviour:
     ModType: 0
   SanPenalties: []
   VisualScaleMultiplier: 1
-  OverrideShadow: 0
-  ShadowOffset: {x: 0, y: -0.8}
-  ShadowWidth: 20
-  ShadowHeight: 10
+  OverrideShadow: 1
+  ShadowOffset: {x: 0, y: -0.55}
+  ShadowWidth: 0.65
+  ShadowHeight: 0.65
   Skills:
   - {fileID: 11400000, guid: 8ea7c27125a2df14e9fbe004118aea9f, type: 2}
   - {fileID: 11400000, guid: fc3c6cf7d63e993418370f73d5b49454, type: 2}

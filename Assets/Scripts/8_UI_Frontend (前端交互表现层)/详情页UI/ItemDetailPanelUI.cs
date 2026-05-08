@@ -281,7 +281,7 @@ public class ItemDetailPanelUI : MonoBehaviour
             ui.SpecialMechanicText.color = defaultTextColor; // 👈 改这里！
         }
 
-        if (ui.ScrapValueText) ui.ScrapValueText.text = s.ToString();
+        if (ui.ScrapValueText) ui.ScrapValueText.text = "拆解价值: " + s.ToString();
         if (ui.IconImage) { ui.IconImage.sprite = ic; ui.IconImage.SetNativeSize(); }
         if (ui.LevelText) ui.LevelText.text = string.IsNullOrEmpty(lv) ? "" : $"Lv.{lv}";
     }
@@ -356,5 +356,97 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private float GetStat(List<StatEntry> stats, StatType type) { var e = stats.Find(x => x.StatID == type); return e != null ? e.Value : 0f; }
     private void SetLevelBackground(Image img, Sprite[] bgs, int lv) { if (img && bgs.Length >= 4) img.sprite = bgs[Mathf.Clamp(lv - 1, 0, 3)]; }
-    private void RenderTags(MacroCategory macro, ComponentType? type, List<SubTag> subs, int lv) { if (!TagsContainer) return; foreach (Transform child in TagsContainer) Destroy(child.gameObject); }
+    private void RenderTags(MacroCategory macro, ComponentType? type, List<SubTag> subs, int lv)
+    {
+        if (!TagsContainer || !TagPrefab) return;
+
+        // 1. 清理旧标签 (打扫战场)
+        foreach (Transform child in TagsContainer)
+        {
+            // 建议使用 Destroy，但在 UI 频繁刷新时可以考虑对象池
+            Destroy(child.gameObject);
+        }
+
+        // --- 2. 准备标签数据队列 ---
+        List<(string text, Color color)> tagsToCreate = new List<(string, Color)>();
+
+        // A. 加入阵营标签 (Tech/Flesh/Magic)
+        string macroName = macro == MacroCategory.Tech ? "科技" : (macro == MacroCategory.Flesh ? "生物" : "秘术");
+        Color macroColor = new Color(0.5f, 0.8f, 1f); // 浅蓝色
+        tagsToCreate.Add((macroName, macroColor));
+
+        // B. 加入类型标签 (Weapon/Core...)
+        if (type.HasValue)
+        {
+            string typeName = TranslateComponentType(type.Value);
+            tagsToCreate.Add((typeName, Color.white));
+        }
+
+        // C. 加入稀有度标签 (Lv1-Lv4)
+        if (lv > 0)
+        {
+            string rarityName = lv == 4 ? "传说" : (lv == 3 ? "史诗" : (lv == 2 ? "稀有" : "普通"));
+            Color rarityColor = lv == 4 ? new Color(1f, 0.6f, 0f) : (lv == 3 ? new Color(0.7f, 0.2f, 0.9f) : Color.white);
+            tagsToCreate.Add((rarityName, rarityColor));
+        }
+
+        // D. 加入所有细分流派标签 (Ballistic, Energy...)
+        if (subs != null)
+        {
+            foreach (var sub in subs)
+            {
+                tagsToCreate.Add((TranslateSubTag(sub), new Color(0.8f, 0.8f, 0.8f)));
+            }
+        }
+
+        // --- 3. 正式实例化并显示 ---
+        foreach (var tagData in tagsToCreate)
+        {
+            GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
+
+            // 尝试寻找 Prefab 里的文本组件
+            TMP_Text txt = tagObj.GetComponentInChildren<TMP_Text>();
+            if (txt != null)
+            {
+                txt.text = tagData.text;
+                txt.color = tagData.color;
+            }
+
+            // 尝试寻找 Prefab 里的背景图（如果有边框的话）
+            Image img = tagObj.GetComponent<Image>();
+            if (img != null)
+            {
+                // 给边框一个微弱的对应颜色，增加高级感
+                Color fadedColor = tagData.color;
+                fadedColor.a = 0.2f;
+                img.color = fadedColor;
+            }
+        }
+    }
+
+    // 内部翻译辅助方法
+    private string TranslateSubTag(SubTag tag)
+    {
+        switch (tag)
+        {
+            case SubTag.Ballistic: return "实弹";
+            case SubTag.Energy: return "能量";
+            case SubTag.Mutation: return "突变";
+            case SubTag.Acid: return "强酸";
+            case SubTag.Economy: return "经济";
+            default: return tag.ToString();
+        }
+    }
+
+    private string TranslateComponentType(ComponentType type)
+    {
+        switch (type)
+        {
+            case ComponentType.Core: return "核心";
+            case ComponentType.Weapon: return "武器";
+            case ComponentType.Movement: return "移动";
+            case ComponentType.Support: return "辅助";
+            default: return "插件";
+        }
+    }
 }
