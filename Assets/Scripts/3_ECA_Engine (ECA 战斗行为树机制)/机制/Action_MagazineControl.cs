@@ -43,7 +43,7 @@ public class Action_MagazineControl : ECAAction
             // A. 【消耗弹药】：扣除一发，并允许本次开火继续向下执行
             states["CurrentAmmo"] = currentAmmo - 1;
 
-            Debug.Log($"<color=#00FFFF>[{context.SourceWeapon.WeaponName}] 射击！剩余弹药: {states["CurrentAmmo"]}/{MaxAmmo}</color>");
+          
 
             // B. 【临界点检查】：如果打完这发正好空了，立刻启动换弹倒计时
             if (states["CurrentAmmo"] <= 0)
@@ -53,7 +53,7 @@ public class Action_MagazineControl : ECAAction
                 // 【核心修复】：立即重置弹药数，这样读秒结束后，第一步判定就能通过
                 states["CurrentAmmo"] = MaxAmmo;
 
-                Debug.Log($"<color=#FF8800>[{context.SourceWeapon.WeaponName}] 最后一发！启动装填程序，耗时 {ReloadTime}s</color>");
+                
             }
         }
         else

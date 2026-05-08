@@ -63,9 +63,25 @@ public class DamagePopup : MonoBehaviour
 
     private void Update()
     {
+        // 1. 原有的向上移动逻辑
         transform.position += Vector3.up * moveYSpeed * Time.deltaTime;
         disappearTimer -= Time.deltaTime;
 
+        // --- 👇【核心新增】：屏幕边界检测 ---
+        // 将世界坐标转为屏幕坐标 (0-1 范围)
+        Vector3 viewportPos = Camera.main.WorldToViewportPoint(transform.position);
+
+        // 如果 Y 轴超过了 0.95 (即屏幕顶端 5% 的位置)，强行扣回
+        if (viewportPos.y > 0.95f)
+        {
+            viewportPos.y = 0.95f;
+            // 再转回世界坐标，只锁定 Y 轴
+            Vector3 clampedWorldPos = Camera.main.ViewportToWorldPoint(viewportPos);
+            transform.position = new Vector3(transform.position.x, clampedWorldPos.y, transform.position.z);
+        }
+        // ----------------------------------
+
+        // 原有的渐隐逻辑
         if (disappearTimer < 0.4f)
         {
             float fadeAlpha = disappearTimer / 0.4f;
@@ -76,11 +92,8 @@ public class DamagePopup : MonoBehaviour
 
         if (disappearTimer <= 0)
         {
-            // 【关键修复】：不再 Destroy，而是归还对象池
-            if (mySourcePrefab != null)
-                SimplePool.Despawn(mySourcePrefab, gameObject);
-            else
-                Destroy(gameObject); // 兜底，防止没传 prefab
+            if (mySourcePrefab != null) SimplePool.Despawn(mySourcePrefab, gameObject);
+            else Destroy(gameObject);
         }
     }
 }

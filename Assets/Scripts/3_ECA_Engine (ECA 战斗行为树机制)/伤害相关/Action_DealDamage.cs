@@ -19,8 +19,7 @@ public class Action_DealDamage : ECAAction
             string wpnName = context.SourceWeapon != null ? context.SourceWeapon.WeaponName : "未知来源";
 
             // 调试日志：展示最终结算公式
-            Debug.Log($"<color=#00FF00>【伤害审计】</color> [{wpnName}] -> [{receiver.name}] | " +
-                      $"底数:{context.BaseDamage:F1} * 积木:{DamageMultiplier} * 临时:{context.TemporaryDamageModifier} = 最终:{finalDamage:F1}");
+     
 
             receiver.TakeDamage(finalDamage, wpnName, IsTrueDamage, context.IsCriticalHit);
         }

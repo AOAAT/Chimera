@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 // 🌟【强制加固】：这行代码会让 Unity 自动在物体上挂载 CanvasGroup，解决报错
 [RequireComponent(typeof(CanvasGroup))]
@@ -85,7 +86,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public Transform TagsContainer;
     public GameObject TagPrefab;
     public Image[] Chassis_SocketIcons;
-
+    private Coroutine activeTagRoutine;
     private void Awake()
     {
         // 🌟 优先初始化 CanvasGroup
@@ -360,37 +361,52 @@ public class ItemDetailPanelUI : MonoBehaviour
     {
         if (!TagsContainer || !TagPrefab) return;
 
-        // 1. 清理旧标签 (打扫战场)
+        if (activeTagRoutine != null) StopCoroutine(activeTagRoutine);
         foreach (Transform child in TagsContainer)
         {
-            // 建议使用 Destroy，但在 UI 频繁刷新时可以考虑对象池
+            child.gameObject.SetActive(false);
             Destroy(child.gameObject);
         }
 
-        // --- 2. 准备标签数据队列 ---
-        List<(string text, Color color)> tagsToCreate = new List<(string, Color)>();
+        List<(string text, Color bgColor)> tagsToCreate = new List<(string, Color)>();
 
-        // A. 加入阵营标签 (Tech/Flesh/Magic)
+        // --- 1. 定义大阵营底色 ---
+        Color macroColor;
+        switch (macro)
+        {
+            case MacroCategory.Tech:
+                macroColor = new Color(0.2f, 0.6f, 1f); // 科技：明亮的蓝色
+                break;
+            case MacroCategory.Flesh:
+                macroColor = new Color(0.9f, 0.2f, 0.2f); // 血肉：鲜艳的红色
+                break;
+            case MacroCategory.Magic:
+                macroColor = new Color(0.7f, 0.3f, 1f); // 秘术：迷幻的紫色
+                break;
+            default:
+                macroColor = Color.gray;
+                break;
+        }
+
+        // --- 2. 填充数据 ---
+        // A. 阵营标签 (使用上面定义的强色)
         string macroName = macro == MacroCategory.Tech ? "科技" : (macro == MacroCategory.Flesh ? "生物" : "秘术");
-        Color macroColor = new Color(0.5f, 0.8f, 1f); // 浅蓝色
         tagsToCreate.Add((macroName, macroColor));
 
-        // B. 加入类型标签 (Weapon/Core...)
+        // B. 其他标签 (建议使用浅灰色或白色作为底色，以便衬托黑色字体)
         if (type.HasValue)
         {
-            string typeName = TranslateComponentType(type.Value);
-            tagsToCreate.Add((typeName, Color.white));
+            tagsToCreate.Add((TranslateComponentType(type.Value), new Color(0.9f, 0.9f, 0.9f)));
         }
 
-        // C. 加入稀有度标签 (Lv1-Lv4)
         if (lv > 0)
         {
-            string rarityName = lv == 4 ? "传说" : (lv == 3 ? "史诗" : (lv == 2 ? "稀有" : "普通"));
-            Color rarityColor = lv == 4 ? new Color(1f, 0.6f, 0f) : (lv == 3 ? new Color(0.7f, 0.2f, 0.9f) : Color.white);
-            tagsToCreate.Add((rarityName, rarityColor));
+            // 稀有度标签也可以根据等级给一点淡色，或者统一白色
+            Color rColor = lv == 4 ? new Color(1f, 0.8f, 0.4f) : new Color(0.85f, 0.85f, 0.85f);
+            string rName = lv == 4 ? "传说" : (lv == 3 ? "史诗" : (lv == 2 ? "稀有" : "普通"));
+            tagsToCreate.Add((rName, rColor));
         }
 
-        // D. 加入所有细分流派标签 (Ballistic, Energy...)
         if (subs != null)
         {
             foreach (var sub in subs)
@@ -399,32 +415,41 @@ public class ItemDetailPanelUI : MonoBehaviour
             }
         }
 
-        // --- 3. 正式实例化并显示 ---
-        foreach (var tagData in tagsToCreate)
+        activeTagRoutine = StartCoroutine(StaggeredTagRoutine(tagsToCreate));
+    }
+
+    private IEnumerator StaggeredTagRoutine(List<(string text, Color bgColor)> dataList)
+    {
+        yield return null;
+        float staggerDelay = 0.05f;
+
+        foreach (var tagData in dataList)
         {
             GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
 
-            // 尝试寻找 Prefab 里的文本组件
+            // 🅰️ 字体颜色：强制设为黑色
             TMP_Text txt = tagObj.GetComponentInChildren<TMP_Text>();
             if (txt != null)
             {
                 txt.text = tagData.text;
-                txt.color = tagData.color;
+                txt.color = Color.black; // 👈 强制变黑
+                txt.fontStyle = FontStyles.Bold; // 建议加粗，黑色粗体在彩色底上非常有高级感
             }
 
-            // 尝试寻找 Prefab 里的背景图（如果有边框的话）
+            // 🅱️ 背景底色：使用传入的颜色，透明度设高一点
             Image img = tagObj.GetComponent<Image>();
             if (img != null)
             {
-                // 给边框一个微弱的对应颜色，增加高级感
-                Color fadedColor = tagData.color;
-                fadedColor.a = 0.2f;
-                img.color = fadedColor;
+                Color c = tagData.bgColor;
+                c.a = 0.9f; // 👈 设为 0.9，让彩色背景接近不透明，文字才清晰
+                img.color = c;
             }
-        }
-    }
 
-    // 内部翻译辅助方法
+            yield return new WaitForSecondsRealtime(staggerDelay);
+        }
+        activeTagRoutine = null;
+    }
+    // --- 4. 必要的翻译辅助函数 ---
     private string TranslateSubTag(SubTag tag)
     {
         switch (tag)
@@ -434,6 +459,8 @@ public class ItemDetailPanelUI : MonoBehaviour
             case SubTag.Mutation: return "突变";
             case SubTag.Acid: return "强酸";
             case SubTag.Economy: return "经济";
+            case SubTag.Shield: return "护盾";
+            case SubTag.Drone: return "无人机";
             default: return tag.ToString();
         }
     }
@@ -446,6 +473,7 @@ public class ItemDetailPanelUI : MonoBehaviour
             case ComponentType.Weapon: return "武器";
             case ComponentType.Movement: return "移动";
             case ComponentType.Support: return "辅助";
+            case ComponentType.Factory: return "生产";
             default: return "插件";
         }
     }

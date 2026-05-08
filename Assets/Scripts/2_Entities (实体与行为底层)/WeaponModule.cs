@@ -52,7 +52,17 @@ public class WeaponModule : MonoBehaviour
 
     private void Update()
     {
+
         if (weaponData == null || actualHinge == null) return;
+
+        // --- 👇【核心新增】：死亡断电判定 ---
+        if (mechReceiver != null && mechReceiver.CurrentHP <= 0)
+        {
+            // 停止动画，停止索敌，直接跳过
+            if (myAnimator != null) myAnimator.enabled = false;
+            lockedTarget = null;
+            return;
+        }
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
 
         if (!cachedIsEnemy) // 只限制玩家单位

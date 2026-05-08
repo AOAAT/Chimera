@@ -93,28 +93,27 @@ public class BattleCommandManager : MonoBehaviour
     }
     private void HandleCommand()
     {
-        if (SelectedUnit == null || !Input.GetMouseButtonDown(1)) return; // 右键
+        if (SelectedUnit == null || !Input.GetMouseButtonDown(1)) return;
 
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
 
         if (enemyHit.collider != null)
         {
-            // 1. 集火指令
+            // 1. 集火指令：内部会自动清除移动点
             DamageReceiver enemy = enemyHit.collider.GetComponentInParent<DamageReceiver>();
             if (enemy != null)
             {
                 SelectedUnit.SetManualTarget(enemy.transform);
-                GetBracket(SelectedUnit).Show(true); // 变红锁定
+                GetBracket(SelectedUnit).Show(true);
                 PlayConfirmSound(1.2f);
             }
         }
         else
         {
-            // 2. 位移指令 (即使没点中地板 Collider 也生效)
+            // 2. 位移指令：内部会自动清除锁定目标，红线会自然消失
             SelectedUnit.SetManualMovePoint(mousePos);
-            GetBracket(SelectedUnit).Show(false); // 恢复青色
-            if (ClickVFXPrefab != null) Instantiate(ClickVFXPrefab, (Vector3)mousePos, Quaternion.identity);
+            GetBracket(SelectedUnit).Show(false);
             PlayConfirmSound(1.0f);
         }
     }

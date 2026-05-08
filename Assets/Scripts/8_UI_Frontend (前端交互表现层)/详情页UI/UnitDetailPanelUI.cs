@@ -147,4 +147,25 @@ public class UnitDetailPanelUI : MonoBehaviour
         if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
         gameObject.SetActive(false);
     }
+
+    public void OnClickDismantle()
+    {
+        if (currentSlotIndex < 0 || currentProfile == null) return;
+
+        // 1. 调用底层的原子化拆解
+        PlayerInventoryManager.Instance.DismantleUnit(currentSlotIndex);
+
+        // 2. 视觉反馈：震一下并关闭详情页
+        if (ScreenEffectManager.Instance != null)
+            ScreenEffectManager.Instance.TriggerShake(0.15f, 0.15f);
+
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Detach);
+
+        // 3. 关闭当前面板并刷新机库
+        CloseDetail();
+        if (HangarMenuUI.Instance != null)
+        {
+            HangarMenuUI.Instance.RefreshHangar();
+        }
+    }
 }

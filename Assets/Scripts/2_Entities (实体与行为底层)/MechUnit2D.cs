@@ -248,7 +248,58 @@ public class MechUnit2D : MonoBehaviour
                 weaponIndex++;
             }
         }
+
+
+        if (isEnemy)
+        {
+            receiver.OnEntityDeath += HandleEliteDeath;
+        }
+        else
+        {
+            receiver.OnEntityDeath += HandlePlayerDeath; // 👈 处理玩家自己
+        }
+
         return receiver;
+
+    }
+
+    private void HandlePlayerDeath()
+    {
+        Debug.Log($"<color=red>【战损警告】</color> 机甲 [{this.name}] 核心熔毁，逻辑离线。");
+
+        // 1. 关停 AI 指令
+        var ai = GetComponent<ChimeraAIController>();
+        if (ai != null)
+        {
+            ai.AbortDash();
+            ai.ClearMoveCommand();
+            ai.enabled = false;
+        }
+
+        // 2. 关停技能控制
+        var sc = GetComponent<MechSkillController>();
+        if (sc != null) sc.enabled = false;
+
+        // 3. 关停所有挂载的武器模块
+        foreach (var w in GetComponentsInChildren<WeaponModule>())
+        {
+            w.enabled = false;
+        }
+
+        // 4. 物理停摆：防止机甲死后还在推挤别人
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.isKinematic = true;
+            rb.simulated = false; // 彻底从物理世界“消失”
+        }
+
+        // 5. 视觉处理：变暗
+        TintMech(new Color(0.3f, 0.3f, 0.3f, 0.8f));
+
+        // 6. 剥离受击层，防止子弹继续撞在残骸上
+        gameObject.layer = LayerMask.NameToLayer("Floor");
+        foreach (var col in GetComponentsInChildren<Collider2D>()) col.enabled = false;
     }
 
     // --- 修改 MechUnit2D.cs 中的 HandleEliteDeath 方法 ---
@@ -361,7 +412,25 @@ public class MechUnit2D : MonoBehaviour
     private void OnMouseUp() { if (!isDragging) return; isDragging = false; TintMech(Color.white); if (rb != null) rb.isKinematic = false; if (EventSystem.current.IsPointerOverGameObject()) { RecycleToHangar(); return; } int noDeployLayerMask = LayerMask.GetMask("NoDeploy"); Collider2D f = Physics2D.OverlapCircle(transform.position, 0.5f, noDeployLayerMask); bool v = Physics2D.OverlapPointAll(transform.position).Any(h => h.CompareTag("DeployZone")); if (f != null || !v) transform.position = dragStartPos; if (physicsCol != null) physicsCol.enabled = true; }
     private void RecycleToHangar() { if (bindedData != null) bindedData.IsDeployed = false; if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar(); Destroy(gameObject); }
     private void TintMech(Color targetColor) { SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>(); foreach (var sr in srs) if (sr.gameObject.name != "Logic_Visual_Shadow") sr.color = targetColor; }
-    public void SyncPostCombatState() { if (bindedData == null) return; DamageReceiver r = GetComponent<DamageReceiver>(); if (r != null) { bindedData.CurrentHP = Mathf.Max(0, r.CurrentHP); bindedData.CurrentAP = r.MaxAP; } }
+    public void SyncPostCombatState()
+    {
+        if (bindedData == null) return;
+        DamageReceiver r = GetComponent<DamageReceiver>();
+
+        if (r != null)
+        {
+            // --- 方案 A：记忆性系统 (已注释，保留备用) ---
+            // bindedData.CurrentHP = Mathf.Max(0, r.CurrentHP);
+            // bindedData.CurrentAP = r.MaxAP;
+
+            // --- 方案 B：V1.0 满血复活协议 ---
+            // 直接从缓存的战斗数据中读取最大值，让机甲离场即满血
+            bindedData.CurrentHP = cachedCombatData.MaxHP;
+            bindedData.CurrentAP = cachedCombatData.MaxAP;
+
+            Debug.Log($"<color=green>【自动修护】</color> 机甲 [{bindedData.UnitName}] 已完成战后整备，耐久度已恢复至 100%。");
+        }
+    }
     private void LateUpdate() { if (CombatDirector.Instance == null || CombatDirector.Instance.CurrentArenaSize.x == 0) return; Vector2 center = CombatDirector.Instance.CurrentArenaCenter; Vector2 size = CombatDirector.Instance.CurrentArenaSize; float minX = center.x - size.x / 2f, maxX = center.x + size.x / 2f, minY = center.y - size.y / 2f, maxY = center.y + size.y / 2f; Vector3 cp = transform.position; float cx = Mathf.Clamp(cp.x, minX, maxX), cy = Mathf.Clamp(cp.y, minY, maxY); if (cp.x != cx || cp.y != cy) { transform.position = new Vector3(cx, cy, cp.z); if (rb != null) rb.velocity = Vector2.zero; } }
 }
 

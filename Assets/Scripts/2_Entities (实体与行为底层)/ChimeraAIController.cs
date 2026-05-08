@@ -18,6 +18,11 @@ public class ChimeraAIController : MonoBehaviour
     public bool isDashing = false;
     private float dashTimer = 0f;
 
+    [Header("=== 战术视觉引用 ===")]
+    public GameObject WaypointPrefab; // 在 Inspector 中拖入你的路点预制体
+    private GameObject currentWaypointInstance;
+
+
     private Vector2? manualMovePoint = null;
     private Transform manualAttackTarget = null;
 
@@ -47,12 +52,38 @@ public class ChimeraAIController : MonoBehaviour
 
     public void SetManualMovePoint(Vector2 point)
     {
+        // --- 👇 核心逻辑 A：互斥熔断 ---
+        manualAttackTarget = null; // 移动时，立即断开集火红线
+
         manualMovePoint = point;
-        // 注意：移动和攻击不互斥，移动时依然可以锁定目标，只是能否开火由 WeaponModule 决定
+
+        // --- 👇 核心逻辑 B：路点视觉管理 ---
+        if (currentWaypointInstance != null) Destroy(currentWaypointInstance);
+
+        if (WaypointPrefab != null)
+        {
+            currentWaypointInstance = Instantiate(WaypointPrefab, new Vector3(point.x, point.y, 0), Quaternion.identity);
+        }
+
+        Debug.Log("<color=cyan>【指令】</color> 正在脱离交火，前往坐标点。");
     }
     public void SetManualTarget(Transform target)
     {
+        // --- 👇 核心逻辑 C：互斥熔断 ---
+        ClearMoveCommand(); // 锁定敌人时，立即停止当前的路径导航
+
         manualAttackTarget = target;
+        Debug.Log($"<color=red>【指令】</color> 已截获目标信号：{target.name}，开始拉扯集火。");
+    }
+
+    public void ClearMoveCommand()
+    {
+        manualMovePoint = null;
+        if (currentWaypointInstance != null)
+        {
+            // 这里可以播放一个“抵达”或“消失”的微弱特效
+            Destroy(currentWaypointInstance);
+        }
     }
     public bool HasManualTarget() => manualAttackTarget != null;
     public Transform GetManualTarget() => manualAttackTarget;
@@ -102,6 +133,13 @@ public class ChimeraAIController : MonoBehaviour
 
     private void Update()
     {
+        // 如果血量归零，强制停止所有物理输出
+        if (myReceiver == null || myReceiver.CurrentHP <= 0)
+        {
+            if (rb != null) rb.velocity = Vector2.zero;
+            return;
+        }
+
         if (myReceiver == null || myReceiver.CurrentHP <= 0) { if (rb != null) rb.velocity = Vector2.zero; return; }
         if (runtimeData == null || (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive))
         { if (rb != null) rb.velocity = Vector2.zero; return; }
@@ -159,9 +197,10 @@ public class ChimeraAIController : MonoBehaviour
         if (manualMovePoint.HasValue)
         {
             float dist = Vector2.Distance(transform.position, manualMovePoint.Value);
+            // 抵达判定阈值：0.4米
             if (dist < 0.4f)
             {
-                manualMovePoint = null;
+                ClearMoveCommand(); // 抵达后，自动销毁地面光圈
                 rb.velocity = Vector2.zero;
             }
             else
@@ -170,8 +209,6 @@ public class ChimeraAIController : MonoBehaviour
             }
             return;
         }
-
-        if (currentTarget == null) { if (rb != null) rb.velocity = Vector2.zero; return; }
 
         // 优先级 B：AI 自动位移
         // (如果当前是锁定目标打，AI 也会尝试根据射程自动拉扯)
@@ -289,5 +326,10 @@ public class ChimeraAIController : MonoBehaviour
         Gizmos.DrawWireSphere(logicCenter, maxWeaponRange);
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         Gizmos.DrawWireSphere(logicCenter, minWeaponRange);
+    }
+
+    private void OnDisable()
+    {
+        if (currentWaypointInstance != null) Destroy(currentWaypointInstance);
     }
 }

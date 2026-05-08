@@ -259,6 +259,7 @@ public class CombatDirector : MonoBehaviour
     /// </summary>
     private void OnBattleStartClicked()
     {
+        if (GameTerminalLog.Instance != null) GameTerminalLog.Instance.SetFreeze(true);
         // 1. 重新抓取当前部署在场上的所有单位
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
@@ -402,6 +403,8 @@ public class CombatDirector : MonoBehaviour
         {
             GlobalAudioManager.Instance.PlayUISound(UISoundType.Combat_Failure);
         }
+
+        if (GameTerminalLog.Instance != null) GameTerminalLog.Instance.SetFreeze(false);
     }
 
 

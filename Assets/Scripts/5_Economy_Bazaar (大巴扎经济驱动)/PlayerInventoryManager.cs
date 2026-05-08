@@ -270,7 +270,42 @@ public class PlayerInventoryManager : MonoBehaviour
         OnInventoryChanged?.Invoke();
         return upgradedItem;
     }
+    // --- 请在 PlayerInventoryManager.cs 中追加此方法 ---
+    public void DismantleUnit(int slotIndex)
+    {
+        SavedUnitProfile unit = HangarUnits[slotIndex];
+        if (unit == null) return;
 
+        Debug.Log($"<color=orange>【机甲解体】</color> 正在拆解机甲: {unit.UnitName}...");
+
+        // 1. 释放底盘
+        var chassis = ChassisInventory.Find(c => c.InstanceID == unit.ChassisInstanceID);
+        if (chassis != null)
+        {
+            chassis.EquippedUnitID = string.Empty;
+        }
+
+        // 2. 释放所有挂载的零件
+        foreach (string compID in unit.EquippedComponentIDs)
+        {
+            var comp = ComponentInventory.Find(c => c.InstanceID == compID);
+            if (comp != null)
+            {
+                comp.EquippedUnitID = string.Empty;
+            }
+        }
+
+        // 3. 将机甲名称归还池子 (可选)
+        ReturnNameToPool(unit.UnitName);
+
+        // 4. 清空车位
+        HangarUnits[slotIndex] = null;
+
+        // 5. 广播库存变动，让仓库、详情页等自动刷新
+        ForceTriggerInventoryEvent();
+
+        Debug.Log($"<color=yellow>【解体成功】</color> 底盘与组件已回归原始库存。");
+    }
     public void ForceTriggerInventoryEvent()
     {
         OnInventoryChanged?.Invoke();
