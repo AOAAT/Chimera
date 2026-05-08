@@ -1823,11 +1823,11 @@ MonoBehaviour:
   TotalLayers: 15
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
-  Weight_NormalEnemy: 0
+  Weight_NormalEnemy: 1
   Weight_Unknown: 0
   Weight_Event: 0
   Weight_Elite: 0
-  Weight_Workshop: 1
+  Weight_Workshop: 0
   InnerWeight_Event: 1
   InnerWeight_Workshop: 0
   InnerWeight_Elite: 0
@@ -14303,7 +14303,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1656717727}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9407338
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -20050,7 +20050,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 1b318819a975ab447bac3e84777c19e5, type: 3}
+  m_Sprite: {fileID: 21300000, guid: bddbfb3a6fa19094c93e72be788134f3, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
