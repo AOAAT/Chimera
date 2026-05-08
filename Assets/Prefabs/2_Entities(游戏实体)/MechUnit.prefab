@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 2038896030842088896}
   - component: {fileID: 4604755739766904801}
   - component: {fileID: 3140691120266713624}
+  - component: {fileID: 4163971379876546601}
   m_Layer: 7
   m_Name: MechUnit
   m_TagString: Player
@@ -154,3 +155,19 @@ MonoBehaviour:
   isStaggered: 0
   isDashing: 0
   WaypointPrefab: {fileID: 8954513958914949010, guid: 440ac5dc8e18b3d45b195defd1f9d214, type: 3}
+--- !u!114 &4163971379876546601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724532761662945261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57b3bc946488d5b49b4474ffe160d7d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CircleSegments: 60
+  LineWidth: 0.01
+  MaxRangeColor: {r: 0, g: 1, b: 0, a: 0.6}
+  MinRangeColor: {r: 1, g: 0, b: 0, a: 0.8}

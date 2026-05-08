@@ -54,40 +54,60 @@ public class BattleCommandManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+            // --- 1. UI 屏蔽：点击 UI 按钮时不触发选择 ---
+            if (UnityEngine.EventSystems.EventSystem.current != null &&
+                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
 
             Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-            // --- 👇【核心优化 1】：扩大掩码，同时扫描 Body(物理层) 和 Hitbox(视觉层) ---
+            // --- 2. 扩容检测：同时扫描物理层和受击层，并增加 0.25 的容错半径 ---
             int selectionMask = LayerMask.GetMask("Player_Body", "Player_Hitbox");
-
-            // --- 👇【核心优化 2】：使用 OverlapCircle 代替 Raycast，增加 0.25 的点击容错半径 ---
             Collider2D hit = Physics2D.OverlapCircle(mousePos, 0.25f, selectionMask);
 
             if (hit != null)
             {
-                // 顺着被点中的物体（可能是头也可能是脚）往上找控制器
                 var newUnit = hit.GetComponentInParent<ChimeraAIController>();
 
                 if (newUnit != null)
                 {
-                    if (SelectedUnit != null && SelectedUnit != newUnit) GetBracket(SelectedUnit).Hide();
+                    // --- 3. 逻辑切换：如果点中了新单位 ---
+
+                    // A. 如果之前有选中的，先把它的视觉关掉
+                    if (SelectedUnit != null && SelectedUnit != newUnit)
+                    {
+                        GetBracket(SelectedUnit).Hide();
+                        // 👈 核心：关闭旧射程圆环
+                        SelectedUnit.GetComponent<WeaponRangeVisualizer>()?.SetVisible(false);
+                    }
 
                     SelectedUnit = newUnit;
-                    // 强制显示支架，并根据是否有手动目标决定颜色
+
+                    // B. 开启新单位的战术视觉
                     GetBracket(SelectedUnit).Show(SelectedUnit.HasManualTarget());
+
+                    // 👈 核心：开启新射程圆环
+                    var rangeViz = SelectedUnit.GetComponent<WeaponRangeVisualizer>();
+                    if (rangeViz != null)
+                    {
+                        rangeViz.SetVisible(true);
+                    }
+
                     PlayConfirmSound(1.0f);
-                    Debug.Log($"<color=green>【选中成功】</color> 目标：{newUnit.gameObject.name}");
-                    return; // 选中了就直接返回，不再走下面的清空逻辑
+                    Debug.Log($"<color=green>【火控同步】</color> 目标：{newUnit.gameObject.name}，射程网已展开。");
+                    return; // 选中成功，不再走下面的清空逻辑
                 }
             }
 
-            // --- 👇【核心优化 3】：点击空地逻辑依然保留 ---
+            // --- 4. 释放焦点：点击空地时，清空一切战术视觉 ---
             if (SelectedUnit != null)
             {
                 GetBracket(SelectedUnit).Hide();
+
+                // 👈 核心：清空圆环
+                SelectedUnit.GetComponent<WeaponRangeVisualizer>()?.SetVisible(false);
+
                 SelectedUnit = null;
-                Debug.Log("<color=white>【系统】</color> 指挥焦点已释放。");
+                Debug.Log("<color=white>【火控挂起】</color> 指挥焦点已释放。");
             }
         }
     }
