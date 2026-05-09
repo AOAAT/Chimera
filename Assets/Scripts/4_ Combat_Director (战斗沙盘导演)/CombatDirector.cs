@@ -51,6 +51,9 @@ public class CombatDirector : MonoBehaviour
     public EncounterLayoutSO CurrentLayout;
     private GameObject forbiddenZonesContainer;
 
+    [Header("=== 导航面板引用 ===")]
+    public GameObject NavigationPanel; // 👈 拖入包含“进入仓库、进入机库”按钮的父物体
+
     private MapNodeData currentNodeData;
     private bool isCheckingWinCondition = false;
     private bool isLastCombatVictory = false;
@@ -503,11 +506,13 @@ public class CombatDirector : MonoBehaviour
             }
         }
     }
-    // --- 👇【核心新增】：工业级大扫除方法 ---
-    private void SilentCleanup()
+    public void SetNavigationVisibility(bool isVisible)
     {
-        // 这个方法和 PerformFullCleanup 逻辑一模一样，只是不打印那行吓人的 Debug.Log
-        ResetBattlefieldInternal();
+        if (NavigationPanel != null)
+        {
+            NavigationPanel.SetActive(isVisible);
+            Debug.Log($"<color=white>【导航总线】</color> 底部导航栏已 {(isVisible ? "唤醒" : "沉默")}");
+        }
     }
 
     public void PerformFullCleanup()

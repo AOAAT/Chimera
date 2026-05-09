@@ -47,21 +47,29 @@ public class GlobalWarehouseUI : MonoBehaviour
         if (PlayerInventoryManager.Instance != null)
             PlayerInventoryManager.Instance.OnInventoryChanged -= RefreshWarehouse;
     }
-
     public void OpenWarehouse()
     {
         gameObject.SetActive(true);
-        MusicManager.Instance?.SetImmersionMode(true); // 👈 开启闷声
+        MusicManager.Instance?.SetImmersionMode(true);
+
+        // --- 👇【核心新增】：隐藏主界面进入按钮 ---
+        if (CombatDirector.Instance != null)
+            CombatDirector.Instance.SetNavigationVisibility(false);
+
         RefreshWarehouse();
     }
 
     public void CloseWarehouse()
     {
         gameObject.SetActive(false);
-        MusicManager.Instance?.SetImmersionMode(false); // 👈 恢复清亮
+        MusicManager.Instance?.SetImmersionMode(false);
+
+        // --- 👇【核心新增】：恢复主界面进入按钮 ---
+        if (CombatDirector.Instance != null)
+            CombatDirector.Instance.SetNavigationVisibility(true);
+
         ItemDetailPanelUI.Instance?.HidePanel();
     }
-
     private void InitDropdowns()
     {
         MainCategoryDropdown.ClearOptions();

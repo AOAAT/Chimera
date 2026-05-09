@@ -72,18 +72,23 @@ public class HangarMenuUI : MonoBehaviour
     {
         gameObject.SetActive(true);
         MusicManager.Instance?.SetImmersionMode(true);
+
+        // --- 👇【核心新增】：隐藏主界面进入按钮 ---
+        if (CombatDirector.Instance != null)
+            CombatDirector.Instance.SetNavigationVisibility(false);
+
         RefreshHangar();
     }
 
     public void CloseHangar()
     {
         gameObject.SetActive(false);
-
-        // --- 👇【修改】：关闭机库时，只负责恢复音质 ---
         MusicManager.Instance?.SetImmersionMode(false);
 
-        // 只有在非战斗环境下（即大地图环境下），才考虑切回地图音乐
-        // 如果在战斗房间里，这里什么都不做，继续播当前的 Combat BGM
+        // --- 👇【核心新增】：恢复主界面进入按钮 ---
+        if (CombatDirector.Instance != null)
+            CombatDirector.Instance.SetNavigationVisibility(true);
+
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase && !CombatDirector.Instance.IsCombatActive)
         {
             MusicManager.Instance?.SwitchState(MusicState.Map);
