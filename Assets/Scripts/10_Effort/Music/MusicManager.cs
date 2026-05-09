@@ -7,6 +7,7 @@ public class MusicManager : MonoBehaviour
     public static MusicManager Instance;
 
     [Header("=== 基础音乐库 ===")]
+    public AudioClip BGM_MainMenu;     // 👈 统一命名规范
     public AudioClip BGM_Map;
     public AudioClip BGM_Combat;
     public AudioClip BGM_Shop;
@@ -22,7 +23,6 @@ public class MusicManager : MonoBehaviour
     public float MuffledFrequency = 800f;
     public float FilterSmoothSpeed = 8f;
 
-    // 🌟 核心改动：不再直接引用 Source，而是管理两个子通道
     private AudioSource sourceA;
     private AudioSource sourceB;
     private AudioLowPassFilter filterA;
@@ -30,7 +30,7 @@ public class MusicManager : MonoBehaviour
 
     private AudioClip currentlyPlayingClip;
     private float targetFrequency = 22000f;
-    private bool isSourceATarget = true; // 标记当前哪一个是主播放通道
+    private bool isSourceATarget = true;
 
     private void Awake()
     {
@@ -42,29 +42,27 @@ public class MusicManager : MonoBehaviour
         else if (Instance != this)
         {
             Destroy(gameObject);
+            return; // 👈 增加 return，防止销毁中的物体继续跑逻辑
         }
 
-        // 🌟【核心修复】：物理隔离初始化
-        // 我们在物体下方动态创建两个纯净的子物体来承载音频
+        // 初始化物理隔离通道
         sourceA = CreateChannel("MusicChannel_A", out filterA);
         sourceB = CreateChannel("MusicChannel_B", out filterB);
 
         targetFrequency = NormalFrequency;
     }
 
-    // 辅助方法：创建一个带有 Source 和 Filter 的干净通道
     private AudioSource CreateChannel(string name, out AudioLowPassFilter filter)
     {
         GameObject go = new GameObject(name);
         go.transform.SetParent(this.transform);
 
-        // 顺序极其关键：先加 Source，再加 Filter，绝不报错
         AudioSource s = go.AddComponent<AudioSource>();
         filter = go.AddComponent<AudioLowPassFilter>();
 
         s.playOnAwake = false;
         s.loop = true;
-        s.priority = 0; // 最高优先级
+        s.priority = 0;
         s.spatialBlend = 0f;
         s.volume = 0f;
 
@@ -74,7 +72,6 @@ public class MusicManager : MonoBehaviour
 
     private void Update()
     {
-        // 平滑同步两个通道的滤波器频率
         if (filterA != null && filterB != null)
         {
             float currentFreq = Mathf.Lerp(filterA.cutoffFrequency, targetFrequency, Time.unscaledDeltaTime * FilterSmoothSpeed);
@@ -97,10 +94,16 @@ public class MusicManager : MonoBehaviour
 
     private void ExecuteTransition(AudioClip target)
     {
+        // 关键判定：如果目标音乐和正在播的一样，直接拦截，防止重复触发淡入淡出
         if (target == currentlyPlayingClip) return;
         currentlyPlayingClip = target;
 
-        if (target == null) { StopAllCoroutines(); StartCoroutine(FadeToSilence()); return; }
+        if (target == null)
+        {
+            StopAllCoroutines();
+            StartCoroutine(FadeToSilence());
+            return;
+        }
 
         StopAllCoroutines();
         StartCoroutine(CrossFadeRoutine(target));
@@ -108,7 +111,7 @@ public class MusicManager : MonoBehaviour
 
     private IEnumerator CrossFadeRoutine(AudioClip newClip)
     {
-        // 确定谁是进入通道，谁是退出通道
+        // 1. 确定进入和退出的通道
         AudioSource activeSource = isSourceATarget ? sourceA : sourceB;
         AudioSource inactiveSource = isSourceATarget ? sourceB : sourceA;
 
@@ -119,9 +122,10 @@ public class MusicManager : MonoBehaviour
         float timer = 0;
         float startVolInactive = inactiveSource.volume;
 
+        // 2. 双通道交叉淡入淡出
         while (timer < FadeDuration)
         {
-            timer += Time.unscaledDeltaTime;
+            timer += Time.unscaledDeltaTime; // 👈 使用 unscaled，确保暂停时音乐过渡也不卡顿
             float p = timer / FadeDuration;
 
             activeSource.volume = Mathf.Lerp(0, MaxVolume, p);
@@ -129,9 +133,13 @@ public class MusicManager : MonoBehaviour
             yield return null;
         }
 
+        // 3. 收尾
+        activeSource.volume = MaxVolume;
         inactiveSource.Stop();
         inactiveSource.clip = null;
-        isSourceATarget = !isSourceATarget; // 身份切换
+        inactiveSource.volume = 0;
+
+        isSourceATarget = !isSourceATarget; // 身份轮换
     }
 
     private IEnumerator FadeToSilence()
@@ -153,10 +161,12 @@ public class MusicManager : MonoBehaviour
 
     public void SetImmersionMode(bool on) { targetFrequency = on ? MuffledFrequency : NormalFrequency; }
 
+    // --- 👇【核心修复点】：补全主菜单状态映射 ---
     private AudioClip GetDefaultClip(MusicState state)
     {
         switch (state)
         {
+            case MusicState.MainMenu: return BGM_MainMenu; // 👈 增加这一行
             case MusicState.Map: return BGM_Map;
             case MusicState.Combat: return BGM_Combat;
             case MusicState.Shop: return BGM_Shop;

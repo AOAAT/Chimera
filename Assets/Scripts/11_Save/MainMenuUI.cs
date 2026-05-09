@@ -11,14 +11,15 @@ public class MainMenuUI : MonoBehaviour
 
     private void Start()
     {
-        // 清理所有可能残留的单例（防止回主菜单后再次进入产生的Bug）
-        ClearAllManagers();
+        // --- 👇【核心新增】：唤醒主菜单音乐 ---
+        if (MusicManager.Instance != null)
+        {
+            MusicManager.Instance.SwitchState(MusicState.MainMenu);
+        }
+        // ----------------------------------
 
         if (NewGameButton != null) NewGameButton.onClick.AddListener(StartNewGame);
         if (QuitButton != null) QuitButton.onClick.AddListener(QuitGame);
-
-        // 载入功能暂时禁用
-        if (LoadGameButton != null) LoadGameButton.interactable = false;
     }
 
     private void StartNewGame()
@@ -48,22 +49,4 @@ public class MainMenuUI : MonoBehaviour
 #endif
     }
 
-    private void ClearAllManagers()
-    {
-        // 这一步是为了防止那些开启了 DontDestroyOnLoad 的脚本在大厅残留
-        // 强制销毁旧的管理器实例
-        var managers = GameObject.FindObjectsOfType<GameObject>();
-        foreach (var m in managers)
-        {
-            // 只要名字里带 Manager 或 Director 且不是当前场景物体的，标记清理
-            if (m.name.Contains("Manager") || m.name.Contains("Director"))
-            {
-                // 注意：这里不销毁 MainMenu 里的 UI，只销毁持久化的逻辑物体
-                if (m.transform.parent == null) // 通常单例都在根节点
-                {
-                    // Destroy(m); // 暂时注释，如果发现单例冲突再启用
-                }
-            }
-        }
-    }
 }
