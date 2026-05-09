@@ -15,4 +15,4 @@ MonoBehaviour:
   TargetResource: 0
   Mode: 2
   Threshold: 50
-  MaxThreshold: 100
+  MaxThreshold: 50

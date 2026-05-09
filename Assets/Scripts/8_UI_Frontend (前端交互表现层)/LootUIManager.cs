@@ -101,16 +101,16 @@ public class LootUIManager : MonoBehaviour
             }
             else if (task.IsBoxOpened)
             {
-                txt.text = "<color=#00FFFF>【已开封的残骸】点击查看</color>";
+                txt.text = "<color=#00FFFF>【已搜寻的残骸】点击查看</color>";
                 btn.onClick.AddListener(() => OnHubEntryClicked(task));
             }
             else if (task.Config.Mode == LootDropMode.CustomPoolDrop)
             {
                 // 👇【优化】：如果是特定奖励，直接显示第一项的名字
                 if (task.GeneratedItems.Count > 0)
-                    txt.text = $"<color=#FF8800>【特定打捞】{task.GeneratedItems[0].BaseData.ComponentName}</color>";
+                    txt.text = $"<color=#FF8800>【特殊奖励】{task.GeneratedItems[0].BaseData.ComponentName}</color>";
                 else
-                    txt.text = "<color=#FF8800>【首领遗产】极品固定掉落</color>";
+                    txt.text = "<color=#FF8800>【特殊奖励】固定掉落</color>";
 
                 btn.onClick.AddListener(() => OnHubEntryClicked(task));
             }
@@ -118,18 +118,18 @@ public class LootUIManager : MonoBehaviour
             {
                 // 动态文本解析：告诉玩家这是什么类型的盲盒
                 if (task.Config.Mode == LootDropMode.PlayerDrivenFilter)
-                    txt.text = "<color=#FFD700>【深度打捞】自主选择流派标签</color>";
+                    txt.text = "<color=#FFD700>【深度搜寻】自主选择流派标签</color>";
                 else if (task.Config.Mode == LootDropMode.CustomPoolDrop)
-                    txt.text = "<color=#FF8800>【首领遗产】极品固定掉落</color>";
+                    txt.text = "<color=#FF8800>【特殊奖励】固定掉落</color>";
                 else
-                    txt.text = "【未知的机械盲盒】点击开启";
+                    txt.text = "【简单搜寻】点击获取";
 
                 btn.onClick.AddListener(() => OnHubEntryClicked(task));
             }
         }
 
         LeaveHubButton.interactable = allClaimed;
-        LeaveHubButton.GetComponentInChildren<TMP_Text>().text = allClaimed ? "离开废墟" : "还有未处理的战利品";
+        LeaveHubButton.GetComponentInChildren<TMP_Text>().text = allClaimed ? "离开" : "还有未处理的战利品";
     }
 
     private void OnHubEntryClicked(ActiveLootTask task)
@@ -162,7 +162,7 @@ public class LootUIManager : MonoBehaviour
         }
 
         // 2. 伪装扫描：可以禁用交互，并让鼠标变成忙碌状态
-        Debug.Log("【系统】正在解析机械残骸...");
+        Debug.Log("【系统】正在解析战场残骸...");
 
         // 这里你可以触发一个全屏的微弱扫描线特效
         // ScreenEffectManager.Instance.TriggerFlash(new Color(0, 1, 1, 0.1f), 0.5f);
@@ -251,9 +251,22 @@ public class LootUIManager : MonoBehaviour
     {
         selectedItem = item;
         ConfirmButton.interactable = true;
-        SalvageButton.interactable = true;
 
-        // 刷新所有槽位的高亮框（互斥单选）
+        // --- 👇【核心重构：动态锁定粉碎按钮】---
+        if (activeTask != null && activeTask.IsForceClaim)
+        {
+            SalvageButton.interactable = false; // 强制置灰，点不动
+
+            // 视觉反馈：可以改个文本提醒玩家
+            SalvageButton.GetComponentInChildren<TMP_Text>().text = "<color=red>禁止拆解</color>";
+        }
+        else
+        {
+            SalvageButton.interactable = true; // 正常模式
+            SalvageButton.GetComponentInChildren<TMP_Text>().text = "拆解以获得废料";
+        }
+        // ----------------------------------------
+
         for (int i = 0; i < FixedItemSlots.Length; i++)
         {
             if (FixedItemSlots[i].gameObject.activeSelf)
@@ -336,7 +349,7 @@ public class LootUIManager : MonoBehaviour
             PlayerInventoryManager.Instance.ComponentInventory.Add(selectedItem);
             PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
 
-            Debug.Log($"【打捞成功】获得了 Lv.{selectedItem.CurrentLevel} [{selectedItem.BaseData.ComponentName}]");
+            Debug.Log($"【搜寻成功】获得了 Lv.{selectedItem.CurrentLevel} [{selectedItem.BaseData.ComponentName}]");
 
             ConcludeTask();
         }

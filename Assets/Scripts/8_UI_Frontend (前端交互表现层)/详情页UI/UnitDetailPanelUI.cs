@@ -42,7 +42,7 @@ public class UnitDetailPanelUI : MonoBehaviour
         gameObject.SetActive(true);
 
         NameText.text = profile.UnitName;
-        APText.text = $"AP: {profile.CurrentAP}";
+        APText.text = $"护甲: {profile.CurrentAP}";
 
         // 1. 抓取底盘基准值
         float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
@@ -74,8 +74,8 @@ public class UnitDetailPanelUI : MonoBehaviour
         float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
 
         // 4. 灌入数据
-        HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
-        PowerText.text = $"耗电量: {totalPower}";
+        HPText.text = $"血量: {profile.CurrentHP} / {maxHP}";
+        PowerText.text = $"总耗电量: {totalPower}";
 
         if (BlockText != null) BlockText.text = $"格挡: {totalBlock}";
         if (MassText != null) MassText.text = $"质量: {totalMass}t";

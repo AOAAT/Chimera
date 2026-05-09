@@ -34,8 +34,8 @@ public class GlobalResourceHUD : MonoBehaviour
     {
         if (GlobalResourceManager.Instance != null)
         {
-            SanText.text = $"SAN: {GlobalResourceManager.Instance.CurrentSAN} / {GlobalResourceManager.Instance.MaxSAN}";
-            MaterialText.text = $"废料: {GlobalResourceManager.Instance.Materials}";
+            SanText.text = $"SAN值: {GlobalResourceManager.Instance.CurrentSAN} / {GlobalResourceManager.Instance.MaxSAN}";
+            MaterialText.text = $"废料存量: {GlobalResourceManager.Instance.Materials}";
 
             // 👇【完美修复】：读取已用电量和总产能！
             int usedPower = GlobalResourceManager.Instance.GetTotalUsedPower();
@@ -48,7 +48,7 @@ public class GlobalResourceHUD : MonoBehaviour
 
         if (MapManager.Instance != null)
         {
-            DepthText.text = $"探索层数: {MapManager.Instance.CurrentLayer}";
+            DepthText.text = $"当前层数: {MapManager.Instance.CurrentLayer}";
         }
     }
 }

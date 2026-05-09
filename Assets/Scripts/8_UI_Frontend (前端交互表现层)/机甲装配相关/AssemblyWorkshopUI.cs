@@ -105,10 +105,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
         {
             GhostChassisPrompt.SetActive(true);
             ChassisVisualRoot.gameObject.SetActive(false);
-            HPText.text = "HP: -- / --";
-            APText.text = "AP: -- / --";
-            PowerText.text = "耗电: --";
-            UnitNameInput.text = "等待底盘接入...";
+            HPText.text = "血量: -- / --";
+            APText.text = "护甲: -- / --";
+            PowerText.text = "总耗电量: --";
+            UnitNameInput.text = "等待选择底盘...";
             UnitNameInput.interactable = false;
         }
         else
@@ -144,9 +144,9 @@ public class AssemblyWorkshopUI : MonoBehaviour
             float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
             float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
 
-            HPText.text = $"HP: {currentEditingProfile.CurrentHP:F0} / {maxHP:F0}";
-            APText.text = $"AP: {currentEditingProfile.CurrentAP:F0} / {maxAP:F0}";
-            PowerText.text = $"耗电: {totalPower:F0}";
+            HPText.text = $"血量: {currentEditingProfile.CurrentHP:F0} / {maxHP:F0}";
+            APText.text = $"护甲: {currentEditingProfile.CurrentAP:F0} / {maxAP:F0}";
+            PowerText.text = $"总耗电量: {totalPower:F0}";
             if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
             if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";
             if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
