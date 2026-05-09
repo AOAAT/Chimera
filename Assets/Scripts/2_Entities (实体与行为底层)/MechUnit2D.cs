@@ -87,6 +87,11 @@ public class MechUnit2D : MonoBehaviour
     // ==========================================
     // 🛠️ 核心驱动：加固后的全量装配流程
     // ==========================================
+    // --- MechUnit2D.cs ---
+
+    // ==========================================
+    // 🛠️ 核心驱动：加固后的全量装配流程 (Shadow Override Fix)
+    // ==========================================
     private void FullSetup(SavedUnitProfile data, InstancedComponent[] comps, bool isEnemy, EnemyDataSO enemySO = null)
     {
         // 1. 暴力初始化核心组件（解决所有 MissingComponentException）
@@ -144,12 +149,21 @@ public class MechUnit2D : MonoBehaviour
         shadowComp.GetShadowTransform().SetParent(chassisObj.transform, false);
         shadowComp.GetShadowTransform().SetAsFirstSibling();
 
+        // --- 👇【关键修复节点 A】：准备捕获阴影复写零件 ---
+        ComponentDataSO shadowProvider = null;
+
         // 6. 零件挂载循环
         for (int i = 0; i < comps.Length; i++)
         {
             if (comps[i] == null) continue;
             var comp = comps[i];
             var slotDef = data.ChassisData.Sockets[i];
+
+            // --- 👇【关键修复节点 B】：捕捉开启了复写的移动组件 ---
+            if (comp.BaseData.Type == ComponentType.Movement && comp.BaseData.OverrideShadow)
+            {
+                shadowProvider = comp.BaseData;
+            }
 
             string typeTag = (comp.BaseData.Type == ComponentType.Movement) ? "_MovementType" : "";
             GameObject slotObj = new GameObject($"Socket_{slotDef.SlotName}{typeTag}");
@@ -171,19 +185,36 @@ public class MechUnit2D : MonoBehaviour
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
 
-        // 7. 逻辑初始化（注意：这里现在会返回 receiver 引用）
+        // 7. 逻辑初始化
         DamageReceiver receiver = ActivateCombatBrainsSafe(data, comps, isEnemy, chassisObj.transform);
 
-        // 8. 阴影数据应用
+        // --- 👇【关键修复节点 C】：阴影权重管线 ---
+        // 优先级 1：精英怪/BOSS SO 直接定义的特殊阴影
         if (isEnemy && enemySO != null && enemySO.OverrideShadow)
+        {
             shadowComp.SetupManualShadow(true, enemySO.ShadowWidth, enemySO.ShadowHeight, enemySO.ShadowOffset);
+        }
+        // 优先级 2：检测到的移动组件（如：蜘蛛腿、重型履带）的阴影复写
+        else if (shadowProvider != null)
+        {
+            shadowComp.SetupManualShadow(
+                isEnemy,
+                shadowProvider.ShadowWidth,
+                shadowProvider.ShadowHeight,
+                shadowProvider.ShadowOffset
+            );
+            Debug.Log($"<color=#00FFFF>【视觉同步】</color> 已应用移动组件 [{shadowProvider.ComponentName}] 的专属阴影参数。");
+        }
+        // 优先级 3：基于底盘尺寸的默认算法（兜底）
         else
+        {
             shadowComp.SetupModularShadow(isEnemy, spriteSize.x, -(spriteSize.y / 2f));
+        }
 
-        // 9. 递归设置物理层级 (解决命中判定问题)
+        // 8. 递归设置物理层级
         SetLayerRecursive(chassisObj, isEnemy ? LayerMask.NameToLayer("Enemy_Hitbox") : LayerMask.NameToLayer("Player_Hitbox"));
 
-        // 10. 深度排序与动画
+        // 9. 深度排序与动画
         DynamicDepthSorter sorter = GetComponent<DynamicDepthSorter>() ?? gameObject.AddComponent<DynamicDepthSorter>();
         sorter.YOffset = -(spriteSize.y / 2f);
 
@@ -191,13 +222,12 @@ public class MechUnit2D : MonoBehaviour
         procAnim.SetTargetVisual(chassisObj.transform);
         procAnim.RefreshBaseState();
 
-        // 11. 【精英死亡剧本】：如果是敌人，订阅死亡事件
+        // 10. 精英死亡订阅
         if (isEnemy && receiver != null)
         {
             receiver.OnEntityDeath += HandleEliteDeath;
         }
     }
-
     private void SetLayerRecursive(GameObject obj, int newLayer)
     {
         // 如果是影子，强制保持在 Default 层，防止干扰子弹
@@ -219,7 +249,9 @@ public class MechUnit2D : MonoBehaviour
     private DamageReceiver ActivateCombatBrainsSafe(SavedUnitProfile data, InstancedComponent[] comps, bool isEnemy, Transform chassisRoot)
     {
         cachedCombatData = new RuntimeChimeraData();
-        cachedCombatData.Assemble(data.ChassisData, comps);
+        // 关键点：我们需要在 Assemble 之后，让 Actions 能够找到当前的 GameObject
+        cachedCombatData.Assemble(data.ChassisData, comps, this.transform); // 传入 this.transform
+
 
         DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
         receiver.isEnemy = isEnemy;

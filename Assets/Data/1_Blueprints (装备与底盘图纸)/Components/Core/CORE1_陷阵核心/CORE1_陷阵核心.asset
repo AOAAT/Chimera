@@ -30,11 +30,13 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 3
+      ModType: 0
     - StatID: 1
       Value: 100
+      ModType: 0
     - StatID: 3
       Value: 3
-    Mechanics: []
+      ModType: 0
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
@@ -43,8 +45,8 @@ MonoBehaviour:
     SpecialMechanicDesc: 
     ActiveSkill:
       HasActiveSkill: 1
-      SkillName: "\u6218\u672F\u64A4\u9000"
-      SkillIcon: {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}
+      SkillName: "\u72C2\u6218"
+      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
       CPCost: 3
       Cooldown: 10
       OnSkillCastActions:
@@ -59,6 +61,10 @@ MonoBehaviour:
   AnchorOffset: {x: -0.012473935, y: -0.1668223}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 1
   MovementLogic: 0
   SafeDodgeDistance: 0

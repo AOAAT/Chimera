@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8ff185f3f131bed489e59dc76528b0c2, type: 3}
-  m_Name: Chassis1
+  m_Name: "CH1_\u7981\u519B"
   m_EditorClassIdentifier: 
-  ChassisID: CH_000
-  ChassisName: "\u5E95\u76D81"
+  ChassisID: CH_001
+  ChassisName: "\u7981\u519B"
   ChassisSprite: {fileID: 21300000, guid: e708e5238d832394a86b0b02c4a65149, type: 3}
   DetailBackgroundSprite: {fileID: 0}
-  Description: "\u5E95\u76D8\u7684\u98CE\u5473\u63CF\u8FF0"
-  SpecialMechanicDesc: "\u7279\u6B8A\u673A\u5236"
+  Description: "\u81EA\u6D69\u52AB\u4E4B\u6218\u4F0A\u59CB\uFF0C\u7531\u7981\u519B\u6240\u642D\u8F7D\u7684\u5947\u7F8E\u62C9\u5C31\u4E00\u76F4\u6D3B\u8DC3\u5728\u6218\u6597\u7684\u524D\u7EBF\u3002"
+  SpecialMechanicDesc: "\u6BCF\u4E2A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684*\u79D1\u6280*\u7C7B\u578B\u7684\u7EC4\u4EF6\u90FD\u4F1A\u4E3A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684\u6B66\u5668\u63D0\u4F9B1\u70B9\u653B\u51FB\u52A0\u6210\u3002"
   MacroCategory: 0
   SubTags: 000000000100000002000000
   BaseStats:
@@ -59,3 +59,7 @@ MonoBehaviour:
     LocalPosition: {x: 0, y: -0.58}
     MountAngle: 0
     DefaultComponentScale: 1
+  OnAssembleActions:
+  - {fileID: 11400000, guid: 55bd3e6e1e0338b4b8205f4f110f4b64, type: 2}
+  - {fileID: 11400000, guid: f7c1e1dc1edd9c440bb8a6b206987d70, type: 2}
+  OnBattleStartActions: []

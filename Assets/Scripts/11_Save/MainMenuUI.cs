@@ -11,21 +11,20 @@ public class MainMenuUI : MonoBehaviour
 
     private void Start()
     {
-        // --- 👇【核心新增】：唤醒主菜单音乐 ---
+        // 唤醒主菜单音乐
         if (MusicManager.Instance != null)
         {
             MusicManager.Instance.SwitchState(MusicState.MainMenu);
         }
-        // ----------------------------------
 
         if (NewGameButton != null) NewGameButton.onClick.AddListener(StartNewGame);
+
         if (QuitButton != null) QuitButton.onClick.AddListener(QuitGame);
     }
 
     private void StartNewGame()
     {
-        // --- 👇【关键加固】：在加载场景前，手动切断单例连接 ---
-        // 这样新场景加载时，它们的 Awake 会发现 Instance 为 null，从而正常初始化。
+
         if (MapManager.Instance != null) Destroy(MapManager.Instance.gameObject);
         if (RunManager.Instance != null) Destroy(RunManager.Instance.gameObject);
         if (PlayerInventoryManager.Instance != null) Destroy(PlayerInventoryManager.Instance.gameObject);

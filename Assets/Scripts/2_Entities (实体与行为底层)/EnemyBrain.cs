@@ -142,7 +142,7 @@ public class EnemyBrain : MonoBehaviour
         rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = GetFinalStat(StatType.MaxDamage, data.MaxDamage);
         rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = GetFinalStat(StatType.MinDamage, data.MinDamage);
         rSkill.DummyWeapon.WeaponStats[StatType.MaxRange] = GetFinalStat(StatType.MaxRange, data.MaxRange);
-        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed) * CombatSandbox.GetSpeed(1f);
+        rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = GetFinalStat(StatType.ProjectileSpeed, data.ProjectileSpeed);
 
         ECAContext context = new ECAContext
         {

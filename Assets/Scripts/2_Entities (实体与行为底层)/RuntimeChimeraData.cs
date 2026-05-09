@@ -21,6 +21,7 @@ public class RuntimeWeapon
 [System.Serializable]
 public class RuntimeChimeraData
 {
+    public ChassisDataSO ActiveChassisSO;
     public string UnitID;
     public string UnitName;
     public float MaxHP { get; private set; }
@@ -50,27 +51,32 @@ public class RuntimeChimeraData
     // 👇【新增】：全机开战管线
     public List<ECAAction> GlobalOnBattleStartActions = new List<ECAAction>();
     public bool CanFireWhileManualMoving = false;
-    public void Assemble(ChassisDataSO chassis, InstancedComponent[] components)
+    // --- RuntimeChimeraData.cs 逻辑加固版 ---
+
+    public void Assemble(ChassisDataSO chassis, InstancedComponent[] components, Transform entityTransform = null)
     {
+        // 1. 初始化清空
         GlobalOnFireActions.Clear();
         GlobalOnHitActions.Clear();
         GlobalOnKillActions.Clear();
-        GlobalOnBattleStartActions.Clear(); // 👈 每次重装清空
-
+        GlobalOnBattleStartActions.Clear();
         AllEquippedSOs.Clear();
         GlobalStats.Clear();
         Tags.Clear();
-        GlobalMechanics.Clear();
         EquippedWeapons.Clear();
         MaxHP = MaxAP = TotalPowerCost = TotalMass = TotalEnginePower = 0;
         CoreActiveSkill = null;
 
         if (chassis == null) return;
+
+
+        this.ActiveChassisSO = chassis;
+        // 2. 底盘基础登记
         UnitName = chassis.ChassisName;
         LogicCenterOffset = chassis.LogicCenterOffset;
-
         ProcessStats(chassis.BaseStats, false, null);
 
+        // 3. 第一遍循环：登记所有零件
         foreach (var compInstance in components)
         {
             if (compInstance == null || compInstance.BaseData == null) continue;
@@ -81,14 +87,24 @@ public class RuntimeChimeraData
             var levelData = compSO.GetLevelData(compInstance.CurrentLevel);
             if (levelData == null) continue;
 
-            foreach (var tag in compSO.BaseSubTags) Tags.Add(tag);
-            foreach (var tag in levelData.BonusTags) Tags.Add(tag);
+            // 标签合并
+            if (compSO.BaseSubTags != null) foreach (var tag in compSO.BaseSubTags) Tags.Add(tag);
+            if (levelData.BonusTags != null) foreach (var tag in levelData.BonusTags) Tags.Add(tag);
 
             if (compSO.Type == ComponentType.Weapon)
             {
-                RuntimeWeapon newWeapon = new RuntimeWeapon { WeaponName = compSO.ComponentName, SourceSO = compSO, CurrentLevel = compInstance.CurrentLevel,DeliveryType = compSO.DeliveryType, ProjectilePrefab = compSO.ProjectilePrefab };
+                RuntimeWeapon newWeapon = new RuntimeWeapon
+                {
+                    WeaponName = compSO.ComponentName,
+                    SourceSO = compSO,
+                    CurrentLevel = compInstance.CurrentLevel,
+                    DeliveryType = compSO.DeliveryType,
+                    ProjectilePrefab = compSO.ProjectilePrefab
+                };
+                // 【判空保护】：OnHit/OnFire 列表可能为 null
                 if (levelData.OnHitActions != null) newWeapon.OnHitActions.AddRange(levelData.OnHitActions);
                 if (levelData.OnFireActions != null) newWeapon.OnFireActions.AddRange(levelData.OnFireActions);
+
                 ProcessStats(levelData.Stats, true, newWeapon);
                 EquippedWeapons.Add(newWeapon);
             }
@@ -104,8 +120,8 @@ public class RuntimeChimeraData
                 ProcessStats(levelData.Stats, false, null);
             }
 
-            // 👇【核心新增】：如果是辅助/移动/核心组件，且配了全局效果，注入对应池
-            if (compInstance.BaseData.Type != ComponentType.Weapon)
+            // 收集全局效果
+            if (compSO.Type != ComponentType.Weapon)
             {
                 if (levelData.OnFireActions != null) GlobalOnFireActions.AddRange(levelData.OnFireActions);
                 if (levelData.OnHitActions != null) GlobalOnHitActions.AddRange(levelData.OnHitActions);
@@ -113,26 +129,51 @@ public class RuntimeChimeraData
             }
         }
 
+        // 4. 第二遍循环：逻辑触发
+        // --- A. 底盘积木 (加固判空) ---
+        if (chassis.OnAssembleActions != null && chassis.OnAssembleActions.Count > 0)
+        {
+            ECAContext chassisCtx = new ECAContext { ChassisData = this, SourceEntity = entityTransform };
+            foreach (var action in chassis.OnAssembleActions)
+                if (action != null) action.Execute(chassisCtx);
+        }
+
+        // 底盘开战协议
+        if (chassis.OnBattleStartActions != null) GlobalOnBattleStartActions.AddRange(chassis.OnBattleStartActions);
+
+        // --- B. 零件积木 (加固判空) ---
+        foreach (var compInstance in components)
+        {
+            if (compInstance == null || compInstance.BaseData == null) continue;
+
+            var levelData = compInstance.BaseData.GetLevelData(compInstance.CurrentLevel);
+            if (levelData == null) continue;
+
+            // 👇【核心报错修复点】：检查列表是否为 null
+            if (levelData.OnAssembleActions != null && levelData.OnAssembleActions.Count > 0)
+            {
+                ECAContext compCtx = new ECAContext
+                {
+                    ChassisData = this,
+                    SourceComponentSO = compInstance.BaseData,
+                    SourceEntity = entityTransform
+                };
+                foreach (var action in levelData.OnAssembleActions)
+                    if (action != null) action.Execute(compCtx);
+            }
+        }
+
+        RefreshFinalStats();
+    }
+
+    private void RefreshFinalStats()
+    {
         MaxHP = GetGlobalStat(StatType.AddedHP);
         MaxAP = GetGlobalStat(StatType.AddedAP);
         TotalPowerCost = GetGlobalStat(StatType.PowerCost);
         TotalMass = GetGlobalStat(StatType.AddedMass);
         TotalEnginePower = GetGlobalStat(StatType.EnginePower);
-
-        // 执行装配瞬时效果
-        foreach (var compInstance in components)
-        {
-            if (compInstance == null) continue;
-            var levelData = compInstance.BaseData.GetLevelData(compInstance.CurrentLevel);
-            if (levelData != null && levelData.OnAssembleActions.Count > 0)
-            {
-                ECAContext assembleContext = new ECAContext { ChassisData = this, SourceComponentSO = compInstance.BaseData };
-                foreach (var action in levelData.OnAssembleActions) if (action != null) action.Execute(assembleContext);
-            }
-        }
-        RefreshStatCache();
     }
-
     private void RefreshStatCache()
     {
         cachedFlattenedStats.Clear();

@@ -30,11 +30,13 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
+      ModType: 0
     - StatID: 2
       Value: 10
+      ModType: 0
     - StatID: 5
       Value: 400
-    Mechanics: []
+      ModType: 0
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
@@ -59,10 +61,10 @@ MonoBehaviour:
   AnchorOffset: {x: -0.002746582, y: 0.26835597}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 1
-  OverrideShadow: 0
-  ShadowOffset: {x: 0, y: -0.5}
-  ShadowWidth: 1.2
-  ShadowHeight: 0.4
+  OverrideShadow: 1
+  ShadowOffset: {x: 0, y: -1.2}
+  ShadowWidth: 1.4
+  ShadowHeight: 1.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

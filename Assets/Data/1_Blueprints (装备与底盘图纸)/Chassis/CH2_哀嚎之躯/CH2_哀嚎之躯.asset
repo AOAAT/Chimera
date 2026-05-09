@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff185f3f131bed489e59dc76528b0c2, type: 3}
+  m_Name: "CH2_\u54C0\u568E\u4E4B\u8EAF"
+  m_EditorClassIdentifier: 
+  ChassisID: CH_002
+  ChassisName: "\u54C0\u568E\u4E4B\u8EAF"
+  ChassisSprite: {fileID: 21300000, guid: a8721178fa4c96341855b58be07c0c25, type: 3}
+  DetailBackgroundSprite: {fileID: 0}
+  Description: "\u8FD9\u56E2\u626D\u66F2\u7684\u8840\u8089\u6BCF\u6B21\u53D7\u4F24\u90FD\u4F1A\u53D1\u51FA\u75DB\u82E6\u7684\u54C0\u568E\uFF0C\u7531\u6B64\u5F97\u540D\u3002"
+  SpecialMechanicDesc: "\u6BCF\u4E2A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684*\u8840\u8089*\u7C7B\u578B\u7684\u7EC4\u4EF6\u90FD\u4F1A\u4E3A\u5355\u4F4D\u6574\u4F53\u63D0\u4F9B10\u70B9\u8840\u91CF\u52A0\u6210\u3002"
+  MacroCategory: 1
+  SubTags: 
+  BaseStats:
+  - StatID: 0
+    Value: 100
+    ModType: 0
+  - StatID: 1
+    Value: 50
+    ModType: 0
+  BasePrice: 200
+  ScrapValue: 50
+  LogicCenterOffset: {x: 0, y: 0}
+  Sockets:
+  - SlotName: "\u5934\u90E8"
+    AllowedTypes: 00000000
+    LocalPosition: {x: 0, y: 0.58}
+    MountAngle: -0
+    DefaultComponentScale: 1
+  - SlotName: "\u8F85\u52A9"
+    AllowedTypes: 02000000
+    LocalPosition: {x: 0, y: -0.05}
+    MountAngle: 0
+    DefaultComponentScale: 1
+  - SlotName: "\u53F3"
+    AllowedTypes: 0100000002000000
+    LocalPosition: {x: 0.63, y: 0.23}
+    MountAngle: -90
+    DefaultComponentScale: 1
+  - SlotName: "\u5DE6"
+    AllowedTypes: 0100000002000000
+    LocalPosition: {x: -0.63, y: 0.23}
+    MountAngle: 90
+    DefaultComponentScale: 1
+  - SlotName: "\u79FB\u52A8"
+    AllowedTypes: 04000000
+    LocalPosition: {x: 0, y: -0.58}
+    MountAngle: 0
+    DefaultComponentScale: 1
+  OnAssembleActions:
+  - {fileID: 11400000, guid: de8c0b9378779864e92880691eec81f1, type: 2}
+  OnBattleStartActions: []

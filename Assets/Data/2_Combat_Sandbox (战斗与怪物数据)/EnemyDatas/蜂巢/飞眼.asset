@@ -16,7 +16,7 @@ MonoBehaviour:
   EnemyID: ENM_003
   EnemyName: "\u98DE\u773C"
   Description: "\u98CE\u5473\u63CF\u8FF0..."
-  EnemySprite: {fileID: 21300000, guid: 288f734967bcba747afb0f86a058aa9d, type: 3}
+  EnemySprite: {fileID: 21300000, guid: 00ec854a1b150584fa760bf5fe9cc13c, type: 3}
   AnimController: {fileID: 0}
   Chassis: {fileID: 0}
   Components: []
@@ -40,9 +40,9 @@ MonoBehaviour:
     ModType: 0
   SanPenalties: []
   VisualScaleMultiplier: 1
-  OverrideShadow: 0
-  ShadowOffset: {x: 0, y: -0.8}
-  ShadowWidth: 1.5
+  OverrideShadow: 1
+  ShadowOffset: {x: 0, y: -0.45}
+  ShadowWidth: 0.5
   ShadowHeight: 0.5
   Skills:
   - {fileID: 11400000, guid: b1809430457af5c41ab9f1b48a5cdfa1, type: 2}

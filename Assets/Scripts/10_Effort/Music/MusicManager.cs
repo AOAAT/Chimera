@@ -37,19 +37,21 @@ public class MusicManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            // 关键：确保主菜单的这个物体在切场景时不被销毁
             DontDestroyOnLoad(gameObject);
+
+            // 初始化通道逻辑保持不变...
+            sourceA = CreateChannel("MusicChannel_A", out filterA);
+            sourceB = CreateChannel("MusicChannel_B", out filterB);
+            targetFrequency = NormalFrequency;
         }
         else if (Instance != this)
         {
+            // 核心加固：如果从游戏退回主菜单，主菜单里原本就有的那个 Manager 会发现单例已存在，
+            // 此时它必须“自杀”，否则会出现两个音乐播放器在打架。
             Destroy(gameObject);
-            return; // 👈 增加 return，防止销毁中的物体继续跑逻辑
+            return;
         }
-
-        // 初始化物理隔离通道
-        sourceA = CreateChannel("MusicChannel_A", out filterA);
-        sourceB = CreateChannel("MusicChannel_B", out filterB);
-
-        targetFrequency = NormalFrequency;
     }
 
     private AudioSource CreateChannel(string name, out AudioLowPassFilter filter)

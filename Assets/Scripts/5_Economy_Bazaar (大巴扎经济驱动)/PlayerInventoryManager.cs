@@ -102,7 +102,7 @@ public class PlayerInventoryManager : MonoBehaviour
     public List<ComponentDataSO> AllComponentDatabase = new List<ComponentDataSO>();
 
     [Header("=== 测试作弊专用 ===")]
-    public ChassisDataSO DebugChassisBlueprint;
+    public List<ChassisDataSO> DebugChassisBundle = new List<ChassisDataSO>(); // 改为 List
     public List<ComponentDataSO> DebugComponentBundle = new List<ComponentDataSO>();
 
     [Tooltip("预设的机甲名称库，玩家新建机甲时会从中随机抽取")]
@@ -149,22 +149,41 @@ public class PlayerInventoryManager : MonoBehaviour
 
         InitNamePool();
 }
-  
+
     private void Update()
     {
+        // 【按 T 键】：一键领取所有测试底盘
         if (Input.GetKeyDown(KeyCode.T))
         {
-            if (DebugChassisBlueprint != null) AddChassisToInventory(DebugChassisBlueprint);
+            if (DebugChassisBundle != null && DebugChassisBundle.Count > 0)
+            {
+                int addedCount = 0;
+                foreach (var chassisSO in DebugChassisBundle)
+                {
+                    if (chassisSO != null)
+                    {
+                        AddChassisToInventory(chassisSO);
+                        addedCount++;
+                    }
+                }
+                Debug.Log($"<color=cyan>【测试指令】</color> 已成功下发 {addedCount} 台新型号底盘至仓库。");
+            }
+            else
+            {
+                Debug.LogWarning("【测试指令】底盘测试包为空，请先在 PlayerInventoryManager 脚本面板配置数据！");
+            }
         }
 
+        // 【按 Y 键】：一键领取所有测试零件 (保持原逻辑，但加上 Log 增强反馈)
         if (Input.GetKeyDown(KeyCode.Y))
         {
             if (DebugComponentBundle != null && DebugComponentBundle.Count > 0)
             {
                 foreach (var blueprint in DebugComponentBundle)
                 {
-                    if (blueprint != null) AddComponentToInventory(blueprint); // 默认发放 1 级
+                    if (blueprint != null) AddComponentToInventory(blueprint);
                 }
+                Debug.Log($"<color=orange>【测试指令】</color> 补给箱已送达，所有测试零件已入库。");
             }
         }
     }

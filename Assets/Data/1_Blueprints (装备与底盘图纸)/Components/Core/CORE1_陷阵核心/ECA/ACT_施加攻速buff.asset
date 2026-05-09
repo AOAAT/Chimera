@@ -10,6 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b71d0f67d69a3f469cc9424a6d89515, type: 3}
-  m_Name: ACT_ApplyDodgeAI
+  m_Name: "ACT_\u65BD\u52A0\u653B\u901Fbuff"
   m_EditorClassIdentifier: 
-  BuffToApply: {fileID: 11400000, guid: d56e8d49c50d53044a960c78d35f9665, type: 2}
+  BuffToApply: {fileID: 11400000, guid: 8bf707a303bda2247b5ce33df826e94b, type: 2}

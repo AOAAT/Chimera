@@ -20,7 +20,7 @@ MonoBehaviour:
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
-  MacroCategory: 0
+  MacroCategory: 1
   BaseSubTags: 
   MinDropLevel: 1
   LevelMatrix:
@@ -30,7 +30,7 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
-    Mechanics: []
+      ModType: 0
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions:
@@ -52,9 +52,14 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: -0.12269388, y: -0.1957505}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

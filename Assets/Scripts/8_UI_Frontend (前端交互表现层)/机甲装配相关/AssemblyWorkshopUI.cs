@@ -97,10 +97,12 @@ public class AssemblyWorkshopUI : MonoBehaviour
         RefreshWorkshopState();
     }
 
+    // --- AssemblyWorkshopUI.cs ---
     private void RefreshWorkshopState()
     {
         if (RightInventoryPanel != null) RightInventoryPanel.SetActive(false);
 
+        // 1. 如果还没选底盘，显示占位符并清空数值
         if (currentEditingProfile == null)
         {
             GhostChassisPrompt.SetActive(true);
@@ -108,6 +110,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
             HPText.text = "血量: -- / --";
             APText.text = "护甲: -- / --";
             PowerText.text = "总耗电量: --";
+            if (BlockText != null) BlockText.text = "格挡: --";
+            if (MassText != null) MassText.text = "质量: --";
+            if (SpeedText != null) SpeedText.text = "移速: --";
+
             UnitNameInput.text = "等待选择底盘...";
             UnitNameInput.interactable = false;
         }
@@ -116,48 +122,76 @@ public class AssemblyWorkshopUI : MonoBehaviour
             GhostChassisPrompt.SetActive(false);
             ChassisVisualRoot.gameObject.SetActive(true);
 
-            float maxHP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedHP);
-            float maxAP = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedAP);
-            float totalPower = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.PowerCost);
-            float totalBlock = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedBlock);
-            float totalMass = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.AddedMass);
-            float totalEngine = PlayerInventoryManager.GetStatValue(currentEditingProfile.ChassisData.BaseStats, StatType.EnginePower);
+            // ==========================================
+            // 🚀 核心重构：调用积木引擎执行【装配模拟】
+            // ==========================================
 
-            foreach (string compID in currentEditingProfile.EquippedComponentIDs)
+            // A. 准备当前插槽的零件快照 (必须严格对应插槽索引)
+            int totalSockets = currentEditingProfile.ChassisData.Sockets.Count;
+            InstancedComponent[] tempComps = new InstancedComponent[totalSockets];
+
+            for (int i = 0; i < currentEditingProfile.SlotIndices.Count; i++)
             {
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null)
+                int slotIdx = currentEditingProfile.SlotIndices[i];
+                string instanceID = currentEditingProfile.EquippedComponentIDs[i];
+
+                // 去库存里抓取这个实时的零件实例
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == instanceID);
+
+                if (slotIdx < totalSockets)
                 {
-                    var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
-                    maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
-                    maxAP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedAP);
-                    totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
-                    totalBlock += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedBlock);
-                    totalMass += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedMass);
-                    totalEngine += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.EnginePower);
+                    tempComps[slotIdx] = comp;
                 }
             }
 
-            if (isCreatingNew) { currentEditingProfile.CurrentHP = maxHP; currentEditingProfile.CurrentAP = maxAP; }
-            else { currentEditingProfile.CurrentHP = Mathf.Max(1f, maxHP - snapshot_DamageTaken); currentEditingProfile.CurrentAP = maxAP; }
+            // B. 呼叫后端解算器 (这会触发底盘的 OnAssembleActions 积木)
+            RuntimeChimeraData calcData = new RuntimeChimeraData();
+            calcData.Assemble(currentEditingProfile.ChassisData, tempComps);
 
-            float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
+            // C. 提取解算后的“真理数值”
+            float maxHP = calcData.MaxHP;
+            float maxAP = calcData.MaxAP;
+            float totalPower = calcData.TotalPowerCost;
+            float totalBlock = calcData.GetGlobalStat(StatType.AddedBlock);
+            float totalMass = calcData.TotalMass;
+            float totalEngine = calcData.TotalEnginePower;
+
+            // ==========================================
+
+            // 2. 更新机甲档案的实时战损状态
+            if (isCreatingNew)
+            {
+                currentEditingProfile.CurrentHP = maxHP;
+                currentEditingProfile.CurrentAP = maxAP;
+            }
+            else
+            {
+                // 如果是改装旧机甲，保持之前的战损（通过 snapshot_DamageTaken 计算）
+                // 如果加成后的上限变低了，强制收缩当前血量
+                currentEditingProfile.CurrentHP = Mathf.Min(maxHP - snapshot_DamageTaken, maxHP);
+                currentEditingProfile.CurrentAP = maxAP;
+            }
+
+            // 3. 计算最终物理表现 (移速)
+            float speedMult = CombatSandbox.GetSpeed(1f);
             float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
 
+            // 4. 刷新 UI 文字显示
             HPText.text = $"血量: {currentEditingProfile.CurrentHP:F0} / {maxHP:F0}";
             APText.text = $"护甲: {currentEditingProfile.CurrentAP:F0} / {maxAP:F0}";
             PowerText.text = $"总耗电量: {totalPower:F0}";
+
             if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
             if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";
             if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
 
+            // 5. 交互与视觉
             UnitNameInput.text = currentEditingProfile.UnitName;
             UnitNameInput.interactable = true;
 
             RenderMechAndSockets();
         }
     }
-
     private void RenderMechAndSockets()
     {
         // 1. 彻底清理环境

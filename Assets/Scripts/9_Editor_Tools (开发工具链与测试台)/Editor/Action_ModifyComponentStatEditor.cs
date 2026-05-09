@@ -1,66 +1,52 @@
-﻿#if UNITY_EDITOR
+﻿// --- Action_ModifyComponentStatEditor.cs ---
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 
-// 告诉 Unity：这段代码是专门用来画 Action_ModifyComponentStat 面板的！
 [CustomEditor(typeof(Action_ModifyComponentStat))]
 public class Action_ModifyComponentStatEditor : Editor
 {
-    private SerializedProperty filterProp;
-    private SerializedProperty targetTagProp;
-    private SerializedProperty targetTypeProp;
-    private SerializedProperty targetStatProp;
-    private SerializedProperty operationProp;
-    private SerializedProperty valueProp;
-
-    private void OnEnable()
-    {
-        // 抓取脚本里所有的变量名
-        filterProp = serializedObject.FindProperty("Filter");
-        targetTagProp = serializedObject.FindProperty("TargetTag");
-        targetTypeProp = serializedObject.FindProperty("TargetType");
-        targetStatProp = serializedObject.FindProperty("TargetStat");
-        operationProp = serializedObject.FindProperty("Operation");
-        valueProp = serializedObject.FindProperty("Value");
-    }
-
     public override void OnInspectorGUI()
     {
-        // 开始监听面板数据的变化
         serializedObject.Update();
 
-        // === 1. 第一区块：动态过滤显示 ===
-        EditorGUILayout.LabelField("1. 谁来享受加成？ (Filter)", EditorStyles.boldLabel);
+        // 1. 绘制目标过滤
+        EditorGUILayout.LabelField("修改谁？", EditorStyles.boldLabel);
+        SerializedProperty filterProp = serializedObject.FindProperty("Filter");
         EditorGUILayout.PropertyField(filterProp);
-
-        // 获取当前下拉菜单选了第几项
         TargetFilterType currentFilter = (TargetFilterType)filterProp.enumValueIndex;
-
-        // 核心魔法：根据选项，决定画出哪个输入框！
-        if (currentFilter == TargetFilterType.ByTag)
-        {
-            EditorGUILayout.PropertyField(targetTagProp);
-        }
-        else if (currentFilter == TargetFilterType.ByType)
-        {
-            EditorGUILayout.PropertyField(targetTypeProp);
-        }
-        // 如果选了 All 或者 Self，这两个框就凭空消失了！
-
-        EditorGUILayout.Space(); // 空一行，保持美观
-
-        // === 2. 第二区块：修改什么属性 ===
-        EditorGUILayout.LabelField("2. 修改什么属性？ (Target Stat)", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(targetStatProp);
+        if (currentFilter == TargetFilterType.ByTag) EditorGUILayout.PropertyField(serializedObject.FindProperty("TargetTag"));
+        else if (currentFilter == TargetFilterType.ByType) EditorGUILayout.PropertyField(serializedObject.FindProperty("TargetType"));
+        else if (currentFilter == TargetFilterType.ByMacro) EditorGUILayout.PropertyField(serializedObject.FindProperty("TargetMacro"));
 
         EditorGUILayout.Space();
 
-        // === 3. 第三区块：怎么改 ===
-        EditorGUILayout.LabelField("3. 怎么改？ (Operation)", EditorStyles.boldLabel);
-        EditorGUILayout.PropertyField(operationProp);
-        EditorGUILayout.PropertyField(valueProp);
+        // 2. 绘制数值操作
+        EditorGUILayout.LabelField("修改什么？", EditorStyles.boldLabel);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("TargetStat"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("Operation"));
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("Value"), new GUIContent("基础值 (Base Value)"));
 
-        // 应用修改，保存数据
+        EditorGUILayout.Space();
+
+        // 3. 绘制动态系数（核心魔法区）
+        EditorGUILayout.LabelField("动态系数来源", EditorStyles.boldLabel);
+        SerializedProperty scaleModeProp = serializedObject.FindProperty("ScaleBy");
+        EditorGUILayout.PropertyField(scaleModeProp);
+
+        if ((ScalingMode)scaleModeProp.enumValueIndex == ScalingMode.ComponentCount)
+        {
+            EditorGUILayout.BeginVertical("helpbox");
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("ScalingMacro"), new GUIContent("统计该阵营数量"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("ExcludeSourceFromCount"), new GUIContent("排除触发者零件"));
+
+            // 👇【核心新增】：暴露底盘计数开关
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("IncludeChassisInCount"), new GUIContent("统计底盘本身"));
+
+            EditorGUILayout.HelpBox("最终加成 = 基础值 × (匹配零件数 + 底盘判定)", MessageType.Info);
+            EditorGUILayout.EndVertical();
+        }
+
         serializedObject.ApplyModifiedProperties();
     }
 }

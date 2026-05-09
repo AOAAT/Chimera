@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff185f3f131bed489e59dc76528b0c2, type: 3}
+  m_Name: "CH3_\u5929\u67A2\u6218\u673A"
+  m_EditorClassIdentifier: 
+  ChassisID: CH_003
+  ChassisName: "\u5929\u67A2\u6218\u673A"
+  ChassisSprite: {fileID: 21300000, guid: bb33cf922bc449346a5c6b970b8b393a, type: 3}
+  DetailBackgroundSprite: {fileID: 0}
+  Description: "\u8FD9\u4E2A\u5E9E\u7136\u5927\u7269\u4EE3\u8868\u4E86\u6700\u5F3A\u608D\u7684\u5355\u5175\u4F5C\u6218\u80FD\u529B\u3002\u4EE3\u4EF7\u662F\u6781\u81F4\u7684\u7535\u91CF\u635F\u8017\u3002"
+  SpecialMechanicDesc: 
+  MacroCategory: 0
+  SubTags: 
+  BaseStats:
+  - StatID: 0
+    Value: 100
+    ModType: 0
+  - StatID: 1
+    Value: 100
+    ModType: 0
+  - StatID: 3
+    Value: 2
+    ModType: 0
+  BasePrice: 200
+  ScrapValue: 50
+  LogicCenterOffset: {x: 0, y: 0}
+  Sockets:
+  - SlotName: "\u5934\u90E81"
+    AllowedTypes: 01000000
+    LocalPosition: {x: -0.3, y: 0.7}
+    MountAngle: 45
+    DefaultComponentScale: 1
+  - SlotName: "\u5934\u90E82"
+    AllowedTypes: 01000000
+    LocalPosition: {x: 0.26, y: 0.7}
+    MountAngle: -45
+    DefaultComponentScale: 1
+  - SlotName: "\u4E2D\u5FC3"
+    AllowedTypes: 00000000
+    LocalPosition: {x: 0, y: -0.068}
+    MountAngle: 0
+    DefaultComponentScale: 1
+  - SlotName: "\u53F3"
+    AllowedTypes: 02000000
+    LocalPosition: {x: 0.63, y: 0.13}
+    MountAngle: -90
+    DefaultComponentScale: 1
+  - SlotName: "\u5DE6"
+    AllowedTypes: 02000000
+    LocalPosition: {x: -0.62, y: 0.14}
+    MountAngle: 90
+    DefaultComponentScale: 1
+  - SlotName: "\u79FB\u52A8"
+    AllowedTypes: 04000000
+    LocalPosition: {x: 0, y: -0.69}
+    MountAngle: 0
+    DefaultComponentScale: 1
+  OnAssembleActions: []
+  OnBattleStartActions: []

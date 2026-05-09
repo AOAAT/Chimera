@@ -10,22 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
-  m_Name: BUFF_DodgeState
+  m_Name: "Buff_\u653B\u901F"
   m_EditorClassIdentifier: 
-  BuffID: BUFF_C_001
-  BuffName: "\u6218\u672F\u64A4\u9000"
-  BuffIcon: {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}
+  BuffID: BUFF_010
+  BuffName: "\u653B\u901F\u589E\u52A0"
+  BuffIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
   ParticleColor: {r: 1, g: 1, b: 1, a: 1}
-  DurationType: 1
+  DurationType: 0
   BaseDuration: 3
   StackType: 1
   MaxStacks: 1
-  StatModifiers: []
+  StatModifiers:
+  - StatID: 15
+    Value: 1000
+    ModType: 0
   OnApplyActions: []
   TickInterval: 1
   OnTickActions: []
   OnRemoveActions: []
   OnMaxStacksActions: []
-  OverrideAI: 1
+  OnHolderDeathActions: []
+  OverrideAI: 0
   OverrideMovementLogic: 2
-  OverrideSafeDodgeDistance: 80
+  OverrideSafeDodgeDistance: 8

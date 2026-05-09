@@ -30,21 +30,28 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
+      ModType: 0
     - StatID: 10
       Value: 10
+      ModType: 0
     - StatID: 11
-      Value: 5
+      Value: 10
+      ModType: 0
     - StatID: 13
       Value: 40
+      ModType: 0
     - StatID: 14
       Value: 0
+      ModType: 0
     - StatID: 15
       Value: 200
+      ModType: 0
     - StatID: 16
       Value: 0.2
+      ModType: 0
     - StatID: 18
       Value: 4
-    Mechanics: []
+      ModType: 0
     OnFireActions: []
     OnHitActions:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
@@ -65,9 +72,14 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: -0.29730225, y: 0.16118938}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

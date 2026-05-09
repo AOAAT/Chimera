@@ -35,6 +35,13 @@ public class ChassisDataSO : ScriptableObject
 
     [Header("=== 接口/插槽定义 (极其核心) ===")]
     public List<SlotDefinition> Sockets = new List<SlotDefinition>();
+
+    [Header("=== 生命周期 ECA (New!) ===")]
+    [Tooltip("当底盘被加载/装配到战斗实体时触发（通常用于初始化永久效果）")]
+    public List<ECAAction> OnAssembleActions = new List<ECAAction>();
+
+    [Tooltip("该底盘特有的开战协议")]
+    public List<ECAAction> OnBattleStartActions = new List<ECAAction>();
 }
 
 [System.Serializable]
