@@ -97,43 +97,83 @@ public class CombatDirector : MonoBehaviour
 
     public void EnterCombatPhase(MapNodeData nodeData)
     {
-        PerformFullCleanup(); // 强制先清空一次，防止上一关残留
+        // --- 1. 系统防护：执行物理与逻辑大扫除 ---
+        // 如果是从非正常状态（如战斗中强退重进）触发，执行带日志的重置
+        if (IsCombatActive || IsDeploymentPhase)
+        {
+            Debug.Log("<color=yellow>【避灾协议】检测到异常残留环境，正在执行强制全量重置...</color>");
+            PerformFullCleanup();
+        }
+        else
+        {
+            // 正常逻辑流（战斗已结算）下，执行静默重置，确保战场是一张白纸
+            // 注意：ResetBattlefieldInternal 是我建议你封装的私有方法，
+            // 如果你还没封装，这里可以直接先调 PerformFullCleanup()
+            PerformFullCleanup();
+        }
+
+        // --- 2. 核心 UI 唤醒链路 (解决按钮不显示的问题) ---
+        if (CombatUIPanel != null)
+        {
+            CombatUIPanel.SetActive(true);
+        }
+
+        if (StartBattleButton != null)
+        {
+            StartBattleButton.gameObject.SetActive(true);
+            StartBattleButton.interactable = true;
+
+            // 【补强】：工业级监听重刷。
+            // 防止场景切换或退出导致的 Button 引用丢失或逻辑挂空
+            StartBattleButton.onClick.RemoveAllListeners();
+            StartBattleButton.onClick.AddListener(OnBattleStartClicked);
+        }
+
+        // --- 3. 导演状态机重置 ---
         MusicManager.Instance?.SwitchState(MusicState.Combat);
-        IsCombatActive = false;
-        IsDeploymentPhase = true;
+        IsDeploymentPhase = true;  // 进入部署阶段
+        IsCombatActive = false;    // 战斗尚未鸣枪
         isCheckingWinCondition = false;
 
-        // --- 👇【加固逻辑】：节点记录 ---
+        // --- 4. 节点数据交接 ---
         if (nodeData != null)
         {
             currentNodeData = nodeData;
-            Debug.Log($"<color=green>【导演】</color> 已锁定当前作战节点: {currentNodeData.NodeID}");
+            Debug.Log($"<color=green>【导演】</color> 已锁定作战节点: {currentNodeData.NodeID}");
         }
-        // ------------------------------------------
 
-        if (CombatUIPanel != null) CombatUIPanel.SetActive(true);
-        if (StartBattleButton != null) { StartBattleButton.gameObject.SetActive(true); StartBattleButton.interactable = true; }
-        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
-
-        if (RunManager.Instance == null) return;
-
-        if (CurrentLayout == null)
+        // --- 5. 环境与布局加载 ---
+        if (RunManager.Instance == null)
         {
-            int stage = RunManager.Instance.CurrentStage;
-            int layer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
-            // 兜底判定
-            MapNodeType combatType = (currentNodeData != null) ? currentNodeData.HiddenRealType : MapNodeType.Enemy_Mixed;
-            CurrentLayout = RunManager.Instance.GetNextEncounter(stage, layer, combatType);
+            Debug.LogError("【严重错误】RunManager 实例丢失，无法生成关卡！");
+            return;
         }
+
+        int stage = RunManager.Instance.CurrentStage;
+        int layer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
+        MapNodeType combatType = (currentNodeData != null) ? currentNodeData.HiddenRealType : MapNodeType.Enemy_Mixed;
+
+        // 从牌库抓取具体的战斗配置
+        CurrentLayout = RunManager.Instance.GetNextEncounter(stage, layer, combatType);
 
         if (CurrentLayout != null)
         {
-            SetupArenaVisuals();
+            SetupArenaVisuals();    // 这里面会执行 ArenaReference.SetActive(true)
             SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
+
+            Debug.Log($"<color=cyan>【系统】</color> 战场布局 [{CurrentLayout.name}] 已加载，等待部署。");
+        }
+        else
+        {
+            Debug.LogError($"【加载失败】找不到匹配 Stage:{stage} Layer:{layer} 的战斗配置！");
         }
 
-        MusicManager.Instance.SwitchState(MusicState.Combat);
+        // --- 6. 自动唤起整备 UI ---
+        if (HangarMenuUI.Instance != null)
+        {
+            HangarMenuUI.Instance.OpenHangar();
+        }
     }
     private void SetupArenaVisuals()
     {
@@ -410,22 +450,35 @@ public class CombatDirector : MonoBehaviour
 
     private void OnReturnToMapClicked()
     {
-        // --- 👇【系统化清理入口】：无论是普通还是特殊战斗，离开时必须执行 ---
-        PerformFullCleanup();
-
-        if (isLastCombatVictory)
+        // --- 👇【核心修正 A】：在清理之前，先把奖励引用存下来 ---
+        LootSequenceSO encounterLoot = null;
+        if (CurrentLayout != null)
         {
-            LootSequenceSO encounterLoot = CurrentLayout != null ? CurrentLayout.NodeLootSequence : null;
-            if (encounterLoot != null && LootSequenceDirector.Instance != null)
-            {
-                LootSequenceDirector.Instance.StartLootHub(encounterLoot, null, MacroCategory.Tech, 1, () => ExecuteReturnToMap());
-                return;
-            }
+            encounterLoot = CurrentLayout.NodeLootSequence;
         }
 
-        ExecuteReturnToMap();
-    }
+        // 记录当前的获胜状态
+        bool won = isLastCombatVictory;
+        // ----------------------------------------------------
 
+        // --- 👇【核心修正 B】：执行物理清理 ---
+        // 此时清理掉 CurrentLayout 已经没关系了，因为我们已经拿到了 encounterLoot
+        PerformFullCleanup();
+
+        // --- 👇【核心修正 C】：基于缓存的数据决定后续去向 ---
+        if (won && encounterLoot != null && LootSequenceDirector.Instance != null)
+        {
+            Debug.Log("<color=green>【系统】</color> 侦测到战利品序列，正在打开大巴扎...");
+
+            // 注意：这里的回调函数必须指向 ExecuteReturnToMap，确保选完后能正常回图
+            LootSequenceDirector.Instance.StartLootHub(encounterLoot, null, MacroCategory.Tech, 1, () => ExecuteReturnToMap());
+        }
+        else
+        {
+            // 如果没赢，或者没配奖励，直接回地图
+            ExecuteReturnToMap();
+        }
+    }
     public void ExecuteReturnToMap()
     {
         // 🌟【核心修复点 1】：把切歌指令提到最前面，且放在判定之外
@@ -449,47 +502,87 @@ public class CombatDirector : MonoBehaviour
     }
 
     // --- 👇【核心新增】：工业级大扫除方法 ---
-    private void PerformFullCleanup()
+    private void SilentCleanup()
     {
-        Debug.Log("<color=#FF00FF>【系统大扫除】</color> 正在注销战场资源，重置机组状态...");
+        // 这个方法和 PerformFullCleanup 逻辑一模一样，只是不打印那行吓人的 Debug.Log
+        ResetBattlefieldInternal();
+    }
 
-        // 1. 物理实体清理
-        MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
-        foreach (var mech in allMechs) { if (mech != null) { mech.SyncPostCombatState(); Destroy(mech.gameObject); } }
+    public void PerformFullCleanup()
+    {
+        Debug.Log("<color=#FF00FF>【战区管理】当前作战环境已物理卸载，逻辑回滚至待命态。</color>");
+        ResetBattlefieldInternal();
+    }
 
-        DamageReceiver[] allReceivers = FindObjectsOfType<DamageReceiver>();
-        foreach (var r in allReceivers) { if (r != null) Destroy(r.gameObject); }
-
-        Projectile[] allBullets = FindObjectsOfType<Projectile>();
-        foreach (var b in allBullets) { if (b != null) Destroy(b.gameObject); }
-
-        // 2. 状态机重置：机库机甲必须设为“未部署”才能在下一场使用
+    // 核心重置逻辑提取
+    private void ResetBattlefieldInternal()
+    {
+        // --- 👇【核心新增 A】：逻辑归还 ---
         if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
         {
+            Debug.Log("<color=cyan>【系统】</color> 正在回收前线机甲权限，重置部署标志位...");
             foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
             {
-                if (profile != null) profile.IsDeployed = false;
+                if (profile != null)
+                {
+                    // 强行拨回“未部署”状态，这样下一场战斗才能重新拖拽
+                    profile.IsDeployed = false;
+                }
+            }
+        }
+        SimplePool.ClearPool();
+        // --- 👇【核心新增 B】：UI 关灯 ---
+        if (ActiveSkillUIManager.Instance != null)
+        {
+            ActiveSkillUIManager.Instance.ClearUI(); // 销毁所有技能格子
+            ActiveSkillUIManager.Instance.SetVisibility(false); // 隐藏整个技能栏
+        }
+
+        if (NavHangarButton != null)
+        {
+            NavHangarButton.interactable = true;
+        }
+
+        if (NavWarehouseButton != null)
+        {
+            NavWarehouseButton.interactable = true;
+        }
+
+        // --- 以下是原有的物理清理逻辑 ---
+        IsCombatActive = false;
+        IsDeploymentPhase = false;
+        wallsGenerated = false;
+        CurrentLayout = null;
+
+        if (activeEnemiesContainer != null)
+        {
+            foreach (Transform child in activeEnemiesContainer.transform) Destroy(child.gameObject);
+        }
+
+        MechUnit2D[] allMechs = FindObjectsOfType<MechUnit2D>();
+        foreach (var mech in allMechs)
+        {
+            if (mech != null)
+            {
+                // 在销毁前，先执行我们之前写的“满血复活”同步
+                mech.SyncPostCombatState();
+                Destroy(mech.gameObject);
             }
         }
 
-        // 3. UI 彻底清理
-        if (ActiveSkillUIManager.Instance != null) ActiveSkillUIManager.Instance.ClearUI();
-        if (BattleCommandManager.Instance != null) BattleCommandManager.Instance.SelectedUnit = null;
+        ActiveEnemies.Clear();
+        ActivePlayerUnits.Clear();
 
         if (ArenaReference != null) ArenaReference.SetActive(false);
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
-        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
-        if (NavHangarButton != null) NavHangarButton.interactable = true;
-        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        // 如果之前有关闭过 StartBattleButton 的交互，也在这里恢复
-        if (StartBattleButton != null) StartBattleButton.interactable = true;
-        // 4. 重置战斗发令枪状态
-        IsCombatActive = false;
-        IsDeploymentPhase = false;
+        StopAllCoroutines();
+
+        // 强制刷新一次机库 UI，让“已部署”的印章消失
+        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar();
+
     }
-
     private void GenerateArenaBoundaries()
     {
         CurrentArenaCenter = ArenaReference != null ? ArenaReference.transform.position : Vector3.zero;
@@ -536,5 +629,47 @@ public class CombatDirector : MonoBehaviour
 
     private MacroCategory GetMacroForNodeType(MapNodeType type) { return MacroCategory.Tech; }
 
-   
+    public void FullResetBeforeExit()
+    {
+        Debug.Log("<color=red>【指令】执行紧急关停协议，物理卸载全场实体...</color>");
+
+        // 1. 强制重置时间缩放（防止在暂停状态退出导致新游戏卡死）
+        Time.timeScale = 1f;
+
+        // 2. 彻底清空静态注册表 (防止残留野指针)
+        ActiveEnemies.Clear();
+        ActivePlayerUnits.Clear();
+
+        // 3. 物理清理：销毁所有战场动态生成的容器
+        if (activeEnemiesContainer != null) Destroy(activeEnemiesContainer);
+        if (boundariesContainer != null) Destroy(boundariesContainer);
+        if (forbiddenZonesContainer != null) Destroy(forbiddenZonesContainer);
+
+        // 4. 寻找并清理所有残余的战斗单位和子弹（双重保险）
+        var allMechs = FindObjectsOfType<MechUnit2D>();
+        foreach (var m in allMechs) Destroy(m.gameObject);
+
+        var allProjectiles = FindObjectsOfType<Projectile>();
+        foreach (var p in allProjectiles) Destroy(p.gameObject);
+
+        // 5. 状态机归零
+        IsCombatActive = false;
+        IsDeploymentPhase = false;
+        wallsGenerated = false;
+        CurrentLayout = null;
+        currentNodeData = null;
+
+        // 6. 核心战场预制体复位
+        if (ArenaReference != null)
+        {
+            ArenaReference.SetActive(false);
+        }
+
+        // 7. 音乐恢复
+        if (MusicManager.Instance != null)
+        {
+            MusicManager.Instance.SetImmersionMode(false);
+            MusicManager.Instance.SwitchState(MusicState.Silence);
+        }
+    }
 }

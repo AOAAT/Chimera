@@ -73,13 +73,18 @@ public class PauseMenuUI : MonoBehaviour
 
     private void BackToMainMenu()
     {
-        Debug.Log("<color=orange>【系统】</color> 正在卸载当前战区，返回指挥部...");
+        Debug.Log("<color=orange>【系统】</color> 正在执行离场清理并返回主菜单...");
 
-        // ！！！极其关键！！！
-        // 在切换场景前，必须恢复 TimeScale，否则新场景（主菜单）也是卡死的！
+        // --- 👇【核心新增】：先大扫除，再切场景 ---
+        if (CombatDirector.Instance != null)
+        {
+            CombatDirector.Instance.FullResetBeforeExit();
+        }
+
+        // 额外确保时间流速正常
         Time.timeScale = 1f;
 
-        // 这里的 0 是主菜单场景的索引
+        // 卸载当前场景，加载主菜单（Index 0）
         SceneManager.LoadScene(0);
     }
 

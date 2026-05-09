@@ -23,10 +23,15 @@ public class MainMenuUI : MonoBehaviour
 
     private void StartNewGame()
     {
-        Debug.Log("<color=cyan>【系统】</color> 正在重载逻辑序列，初始化新进度...");
+        // --- 👇【关键加固】：在加载场景前，手动切断单例连接 ---
+        // 这样新场景加载时，它们的 Awake 会发现 Instance 为 null，从而正常初始化。
+        if (MapManager.Instance != null) Destroy(MapManager.Instance.gameObject);
+        if (RunManager.Instance != null) Destroy(RunManager.Instance.gameObject);
+        if (PlayerInventoryManager.Instance != null) Destroy(PlayerInventoryManager.Instance.gameObject);
+        if (GlobalResourceManager.Instance != null) Destroy(GlobalResourceManager.Instance.gameObject);
+        if (CombatDirector.Instance != null) Destroy(CombatDirector.Instance.gameObject);
 
-        // 场景跳转：1 代表主游戏场景，0 代表主菜单
-        // 确保 Build Settings 里 Scene_MainGame 的索引是 1
+        Time.timeScale = 1f;
         SceneManager.LoadScene(1);
     }
 
