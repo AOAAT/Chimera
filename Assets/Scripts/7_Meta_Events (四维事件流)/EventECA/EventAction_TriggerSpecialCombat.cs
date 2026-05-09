@@ -5,20 +5,23 @@ public class EventAction_TriggerSpecialCombat : EventAction
 {
     public EncounterLayoutSO SpecialLayout;
 
-    // --- EventAction_TriggerSpecialCombat.cs ---
+    [Header("=== 战斗后续跳转 (可选) ===")]
+    [Tooltip("战斗获胜并领完奖后，要跳转的事件。如果为空则回大地图")]
+    public EventNodeSO NextEventOnVictory;
+
+    [Tooltip("战斗失败（没死的情况下）要跳转的事件")]
+    public EventNodeSO NextEventOnFailure;
 
     public override void Execute()
     {
         if (SpecialLayout == null || CombatDirector.Instance == null || EventDirector.Instance == null) return;
 
-        Debug.Log($"<color=red>【特殊开战】</color> 正在将仪式现场载入沙盘，锚定节点: {EventDirector.Instance.CurrentNodeData.NodeID}");
+        Debug.Log($"<color=red>【剧情开战】</color> 注入战场并挂载后续剧情钩子。");
 
-        // 1. 设置布局
-        CombatDirector.Instance.CurrentLayout = SpecialLayout;
-        MusicManager.Instance?.SwitchState(MusicState.Combat);
-        // --- 👇【关键修复】：显式交接节点数据 ---
-        // 这样战斗导演就会记住这个节点，打完后能正确结账
-        CombatDirector.Instance.EnterCombatPhase(EventDirector.Instance.CurrentNodeData);
-        // ------------------------------------------
+        // --- 👇【核心重构】：将后续跳转指令寄存到导演那里 ---
+        CombatDirector.Instance.RegisterPostCombatEvents(NextEventOnVictory, NextEventOnFailure);
+
+        // 开启战斗，传入特定布局
+        CombatDirector.Instance.EnterCombatPhase(EventDirector.Instance.CurrentNodeData, SpecialLayout);
     }
 }

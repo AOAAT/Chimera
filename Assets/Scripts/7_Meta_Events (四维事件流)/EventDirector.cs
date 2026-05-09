@@ -23,8 +23,12 @@ public class EventDirector : MonoBehaviour
     private EventNodeSO currentEventNode;
     private List<EventOptionUI> activeOptionUIs = new List<EventOptionUI>();
 
-    // --- 👇【关键修复】：流程打断标志位 ---
-    private bool isFlowHijackedByAction = false;
+
+    private static EventNodeSO nextNodeAfterLoot;
+
+    public static EventNodeSO GetPendingNextNode() => nextNodeAfterLoot;
+    public static void ClearPendingNextNode() => nextNodeAfterLoot = null;
+
 
     private void Awake() { Instance = this; }
 
@@ -94,7 +98,6 @@ public class EventDirector : MonoBehaviour
     {
         // --- 👇【关键修复】：只要调用了 PlayEvent，就标记流程已被劫持 ---
         MusicManager.Instance?.PlayEventMusic(eventNode.CustomBGM);
-        isFlowHijackedByAction = true;
 
         currentEventNode = eventNode;
         if (EventPanel != null) EventPanel.SetActive(true);
@@ -154,34 +157,36 @@ public class EventDirector : MonoBehaviour
     {
         if (option == null) return;
 
-        isFlowHijackedByAction = false;
+        // 1. 注册可能存在的接力节点
+        nextNodeAfterLoot = option.NextEventNode;
 
-        // 执行积木
+        // 2. 执行所有积木动作
         foreach (var action in option.Actions) if (action != null) action.Execute();
 
-        if (option.NextEventNode != null)
+        // --- 👇【核心修复：判定逻辑升级】---
+        // 现在我们要检查 ug.Rewards 这个列表里，是否有任何一项触发了大巴扎 UI
+        bool isLootAction = option.Actions.Any(a =>
+            a is EventAction_UniversalGrant ug &&
+            ug.Rewards.Any(r => r.Mode == RewardType.RandomLootBox || r.Mode == RewardType.SpecificComponent)
+        );
+        // ----------------------------------
+
+        // 4. 流程分流
+        if (isLootAction)
         {
+            // 开启了打捞：关闭文字面板，等待接力回调
+            if (EventPanel != null) EventPanel.SetActive(false);
+        }
+        else if (option.NextEventNode != null)
+        {
+            // 没打捞，但有下一幕：直接跳转
             PlayEvent(option.NextEventNode);
         }
         else
         {
-            // --- 👇【逻辑适配】：判定是否开启了任何会展示物品的 UI ---
-            bool isUIHijacked = option.Actions.Any(a =>
-                a is EventAction_UniversalGrant ug &&
-                (ug.Mode == RewardType.RandomLootBox || ug.Mode == RewardType.SpecificComponent));
-
-            bool isBattleActive = CombatDirector.Instance != null && CombatDirector.Instance.IsDeploymentPhase;
-
-            if (!isFlowHijackedByAction && !isBattleActive && !isUIHijacked)
-            {
-                if (EventPanel != null) EventPanel.SetActive(false);
-                ExecuteReturnToMap();
-            }
-            else
-            {
-                // 如果开启了展示 UI，我们只关掉文字面板，等待展示 UI 的回调
-                if (EventPanel != null) EventPanel.SetActive(false);
-            }
+            // 啥都没有：任务结束，关门回地图
+            if (EventPanel != null) EventPanel.SetActive(false);
+            ExecuteReturnToMap();
         }
     }
 

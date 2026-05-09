@@ -2,6 +2,19 @@
 using System.Linq;
 using UnityEngine;
 
+[System.Serializable]
+public class LayerOverrideRule
+{
+    [Tooltip("指定哪一层 (Index 从 0 开始)")]
+    public int LayerIndex;
+
+    [Tooltip("该层强制生成的节点数量")]
+    public int NodeCount = 1;
+
+    [Tooltip("该层所有节点强制显示的类型")]
+    public MapNodeType ForcedType = MapNodeType.Event;
+}
+
 public class MapGenerator : MonoBehaviour
 {
     [Header("=== 1. 地图结构参数 ===")]
@@ -9,24 +22,27 @@ public class MapGenerator : MonoBehaviour
     public int MinNodesPerLayer = 2;
     public int MaxNodesPerLayer = 4;
 
-    [Header("=== 2. 全局节点生成权重 (确定地图上显示什么) ===")]
+    // --- 👇【核心新增】：层级干预槽位 ---
+    [Header("=== 特殊层级规则 (用于新手引导/剧情点) ===")]
+    public List<LayerOverrideRule> ForcedLayers = new List<LayerOverrideRule>();
+
+    [Header("=== 2. 全局节点生成权重 ===")]
     public float Weight_NormalEnemy = 40f;
-    public float Weight_Unknown = 30f;  // 👈 问号房
-    public float Weight_Event = 10f;    // 👈 天然显现的事件
+    public float Weight_Unknown = 30f;
+    public float Weight_Event = 10f;
     public float Weight_Elite = 10f;
     public float Weight_Workshop = 10f;
 
-    [Header("=== 3. 问号房内核分布权重 (确定揭开后是什么) ===")]
+    [Header("=== 3. 问号房内核分布权重 ===")]
     public float InnerWeight_Event = 50f;
     public float InnerWeight_Workshop = 15f;
     public float InnerWeight_Elite = 5f;
-    [Space]
     public float InnerWeight_TechBattle = 10f;
     public float InnerWeight_FleshBattle = 10f;
     public float InnerWeight_MagicBattle = 5f;
     public float InnerWeight_MixedBattle = 5f;
 
-    [Header("=== 4. 普通战斗流派均衡器 (防扎堆) ===")]
+    [Header("=== 4. 普通战斗流派均衡器 ===")]
     [Range(0f, 1f)] public float BufferFactor = 0.2f;
     public float TechBase = 10f;
     public float FleshBase = 10f;
@@ -46,22 +62,53 @@ public class MapGenerator : MonoBehaviour
         List<List<MapNodeData>> layers = new List<List<MapNodeData>>();
 
         missCounts = new Dictionary<MapNodeType, int>
+    {
+        { MapNodeType.Enemy_Tech, 0 }, { MapNodeType.Enemy_Flesh, 0 },
+        { MapNodeType.Enemy_Magic, 0 }, { MapNodeType.Enemy_Mixed, 0 }
+    };
+
+        // --- 优化点：预处理规则，防止策划重复配置同一层 ---
+        // 我们把 List 转成 Dictionary 提高每层查询的速度
+        var ruleLookup = new Dictionary<int, LayerOverrideRule>();
+        foreach (var r in ForcedLayers)
         {
-            { MapNodeType.Enemy_Tech, 0 }, { MapNodeType.Enemy_Flesh, 0 },
-            { MapNodeType.Enemy_Magic, 0 }, { MapNodeType.Enemy_Mixed, 0 }
-        };
+            if (!ruleLookup.ContainsKey(r.LayerIndex))
+                ruleLookup.Add(r.LayerIndex, r);
+        }
 
         for (int i = 0; i < TotalLayers; i++)
         {
             List<MapNodeData> currentLayerNodes = new List<MapNodeData>();
-            int nodeCount = (i == 0 || i == TotalLayers - 1) ? 1 : Random.Range(MinNodesPerLayer, MaxNodesPerLayer + 1);
+
+            // --- 检查当前层是否有覆盖规则 ---
+            bool hasRule = ruleLookup.TryGetValue(i, out LayerOverrideRule rule);
+
+            int nodeCount;
+            if (hasRule)
+            {
+                nodeCount = Mathf.Max(1, rule.NodeCount); // 应用强制数量
+            }
+            else
+            {
+                // 默认逻辑
+                nodeCount = (i == 0 || i == TotalLayers - 1) ? 1 : Random.Range(MinNodesPerLayer, MaxNodesPerLayer + 1);
+            }
 
             for (int j = 0; j < nodeCount; j++)
             {
-                MapNodeType visualType = DetermineNodeType(i);
+                MapNodeType visualType;
+                if (hasRule)
+                {
+                    visualType = rule.ForcedType; // 应用强制类型
+                }
+                else
+                {
+                    visualType = DetermineNodeType(i); // 正常随机
+                }
+
                 MapNodeData newNode = new MapNodeData(i, j, visualType);
 
-                // --- 👇【核心重构：多维度内核预解算】 ---
+                // 内核预解算
                 if (visualType == MapNodeType.Unknown)
                 {
                     newNode.IsRevealed = false;
@@ -72,11 +119,13 @@ public class MapGenerator : MonoBehaviour
                     newNode.HiddenRealType = visualType;
                     newNode.IsRevealed = true;
                 }
-                // ------------------------------------------
 
+                // 坐标计算
                 float base_X = (j - (nodeCount - 1) / 2f) * 2f;
                 float base_Y = i;
-                if (i > 0 && i < TotalLayers - 1)
+
+                // 只有“随机层”才抖动，保证“固定层”在地图上整齐划一，像仪式现场一样
+                if (i > 0 && i < TotalLayers - 1 && !hasRule)
                 {
                     base_X += Random.Range(-JitterX, JitterX);
                     base_Y += Random.Range(-JitterY, JitterY);
@@ -91,7 +140,6 @@ public class MapGenerator : MonoBehaviour
 
         ExecuteZipperConnection(layers);
     }
-
     private MapNodeType DetermineNodeType(int layerIndex)
     {
         if (layerIndex == 0) return MapNodeType.Start;

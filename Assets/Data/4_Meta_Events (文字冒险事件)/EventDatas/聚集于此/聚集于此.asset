@@ -29,3 +29,4 @@ MonoBehaviour:
     Actions:
     - {fileID: 11400000, guid: b5c7e3d2b5701884f80c2129ad97e830, type: 2}
     NextEventNode: {fileID: 0}
+  CustomBGM: {fileID: 0}

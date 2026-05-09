@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc17ecfff5028cd4598c5c10e7f53a23, type: 3}
+  m_Name: "\u5E9F\u571F\u65B0\u4EBA"
+  m_EditorClassIdentifier: 
+  AppearanceConditions: []
+  EventTitle: "\u5E9F\u571F\u6765\u4E86\u4E2A\u5E74\u8F7B\u4EBA"
+  EventDescription: "\u201C\u5466\u543C\u543C\uFF0C\u770B\u6837\u5B50\u5E9F\u571F\u53C8\u6765\u4E86\u4E00\u4F4D\u5E74\u8F7B\u4EBA\uFF01\u201D\u4E00\u4F4D\u8001\u4EBA\u62E6\u4F4F\u4E86\u4F60\uFF0C\u4ED6\u8FD8\u6CA1\u9760\u8FD1\u4F60\uFF0C\u4F60\u5C31\u95FB\u5230\u4E86\u4ED6\u8EAB\u4E0A\u6DF7\u5408\u7740\u673A\u6CB9\u3001\u9152\u7CBE\u548C\u70DF\u8349\u7684\u5473\u9053\u3002\n\"\u554A\u5440\u5440\uFF0C\u4F60\u600E\u4E48\u8FDE\u4E00\u53F0\u81EA\u5DF1\u7684\u5947\u7F8E\u62C9\u90FD\u6CA1\u6709\uFF01\u6CA1\u6709\u5947\u7F8E\u62C9\u7684\u4FDD\u62A4\uFF0C\u4F60\u8FDE\u4E00\u5929\u90FD\u6D3B\u4E0D\u4E0B\u53BB\uFF01\"\u89C1\u4F60\u5F62\u5355\u5F71\u53EA\uFF0C\u4ED6\u663E\u5F97\u66F4\u6FC0\u52A8\u4E86\u3002\n"
+  EventIllustration: {fileID: 21300000, guid: 22c94b3be12ec1c4ba1f84bdcdff6881, type: 3}
+  Options:
+  - OptionText: "\u8BE2\u95EE"
+    FlavorText: "\u4EC0\u4E48\u662F\u5947\u7F8E\u62C9\uFF1F"
+    Conditions: []
+    Actions: []
+    NextEventNode: {fileID: 11400000, guid: 098f7eb1a2e432649ad801edcd37c7d5, type: 2}
+  CustomBGM: {fileID: 0}

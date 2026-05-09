@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf09b1b78ca2557459c65f9fa8654d1c, type: 3}
   m_Name: "\u79D1\u6280\u76F2\u76D2"
   m_EditorClassIdentifier: 
-  Mode: 1
-  ComponentBlueprint: {fileID: 0}
-  Level: 1
-  LootPool: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
-  ProtocolBuff: {fileID: 0}
-  ProtocolDuration: 1
+  Rewards:
+  - Mode: 1
+    ComponentBlueprint: {fileID: 0}
+    Level: 0
+    LootPool: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
+    ProtocolBuff: {fileID: 0}
+    ProtocolDuration: 0

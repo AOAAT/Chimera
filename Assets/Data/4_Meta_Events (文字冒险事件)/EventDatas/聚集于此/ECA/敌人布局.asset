@@ -32,4 +32,4 @@ MonoBehaviour:
     y: 2.5
     width: 5
     height: 5
-  NodeLootSequence: {fileID: 0}
+  NodeLootSequence: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}

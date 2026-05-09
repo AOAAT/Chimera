@@ -54,8 +54,10 @@ public class CombatDirector : MonoBehaviour
     private MapNodeData currentNodeData;
     private bool isCheckingWinCondition = false;
     private bool isLastCombatVictory = false;
+    private EventNodeSO pendingEventOnVictory;
+    private EventNodeSO pendingEventOnFailure;
 
-    
+
 
     private void Awake()
     {
@@ -94,86 +96,72 @@ public class CombatDirector : MonoBehaviour
     /// <summary>
     /// 关卡入口：进入部署阶段
     /// </summary>
-
-    public void EnterCombatPhase(MapNodeData nodeData)
+    public void RegisterPostCombatEvents(EventNodeSO winEvent, EventNodeSO failEvent)
     {
-        // --- 1. 系统防护：执行物理与逻辑大扫除 ---
-        // 如果是从非正常状态（如战斗中强退重进）触发，执行带日志的重置
-        if (IsCombatActive || IsDeploymentPhase)
-        {
-            Debug.Log("<color=yellow>【避灾协议】检测到异常残留环境，正在执行强制全量重置...</color>");
-            PerformFullCleanup();
-        }
-        else
-        {
-            // 正常逻辑流（战斗已结算）下，执行静默重置，确保战场是一张白纸
-            // 注意：ResetBattlefieldInternal 是我建议你封装的私有方法，
-            // 如果你还没封装，这里可以直接先调 PerformFullCleanup()
-            PerformFullCleanup();
-        }
+        pendingEventOnVictory = winEvent;
+        pendingEventOnFailure = failEvent;
+        Debug.Log("<color=#00FFFF>【剧情挂载】</color> 成功注册后续事件钩子。");
+    }
+    public void EnterCombatPhase(MapNodeData nodeData, EncounterLayoutSO overrideLayout = null)
+    {
+        // A. 执行物理层面的清理 (确保战场是干净的)
+        // 注意：此时 PerformFullCleanup 内部不再清空 pendingEvent，所以它是安全的
+        PerformFullCleanup();
 
-        // --- 2. 核心 UI 唤醒链路 (解决按钮不显示的问题) ---
-        if (CombatUIPanel != null)
-        {
-            CombatUIPanel.SetActive(true);
-        }
-
+        // B. UI 强制唤醒
+        if (CombatUIPanel != null) CombatUIPanel.SetActive(true);
         if (StartBattleButton != null)
         {
             StartBattleButton.gameObject.SetActive(true);
             StartBattleButton.interactable = true;
-
-            // 【补强】：工业级监听重刷。
-            // 防止场景切换或退出导致的 Button 引用丢失或逻辑挂空
             StartBattleButton.onClick.RemoveAllListeners();
             StartBattleButton.onClick.AddListener(OnBattleStartClicked);
         }
 
-        // --- 3. 导演状态机重置 ---
+        // C. 状态初始化
         MusicManager.Instance?.SwitchState(MusicState.Combat);
-        IsDeploymentPhase = true;  // 进入部署阶段
-        IsCombatActive = false;    // 战斗尚未鸣枪
+        IsDeploymentPhase = true;
+        IsCombatActive = false;
         isCheckingWinCondition = false;
+        if (nodeData != null) currentNodeData = nodeData;
 
-        // --- 4. 节点数据交接 ---
-        if (nodeData != null)
+        // D. 【核心分支】：判定加载来源
+        if (overrideLayout != null)
         {
-            currentNodeData = nodeData;
-            Debug.Log($"<color=green>【导演】</color> 已锁定作战节点: {currentNodeData.NodeID}");
-        }
-
-        // --- 5. 环境与布局加载 ---
-        if (RunManager.Instance == null)
-        {
-            Debug.LogError("【严重错误】RunManager 实例丢失，无法生成关卡！");
-            return;
-        }
-
-        int stage = RunManager.Instance.CurrentStage;
-        int layer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
-        MapNodeType combatType = (currentNodeData != null) ? currentNodeData.HiddenRealType : MapNodeType.Enemy_Mixed;
-
-        // 从牌库抓取具体的战斗配置
-        CurrentLayout = RunManager.Instance.GetNextEncounter(stage, layer, combatType);
-
-        if (CurrentLayout != null)
-        {
-            SetupArenaVisuals();    // 这里面会执行 ArenaReference.SetActive(true)
-            SpawnEnemiesFromLayout();
-            GenerateForbiddenZones();
-
-            Debug.Log($"<color=cyan>【系统】</color> 战场布局 [{CurrentLayout.name}] 已加载，等待部署。");
+            // 模式 1：由事件积木强插的战斗 (如：新手引导)
+            this.CurrentLayout = overrideLayout;
+            Debug.Log($"<color=orange>【模式：剧情】</color> 载入特定布局：{overrideLayout.name}");
         }
         else
         {
-            Debug.LogError($"【加载失败】找不到匹配 Stage:{stage} Layer:{layer} 的战斗配置！");
+            // 模式 2：点击大地图正常进入的随机战斗
+            // 只有在随机战斗时，才彻底清空之前的剧情钩子 (防止污染)
+            pendingEventOnVictory = null;
+            pendingEventOnFailure = null;
+
+            if (RunManager.Instance != null)
+            {
+                int stage = RunManager.Instance.CurrentStage;
+                int layer = (nodeData != null) ? nodeData.LayerIndex : 1;
+                MapNodeType combatType = (nodeData != null) ? nodeData.HiddenRealType : MapNodeType.Enemy_Mixed;
+                this.CurrentLayout = RunManager.Instance.GetNextEncounter(stage, layer, combatType);
+            }
         }
 
-        // --- 6. 自动唤起整备 UI ---
-        if (HangarMenuUI.Instance != null)
+        // E. 物理环境实例化
+        if (this.CurrentLayout != null)
         {
-            HangarMenuUI.Instance.OpenHangar();
+            SetupArenaVisuals();
+            SpawnEnemiesFromLayout();
+            GenerateForbiddenZones();
         }
+        else
+        {
+            Debug.LogError("【加载失败】无法确定当前战场的布局配置！");
+        }
+
+        // F. 打开机库准备部署
+        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
     }
     private void SetupArenaVisuals()
     {
@@ -481,26 +469,40 @@ public class CombatDirector : MonoBehaviour
     }
     public void ExecuteReturnToMap()
     {
-        // 🌟【核心修复点 1】：把切歌指令提到最前面，且放在判定之外
-        // 只要执行“返回地图”逻辑，必须无条件切回地图 BGM
-        MusicManager.Instance?.SwitchState(MusicState.Map);
+        // --- 1. 先把钩子拿出来缓存，然后立刻切断寄存器 ---
+        EventNodeSO nextStep = isLastCombatVictory ? pendingEventOnVictory : pendingEventOnFailure;
+        pendingEventOnVictory = null;
+        pendingEventOnFailure = null;
 
+        // --- 2. 正常执行音频和物理清理 ---
+        MusicManager.Instance?.SwitchState(MusicState.Map);
         PerformFullCleanup();
 
-        if (MapManager.Instance != null && currentNodeData != null)
+        // --- 3. 跳转判定 ---
+        if (nextStep != null && EventDirector.Instance != null)
         {
-            MapManager.Instance.OnCombatVictory(currentNodeData);
-            currentNodeData = null;
+            Debug.Log($"<color=#00FFFF>【逻辑拦截】</color> 检测到后续剧情，正在执行跳转：{nextStep.EventTitle}");
+
+            // 确保地图面板不干扰，直接唤醒事件导演
+            if (MapManager.Instance != null && MapManager.Instance.MapUIPanel != null)
+                MapManager.Instance.MapUIPanel.SetActive(false);
+
+            EventDirector.Instance.PlayEvent(nextStep);
         }
         else
         {
-            // 兜底逻辑：即使没有节点数据，也要把地图 UI 屏显打开
-            if (MapManager.Instance != null) MapManager.Instance.MapUIPanel.SetActive(true);
+            // 正常的普通回城流程
+            if (MapManager.Instance != null && currentNodeData != null)
+            {
+                MapManager.Instance.OnCombatVictory(currentNodeData);
+                currentNodeData = null;
+            }
+            else if (MapManager.Instance != null)
+            {
+                MapManager.Instance.MapUIPanel.SetActive(true);
+            }
         }
-
-        CurrentLayout = null;
     }
-
     // --- 👇【核心新增】：工业级大扫除方法 ---
     private void SilentCleanup()
     {
@@ -517,43 +519,34 @@ public class CombatDirector : MonoBehaviour
     // 核心重置逻辑提取
     private void ResetBattlefieldInternal()
     {
-        // --- 👇【核心新增 A】：逻辑归还 ---
+        // --- 1. 逻辑状态返还 ---
         if (PlayerInventoryManager.Instance != null && PlayerInventoryManager.Instance.HangarUnits != null)
         {
-            Debug.Log("<color=cyan>【系统】</color> 正在回收前线机甲权限，重置部署标志位...");
             foreach (var profile in PlayerInventoryManager.Instance.HangarUnits)
             {
-                if (profile != null)
-                {
-                    // 强行拨回“未部署”状态，这样下一场战斗才能重新拖拽
-                    profile.IsDeployed = false;
-                }
+                if (profile != null) profile.IsDeployed = false;
             }
         }
-        SimplePool.ClearPool();
-        // --- 👇【核心新增 B】：UI 关灯 ---
+
+        // --- 2. UI 视觉清理 ---
         if (ActiveSkillUIManager.Instance != null)
         {
-            ActiveSkillUIManager.Instance.ClearUI(); // 销毁所有技能格子
-            ActiveSkillUIManager.Instance.SetVisibility(false); // 隐藏整个技能栏
+            ActiveSkillUIManager.Instance.ClearUI();
+            ActiveSkillUIManager.Instance.SetVisibility(false);
         }
 
-        if (NavHangarButton != null)
-        {
-            NavHangarButton.interactable = true;
-        }
+        if (NavHangarButton != null) NavHangarButton.interactable = true;
+        if (NavWarehouseButton != null) NavWarehouseButton.interactable = true;
 
-        if (NavWarehouseButton != null)
-        {
-            NavWarehouseButton.interactable = true;
-        }
+        // --- 3. 对象池与状态机重置 ---
+        SimplePool.ClearPool(); // 彻底肃清旧子弹/飘字引用
 
-        // --- 以下是原有的物理清理逻辑 ---
         IsCombatActive = false;
         IsDeploymentPhase = false;
         wallsGenerated = false;
         CurrentLayout = null;
 
+        // --- 4. 物理实体物理卸载 ---
         if (activeEnemiesContainer != null)
         {
             foreach (Transform child in activeEnemiesContainer.transform) Destroy(child.gameObject);
@@ -564,8 +557,7 @@ public class CombatDirector : MonoBehaviour
         {
             if (mech != null)
             {
-                // 在销毁前，先执行我们之前写的“满血复活”同步
-                mech.SyncPostCombatState();
+                mech.SyncPostCombatState(); // 执行满血复活同步
                 Destroy(mech.gameObject);
             }
         }
@@ -573,15 +565,15 @@ public class CombatDirector : MonoBehaviour
         ActiveEnemies.Clear();
         ActivePlayerUnits.Clear();
 
+        // --- 5. 场景预制体归位 ---
         if (ArenaReference != null) ArenaReference.SetActive(false);
         if (SettlementPanel != null) SettlementPanel.SetActive(false);
         if (CombatUIPanel != null) CombatUIPanel.SetActive(false);
 
         StopAllCoroutines();
 
-        // 强制刷新一次机库 UI，让“已部署”的印章消失
+        // 刷新机库 UI
         if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar();
-
     }
     private void GenerateArenaBoundaries()
     {

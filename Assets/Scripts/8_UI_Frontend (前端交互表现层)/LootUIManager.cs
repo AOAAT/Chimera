@@ -104,6 +104,16 @@ public class LootUIManager : MonoBehaviour
                 txt.text = "<color=#00FFFF>【已开封的残骸】点击查看</color>";
                 btn.onClick.AddListener(() => OnHubEntryClicked(task));
             }
+            else if (task.Config.Mode == LootDropMode.CustomPoolDrop)
+            {
+                // 👇【优化】：如果是特定奖励，直接显示第一项的名字
+                if (task.GeneratedItems.Count > 0)
+                    txt.text = $"<color=#FF8800>【特定打捞】{task.GeneratedItems[0].BaseData.ComponentName}</color>";
+                else
+                    txt.text = "<color=#FF8800>【首领遗产】极品固定掉落</color>";
+
+                btn.onClick.AddListener(() => OnHubEntryClicked(task));
+            }
             else
             {
                 // 动态文本解析：告诉玩家这是什么类型的盲盒
