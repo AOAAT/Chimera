@@ -222,49 +222,28 @@ public class EnemyBrain : MonoBehaviour
     private void HandleStaggerState() { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 3f; CurrentState = AIState.Thinking; } }
     public void ApplyImpulse(Vector2 dir, float impulse)
     {
-        if (isDead) return;
+        if (isDead || rb == null) return;
 
         float mass = Mathf.Max(rb.mass, 0.5f);
-        float deltaV = impulse / mass;
-        if (deltaV < 0.5f) return; // 极小冲量忽略
+        // 1. 利用公式计算硬直时间 (公式在 GameFormulas.cs)
+        float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
 
-        // --- 1. 判定是否打断技能 (逻辑判定) ---
-        bool shouldInterrupt = true;
-
-        // 检查当前技能的霸体配置
-        if (currentSkill != null && !currentSkill.SkillData.CanBeInterruptedByForce)
-            shouldInterrupt = false;
-
-        // 检查功能模块（如激光）的霸体配置
-        var laser = GetComponentInChildren<LinearLaserController>();
-        var kinetic = GetComponent<KineticCollisionHandler>();
-        if ((laser != null && laser.IsUnstoppable) || (kinetic != null && kinetic.IsUnstoppable))
-            shouldInterrupt = false;
-
-        // --- 2. 执行状态机干预 ---
-        if (shouldInterrupt)
+        if (stunTime > 0.05f)
         {
-            // 如果没有霸体：执行招式清理，并进入硬直状态
+            // 2. 只有冲力足够大，才打断技能并进入硬直
             CheckInterrupt();
             isStaggered = true;
-            staggerTimer = Mathf.Max(deltaV * 0.05f, 0.1f);
-            rb.drag = 5f;
-            rb.velocity = Vector2.zero; // 先清空当前速度，再施加冲量，打击感更明确
-        }
-        else
-        {
-            // 🌟 如果有霸体：不执行 CheckInterrupt，不设置 isStaggered。
-            // 这意味着：Update 里的计时器继续走，AI 状态不重置。
-            // 物理惯性会和 AI 原有的速度叠加，产生“边被推边蓄力”的效果。
+            staggerTimer = stunTime;
 
-            // 降低摩擦力，让推挤更丝滑，不会因为 AI 强行修正速度而瞬间停下
-            rb.drag = 1.0f;
+            // 3. 核心：进入硬直瞬间清理掉 AI 原有的速度，防止惯性对抗
+            rb.velocity = Vector2.zero;
+            rb.drag = 2f; // 击退期间降低阻力，让它飞得更丝滑
         }
 
-        // --- 3. 🌟 物理冲量无条件生效 ---
-        // 无论是杂兵还是霸体精英，只要被推了，身体必须动
+        // 4. 施加物理冲力
         rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
+
     private void HandleDeathSequence() { if (isDead) return; isDead = true; CurrentState = AIState.Dead; if (myHUD != null) myHUD.HideIntent(); FinishSkillExecution(); rb.velocity = Vector2.zero; rb.isKinematic = true; rb.simulated = false; ExecuteECAActions(MyData.OnDeathActions, null); gameObject.layer = LayerMask.NameToLayer("Floor"); StartCoroutine(CorpseDecayRoutine()); }
     private void InitializeSkills() { runtimeSkills.Clear(); foreach (var skillSO in MyData.Skills) { if (skillSO == null) continue; var rSkill = new RuntimeEnemySkill { SkillData = skillSO, CurrentCooldown = 0f }; rSkill.DummyWeapon = new RuntimeWeapon { WeaponName = skillSO.SkillName, DeliveryType = skillSO.DeliveryType, ProjectilePrefab = skillSO.ProjectilePrefab }; rSkill.DummyWeapon.WeaponStats[StatType.AttackSpeed] = skillSO.AttackSpeed; rSkill.DummyWeapon.WeaponStats[StatType.MaxDamage] = skillSO.MaxDamage; rSkill.DummyWeapon.WeaponStats[StatType.MinDamage] = skillSO.MinDamage; rSkill.DummyWeapon.WeaponStats[StatType.MaxRange] = skillSO.MaxRange; rSkill.DummyWeapon.WeaponStats[StatType.ProjectileSpeed] = skillSO.ProjectileSpeed; rSkill.DummyWeapon.OnHitActions.AddRange(skillSO.OnHitActions); rSkill.DummyWeapon.OnFireActions.AddRange(skillSO.OnFireActions); runtimeSkills.Add(rSkill); } }
     private void ExecuteECAActions(List<ECAAction> actions, RuntimeWeapon w) { if (actions == null) return; ECAContext c = new ECAContext { ImpactPoint = transform.position, PrimaryTarget = this.transform, SourceWeapon = w, IsEnemyFire = true, SourceEntity = this.transform }; foreach (var a in actions) if (a != null) a.Execute(c); }

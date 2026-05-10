@@ -4429,10 +4429,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 801539495}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 91.5, y: -21.880001}
-  m_SizeDelta: {x: 163, y: 23.76}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &479983635
 MonoBehaviour:
@@ -17012,24 +17012,20 @@ MonoBehaviour:
   AllChassisDatabase:
   - {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   - {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
+  - {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
+  - {fileID: 11400000, guid: 4f4a3a3c5d2cfc44280d721dfa86e707, type: 2}
   AllComponentDatabase:
-  - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
-  - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}
-  - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
-  - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
-  - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
-  - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
-  - {fileID: 11400000, guid: bd397b17d4840894b96ba5e736f8a6f5, type: 2}
-  - {fileID: 11400000, guid: 2e4610e75b24e7948a77b744a6160726, type: 2}
   - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
   - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
   - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
   - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
+  - {fileID: 11400000, guid: d424ca5c6e64c514cbd97d9ab05a9129, type: 2}
+  - {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
   - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
   - {fileID: 11400000, guid: a8a0f3751e164e3459ba36a6c1238f67, type: 2}
   - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
   - {fileID: 11400000, guid: 3b843ca9bf3f2b64d9d4299c59a62c9e, type: 2}
-  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
   - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
   - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
   - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
@@ -17047,14 +17043,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
   - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
   - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
-  - {fileID: 11400000, guid: d424ca5c6e64c514cbd97d9ab05a9129, type: 2}
-  - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
-  - {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
-  - {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
   DebugChassisBundle:
   - {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   - {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
   - {fileID: 11400000, guid: 4f4a3a3c5d2cfc44280d721dfa86e707, type: 2}
+  - {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
   DebugComponentBundle:
   - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
   - {fileID: 11400000, guid: 016930558f3654546addbd5abbb1ea75, type: 2}

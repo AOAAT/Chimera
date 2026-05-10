@@ -229,15 +229,27 @@ public class ChimeraAIController : MonoBehaviour
 
     public void ApplyImpulse(Vector2 dir, float impulse, bool ignoreStun = false)
     {
-        float mass = runtimeData != null ? Mathf.Max(runtimeData.TotalMass, 0.5f) : 10f;
+        if (rb == null || runtimeData == null) return;
+
+        float mass = Mathf.Max(runtimeData.TotalMass, 0.5f);
+
         if (!ignoreStun)
         {
             float stunTime = GameFormulas.CalcStaggerTime(impulse, mass);
-            if (stunTime > 0f) { isStaggered = true; staggerTimer = stunTime; }
+            if (stunTime > 0.05f)
+            {
+                isStaggered = true;
+                staggerTimer = stunTime;
+                rb.velocity = Vector2.zero; // 物理熔断
+                rb.drag = 2f;
+
+                // 如果正在冲刺，强制强断
+                if (isDashing) AbortDash();
+            }
         }
-        float speedMult = CombatSandbox.GetSpeed(1f);
-        float clampedDeltaV = Mathf.Clamp((impulse / mass) * speedMult, 0f, 25f);
-        if (rb != null) { rb.drag = 5f; if (!ignoreStun) rb.velocity = Vector2.zero; rb.AddForce(dir * clampedDeltaV * mass, ForceMode2D.Impulse); }
+
+        // 修复：直接使用物理推力，不再进行二次复杂的 deltaV 换算
+        rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
 
     public void ApplyRecoil(Vector2 dir, float impulse, float manualStunTime)

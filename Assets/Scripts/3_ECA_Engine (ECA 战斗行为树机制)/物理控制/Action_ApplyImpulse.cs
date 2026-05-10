@@ -7,23 +7,35 @@ public class Action_ApplyImpulse : ECAAction
     [Tooltip("基础冲量大小 (将被目标的质量稀释)")]
     public float BaseImpulse = 200f;
 
+    // --- Action_ApplyImpulse.cs 全量加固版 ---
     public override void Execute(ECAContext context)
     {
+        // 1. 寻找根节点 (Root) 的 DamageReceiver
         if (context.PrimaryTarget == null) return;
 
-        // 👇【推力逻辑】：目标位置 - 来源位置 = 向外弹开
-        Vector2 pushDir = (Vector2)(context.PrimaryTarget.position - context.ImpactPoint).normalized;
+        // 穿透子物体查找根部控制组件
+        GameObject rootObj = context.PrimaryTarget.gameObject;
+        var brain = rootObj.GetComponentInParent<EnemyBrain>();
+        var player = rootObj.GetComponentInParent<ChimeraAIController>();
 
-        // 兜底：如果正好在同一坐标，给个随机方向
+        // 2. 计算方向：从爆炸点/枪口指向目标中心
+        Vector2 targetCenter = context.PrimaryTarget.position;
+        // 如果有碰撞盒，取中心点更准确
+        var col = context.PrimaryTarget.GetComponent<Collider2D>();
+        if (col != null) targetCenter = col.bounds.center;
+
+        Vector2 pushDir = (targetCenter - (Vector2)context.ImpactPoint).normalized;
         if (pushDir == Vector2.zero) pushDir = Random.insideUnitCircle.normalized;
 
-        float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
-        float scaledImpulse = BaseImpulse * speedMult;
+        // 3. 适配全局度量衡
+        float speedMult = CombatSandbox.GetSpeed(1f);
+        float finalImpulse = BaseImpulse * speedMult;
 
-        EnemyBrain enemy = context.PrimaryTarget.GetComponentInParent<EnemyBrain>();
-        if (enemy != null) enemy.ApplyImpulse(pushDir, scaledImpulse);
+        // 4. 执行分发
+        if (brain != null) brain.ApplyImpulse(pushDir, finalImpulse);
+        if (player != null) player.ApplyImpulse(pushDir, finalImpulse, false);
 
-        ChimeraAIController player = context.PrimaryTarget.GetComponentInParent<ChimeraAIController>();
-        if (player != null) player.ApplyImpulse(pushDir, scaledImpulse);
+        // 5. 调试：画一条红色的推力线
+        Debug.DrawRay(context.ImpactPoint, pushDir * 2f, Color.red, 0.5f);
     }
 }

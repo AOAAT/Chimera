@@ -17,7 +17,7 @@ MonoBehaviour:
   Description: "\u4F20\u8BF4\u4E2D\uFF0C\u5723\u97F3\u7684\u7B2C\u4E09\u9636\u6CDB\u97F3\u53EF\u4EE5\u6495\u788E\u542C\u5230\u5B83\u7684\u4E00\u5207\u90AA\u795F\uFF0C\u8BA9\u6B7B\u4EBA\u518D\u6B7B\u4E00\u6B21\u3002"
   ComponentIcon: {fileID: 21300000, guid: bfa3e0c74d96a894a866df3aee60f169, type: 3}
   Type: 1
-  TacticalRoleDesc: "\u8FD1\u6218"
+  TacticalRoleDesc: "\u8FD1\u6218\u3001\u8303\u56F4"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 2
@@ -30,21 +30,28 @@ MonoBehaviour:
     Stats:
     - StatID: 4
       Value: 0
+      ModType: 0
     - StatID: 10
       Value: 50
+      ModType: 0
     - StatID: 11
       Value: 50
+      ModType: 0
     - StatID: 13
       Value: 30
+      ModType: 0
     - StatID: 14
       Value: 0
+      ModType: 0
     - StatID: 15
       Value: 0
+      ModType: 0
     - StatID: 12
       Value: 0.2
+      ModType: 0
     - StatID: 17
       Value: 50
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: f1f827c8fbecbc2419971ad2f29debdb, type: 2}
     - {fileID: 11400000, guid: 31aea80c88aac1d44bdd5a33d6c9199e, type: 2}
@@ -71,6 +78,10 @@ MonoBehaviour:
   AnchorOffset: {x: -0.23443985, y: -0.30980158}
   BaseRotationOffset: 90
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 1
   MovementLogic: 0
   SafeDodgeDistance: 8

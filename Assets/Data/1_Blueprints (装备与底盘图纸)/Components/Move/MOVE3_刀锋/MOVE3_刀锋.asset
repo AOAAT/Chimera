@@ -39,7 +39,9 @@ MonoBehaviour:
       ModType: 0
     OnFireActions: []
     OnHitActions: []
-    OnAssembleActions: []
+    OnAssembleActions:
+    - {fileID: 11400000, guid: 659493e04664e4c4e9af607dbc58ff6a, type: 2}
+    - {fileID: 11400000, guid: 57d3dca1cfc1c9947b9b3ed742c06047, type: 2}
     OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
