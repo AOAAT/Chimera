@@ -18,8 +18,48 @@ public enum StatType
 // ==========================================
 // 2. 阵营与标签
 // ==========================================
-public enum MacroCategory { Tech, Flesh, Magic }
-public enum SubTag { Ballistic, Energy, Shield, Drone, Mutation, Parasite, Acid, Biomass, Curse, Summon, Economy, Heavy }
+public enum MacroCategory { Tech, Flesh, Magic } ////
+public enum SubTag 
+{
+    //通用==========================================
+
+    StrongAcid,//强酸
+    Melee,//近战
+    Ranged,//远程
+    Charge,//冲撞
+    Armor,//装甲
+    Heavy,//重型
+    Devotion,//奉献
+    Smash,//强击
+    Knockback,//击退
+
+    //科技==========================================
+
+    Wasteland,//废土
+    Industry,//工业
+    Firearms,//枪械
+    Laboratory,//实验室
+    Reload,//装填
+    Kinetic,//动能
+    Plasma,//等离子
+
+    //血肉==========================================
+
+    Head,//头颅
+    Organs,//内脏
+    Limbs,//四肢
+    Parasite,//寄生
+    Pain,//痛苦
+   
+
+    //魔法==========================================
+
+    Artifact,//遗物
+    Otherworld,//异界
+    Mana,//魔力
+    Chaos,//混沌
+    Order,//秩序
+}
 
 // 👇【核心修复】：补全丢失的枚举
 public enum SalvageDropType { SingleDrop, DraftThree }

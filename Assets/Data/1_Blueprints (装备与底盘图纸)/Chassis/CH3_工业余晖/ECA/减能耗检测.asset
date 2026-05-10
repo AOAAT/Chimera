@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: "\u51CF\u80FD\u8017\u68C0\u6D4B"
   m_EditorClassIdentifier: 
   Filter: 1
-  TargetTag: 0
+  TargetTag: 10
   TargetType: 0
   TargetMacro: 1
   TargetStat: 4

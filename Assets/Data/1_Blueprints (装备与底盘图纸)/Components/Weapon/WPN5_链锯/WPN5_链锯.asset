@@ -21,7 +21,7 @@ MonoBehaviour:
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
-  BaseSubTags: 
+  BaseSubTags: 0100000007000000090000000a000000
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
@@ -29,20 +29,26 @@ MonoBehaviour:
     ScrapValue: 0
     Stats:
     - StatID: 4
-      Value: 0
+      Value: 9
+      ModType: 0
     - StatID: 10
       Value: 15
+      ModType: 0
     - StatID: 11
       Value: 5
+      ModType: 0
     - StatID: 13
       Value: 15
+      ModType: 0
     - StatID: 14
       Value: 0
+      ModType: 0
     - StatID: 15
       Value: 200
+      ModType: 0
     - StatID: 16
       Value: 0.2
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 50dc2efe5ff6c414e9c575513fde4d82, type: 2}
     OnHitActions:
@@ -64,15 +70,19 @@ MonoBehaviour:
     Stats:
     - StatID: 7
       Value: 10
+      ModType: 0
     - StatID: 6
       Value: 20
+      ModType: 0
     - StatID: 9
       Value: 0
+      ModType: 0
     - StatID: 8
       Value: 15
+      ModType: 0
     - StatID: 10
       Value: 200
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 3564de6d7526d4544a92502fa15bda6f, type: 2}
     OnHitActions:
@@ -94,15 +104,19 @@ MonoBehaviour:
     Stats:
     - StatID: 7
       Value: 15
+      ModType: 0
     - StatID: 6
       Value: 25
+      ModType: 0
     - StatID: 9
       Value: 0
+      ModType: 0
     - StatID: 8
       Value: 15
+      ModType: 0
     - StatID: 10
       Value: 300
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 39bde418bc2f99841afd3ef43679cc68, type: 2}
     OnHitActions:
@@ -124,15 +138,19 @@ MonoBehaviour:
     Stats:
     - StatID: 0
       Value: 0
+      ModType: 0
     - StatID: 0
       Value: 0
+      ModType: 0
     - StatID: 0
       Value: 0
+      ModType: 0
     - StatID: 0
       Value: 10
+      ModType: 0
     - StatID: 10
       Value: 200
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 1cbe64b20fe672c48b24a7536cc8cdb5, type: 2}
     OnHitActions:
@@ -154,9 +172,14 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: -0.1411744, y: -0.14973056}
   BaseRotationOffset: 45
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

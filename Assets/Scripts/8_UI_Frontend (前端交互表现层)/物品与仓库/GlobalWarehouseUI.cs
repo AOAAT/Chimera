@@ -220,12 +220,40 @@ public class GlobalWarehouseUI : MonoBehaviour
     {
         switch (tag)
         {
-            case SubTag.Ballistic: return "实弹武装";
-            case SubTag.Energy: return "能量科技";
-            case SubTag.Mutation: return "血肉突变";
-            case SubTag.Parasite: return "异星寄生";
-            case SubTag.Curse: return "远古诅咒";
-            case SubTag.Economy: return "经济扩容";
+            //通用
+            case SubTag.StrongAcid: return "强酸";
+            case SubTag.Melee: return "近战";
+            case SubTag.Ranged: return "远程";
+            case SubTag.Charge: return "冲撞";
+            case SubTag.Heavy: return "重型";
+            case SubTag.Armor: return "装甲";
+            case SubTag.Devotion: return "奉献";
+            case SubTag.Smash: return "强击";
+            case SubTag.Knockback: return "冲力";
+
+            //科技
+            case SubTag.Wasteland: return "废土";
+            case SubTag.Industry: return "工业";
+            case SubTag.Firearms: return "枪械";
+            case SubTag.Laboratory: return "实验室";
+            case SubTag.Reload: return "装填";
+            case SubTag.Kinetic: return "动能";
+            case SubTag.Plasma: return "等离子";
+   
+            //血肉
+            case SubTag.Head: return "头颅";
+            case SubTag.Organs: return "内脏";
+            case SubTag.Limbs: return "四肢";
+            case SubTag.Parasite: return "寄生";
+            case SubTag.Pain: return "痛苦";
+
+            //魔法
+            case SubTag.Artifact: return "遗物";
+            case SubTag.Otherworld: return "异界";
+            case SubTag.Mana: return "魔力";
+            case SubTag.Chaos: return "混沌";
+            case SubTag.Order: return "秩序";
+
             default: return tag.ToString();
         }
     }

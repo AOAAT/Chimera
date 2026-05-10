@@ -21,7 +21,7 @@ MonoBehaviour:
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 2
-  BaseSubTags: 
+  BaseSubTags: 02000000160000001700000018000000
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
@@ -29,22 +29,29 @@ MonoBehaviour:
     ScrapValue: 0
     Stats:
     - StatID: 4
-      Value: 0
+      Value: 13
+      ModType: 0
     - StatID: 10
       Value: 300
+      ModType: 0
     - StatID: 11
       Value: 300
+      ModType: 0
     - StatID: 13
       Value: 50
+      ModType: 0
     - StatID: 14
       Value: 0
+      ModType: 0
     - StatID: 15
       Value: 100
+      ModType: 0
     - StatID: 16
       Value: 0.01
+      ModType: 0
     - StatID: 19
       Value: 40
-    Mechanics: []
+      ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 0860f9f61b5e5624b9d1e950a73c2f5d, type: 2}
     OnHitActions:

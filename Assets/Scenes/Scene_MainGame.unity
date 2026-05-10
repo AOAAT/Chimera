@@ -2875,7 +2875,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: eadd0d7efdc493447a7f2fe0d3cee5ee, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c3cf171f7c48edb4cbe072dea63bc5a8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3625,7 +3625,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: eadd0d7efdc493447a7f2fe0d3cee5ee, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c3cf171f7c48edb4cbe072dea63bc5a8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -12129,7 +12129,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: eadd0d7efdc493447a7f2fe0d3cee5ee, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c3cf171f7c48edb4cbe072dea63bc5a8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -16952,13 +16952,13 @@ MonoBehaviour:
   - Type: 7
     IconSprite: {fileID: 21300000, guid: d90bfac6071d040478b1a20594229c7f, type: 3}
   - Type: 1
-    IconSprite: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
+    IconSprite: {fileID: 21300000, guid: 00ec854a1b150584fa760bf5fe9cc13c, type: 3}
   - Type: 2
-    IconSprite: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
+    IconSprite: {fileID: 21300000, guid: 00ec854a1b150584fa760bf5fe9cc13c, type: 3}
   - Type: 3
-    IconSprite: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
+    IconSprite: {fileID: 21300000, guid: 00ec854a1b150584fa760bf5fe9cc13c, type: 3}
   - Type: 4
-    IconSprite: {fileID: 21300000, guid: b0dfa44720d34674f8dd99cbe49aeca8, type: 3}
+    IconSprite: {fileID: 21300000, guid: 00ec854a1b150584fa760bf5fe9cc13c, type: 3}
 --- !u!1 &1436878910
 GameObject:
   m_ObjectHideFlags: 0
@@ -17118,7 +17118,7 @@ MonoBehaviour:
   CurrentSAN: 100
   Materials: 0
   DaysSurvived: 1
-  MaxPowerCapacity: 100
+  MaxPowerCapacity: 160
 --- !u!114 &1436878914
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22034,7 +22034,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: eadd0d7efdc493447a7f2fe0d3cee5ee, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c3cf171f7c48edb4cbe072dea63bc5a8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -24602,7 +24602,6 @@ GameObject:
   - component: {fileID: 2084414084}
   - component: {fileID: 2084414087}
   - component: {fileID: 2084414086}
-  - component: {fileID: 2084414085}
   m_Layer: 0
   m_Name: '[5. MusicManager]'
   m_TagString: Untagged
@@ -24625,31 +24624,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!169 &2084414085
-AudioLowPassFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2084414082}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_LowpassResonanceQ: 1
-  lowpassLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0.22727273
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
 --- !u!82 &2084414086
 AudioSource:
   m_ObjectHideFlags: 0

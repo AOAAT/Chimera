@@ -21,7 +21,7 @@ MonoBehaviour:
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
   MacroCategory: 0
-  BaseSubTags: 
+  BaseSubTags: 1500000019000000
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
@@ -29,8 +29,8 @@ MonoBehaviour:
     ScrapValue: 0
     Stats:
     - StatID: 4
-      Value: 0
-    Mechanics: []
+      Value: 6
+      ModType: 0
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
@@ -51,9 +51,14 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
+  TargetingOverride: 0
   AnchorOffset: {x: 0.013870239, y: -0.12482697}
   BaseRotationOffset: 0
   VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.5}
+  ShadowWidth: 1.2
+  ShadowHeight: 0.4
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8
