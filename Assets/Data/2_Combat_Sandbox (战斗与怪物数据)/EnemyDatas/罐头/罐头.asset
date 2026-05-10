@@ -32,9 +32,6 @@ MonoBehaviour:
   - StatID: 30
     Value: 200
     ModType: 0
-  - StatID: 34
-    Value: 2
-    ModType: 0
   - StatID: 32
     Value: 2
     ModType: 0
@@ -52,6 +49,7 @@ MonoBehaviour:
   Skills:
   - {fileID: 11400000, guid: 4fb1152dc21eab04d959e975fe345ae7, type: 2}
   - {fileID: 11400000, guid: efbb8113f4def0e4aa2e61b547d7cb06, type: 2}
+  - {fileID: 11400000, guid: 0233042f5776bbb4dbb6776f399ac403, type: 2}
   OnSpawnActions: []
   OnDeathActions:
   - {fileID: 11400000, guid: 2d6fcfa5e75006546b11f3dadb1d0955, type: 2}

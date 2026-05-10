@@ -104,31 +104,34 @@ public class GlobalResourceManager : MonoBehaviour
 
     private void ExecuteGameOverProtocol()
     {
-        Debug.Log("<color=red>【致命警告】</color> 指挥官理智彻底崩塌，链路强制断开。");
+        Debug.Log("<color=red>【致命警告】</color> 理智归零。执行强制关机协议...");
 
-        // 1. 物理层清理 (确保没有战斗残留)
+        // 1. 👇【核心加固】：强行切断战斗导演的 UI 链路
         if (CombatDirector.Instance != null)
         {
-            CombatDirector.Instance.FullResetBeforeExit();
+            // 彻底隐藏结算面板，防止玩家点击“返回地图”
+            if (CombatDirector.Instance.SettlementPanel != null)
+                CombatDirector.Instance.SettlementPanel.SetActive(false);
+
+            // 隐藏部署界面
+            if (CombatDirector.Instance.CombatUIPanel != null)
+                CombatDirector.Instance.CombatUIPanel.SetActive(false);
+
+            // 清理战场实体
+            CombatDirector.Instance.PerformFullCleanup();
         }
 
-        // 2. UI 层强制关窗
+        // 2. 隐藏大地图和其他 UI
         if (MapManager.Instance != null && MapManager.Instance.MapUIPanel != null)
             MapManager.Instance.MapUIPanel.SetActive(false);
 
-        // 隐藏仓库、机库等可能打开的面板
-        if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
-        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
-
-        // 3. 唤醒叙事导演
+        // 3. 唤醒谢幕事件
         if (SanityCollapseEvent != null)
         {
             EventDirector.Instance.PlayEvent(SanityCollapseEvent);
         }
         else
         {
-            Debug.LogError("【系统错误】理智归零，但未配置 SanityCollapseEvent！");
-            // 兜底：直接退回主菜单
             UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
     }

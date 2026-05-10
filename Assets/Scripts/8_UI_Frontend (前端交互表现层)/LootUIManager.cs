@@ -38,9 +38,6 @@ public class LootUIManager : MonoBehaviour
     public float ItemStaggerDelay = 0.1f; // 每个零件弹出的间隔（制造时序感）
     public AnimationCurve EjectCurve = AnimationCurve.EaseInOut(0, 0, 1, 1); // 缓动曲线
 
-    [Header("=== 失败设定 ===")]
-    [Tooltip("当理智归零时触发的特定失败事件")]
-    public EventNodeSO SanityCollapseEvent;
 
 
     private List<ActiveLootTask> currentTasks;

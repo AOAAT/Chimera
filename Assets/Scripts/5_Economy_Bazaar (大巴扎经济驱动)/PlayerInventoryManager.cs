@@ -152,29 +152,20 @@ public class PlayerInventoryManager : MonoBehaviour
 
     private void Update()
     {
-        // 【按 T 键】：一键领取所有测试底盘
+#if UNITY_EDITOR
+        // 只有在编辑器模式下，这些按键才会编译进程序
         if (Input.GetKeyDown(KeyCode.T))
         {
             if (DebugChassisBundle != null && DebugChassisBundle.Count > 0)
             {
-                int addedCount = 0;
                 foreach (var chassisSO in DebugChassisBundle)
                 {
-                    if (chassisSO != null)
-                    {
-                        AddChassisToInventory(chassisSO);
-                        addedCount++;
-                    }
+                    if (chassisSO != null) AddChassisToInventory(chassisSO);
                 }
-                Debug.Log($"<color=cyan>【测试指令】</color> 已成功下发 {addedCount} 台新型号底盘至仓库。");
-            }
-            else
-            {
-                Debug.LogWarning("【测试指令】底盘测试包为空，请先在 PlayerInventoryManager 脚本面板配置数据！");
+                Debug.Log("<color=cyan>【Debug】</color> 编辑器指令：底盘包已注入。");
             }
         }
 
-        // 【按 Y 键】：一键领取所有测试零件 (保持原逻辑，但加上 Log 增强反馈)
         if (Input.GetKeyDown(KeyCode.Y))
         {
             if (DebugComponentBundle != null && DebugComponentBundle.Count > 0)
@@ -183,9 +174,10 @@ public class PlayerInventoryManager : MonoBehaviour
                 {
                     if (blueprint != null) AddComponentToInventory(blueprint);
                 }
-                Debug.Log($"<color=orange>【测试指令】</color> 补给箱已送达，所有测试零件已入库。");
+                Debug.Log("<color=orange>【Debug】</color> 编辑器指令：零件包已注入。");
             }
         }
+#endif
     }
     public string GetNextAvailableName()
     {

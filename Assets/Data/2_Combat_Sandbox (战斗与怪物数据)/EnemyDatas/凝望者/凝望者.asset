@@ -26,13 +26,13 @@ MonoBehaviour:
   StopDistance: 0.8
   HoverDistance: 80
   BaseStats:
-  - StatID: 30
+  - StatID: 31
     Value: 150
     ModType: 0
   - StatID: 30
     Value: 150
     ModType: 0
-  - StatID: 30
+  - StatID: 33
     Value: 3
     ModType: 0
   SanPenalties:

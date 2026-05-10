@@ -83,15 +83,21 @@ public class HangarMenuUI : MonoBehaviour
     public void CloseHangar()
     {
         gameObject.SetActive(false);
+
+        // 👇【只恢复音质，不切换轨道】
+        // 这样如果你在事件中打开机库，关闭后依然会播放事件音乐
         MusicManager.Instance?.SetImmersionMode(false);
 
-        // --- 👇【核心新增】：恢复主界面进入按钮 ---
-        if (CombatDirector.Instance != null)
-            CombatDirector.Instance.SetNavigationVisibility(true);
-
+        // --- ❌ 删除或注释掉以下逻辑 ---
+        /* 
         if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase && !CombatDirector.Instance.IsCombatActive)
         {
             MusicManager.Instance?.SwitchState(MusicState.Map);
         }
+        */
+
+        // --- 👇【新增：导航总线】恢复主界面进入按钮 ---
+        if (CombatDirector.Instance != null)
+            CombatDirector.Instance.SetNavigationVisibility(true);
     }
 }

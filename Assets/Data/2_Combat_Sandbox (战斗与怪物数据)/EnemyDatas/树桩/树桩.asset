@@ -32,9 +32,6 @@ MonoBehaviour:
   - StatID: 30
     Value: 100
     ModType: 0
-  - StatID: 34
-    Value: 5
-    ModType: 0
   - StatID: 32
     Value: 4
     ModType: 0

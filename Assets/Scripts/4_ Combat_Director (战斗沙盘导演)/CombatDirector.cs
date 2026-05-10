@@ -383,21 +383,12 @@ public class CombatDirector : MonoBehaviour
 
     private void TriggerSettlement(bool isVictory)
     {
+        // 1. 立即停止战斗心跳，但先不要弹窗
         IsCombatActive = false;
         isCheckingWinCondition = false;
-        IsDeploymentPhase = false;
         isLastCombatVictory = isVictory;
 
-        if (SettlementPanel != null)
-        {
-            SettlementPanel.SetActive(true);
-            if (SettlementTitleText != null)
-            {
-                SettlementTitleText.text = isVictory ? "战 斗 胜 利" : "任 务 失 败";
-                SettlementTitleText.color = isVictory ? Color.green : Color.red;
-            }
-        }
-
+        // 2. 如果战斗失败，计算 SAN 值扣除
         if (!isVictory)
         {
             int totalSanLoss = 0;
@@ -405,9 +396,9 @@ public class CombatDirector : MonoBehaviour
             {
                 if (enemy != null && enemy.CurrentHP > 0)
                 {
+                    // ... 保持原有的根据 HP 阈值计算 SAN 扣除的逻辑 ...
                     float hpPercent = enemy.CurrentHP / enemy.MaxHP;
                     EnemyBrain brain = enemy.GetComponent<EnemyBrain>();
-
                     if (brain != null && brain.MyData != null && brain.MyData.SanPenalties != null)
                     {
                         var sortedTiers = brain.MyData.SanPenalties.OrderByDescending(t => t.HpThreshold).ToList();
@@ -420,15 +411,39 @@ public class CombatDirector : MonoBehaviour
                     }
                 }
             }
-            if (isVictory && GlobalProtocolRegistry.Instance != null)
+
+            // 核心步骤：扣除 SAN 值
+            if (GlobalResourceManager.Instance != null)
             {
-                GlobalProtocolRegistry.Instance.TickProtocolDurations();
+                GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
             }
-            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifySAN(-totalSanLoss);
         }
+
+        // 3. 👇【核心修复：互斥检查】
+        // 如果扣完 SAN 值后，发现指挥官已经疯了（<= 0），则直接退出，绝不显示结算面板
+        if (GlobalResourceManager.Instance != null && GlobalResourceManager.Instance.CurrentSAN <= 0)
+        {
+            Debug.Log("<color=red>【系统】</color> 检测到指挥官精神崩溃，结算面板已熔断。");
+            if (SettlementPanel != null) SettlementPanel.SetActive(false); // 强制关闭可能残留的面板
+            return;
+        }
+
+        // 4. 只有在指挥官还清醒的情况下，才显示正常的结算 UI
+        if (SettlementPanel != null)
+        {
+            SettlementPanel.SetActive(true);
+            if (SettlementTitleText != null)
+            {
+                SettlementTitleText.text = isVictory ? "战 斗 胜 利" : "任 务 失 败";
+                SettlementTitleText.color = isVictory ? Color.green : Color.red;
+            }
+        }
+
+        // 5. 播放对应的音效
         if (isVictory)
         {
             GlobalAudioManager.Instance.PlayUISound(UISoundType.Combat_Victory);
+            if (GlobalProtocolRegistry.Instance != null) GlobalProtocolRegistry.Instance.TickProtocolDurations();
         }
         else
         {

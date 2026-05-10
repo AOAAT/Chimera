@@ -15,6 +15,6 @@ MonoBehaviour:
   PoolWeight: 10
   TargetStage: 1
   MinDepth: 0
-  MaxDepth: 1
+  MaxDepth: 0
   Events:
   - {fileID: 11400000, guid: 09485d405157e1c48a6be0c6aa62b8cb, type: 2}

@@ -62,9 +62,13 @@ public class GlobalWarehouseUI : MonoBehaviour
     public void CloseWarehouse()
     {
         gameObject.SetActive(false);
+
+        // 👇【只恢复音质】
         MusicManager.Instance?.SetImmersionMode(false);
 
-        // --- 👇【核心新增】：恢复主界面进入按钮 ---
+        // --- ❌ 删除这一行 ---
+        // MusicManager.Instance?.SwitchState(MusicState.Map); 
+
         if (CombatDirector.Instance != null)
             CombatDirector.Instance.SetNavigationVisibility(true);
 

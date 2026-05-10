@@ -38,9 +38,6 @@ MonoBehaviour:
   - StatID: 32
     Value: 4
     ModType: 0
-  - StatID: 34
-    Value: 4
-    ModType: 0
   SanPenalties:
   - HpThreshold: 1
     SanDeduction: 5
