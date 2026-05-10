@@ -19,6 +19,9 @@ public class GlobalResourceManager : MonoBehaviour
     [Header("=== 电网枢纽 ===")]
     public int MaxPowerCapacity = 100;
 
+    [Header("=== 失败设定 ===")]
+    [Tooltip("当理智归零时触发的特定失败事件")]
+    public EventNodeSO SanityCollapseEvent;
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -80,9 +83,13 @@ public class GlobalResourceManager : MonoBehaviour
     {
         CurrentSAN = Mathf.Clamp(CurrentSAN + amount, 0, MaxSAN);
         OnResourceChanged?.Invoke();
-        if (CurrentSAN <= 0) Debug.LogError("【游戏结束】指挥官理智清零，奇美拉小队彻底覆灭！");
-    }
 
+        // --- 👇【核心重构：失败判定】---
+        if (CurrentSAN <= 0)
+        {
+            ExecuteGameOverProtocol();
+        }
+    }
     public void ModifyMaterials(int amount)
     {
         Materials = Mathf.Max(0, Materials + amount);
@@ -93,5 +100,36 @@ public class GlobalResourceManager : MonoBehaviour
     {
         DaysSurvived++;
         OnResourceChanged?.Invoke();
+    }
+
+    private void ExecuteGameOverProtocol()
+    {
+        Debug.Log("<color=red>【致命警告】</color> 指挥官理智彻底崩塌，链路强制断开。");
+
+        // 1. 物理层清理 (确保没有战斗残留)
+        if (CombatDirector.Instance != null)
+        {
+            CombatDirector.Instance.FullResetBeforeExit();
+        }
+
+        // 2. UI 层强制关窗
+        if (MapManager.Instance != null && MapManager.Instance.MapUIPanel != null)
+            MapManager.Instance.MapUIPanel.SetActive(false);
+
+        // 隐藏仓库、机库等可能打开的面板
+        if (GlobalWarehouseUI.Instance != null) GlobalWarehouseUI.Instance.CloseWarehouse();
+        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.CloseHangar();
+
+        // 3. 唤醒叙事导演
+        if (SanityCollapseEvent != null)
+        {
+            EventDirector.Instance.PlayEvent(SanityCollapseEvent);
+        }
+        else
+        {
+            Debug.LogError("【系统错误】理智归零，但未配置 SanityCollapseEvent！");
+            // 兜底：直接退回主菜单
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+        }
     }
 }

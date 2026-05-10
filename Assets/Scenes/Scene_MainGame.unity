@@ -1941,7 +1941,7 @@ MonoBehaviour:
   MapUIPanel: {fileID: 489852393}
   CurrentNodeID: 
   CurrentLayer: 0
-  FinaleEvent: {fileID: 0}
+  FinaleEvent: {fileID: 11400000, guid: 09485d405157e1c48a6be0c6aa62b8cb, type: 2}
 --- !u!114 &240448477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1957,10 +1957,7 @@ MonoBehaviour:
   TotalLayers: 20
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
-  ForcedLayers:
-  - LayerIndex: 1
-    NodeCount: 1
-    ForcedType: 7
+  ForcedLayers: []
   Weight_NormalEnemy: 60
   Weight_Unknown: 40
   Weight_Event: 10
@@ -8411,6 +8408,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  SanityCollapseEvent: {fileID: 0}
 --- !u!1 &791016787
 GameObject:
   m_ObjectHideFlags: 0
@@ -17377,6 +17375,7 @@ MonoBehaviour:
   Materials: 0
   DaysSurvived: 1
   MaxPowerCapacity: 160
+  SanityCollapseEvent: {fileID: 11400000, guid: 197ad286e5bb1264794ed7af3743c875, type: 2}
 --- !u!114 &1436878914
 MonoBehaviour:
   m_ObjectHideFlags: 0

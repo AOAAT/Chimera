@@ -43,7 +43,7 @@ MonoBehaviour:
     ModType: 0
   SanPenalties:
   - HpThreshold: 1
-    SanDeduction: 5
+    SanDeduction: 100
   VisualScaleMultiplier: 1
   OverrideShadow: 1
   ShadowOffset: {x: 0, y: -0.55}
