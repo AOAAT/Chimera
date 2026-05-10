@@ -15,18 +15,44 @@ MonoBehaviour:
   PoolWeight: 10
   TargetStage: 1
   MinDepth: 0
-  MaxDepth: 15
+  MaxDepth: 20
   ComponentRoster:
-  - {fileID: 11400000, guid: a30f32aa1e2c738499715a4e8104ab9c, type: 2}
-  - {fileID: 11400000, guid: b6eca2206cbf97549808a39fd8e66ef3, type: 2}
-  - {fileID: 11400000, guid: aa58a8c0a765bbd4c80c16e85e6becd0, type: 2}
-  - {fileID: 11400000, guid: 2114db45db0183241a3d88226ede50c4, type: 2}
-  - {fileID: 11400000, guid: 8ce937ce6a8b7214284054c18cbc3f49, type: 2}
+  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+  - {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+  - {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
+  - {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
+  - {fileID: 11400000, guid: d424ca5c6e64c514cbd97d9ab05a9129, type: 2}
+  - {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
+  - {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
+  - {fileID: 11400000, guid: a8a0f3751e164e3459ba36a6c1238f67, type: 2}
+  - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
+  - {fileID: 11400000, guid: 3b843ca9bf3f2b64d9d4299c59a62c9e, type: 2}
+  - {fileID: 11400000, guid: 9fa4e6d009dcb41428dafef005665846, type: 2}
+  - {fileID: 11400000, guid: 91d36d71de3b57f448b2c13ad6effaa4, type: 2}
+  - {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
+  - {fileID: 11400000, guid: 7a128084928c07d49b40c50781823912, type: 2}
+  - {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
+  - {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
+  - {fileID: 11400000, guid: ad5d115ca59d7174896e83feb9510af6, type: 2}
+  - {fileID: 11400000, guid: 91ef5cfb3c19d7043866cf6d2e217b94, type: 2}
+  - {fileID: 11400000, guid: 968c5b2907db18f4bad9ea209961546a, type: 2}
+  - {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
+  - {fileID: 11400000, guid: da917262c92ab9840821d15c75b08ca0, type: 2}
+  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
+  - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
+  - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
+  - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
+  - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
   ChassisRoster:
   - {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
+  - {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
+  - {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
+  - {fileID: 11400000, guid: 4f4a3a3c5d2cfc44280d721dfa86e707, type: 2}
   Weight_Lv1: 100
   Weight_Lv2: 0
   Weight_Lv3: 0
   Weight_Lv4: 0
-  DiscountChance: 1
+  DiscountChance: 0.2
   DiscountRate: 0.5

@@ -36,8 +36,8 @@ MonoBehaviour:
   - StatID: 2
     Value: 8
     ModType: 0
-  BasePrice: 200
-  ScrapValue: 50
+  BasePrice: 100
+  ScrapValue: 25
   LogicCenterOffset: {x: 0, y: 0}
   Sockets:
   - SlotName: "\u5934\u90E8"

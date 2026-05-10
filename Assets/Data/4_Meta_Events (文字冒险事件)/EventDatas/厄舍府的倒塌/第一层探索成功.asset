@@ -20,5 +20,7 @@ MonoBehaviour:
   - OptionText: "\u62C9\u52A8\u62C9\u73AF"
     FlavorText: "\u201D\u6765\u5230\u524D\u5385\u3002\u201C"
     Conditions: []
-    Actions: []
+    Actions:
+    - {fileID: 0}
     NextEventNode: {fileID: 11400000, guid: 0ce9a31ce3487ba46b1841b31389efdc, type: 2}
+  CustomBGM: {fileID: 0}

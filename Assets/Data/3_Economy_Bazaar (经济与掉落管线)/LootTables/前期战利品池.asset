@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 287dab3adb3a63c4daacfde82844844c, type: 3}
+  m_Name: "\u524D\u671F\u6218\u5229\u54C1\u6C60"
+  m_EditorClassIdentifier: 
+  Tasks:
+  - Mode: 2
+    TripleChoiceProbability: 0.4
+    Weight_Lv1: 0
+    Weight_Lv2: 0
+    Weight_Lv3: 0
+    Weight_Lv4: 0
+    PoolSource: 0
+    CustomMacroMix: 
+    CustomSubTagMix: 0100000002000000000000000300000004000000050000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000140000001500000016000000170000001800000019000000
+    CustomPool:
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+  - Mode: 3
+    TripleChoiceProbability: 0.4
+    Weight_Lv1: 0
+    Weight_Lv2: 0
+    Weight_Lv3: 0
+    Weight_Lv4: 0
+    PoolSource: 0
+    CustomMacroMix: 
+    CustomSubTagMix: 0100000002000000000000000300000004000000050000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000140000001500000016000000170000001800000019000000
+    CustomPool:
+    - ComponentBlueprint: {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: d424ca5c6e64c514cbd97d9ab05a9129, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
+      Level: 0
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
+      Level: 0
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
+      Level: 0
+  - Mode: 3
+    TripleChoiceProbability: 0.4
+    Weight_Lv1: 0
+    Weight_Lv2: 0
+    Weight_Lv3: 0
+    Weight_Lv4: 0
+    PoolSource: 0
+    CustomMacroMix: 
+    CustomSubTagMix: 0100000002000000000000000300000004000000050000000700000008000000090000000a0000000b0000000c0000000d0000000e0000000f00000010000000110000001200000013000000140000001500000016000000170000001800000019000000
+    CustomPool:
+    - ComponentBlueprint: {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 57d30069eb888ed4e8c92bc4425a7869, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: d424ca5c6e64c514cbd97d9ab05a9129, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
+      Level: 0
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
+      Level: 0
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
+      Level: 0

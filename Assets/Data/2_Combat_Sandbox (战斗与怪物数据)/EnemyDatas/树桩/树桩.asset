@@ -23,11 +23,11 @@ MonoBehaviour:
   EliteComponentLevel: 1
   MovementLogic: 0
   TargetingLogic: 1
-  StopDistance: 5
+  StopDistance: 15
   HoverDistance: 5
   BaseStats:
   - StatID: 31
-    Value: 500
+    Value: 400
     ModType: 0
   - StatID: 30
     Value: 100
@@ -41,7 +41,9 @@ MonoBehaviour:
   - StatID: 33
     Value: 2
     ModType: 0
-  SanPenalties: []
+  SanPenalties:
+  - HpThreshold: 1
+    SanDeduction: 5
   VisualScaleMultiplier: 1
   OverrideShadow: 1
   ShadowOffset: {x: 0, y: -0.5}

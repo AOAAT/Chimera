@@ -1,8 +1,14 @@
-﻿using UnityEngine;
+﻿// --- RTSClickIndicator.cs (打包安全加固版) ---
+using UnityEngine;
 
 public class RTSClickIndicator : MonoBehaviour
 {
+    [Header("=== 视觉配置 ===")]
+    [Tooltip("请在 Inspector 面板中拖入你想要显示的箭头/圆点贴图")]
+    public Sprite ArrowSprite;
+
     public float Duration = 0.5f;
+
     private float timer = 0f;
     private SpriteRenderer[] parts;
 
@@ -18,14 +24,20 @@ public class RTSClickIndicator : MonoBehaviour
             go.transform.SetParent(this.transform, false);
             var sr = go.AddComponent<SpriteRenderer>();
 
-            // 2. 【防丢失】：如果你拿不到 Knob.psd，可以用 Unity 内置的白色圆形：
-            // sr.sprite = Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
-            // 如果上面一行不行，请用下面这行（Unity所有版本通用的圆点）：
-            sr.sprite = UnityEditor.AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+            // 2. 👇【核心修复】：使用面板拖入的资源，彻底移除 UnityEditor 依赖
+            if (ArrowSprite != null)
+            {
+                sr.sprite = ArrowSprite;
+            }
+            else
+            {
+                // 如果策划忘了拖图，我们给一个默认的 Log 提示
+                Debug.LogWarning("【系统提示】RTSClickIndicator 缺少贴图引用！请在预制体面板拖入贴图。");
+            }
 
             sr.color = new Color(0, 1, 0, 0.9f); // 亮绿色
-            sr.sortingLayerName = "UI";         // 强制显示在 UI 层
-            sr.sortingOrder = 100;              // 极高层级
+            sr.sortingLayerName = "UI";
+            sr.sortingOrder = 100;
             parts[i] = sr;
 
             float angle = i * 90 * Mathf.Deg2Rad;

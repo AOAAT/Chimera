@@ -14,12 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ArenaReference: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
   Enemies:
-  - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
-    LocalPosition: {x: 2.5, y: 1}
+  - EnemyType: {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
+    LocalPosition: {x: 1.5, y: -0}
+  - EnemyType: {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
+    LocalPosition: {x: -1.5, y: 1}
+  - EnemyType: {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
+    LocalPosition: {x: -1, y: -1.5}
+  - EnemyType: {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
+    LocalPosition: {x: -0, y: 0}
   ForbiddenZones:
   - serializedVersion: 2
-    x: 0.5
-    y: 4.5
+    x: -2.5
+    y: 2.5
     width: 5
     height: 5
-  NodeLootSequence: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
+  NodeLootSequence: {fileID: 11400000, guid: e083d02bee647db488c35a8a731b93ea, type: 2}

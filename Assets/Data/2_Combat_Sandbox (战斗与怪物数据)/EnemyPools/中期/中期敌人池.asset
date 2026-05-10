@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9be51b72b0aee6b40ac17c0f112631ad, type: 3}
+  m_Name: "\u4E2D\u671F\u654C\u4EBA\u6C60"
+  m_EditorClassIdentifier: 
+  PoolWeight: 10
+  TargetStage: 1
+  MinDepth: 7
+  MaxDepth: 20
+  AllowedNodeTypes: 01000000020000000300000004000000
+  LayoutList:
+  - {fileID: 11400000, guid: 8b4c723ebd2e16243a08ae572b5cd669, type: 2}
+  - {fileID: 11400000, guid: 5d11de7bc9f2f4647ba0b772ed7f4623, type: 2}
+  - {fileID: 11400000, guid: 6243d199ef1261c459d045a79063fdc9, type: 2}
+  - {fileID: 11400000, guid: f939adc66d8a30e40bf291e6e5057133, type: 2}
+  - {fileID: 11400000, guid: 2794316f89b89d641b59ac9bb0c2c2e9, type: 2}
+  - {fileID: 11400000, guid: a37ae4010efaa5e43ae02411419ab35d, type: 2}

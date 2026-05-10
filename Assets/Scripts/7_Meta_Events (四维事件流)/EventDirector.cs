@@ -160,36 +160,35 @@ public class EventDirector : MonoBehaviour
         // 1. 注册可能存在的接力节点
         nextNodeAfterLoot = option.NextEventNode;
 
-        // 2. 执行所有积木动作
+        // 2. 深度扫描：判定本次选项是否会“劫持”流程（进入战斗、商店或大巴扎）
+        bool isFlowHijacked = option.Actions.Any(a =>
+            a is EventAction_TriggerSpecialCombat ||
+            a is EventAction_OpenSpecificUpgrade ||
+            (a is EventAction_UniversalGrant ug && ug.Rewards.Any(r => r.Mode == RewardType.RandomLootBox || r.Mode == RewardType.SpecificComponent))
+        );
+
+        // 3. 执行所有积木动作
         foreach (var action in option.Actions) if (action != null) action.Execute();
 
-        // --- 👇【核心修复：判定逻辑升级】---
-        // 现在我们要检查 ug.Rewards 这个列表里，是否有任何一项触发了大巴扎 UI
-        bool isLootAction = option.Actions.Any(a =>
-            a is EventAction_UniversalGrant ug &&
-            ug.Rewards.Any(r => r.Mode == RewardType.RandomLootBox || r.Mode == RewardType.SpecificComponent)
-        );
-        // ----------------------------------
-
         // 4. 流程分流
-        if (isLootAction)
+        if (isFlowHijacked)
         {
-            // 开启了打捞：关闭文字面板，等待接力回调
+            // 如果战斗或奖励已经开启，事件面板静默关闭，不要调用 ExecuteReturnToMap！
             if (EventPanel != null) EventPanel.SetActive(false);
+            Debug.Log("<color=orange>【逻辑守卫】</color> 检测到流程已被劫持（战斗/奖励），事件导演已移交控制权。");
         }
         else if (option.NextEventNode != null)
         {
-            // 没打捞，但有下一幕：直接跳转
+            // 没劫持，但有下一幕：直接跳转
             PlayEvent(option.NextEventNode);
         }
         else
         {
-            // 啥都没有：任务结束，关门回地图
+            // 啥都没有且没被劫持：正常的文字事件结束，回大地图
             if (EventPanel != null) EventPanel.SetActive(false);
             ExecuteReturnToMap();
         }
     }
-
     public void ExecuteReturnToMap()
     {
         if (MapManager.Instance != null)

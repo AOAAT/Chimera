@@ -25,8 +25,8 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
-    BasePrice: 0
-    ScrapValue: 0
+    BasePrice: 40
+    ScrapValue: 10
     Stats:
     - StatID: 4
       Value: 8

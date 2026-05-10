@@ -10,12 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9be51b72b0aee6b40ac17c0f112631ad, type: 3}
-  m_Name: "\u654C\u4EBA\u6C601"
+  m_Name: "\u7B80\u5355\u654C\u4EBA\u6C60"
   m_EditorClassIdentifier: 
   PoolWeight: 10
   TargetStage: 1
   MinDepth: 0
-  MaxDepth: 15
+  MaxDepth: 7
   AllowedNodeTypes: 01000000020000000300000004000000
   LayoutList:
   - {fileID: 11400000, guid: 4a80c51a73cb00e4d805205a667beea5, type: 2}
+  - {fileID: 11400000, guid: 9a4dd0cbc7bf1eb47b0be57a77c78165, type: 2}
+  - {fileID: 11400000, guid: cf075c42e973e714493a11f45c685602, type: 2}
+  - {fileID: 11400000, guid: fc0370ccef558324bae4a24eae631324, type: 2}
+  - {fileID: 11400000, guid: 0d1eee6e290d6534481bf1eee53ab3c1, type: 2}

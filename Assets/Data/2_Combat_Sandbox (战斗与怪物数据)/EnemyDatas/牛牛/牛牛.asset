@@ -41,7 +41,9 @@ MonoBehaviour:
   - StatID: 34
     Value: 4
     ModType: 0
-  SanPenalties: []
+  SanPenalties:
+  - HpThreshold: 1
+    SanDeduction: 5
   VisualScaleMultiplier: 1
   OverrideShadow: 1
   ShadowOffset: {x: 0, y: -0.35}

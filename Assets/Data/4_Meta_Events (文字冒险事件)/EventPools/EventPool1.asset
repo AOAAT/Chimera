@@ -10,11 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ec7a8cec1a2ca5841be23472c1d93034, type: 3}
-  m_Name: EventPool
+  m_Name: EventPool1
   m_EditorClassIdentifier: 
   PoolWeight: 10
   TargetStage: 1
-  MinDepth: 0
-  MaxDepth: 15
+  MinDepth: 1
+  MaxDepth: 20
   Events:
-  - {fileID: 11400000, guid: 09485d405157e1c48a6be0c6aa62b8cb, type: 2}
+  - {fileID: 11400000, guid: 5da16265188bd1d4aa5306fc85e0a650, type: 2}
+  - {fileID: 11400000, guid: e3792dbc378b9764ea8e7ed820c19353, type: 2}
+  - {fileID: 11400000, guid: 48e4b84b86e851c4f8876160633f958f, type: 2}
+  - {fileID: 11400000, guid: f5c5eff2b02257d4480d81d5b4031e68, type: 2}
+  - {fileID: 11400000, guid: c195cc94b29b0a54d91d85f00c03a3e5, type: 2}
