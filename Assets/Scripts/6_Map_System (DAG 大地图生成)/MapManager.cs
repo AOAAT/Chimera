@@ -15,6 +15,10 @@ public class MapManager : MonoBehaviour
     public string CurrentNodeID;
     public int CurrentLayer;
 
+    [Header("=== 终局设定 ===")]
+    [Tooltip("当玩家踩到 BOSS 节点时，触发的特定终章事件")]
+    public EventNodeSO FinaleEvent;
+
     // 您大纲里提到的全局资源，未来会接管这部分
     //public int CurrentSAN = 100;
     //public int CurrentPower = 50;
@@ -54,42 +58,65 @@ public class MapManager : MonoBehaviour
         if (!mapData.ContainsKey(targetNodeID)) return;
         MapNodeData targetData = mapData[targetNodeID];
 
-        // --- 👇【关键修复 A：路径合法性检查】 ---
-        // 1. 状态必须是 Selectable (这个状态现在只在上一关打完后，给直连的节点点亮)
+        // --- 1. 路径合法性检查 (Path Validation) ---
+        // A. 状态检查：必须是已经亮起的“可选择”节点
         if (targetData.NodeState != MapNodeState.Selectable) return;
 
-        // 2. 强校验：目标节点必须是当前所在节点的“后继节点”
-        // 处理第0层的特殊情况（CurrentNodeID 为空时）
+        // B. 连通性检查：目标节点必须是当前节点的直连后继
         if (!string.IsNullOrEmpty(CurrentNodeID))
         {
             MapNodeData currentNode = mapData[CurrentNodeID];
             if (!currentNode.NextNodeIDs.Contains(targetNodeID))
             {
-                Debug.LogWarning("【路径非法】只能进入当前位置直连的下一个房间！");
+                Debug.LogWarning("<color=red>【路径非法】</color> 指挥官，探测到尝试跳过隔离区的行为，指令已拦截。");
                 return;
             }
         }
-        // ------------------------------------------
 
-        // 获取真实的判定类型 (如果是问号，则读取真实的内核)
+        // --- 2. 状态揭示与类型锁定 ---
+        // 踏入瞬间，强制探明真相 (处理问号房)
         targetData.IsRevealed = true;
 
-        // 2. 获取真实内核
+        // 获取内核真实类型
         MapNodeType activeType = (targetData.NodeType == MapNodeType.Unknown)
                                  ? targetData.HiddenRealType
                                  : targetData.NodeType;
 
-        // 3. 路由分发 (保持不变)
+        // --- 3. 核心路由分发逻辑 (Routing) ---
+
+        // 👇【核心重定向】：BOSS 节点叙事劫持
+        if (activeType == MapNodeType.Boss)
+        {
+            if (FinaleEvent != null)
+            {
+                // 关闭大地图卷轴 UI
+                if (MapUIPanel != null) MapUIPanel.SetActive(false);
+
+                // 播放预设的终章文字事件 (您可以在这里说想说的话)
+                EventDirector.Instance.PlayEvent(FinaleEvent);
+
+                Debug.Log("<color=gold>【核心协议】</color> 侦测到节点 15 (BOSS)，正在载入终章叙事模块...");
+            }
+            else
+            {
+                Debug.LogError("【系统异常】已抵达终局节点，但 FinaleEvent 槽位为空！请在 MapManager 检查配置。");
+            }
+            return; // 核心拦截，防止进入后续的战斗逻辑
+        }
+
+        // A. 遭遇战节点分流 (普通怪、精英、大怪)
         if (IsCombatNode(activeType))
         {
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
             CombatDirector.Instance.EnterCombatPhase(targetData);
         }
+        // B. 文字事件节点
         else if (activeType == MapNodeType.Event)
         {
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
             EventDirector.Instance.EnterEventPhase(targetData);
         }
+        // C. 车间/商店节点
         else if (activeType == MapNodeType.Workshop)
         {
             if (MapUIPanel != null) MapUIPanel.SetActive(false);

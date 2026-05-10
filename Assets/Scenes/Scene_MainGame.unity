@@ -1941,6 +1941,7 @@ MonoBehaviour:
   MapUIPanel: {fileID: 489852393}
   CurrentNodeID: 
   CurrentLayer: 0
+  FinaleEvent: {fileID: 0}
 --- !u!114 &240448477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8213,8 +8214,8 @@ Transform:
   m_GameObject: {fileID: 781804929}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.3, y: -0.4, z: 0}
-  m_LocalScale: {x: 1.1993754, y: 1.1993754, z: 1.7057785}
+  m_LocalPosition: {x: -0.18, y: -0.06, z: 0}
+  m_LocalScale: {x: 1.2646779, y: 1.2855734, z: 1.5723866}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
