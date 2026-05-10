@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff185f3f131bed489e59dc76528b0c2, type: 3}
+  m_Name: "CH3_\u5DE5\u4E1A\u4F59\u6656"
+  m_EditorClassIdentifier: 
+  ChassisID: CH_003
+  ChassisName: "\u5DE5\u4E1A\u4F59\u6656"
+  ChassisSprite: {fileID: 21300000, guid: ea85e24e6e8d0cf44905f8a25c536a75, type: 3}
+  DetailBackgroundSprite: {fileID: 0}
+  Description: "\u968F\u7740\u6700\u540E\u4E00\u6279\u4EE3\u8868\u7740\u4EBA\u7C7B\u6700\u9AD8\u751F\u4EA7\u529B\u7684\u5148\u8FDB\u5DE5\u5382\u88AB\u6467\u6BC1\uFF0C\u8FC7\u5F80\u7684\u4E00\u5207\u9AD8\u7CBE\u5C16\u5668\u68B0\u90FD\u53D8\u6210\u4E86\u4E0D\u53EF\u518D\u751F\u7684\u6D88\u8017\u54C1\u3002\u6240\u5E78\u8FD9\u4E2A\u5E95\u76D8\u518D\u672A\u6765\u7684\u51E0\u5341\u5E74\u5185\u4ECD\u53EF\u4EE5\u5C65\u884C\u81EA\u5DF1\u7684\u804C\u8D23\u3002"
+  SpecialMechanicDesc: "\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684*\u5DE5\u4E1A*\u7EC4\u4EF6\u7684\u8017\u7535\u91CF\u51CF\u5C1120%\u3002"
+  MacroCategory: 1
+  SubTags: 
+  BaseStats:
+  - StatID: 0
+    Value: 100
+    ModType: 0
+  - StatID: 1
+    Value: 50
+    ModType: 0
+  BasePrice: 200
+  ScrapValue: 50
+  LogicCenterOffset: {x: 0, y: 0}
+  Sockets:
+  - SlotName: "\u5934\u90E8"
+    AllowedTypes: 00000000
+    LocalPosition: {x: 0, y: 0.58}
+    MountAngle: -0
+    DefaultComponentScale: 1
+  - SlotName: "\u8F85\u52A9"
+    AllowedTypes: 02000000
+    LocalPosition: {x: 0, y: -0.05}
+    MountAngle: 0
+    DefaultComponentScale: 1
+  - SlotName: "\u53F3"
+    AllowedTypes: 0100000002000000
+    LocalPosition: {x: 0.63, y: 0.23}
+    MountAngle: -90
+    DefaultComponentScale: 1
+  - SlotName: "\u5DE6"
+    AllowedTypes: 0100000002000000
+    LocalPosition: {x: -0.63, y: 0.23}
+    MountAngle: 90
+    DefaultComponentScale: 1
+  - SlotName: "\u79FB\u52A8"
+    AllowedTypes: 04000000
+    LocalPosition: {x: 0, y: -0.58}
+    MountAngle: 0
+    DefaultComponentScale: 1
+  OnAssembleActions:
+  - {fileID: 11400000, guid: de8c0b9378779864e92880691eec81f1, type: 2}
+  OnBattleStartActions: []
