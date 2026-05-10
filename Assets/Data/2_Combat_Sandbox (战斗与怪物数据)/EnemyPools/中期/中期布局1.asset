@@ -20,14 +20,10 @@ MonoBehaviour:
     LocalPosition: {x: 2, y: 0.5}
   - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
     LocalPosition: {x: -2, y: 2}
-  - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: -2, y: -2}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: 4.5, y: 0.5}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: 3.5, y: -3.5}
-  - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
-    LocalPosition: {x: 4, y: 3.5}
   ForbiddenZones:
   - serializedVersion: 2
     x: -2.5

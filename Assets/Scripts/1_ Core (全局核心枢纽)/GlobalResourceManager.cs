@@ -124,7 +124,10 @@ public class GlobalResourceManager : MonoBehaviour
         // 2. 隐藏大地图和其他 UI
         if (MapManager.Instance != null && MapManager.Instance.MapUIPanel != null)
             MapManager.Instance.MapUIPanel.SetActive(false);
-
+        if (PauseMenuUI.Instance != null && PauseMenuUI.Instance.GlobalPauseButton != null)
+        {
+            PauseMenuUI.Instance.GlobalPauseButton.SetActive(false);
+        }
         // 3. 唤醒谢幕事件
         if (SanityCollapseEvent != null)
         {

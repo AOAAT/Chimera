@@ -22,10 +22,6 @@ MonoBehaviour:
     LocalPosition: {x: 4, y: 2}
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: -1.5, y: -2.5}
-  - EnemyType: {fileID: 11400000, guid: 24e2f021283bb48408271339c3c53d00, type: 2}
-    LocalPosition: {x: 4, y: -0.5}
-  - EnemyType: {fileID: 11400000, guid: 24e2f021283bb48408271339c3c53d00, type: 2}
-    LocalPosition: {x: -1, y: 2.5}
   ForbiddenZones:
   - serializedVersion: 2
     x: -2.5

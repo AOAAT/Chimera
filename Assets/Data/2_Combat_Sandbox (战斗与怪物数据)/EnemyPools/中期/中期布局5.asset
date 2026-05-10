@@ -15,21 +15,15 @@ MonoBehaviour:
   ArenaReference: {fileID: 1105182036226527270, guid: 736ea161a20b43047abcf6e95455b0d0, type: 3}
   Enemies:
   - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: -0.5, y: 1.5}
+    LocalPosition: {x: -1, y: 3}
   - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: 2, y: -1}
+    LocalPosition: {x: 4.5, y: -2}
   - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: -0.5, y: -1}
+    LocalPosition: {x: -1, y: -2}
   - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: -1.5, y: 4}
-  - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: 2, y: 1.5}
-  - EnemyType: {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
-    LocalPosition: {x: -1.5, y: -3.5}
+    LocalPosition: {x: 4, y: 3}
   - EnemyType: {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
-    LocalPosition: {x: 4, y: -1.5}
-  - EnemyType: {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
-    LocalPosition: {x: 4, y: 2}
+    LocalPosition: {x: 2, y: 0.5}
   ForbiddenZones:
   - serializedVersion: 2
     x: -2.5

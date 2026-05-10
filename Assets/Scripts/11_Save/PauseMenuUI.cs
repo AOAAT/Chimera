@@ -14,11 +14,16 @@ public class PauseMenuUI : MonoBehaviour
     public Button MainMenuButton;
     public Button QuitButton;
 
+    // 👇【核心新增】：用于控制全局“暂停按钮”的显隐（可选）
+    public GameObject GlobalPauseButton;
+
     private bool isPaused = false;
 
     private void Awake()
     {
-        Instance = this;
+        if (Instance == null) Instance = this;
+        else { Destroy(gameObject); return; }
+
         if (PausePanel != null) PausePanel.SetActive(false);
     }
 
@@ -31,14 +36,21 @@ public class PauseMenuUI : MonoBehaviour
 
     private void Update()
     {
-        // 键盘 Esc 呼出/隐藏
+        // 键盘 Esc 逻辑保持不变
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (isPaused) ResumeGame();
-            else PauseGame();
+            TogglePause();
         }
     }
 
+    // ==========================================
+    // 🚀 核心接口：一键切换暂停状态
+    // ==========================================
+    public void TogglePause()
+    {
+        if (isPaused) ResumeGame();
+        else PauseGame();
+    }
     public void PauseGame()
     {
         if (isPaused) return;
@@ -49,8 +61,11 @@ public class PauseMenuUI : MonoBehaviour
         // 核心：暂停物理和逻辑模拟
         Time.timeScale = 0f;
 
-        // 声音反馈：进入沉浸（闷声）模式
+        // 声音反馈
         if (MusicManager.Instance != null) MusicManager.Instance.SetImmersionMode(true);
+
+        // 隐藏全局暂停按钮，防止 UI 重叠
+        if (GlobalPauseButton != null) GlobalPauseButton.SetActive(false);
 
         Debug.Log("<color=yellow>【系统】</color> 游戏已暂停。");
     }
@@ -62,15 +77,15 @@ public class PauseMenuUI : MonoBehaviour
         isPaused = false;
         if (PausePanel != null) PausePanel.SetActive(false);
 
-        // 核心：恢复物理和逻辑模拟
         Time.timeScale = 1f;
 
-        // 恢复声音
         if (MusicManager.Instance != null) MusicManager.Instance.SetImmersionMode(false);
+
+        // 恢复显示全局暂停按钮
+        if (GlobalPauseButton != null) GlobalPauseButton.SetActive(true);
 
         Debug.Log("<color=yellow>【系统】</color> 逻辑继续。");
     }
-
     private void BackToMainMenu()
     {
         Debug.Log("<color=orange>【系统】</color> 正在执行离场清理并返回主菜单...");

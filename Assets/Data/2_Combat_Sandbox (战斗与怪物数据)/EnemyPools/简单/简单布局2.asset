@@ -16,8 +16,6 @@ MonoBehaviour:
   Enemies:
   - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     LocalPosition: {x: -1, y: 1.5}
-  - EnemyType: {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
-    LocalPosition: {x: 1, y: 0}
   - EnemyType: {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
     LocalPosition: {x: 1, y: -1.5}
   - EnemyType: {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
