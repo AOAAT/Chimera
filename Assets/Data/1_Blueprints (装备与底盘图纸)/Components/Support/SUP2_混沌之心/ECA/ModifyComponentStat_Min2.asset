@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4645ca9e7b8b4ab488bbc0263bae814e, type: 3}
-  m_Name: ModifyComponentStat_Min
+  m_Name: ModifyComponentStat_Min2
   m_EditorClassIdentifier: 
   Filter: 2
   TargetTag: 0
@@ -18,7 +18,7 @@ MonoBehaviour:
   TargetMacro: 0
   TargetStat: 11
   Operation: 0
-  Value: -5
+  Value: -10
   ScaleBy: 0
   ScalingMacro: 1
   ExcludeSourceFromCount: 1

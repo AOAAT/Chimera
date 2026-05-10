@@ -25,13 +25,16 @@ MonoBehaviour:
     Value: 18
     ModType: 0
   - StatID: 0
-    Value: 100
+    Value: 200
     ModType: 0
   - StatID: 1
-    Value: 100
+    Value: 240
     ModType: 0
   - StatID: 3
-    Value: 2
+    Value: 5
+    ModType: 0
+  - StatID: 2
+    Value: 10
     ModType: 0
   BasePrice: 200
   ScrapValue: 50

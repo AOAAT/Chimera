@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ComponentBaseID: WPN_003
   ComponentName: "\u9730\u5F39\u67AA"
-  Description: "\u9730\u5F39\u67AA\u4F5C\u4E3A\u53EF\u9760\u7684\u67AA\u68B0\u7ED3\u6784\u4E4B\u4E00\uFF0C\u5728\u62B5\u5FA1\u707E\u53D8\u7684\u7B2C\u4E00\u65F6\u95F4\u5C31\u5F97\u5230\u4E86\u5E7F\u6CDB\u7684\u5E94\u7528\u3002"
+  Description: "\u4F5C\u4E3A\u6700\u53EF\u9760\u7684\u67AA\u68B0\u7ED3\u6784\u4E4B\u4E00\uFF0C\u9730\u5F39\u67AA\u5728\u62B5\u5FA1\u707E\u53D8\u7684\u7B2C\u4E00\u65F6\u95F4\u5C31\u5F97\u5230\u4E86\u5E7F\u6CDB\u7684\u5E94\u7528\u3002"
   ComponentIcon: {fileID: 21300000, guid: b6198c4fd488d78408554b3a4aa8a0fd, type: 3}
   Type: 1
   TacticalRoleDesc: "\u8FDC\u7A0B\u55B7\u5C04"
@@ -32,10 +32,10 @@ MonoBehaviour:
       Value: 10
       ModType: 0
     - StatID: 10
-      Value: 15
+      Value: 5
       ModType: 0
     - StatID: 11
-      Value: 10
+      Value: 3
       ModType: 0
     - StatID: 13
       Value: 30
@@ -66,6 +66,55 @@ MonoBehaviour:
     OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u6BCF\u6B21\u653B\u51FB\u65F6\uFF0C\u4F1A\u5728\u6247\u5F62\u533A\u57DF\u53D1\u5C046\u9897\u56FA\u5B9A\u5F39\u9053\u7684\u5B50\u5F39\uFF0C\u540C\u65F6\u7ED9\u5947\u7F8E\u62C9\u65BD\u52A0\u5F3A\u540E\u5750\u529B\u3002\n\u6BCF\u53D1\u5C042\u53D1\u5B50\u5F39\u5C31\u9700\u8981\u8FDB\u884C\u4E00\u6B211.5\u79D2\u7684\u88C5\u586B\u3002"
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  - Level: 2
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 10
+      ModType: 0
+    - StatID: 10
+      Value: 7
+      ModType: 0
+    - StatID: 11
+      Value: 5
+      ModType: 0
+    - StatID: 13
+      Value: 30
+      ModType: 0
+    - StatID: 14
+      Value: 0
+      ModType: 0
+    - StatID: 15
+      Value: 200
+      ModType: 0
+    - StatID: 16
+      Value: 0.3
+      ModType: 0
+    - StatID: 19
+      Value: 200
+      ModType: 0
+    - StatID: 18
+      Value: 8
+      ModType: 0
+    OnFireActions:
+    - {fileID: 11400000, guid: e86cce55e7dd419449dbb6e9321f19d7, type: 2}
+    - {fileID: 11400000, guid: 6628257c4b99b2e41b4e3378244219f1, type: 2}
+    - {fileID: 11400000, guid: 78e5cf3251839534c87966698440f0cb, type: 2}
+    - {fileID: 11400000, guid: 779570b02a869744d835a7ded90e6462, type: 2}
+    OnHitActions:
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: "\u6BCF\u6B21\u653B\u51FB\u65F6\uFF0C\u4F1A\u5728\u6247\u5F62\u533A\u57DF\u53D1\u5C048\u9897\u56FA\u5B9A\u5F39\u9053\u7684\u5B50\u5F39\uFF0C\u540C\u65F6\u7ED9\u5947\u7F8E\u62C9\u65BD\u52A0\u5F3A\u540E\u5750\u529B\u3002\n\u6BCF\u53D1\u5C042\u53D1\u5B50\u5F39\u5C31\u9700\u8981\u8FDB\u884C\u4E00\u6B211.5\u79D2\u7684\u88C5\u586B\u3002"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

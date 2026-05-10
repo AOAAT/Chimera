@@ -15,6 +15,11 @@ MonoBehaviour:
   Filter: 2
   TargetTag: 0
   TargetType: 1
-  TargetStat: 6
+  TargetMacro: 0
+  TargetStat: 10
   Operation: 0
-  Value: 15
+  Value: 10
+  ScaleBy: 0
+  ScalingMacro: 1
+  ExcludeSourceFromCount: 1
+  IncludeChassisInCount: 1

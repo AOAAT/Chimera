@@ -32,10 +32,10 @@ MonoBehaviour:
       Value: 13
       ModType: 0
     - StatID: 10
-      Value: 300
+      Value: 20
       ModType: 0
     - StatID: 11
-      Value: 300
+      Value: 20
       ModType: 0
     - StatID: 13
       Value: 50
@@ -47,10 +47,10 @@ MonoBehaviour:
       Value: 100
       ModType: 0
     - StatID: 16
-      Value: 0.01
+      Value: 0
       ModType: 0
     - StatID: 19
-      Value: 40
+      Value: 45
       ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: 0860f9f61b5e5624b9d1e950a73c2f5d, type: 2}
@@ -60,7 +60,51 @@ MonoBehaviour:
     OnAssembleActions: []
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: "\u5BF9\u654C\u4EBA\u9020\u6210\u4F24\u5BB3\u7684\u540C\u65F6\uFF0C\u4F1A\u65BD\u52A0\u4E00\u5C42\u6C38\u4E45\u4E14\u53EF\u53E0\u52A0\u7684\u201C\u70DB\u706B\u201Ddebuff\uFF0C\u5728\u62E5\u6709\u6B64debuff\u7684\u654C\u4EBA\u6B7B\u4EA1\u540E\uFF0C\u4F1A\u5C06\u4E00\u5B9A\u6BD4\u4F8B\u7684\u70DB\u706B\u8F6C\u6362\u4E3A\u70DB\u706B\u5B50\u5F39\uFF0C\u968F\u673A\u5206\u914D\u5E76\u53D1\u5C04\u6240\u6709\u654C\u4EBA\uFF0C\u53D1\u5C04\u7684\u70DB\u706B\u662F\u5B50\u5F39\uFF0C\u53EF\u4EE5\u9020\u6210\u4F24\u5BB3\u5E76\u4E14\u4ECD\u53EF\u4EE5\u4E3A\u654C\u4EBA\u6DFB\u52A0debuff\u3002"
+    SpecialMechanicDesc: "\u5BF9\u654C\u4EBA\u9020\u6210\u4F24\u5BB3\u7684\u540C\u65F6\uFF0C\u4F1A\u65BD\u52A0\u4E00\u5C42\u6C38\u4E45\u4E14\u53EF\u53E0\u52A0\u7684\u201C\u70DB\u706B\u201Ddebuff\uFF0C\u5728\u62E5\u6709\u6B64debuff\u7684\u654C\u4EBA\u6B7B\u4EA1\u540E\uFF0C\u4F1A\u5C06\u4E00\u5B9A\u6BD4\u4F8B\u7684\u70DB\u706B\u8F6C\u6362\u4E3A\u70DB\u706B\u5B50\u5F39\uFF0C\u968F\u673A\u5206\u914D\u5E76\u53D1\u5C04\u6240\u6709\u654C\u4EBA\uFF0C\u53D1\u5C04\u7684\u70DB\u706B\u662F\u5B50\u5F39\uFF0C\u53EF\u4EE5\u9020\u6210\u4F24\u5BB3\u5E76\u4E14\u4ECD\u53EF\u4EE5\u4E3A\u654C\u4EBA\u6DFB\u52A0debuff\u3002\n\u6BCF\u6B21\u653B\u51FB\u6263\u9664\u5947\u7F8E\u62C92\u70B9\u8840\u91CF"
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  - Level: 2
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 13
+      ModType: 0
+    - StatID: 10
+      Value: 25
+      ModType: 0
+    - StatID: 11
+      Value: 25
+      ModType: 0
+    - StatID: 13
+      Value: 50
+      ModType: 0
+    - StatID: 14
+      Value: 0
+      ModType: 0
+    - StatID: 15
+      Value: 100
+      ModType: 0
+    - StatID: 16
+      Value: 0
+      ModType: 0
+    - StatID: 19
+      Value: 45
+      ModType: 0
+    OnFireActions:
+    - {fileID: 11400000, guid: 0860f9f61b5e5624b9d1e950a73c2f5d, type: 2}
+    OnHitActions:
+    - {fileID: 11400000, guid: d5a2f5a9e59229442a900880b1fc7a59, type: 2}
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: "\u5BF9\u654C\u4EBA\u9020\u6210\u4F24\u5BB3\u7684\u540C\u65F6\uFF0C\u4F1A\u65BD\u52A0\u4E00\u5C42\u6C38\u4E45\u4E14\u53EF\u53E0\u52A0\u7684\u201C\u70DB\u706B\u201Ddebuff\uFF0C\u5728\u62E5\u6709\u6B64debuff\u7684\u654C\u4EBA\u6B7B\u4EA1\u540E\uFF0C\u4F1A\u5C06\u4E00\u5B9A\u6BD4\u4F8B\u7684\u70DB\u706B\u8F6C\u6362\u4E3A\u70DB\u706B\u5B50\u5F39\uFF0C\u968F\u673A\u5206\u914D\u5E76\u53D1\u5C04\u6240\u6709\u654C\u4EBA\uFF0C\u53D1\u5C04\u7684\u70DB\u706B\u662F\u5B50\u5F39\uFF0C\u53EF\u4EE5\u9020\u6210\u4F24\u5BB3\u5E76\u4E14\u4ECD\u53EF\u4EE5\u4E3A\u654C\u4EBA\u6DFB\u52A0debuff\u3002\n\u6BCF\u6B21\u653B\u51FB\u6263\u9664\u5947\u7F8E\u62C92\u70B9\u8840\u91CF"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

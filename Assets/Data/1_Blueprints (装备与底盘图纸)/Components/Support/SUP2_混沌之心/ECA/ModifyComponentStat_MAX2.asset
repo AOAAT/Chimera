@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4645ca9e7b8b4ab488bbc0263bae814e, type: 3}
-  m_Name: ModifyComponentStat_Min
+  m_Name: ModifyComponentStat_MAX2
   m_EditorClassIdentifier: 
   Filter: 2
   TargetTag: 0
   TargetType: 1
   TargetMacro: 0
-  TargetStat: 11
+  TargetStat: 10
   Operation: 0
-  Value: -5
+  Value: 15
   ScaleBy: 0
   ScalingMacro: 1
   ExcludeSourceFromCount: 1

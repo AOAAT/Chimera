@@ -22,6 +22,5 @@ MonoBehaviour:
     Conditions: []
     Actions:
     - {fileID: 11400000, guid: 34c675a697d7c6d439b1b04bb3153afa, type: 2}
-    - {fileID: 11400000, guid: 34c675a697d7c6d439b1b04bb3153afa, type: 2}
     NextEventNode: {fileID: 11400000, guid: a125a7e73700a9e47906f7d6a8d646a9, type: 2}
   CustomBGM: {fileID: 0}

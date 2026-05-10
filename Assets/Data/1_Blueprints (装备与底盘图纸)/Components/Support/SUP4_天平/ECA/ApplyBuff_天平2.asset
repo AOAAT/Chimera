@@ -9,7 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 97c248c35ae7db14090b3c43aac4cbfd, type: 3}
-  m_Name: L2_ChainsawCritMechanic
+  m_Script: {fileID: 11500000, guid: 7b9b3e1eb3829f646a4d78eeaf9cd2f5, type: 3}
+  m_Name: "ApplyBuff_\u5929\u5E732"
   m_EditorClassIdentifier: 
-  CritIncreasePerAttack: 0.15
+  BuffToApply: {fileID: 11400000, guid: 228c7226cf8794a4783d288178ba6ba8, type: 2}
+  Stacks: 1
+  TargetMode: 0
+  CenterType: 0
+  FactionFilter: 0
+  Radius: 5

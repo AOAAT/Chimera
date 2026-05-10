@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 97c248c35ae7db14090b3c43aac4cbfd, type: 3}
-  m_Name: L3_ChainsawCritMechanic
+  m_Script: {fileID: 11500000, guid: 276a44e1e5eafa343b7049620c0ba13a, type: 3}
+  m_Name: BoostDamageByArmor2
   m_EditorClassIdentifier: 
-  CritIncreasePerAttack: 0.04
+  ArmorToDamageRatio: 1.5

@@ -61,7 +61,52 @@ MonoBehaviour:
     OnAssembleActions: []
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: "\u9020\u6210\u4F24\u5BB3\u524D\uFF0C\u83B7\u5F97\u7B49\u540C\u4E8E\u5F53\u524D\u672A\u4F7F\u7528\u7684\u4EA7\u80FD\u91CF\u7684\u4F24\u5BB3\u52A0\u6DF1\u3002\u5728\u547D\u4E2D\u654C\u4EBA\u540E\uFF0C\u4F1A\u989D\u5916\u8FDB\u884C\u4E00\u5B9A\u8303\u56F4\u76842\u6B21\u4F24\u5BB3\u4E3A\u521D\u59CB\u503C50%\u7684\u8FDE\u9501\u4F24\u5BB3\u3002"
+    SpecialMechanicDesc: "\u9020\u6210\u4F24\u5BB3\u524D\uFF0C\u83B7\u5F97\u7B49\u540C\u4E8E\u5F53\u524D\u672A\u4F7F\u7528\u7684\u4EA7\u7535\u91CF\u7684\u4F24\u5BB3\u52A0\u6DF1\u3002\u5728\u547D\u4E2D\u654C\u4EBA\u540E\uFF0C\u4F1A\u5728\u654C\u4EBA\u5468\u56F4\u4E00\u5B9A\u8303\u56F4\u89E6\u53D12\u6B21\u8FDE\u9501\u4F24\u5BB3\uFF08\u4F24\u5BB3\u91CF\u4E3A\u539F\u672C\u768450%\uFF09\u3002"
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  - Level: 2
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 15
+      ModType: 0
+    - StatID: 10
+      Value: 10
+      ModType: 0
+    - StatID: 11
+      Value: 5
+      ModType: 0
+    - StatID: 13
+      Value: 40
+      ModType: 0
+    - StatID: 14
+      Value: 0
+      ModType: 0
+    - StatID: 15
+      Value: 100
+      ModType: 0
+    - StatID: 16
+      Value: 0.1
+      ModType: 0
+    - StatID: 19
+      Value: 80
+      ModType: 0
+    OnFireActions:
+    - {fileID: 11400000, guid: 3f4413d505d021542acf8674c7bce220, type: 2}
+    OnHitActions:
+    - {fileID: 11400000, guid: 2b3ffe28524a76b49b1b35ae8160d85c, type: 2}
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    - {fileID: 11400000, guid: 397ea9e24168f3f4cb060dc9e55eba92, type: 2}
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: "\u9020\u6210\u4F24\u5BB3\u524D\uFF0C\u83B7\u5F97\u7B49\u540C\u4E8E\u5F53\u524D\u672A\u4F7F\u7528\u7684\u4EA7\u7535\u91CF\u7684\u4F24\u5BB3\u52A0\u6DF1\u3002\u5728\u547D\u4E2D\u654C\u4EBA\u540E\uFF0C\u4F1A\u5728\u654C\u4EBA\u5468\u56F4\u4E00\u5B9A\u8303\u56F4\u89E6\u53D13\u6B21\u8FDE\u9501\u4F24\u5BB3\uFF08\u4F24\u5BB3\u91CF\u4E3A\u539F\u672C\u768470%\uFF09\u3002"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

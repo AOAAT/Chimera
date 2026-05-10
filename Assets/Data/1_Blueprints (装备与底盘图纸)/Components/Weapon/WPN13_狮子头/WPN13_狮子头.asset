@@ -44,10 +44,51 @@ MonoBehaviour:
       Value: 0
       ModType: 0
     - StatID: 15
-      Value: 100
+      Value: 50
       ModType: 0
     - StatID: 16
-      Value: 0.25
+      Value: 0.3
+      ModType: 0
+    OnFireActions:
+    - {fileID: 11400000, guid: ace7bb661a6ea484dbace827b8f09c87, type: 2}
+    - {fileID: 11400000, guid: 91f96aeeef67608478deabd98f5e72a4, type: 2}
+    OnHitActions:
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: "\u5982\u679C\u653B\u51FB\u7684\u76EE\u6807\u6CA1\u6709\u62A4\u7532\uFF0C\u90A3\u4E48\u72EE\u5B50\u5934\u7684\u653B\u51FB\u529B\u548C\u66B4\u51FB\u7387\u5747\u53D8\u4E3A\u539F\u672C\u76841.5\u500D\u3002"
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  - Level: 2
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 10
+      ModType: 0
+    - StatID: 10
+      Value: 15
+      ModType: 0
+    - StatID: 11
+      Value: 15
+      ModType: 0
+    - StatID: 13
+      Value: 20
+      ModType: 0
+    - StatID: 14
+      Value: 0
+      ModType: 0
+    - StatID: 15
+      Value: 50
+      ModType: 0
+    - StatID: 16
+      Value: 0.4
       ModType: 0
     OnFireActions:
     - {fileID: 11400000, guid: ace7bb661a6ea484dbace827b8f09c87, type: 2}

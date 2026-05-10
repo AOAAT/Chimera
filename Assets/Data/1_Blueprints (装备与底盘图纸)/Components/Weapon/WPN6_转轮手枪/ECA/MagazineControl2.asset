@@ -9,7 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 97c248c35ae7db14090b3c43aac4cbfd, type: 3}
-  m_Name: L2_ChainsawCritMechanic
+  m_Script: {fileID: 11500000, guid: 8a5687c350813ff4aa0879682051f6e4, type: 3}
+  m_Name: MagazineControl2
   m_EditorClassIdentifier: 
-  CritIncreasePerAttack: 0.15
+  MaxAmmo: 3
+  ReloadTime: 1

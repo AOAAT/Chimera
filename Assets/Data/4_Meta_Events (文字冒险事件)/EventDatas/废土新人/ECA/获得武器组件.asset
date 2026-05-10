@@ -20,3 +20,10 @@ MonoBehaviour:
     LootPool: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
     ProtocolBuff: {fileID: 0}
     ProtocolDuration: 0
+  - Mode: 1
+    ForceClaim: 1
+    ComponentBlueprint: {fileID: 0}
+    Level: 0
+    LootPool: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
+    ProtocolBuff: {fileID: 0}
+    ProtocolDuration: 0

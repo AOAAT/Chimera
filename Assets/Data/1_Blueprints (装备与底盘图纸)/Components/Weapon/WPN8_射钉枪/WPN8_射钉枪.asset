@@ -68,6 +68,50 @@ MonoBehaviour:
       CPCost: 0
       Cooldown: 0
       OnSkillCastActions: []
+  - Level: 2
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 6
+      ModType: 0
+    - StatID: 10
+      Value: 10
+      ModType: 0
+    - StatID: 11
+      Value: 5
+      ModType: 0
+    - StatID: 13
+      Value: 50
+      ModType: 0
+    - StatID: 14
+      Value: 0
+      ModType: 0
+    - StatID: 15
+      Value: 200
+      ModType: 0
+    - StatID: 16
+      Value: 0.1
+      ModType: 0
+    - StatID: 19
+      Value: 100
+      ModType: 0
+    OnFireActions:
+    - {fileID: 11400000, guid: 53a17e2bea6c51b449393353641ebed4, type: 2}
+    OnHitActions:
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    - {fileID: 11400000, guid: 1e2267bc0c737ce4f8841154cf4928a3, type: 2}
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: "\u5BF9\u654C\u4EBA\u9020\u6210\u4F24\u5BB3\u7684\u540C\u65F6\uFF0C\u4F1A\u65BD\u52A0\u4E00\u5C42\u6C38\u4E45\u4E14\u53EF\u53E0\u52A0\u7684\u201C\u523A\u9489\u201Ddebuff\uFF0C\u6BCF\u53E0\u52A05\u5C42\uFF0C\u5C31\u4F1A\u6D88\u9664\u6240\u6709\u7684\u523A\u9489debuff\uFF0C\u5E76\u5BF9\u654C\u4EBA\u9020\u621050\u771F\u5B9E\u4F24\u5BB3"
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
   DeliveryType: 1
   ProjectilePrefab: {fileID: 5847406748405371688, guid: 8439cb03decd7a64c91b95769a0c71ad, type: 3}
   WindupAngle: -45

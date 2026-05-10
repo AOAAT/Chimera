@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ComponentBaseID: WPN_007
   ComponentName: "\u5F15\u529B\u573A"
-  Description: "\u7EC4\u4EF6\u98CE\u5473\u63CF\u8FF0..."
+  Description: "\u73A9\u5F04\u4E00\u5C0F\u7247\u8303\u56F4\u7684\u5F15\u529B\u3002"
   ComponentIcon: {fileID: 21300000, guid: c108abebdb9a0e34d9b94c2006f69a48, type: 3}
   Type: 1
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
@@ -38,13 +38,13 @@ MonoBehaviour:
       Value: 0
       ModType: 0
     - StatID: 13
-      Value: 50
+      Value: 30
       ModType: 0
     - StatID: 14
       Value: 0
       ModType: 0
     - StatID: 15
-      Value: 50
+      Value: 20
       ModType: 0
     - StatID: 16
       Value: 0.2
@@ -63,6 +63,52 @@ MonoBehaviour:
     OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u9020\u6210\u5C0F\u8303\u56F4\u4F24\u5BB3\uFF0C\u4F24\u5BB3\u91CF\u7B49\u540C\u4E8E\u5947\u7F8E\u62C9\u5F53\u524D\u7684\u62A4\u7532\u503C\u3002"
+    ActiveSkill:
+      HasActiveSkill: 0
+      SkillName: 
+      SkillIcon: {fileID: 0}
+      CPCost: 0
+      Cooldown: 0
+      OnSkillCastActions: []
+  - Level: 1
+    BasePrice: 0
+    ScrapValue: 0
+    Stats:
+    - StatID: 4
+      Value: 14
+      ModType: 0
+    - StatID: 10
+      Value: 0
+      ModType: 0
+    - StatID: 11
+      Value: 0
+      ModType: 0
+    - StatID: 13
+      Value: 30
+      ModType: 0
+    - StatID: 14
+      Value: 0
+      ModType: 0
+    - StatID: 15
+      Value: 25
+      ModType: 0
+    - StatID: 16
+      Value: 0.2
+      ModType: 0
+    - StatID: 19
+      Value: 50
+      ModType: 0
+    - StatID: 17
+      Value: 20
+      ModType: 0
+    OnFireActions:
+    - {fileID: 11400000, guid: 53ab68d31ef23a74d9920994d9847ec0, type: 2}
+    OnHitActions:
+    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
+    OnAssembleActions: []
+    OnBattleStartActions: []
+    BonusTags: 
+    SpecialMechanicDesc: "\u9020\u6210\u5C0F\u8303\u56F4\u4F24\u5BB3\uFF0C\u4F24\u5BB3\u91CF\u7B49\u540C\u4E8E\u5947\u7F8E\u62C9\u5F53\u524D\u7684\u62A4\u7532\u503C\u76841.5\u500D\u3002"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

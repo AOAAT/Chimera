@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a7984b1afe5f1c8468608a80b5e2b41d, type: 3}
-  m_Name: L1_ChainDamage
+  m_Name: L2_ChainDamage
   m_EditorClassIdentifier: 
-  MaxTargets: 2
+  MaxTargets: 3
   ChainRadius: 25
-  DamageRatio: 0.5
+  DamageRatio: 0.7
   IsTrueDamage: 0
   LightningPrefab: {fileID: 1356839212223178731, guid: 82f3607e2a0d86445aaf57a140c09e7c, type: 3}
   LightningDuration: 0.3

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 043ba331d60b9684cbd1e1dd8793fcf9, type: 3}
-  m_Name: BUFF_Scale_Harmonizer
+  m_Name: BUFF_Scale_Harmonizer2
   m_EditorClassIdentifier: 
   BuffID: BUFF_005
   BuffName: "\u5747\u5C65\u5929\u5E73"
@@ -27,6 +27,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 975847c3efc1d374bbc76f04c685e9a2, type: 2}
   OnRemoveActions: []
   OnMaxStacksActions: []
+  OnHolderDeathActions: []
   OverrideAI: 0
   OverrideMovementLogic: 2
   OverrideSafeDodgeDistance: 8

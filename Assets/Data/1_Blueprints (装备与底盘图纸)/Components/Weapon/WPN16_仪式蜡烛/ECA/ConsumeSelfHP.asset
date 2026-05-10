@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b335dd6d9aa6a24d9665dba9ccbaf95, type: 3}
   m_Name: ConsumeSelfHP
   m_EditorClassIdentifier: 
-  HPToConsume: 0
+  HPToConsume: 2
