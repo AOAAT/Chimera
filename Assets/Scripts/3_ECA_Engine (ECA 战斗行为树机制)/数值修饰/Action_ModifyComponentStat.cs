@@ -4,8 +4,7 @@ using System.Collections.Generic;
 
 public enum TargetFilterType { Self, ByTag, ByType, ByMacro, All }
 public enum StatOperation { Add, Multiply, Override }
-public enum ScalingMode { Constant, ComponentCount }
-
+public enum ScalingMode { Constant, ComponentCount, EmptySocketCount }
 [CreateAssetMenu(fileName = "ModifyComponentStat", menuName = "Chimera Protocol/2. ECA 机制积木/修饰 - 万能属性修饰器")]
 public class Action_ModifyComponentStat : ECAAction
 {
@@ -24,9 +23,6 @@ public class Action_ModifyComponentStat : ECAAction
     public ScalingMode ScaleBy = ScalingMode.Constant;
     public MacroCategory ScalingMacro = MacroCategory.Flesh;
     public bool ExcludeSourceFromCount = true;
-
-    // 👇【核心新增】：配置窗口开关
-    [Tooltip("在计数时，是否也将底盘本身的阵营统计进去？")]
     public bool IncludeChassisInCount = true;
 
     public override void Execute(ECAContext context)
@@ -61,7 +57,18 @@ public class Action_ModifyComponentStat : ECAAction
             }
             multiplier = count;
         }
+        else if (ScaleBy == ScalingMode.EmptySocketCount)
+        {
+            // --- 👇【核心新增】：空槽位鉴定逻辑 ---
+            // 1. 获取底盘总插槽数
+            int totalSockets = context.ChassisData.ActiveChassisSO.Sockets.Count;
+            // 2. 获取当前已安装的零件总数 (Assemble 已经帮我们存进了 AllEquippedSOs)
+            int occupiedSockets = context.ChassisData.AllEquippedSOs.Count;
 
+            // 3. 计算差值即为空槽位数
+            int emptyCount = Mathf.Max(0, totalSockets - occupiedSockets);
+            multiplier = emptyCount;
+        }
         float calculatedValue = Value * multiplier;
         if (calculatedValue == 0 && Operation != StatOperation.Override) return;
 

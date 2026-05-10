@@ -57,5 +57,5 @@ MonoBehaviour:
     MountAngle: 0
     DefaultComponentScale: 1
   OnAssembleActions:
-  - {fileID: 11400000, guid: de8c0b9378779864e92880691eec81f1, type: 2}
+  - {fileID: 11400000, guid: 8b8eaf21db13a3c4f96cb403eee190dc, type: 2}
   OnBattleStartActions: []

@@ -46,7 +46,13 @@ public class Action_ModifyComponentStatEditor : Editor
             EditorGUILayout.HelpBox("最终加成 = 基础值 × (匹配零件数 + 底盘判定)", MessageType.Info);
             EditorGUILayout.EndVertical();
         }
-
+        else if ((ScalingMode)scaleModeProp.enumValueIndex == ScalingMode.EmptySocketCount)
+        {
+            // --- 👇【核心新增】：空槽位模式下的提示 ---
+            EditorGUILayout.BeginVertical("helpbox");
+            EditorGUILayout.HelpBox("【空槽位鉴定模式】\n最终加成 = 基础值 × 机甲剩余未安装零件的插槽数量。\n适合设计‘孤狼’、‘轻量化’或‘断舍离’流派的组件。", MessageType.Info);
+            EditorGUILayout.EndVertical();
+        }
         serializedObject.ApplyModifiedProperties();
     }
 }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ComponentBaseID: MOVE_002
   ComponentName: "\u5C65\u5E26"
-  Description: "\u8FD9\u6761\u5C65\u5E26\u8D70\u8FC7\u4E86\u90AA\u795E\u964D\u4E34\u540E\u4EBA\u7C7B\u6587\u660E\u4ECE\u7E41\u534E\u5230\u843D\u5BDE\u7684\u4E09\u767E\u5E74\u3002"
+  Description: "\u4E00\u6761\u8F7B\u5C65\u8E0F\u9E3F\u6CE5\u3002"
   ComponentIcon: {fileID: 21300000, guid: 9f3b98f935bab6847b42ea1c6729fda5, type: 3}
   Type: 4
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
@@ -39,7 +39,8 @@ MonoBehaviour:
       ModType: 0
     OnFireActions: []
     OnHitActions: []
-    OnAssembleActions: []
+    OnAssembleActions:
+    - {fileID: 11400000, guid: 3430e1d490c59114087725ea7cce88ea, type: 2}
     OnBattleStartActions: []
     BonusTags: 
     SpecialMechanicDesc: 
