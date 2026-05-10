@@ -27,7 +27,7 @@ MonoBehaviour:
   IntentIcon: {fileID: 0}
   NextComboSkill: {fileID: 0}
   IgnoreRange: 0
-  MaxRange: 20
+  MaxRange: 15
   MinRange: 0
   MinDamage: 5
   MaxDamage: 10

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkillName: "\u6B21\u5143\u6F5C\u5165"
   AttackSpeed: 50
-  CooldownMultiplier: 3
+  CooldownMultiplier: 5
   OverrideTargeting: 0
   SkillTargetingLogic: 3
   BaseScore: 10

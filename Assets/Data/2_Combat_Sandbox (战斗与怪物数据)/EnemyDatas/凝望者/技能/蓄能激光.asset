@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkillName: "\u84C4\u80FD\u6FC0\u5149"
   AttackSpeed: 25
-  CooldownMultiplier: 2
+  CooldownMultiplier: 4
   OverrideTargeting: 0
   SkillTargetingLogic: 3
   BaseScore: 10
@@ -29,8 +29,8 @@ MonoBehaviour:
   IgnoreRange: 0
   MaxRange: 80000
   MinRange: 0
-  MinDamage: 20
-  MaxDamage: 20
+  MinDamage: 44
+  MaxDamage: 44
   CriticalChance: 0.05
   DeliveryType: 0
   ProjectilePrefab: {fileID: 0}

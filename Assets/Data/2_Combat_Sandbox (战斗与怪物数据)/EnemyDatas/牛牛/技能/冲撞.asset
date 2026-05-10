@@ -29,8 +29,8 @@ MonoBehaviour:
   IgnoreRange: 1
   MaxRange: 60
   MinRange: 0
-  MinDamage: 10
-  MaxDamage: 10
+  MinDamage: 12
+  MaxDamage: 12
   CriticalChance: 0.05
   DeliveryType: 2
   ProjectilePrefab: {fileID: 0}

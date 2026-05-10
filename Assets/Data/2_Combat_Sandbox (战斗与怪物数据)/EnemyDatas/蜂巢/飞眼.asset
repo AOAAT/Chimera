@@ -36,7 +36,7 @@ MonoBehaviour:
     Value: 10
     ModType: 0
   - StatID: 32
-    Value: 1
+    Value: 2
     ModType: 0
   SanPenalties: []
   VisualScaleMultiplier: 1

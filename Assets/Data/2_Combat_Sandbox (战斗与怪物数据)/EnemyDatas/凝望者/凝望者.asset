@@ -27,10 +27,10 @@ MonoBehaviour:
   HoverDistance: 80
   BaseStats:
   - StatID: 30
-    Value: 200
+    Value: 150
     ModType: 0
   - StatID: 30
-    Value: 200
+    Value: 150
     ModType: 0
   - StatID: 30
     Value: 3

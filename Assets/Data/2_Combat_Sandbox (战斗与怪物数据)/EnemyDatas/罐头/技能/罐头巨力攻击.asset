@@ -28,10 +28,10 @@ MonoBehaviour:
   IntentIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
   NextComboSkill: {fileID: 0}
   IgnoreRange: 0
-  MaxRange: 50
+  MaxRange: 20
   MinRange: 0
-  MinDamage: 2
-  MaxDamage: 2
+  MinDamage: 10
+  MaxDamage: 10
   CriticalChance: 0.05
   DeliveryType: 0
   ProjectilePrefab: {fileID: 0}

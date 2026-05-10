@@ -1953,7 +1953,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e41365d4bea76a4eb4563f4eb20b8fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TotalLayers: 15
+  TotalLayers: 20
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
   ForcedLayers: []

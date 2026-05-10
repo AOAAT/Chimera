@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: LootSequence
   m_EditorClassIdentifier: 
   Tasks:
-  - Mode: 0
+  - Mode: 1
     TripleChoiceProbability: 0
     Weight_Lv1: 0
     Weight_Lv2: 0

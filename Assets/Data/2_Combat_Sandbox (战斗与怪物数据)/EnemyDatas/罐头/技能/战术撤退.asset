@@ -26,7 +26,7 @@ MonoBehaviour:
   ShowIntent: 0
   IntentIcon: {fileID: 0}
   NextComboSkill: {fileID: 0}
-  IgnoreRange: 0
+  IgnoreRange: 1
   MaxRange: 50
   MinRange: 0
   MinDamage: 5
@@ -35,5 +35,6 @@ MonoBehaviour:
   DeliveryType: 2
   ProjectilePrefab: {fileID: 0}
   ProjectileSpeed: 10
-  OnFireActions: []
+  OnFireActions:
+  - {fileID: 11400000, guid: 64cee542f927c6a439cfe32718aca948, type: 2}
   OnHitActions: []
