@@ -4432,10 +4432,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 801539495}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 91.5, y: -21.880001}
+  m_SizeDelta: {x: 163, y: 23.76}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &479983635
 MonoBehaviour:
@@ -24814,7 +24814,7 @@ MonoBehaviour:
   BGM_MainMenu: {fileID: 0}
   BGM_Map: {fileID: 8300000, guid: deda773073045d641b27adfec2683d30, type: 3}
   BGM_Combat: {fileID: 8300000, guid: e757018546258484cba55e1cba500168, type: 3}
-  BGM_Shop: {fileID: 8300000, guid: 0296d699129ffcf4a9c34407a92e8f3a, type: 3}
+  BGM_Shop: {fileID: 8300000, guid: 1ce62d9395f4cef4cabc07c14cfa8d89, type: 3}
   BGM_Event_Default: {fileID: 8300000, guid: 0296d699129ffcf4a9c34407a92e8f3a, type: 3}
   BGM_Loot: {fileID: 8300000, guid: 02a0761d60a348f47a0f3b3f7f69fe66, type: 3}
   FadeDuration: 1.5
