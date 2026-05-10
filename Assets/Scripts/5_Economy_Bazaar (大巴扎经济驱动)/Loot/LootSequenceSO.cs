@@ -8,8 +8,16 @@ public enum TagPoolSource { MapNodeDefault, CustomMacros, CustomSubTags }
 [Serializable]
 public class CustomDropEntry
 {
-    public ComponentDataSO Blueprint;
+    [Tooltip("如果是发放组件，请拖入组件图纸")]
+    public ComponentDataSO ComponentBlueprint;
+
+    [Tooltip("如果是发放底盘，请拖入底盘图纸（此时等级设置无效）")]
+    public ChassisDataSO ChassisBlueprint; // 👈 新增：底盘槽位
+
     [Range(1, 4)] public int Level = 1;
+
+    // 辅助判定：这到底是个啥？
+    public bool IsChassis => ChassisBlueprint != null;
 }
 
 [Serializable]

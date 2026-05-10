@@ -1,5 +1,5 @@
 ﻿// --- START OF FILE LootUIManager.cs ---
-using System.Collections; // 必须引用
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,7 +40,10 @@ public class LootUIManager : MonoBehaviour
 
     private List<ActiveLootTask> currentTasks;
     private ActiveLootTask activeTask;
+
+    // 👇【双类型缓存】：支持底盘和组件
     private InstancedComponent selectedItem;
+    private InstancedChassis selectedChassis;
 
     private void Awake() { if (Instance == null) Instance = this; }
 
@@ -106,23 +109,23 @@ public class LootUIManager : MonoBehaviour
             }
             else if (task.Config.Mode == LootDropMode.CustomPoolDrop)
             {
-                // 👇【优化】：如果是特定奖励，直接显示第一项的名字
-                if (task.GeneratedItems.Count > 0)
-                    txt.text = $"<color=#FF8800>【特殊奖励】{task.GeneratedItems[0].BaseData.ComponentName}</color>";
-                else
-                    txt.text = "<color=#FF8800>【特殊奖励】固定掉落</color>";
+                // 👇【优化】：如果是特定奖励，优先显示底盘名，否则显示第一个零件名
+                string rewardName = "固定掉落";
+                if (task.GeneratedChassis.Count > 0)
+                    rewardName = task.GeneratedChassis[0].BaseData.ChassisName;
+                else if (task.GeneratedItems.Count > 0)
+                    rewardName = task.GeneratedItems[0].BaseData.ComponentName;
 
+                txt.text = $"<color=#FF8800>【特殊奖励】{rewardName}</color>";
                 btn.onClick.AddListener(() => OnHubEntryClicked(task));
             }
             else
             {
-                // 动态文本解析：告诉玩家这是什么类型的盲盒
+                // 动态文本解析
                 if (task.Config.Mode == LootDropMode.PlayerDrivenFilter)
                     txt.text = "<color=#FFD700>【深度搜寻】自主选择流派标签</color>";
-                else if (task.Config.Mode == LootDropMode.CustomPoolDrop)
-                    txt.text = "<color=#FF8800>【特殊奖励】固定掉落</color>";
                 else
-                    txt.text = "【简单搜寻】点击获取";
+                    txt.text = "【战场打捞】点击获取残骸";
 
                 btn.onClick.AddListener(() => OnHubEntryClicked(task));
             }
@@ -142,36 +145,24 @@ public class LootUIManager : MonoBehaviour
             HubPanel.SetActive(false);
             OpenTagPanel();
         }
-        else // 其他情况（单抽/系统随机/固定池/已经选过标签），直接开盲盒！
+        else // 其他情况直接开盲盒
         {
-            if (!task.IsBoxOpened) LootSequenceDirector.Instance.RollItemsForTask(task);
-            HubPanel.SetActive(false);
-            OpenItemPanel();
             StartCoroutine(ProcessScanningAndOpen(task));
         }
     }
 
     private IEnumerator ProcessScanningAndOpen(ActiveLootTask task)
     {
-        // 1. 如果已经开过了，跳过扫描
-        if (task.IsBoxOpened)
+        HubPanel.SetActive(false);
+
+        if (!task.IsBoxOpened)
         {
-            HubPanel.SetActive(false);
-            OpenItemPanel();
-            yield break;
+            // 伪装扫描
+            Debug.Log("【系统】正在解析战场残骸...");
+            yield return new WaitForSecondsRealtime(0.6f);
+            LootSequenceDirector.Instance.RollItemsForTask(task);
         }
 
-        // 2. 伪装扫描：可以禁用交互，并让鼠标变成忙碌状态
-        Debug.Log("【系统】正在解析战场残骸...");
-
-        // 这里你可以触发一个全屏的微弱扫描线特效
-        // ScreenEffectManager.Instance.TriggerFlash(new Color(0, 1, 1, 0.1f), 0.5f);
-
-        yield return new WaitForSecondsRealtime(0.6f); // 停顿一下，制造期待感
-
-        // 3. 正式开盲盒
-        LootSequenceDirector.Instance.RollItemsForTask(task);
-        HubPanel.SetActive(false);
         OpenItemPanel();
     }
 
@@ -196,21 +187,19 @@ public class LootUIManager : MonoBehaviour
                 {
                     activeTask.LockedTag = capturedTag;
                     TagPanel.SetActive(false);
-                    // 选完标签，当场 Roll 出装备，转入展示面板！
                     LootSequenceDirector.Instance.RollItemsForTask(activeTask);
                     OpenItemPanel();
                 });
             }
             else
             {
-                // 选项不够 3 个，自动隐藏多余的按钮
                 FixedTagButtons[i].gameObject.SetActive(false);
             }
         }
     }
 
     // ==========================================
-    // 渲染终极物品展示面板
+    // 渲染终极物品展示面板 (支持混排)
     // ==========================================
     private void OpenItemPanel()
     {
@@ -218,100 +207,146 @@ public class LootUIManager : MonoBehaviour
         ConfirmButton.interactable = false;
         SalvageButton.interactable = false;
         selectedItem = null;
+        selectedChassis = null;
 
-        var items = activeTask.GeneratedItems;
+        int slotIdx = 0;
 
-        for (int i = 0; i < FixedItemSlots.Length; i++)
+        // 1. 优先摆放生成的底盘
+        foreach (var chassis in activeTask.GeneratedChassis)
         {
-            if (i < items.Count)
-            {
-                FixedItemSlots[i].gameObject.SetActive(true);
-                FixedItemSlots[i].SetHighlight(false);
+            if (slotIdx >= FixedItemSlots.Length) break;
 
-                // 初始化状态：缩放为0，放在屏幕中心
-                FixedItemSlots[i].transform.localScale = Vector3.zero;
+            var slot = FixedItemSlots[slotIdx];
+            slot.gameObject.SetActive(true);
 
-                int index = i;
-                var item = items[i];
-                FixedItemSlots[i].SetupComponent(item, (_) => OnItemSlotClicked(index, item));
+            // 👇【核心修改】：物理重置高亮状态
+            slot.SetHighlight(false);
 
-                // 👇【核心】：启动弹射协程
-                StartCoroutine(AnimateItemEject(FixedItemSlots[i].GetComponent<RectTransform>(), i));
-            }
-            else
-            {
-                FixedItemSlots[i].gameObject.SetActive(false);
-            }
+            slot.transform.localScale = Vector3.zero;
+
+            int index = slotIdx;
+            InstancedChassis capturedChassis = chassis;
+            slot.SetupChassis(chassis, (_) => OnChassisSlotClicked(index, capturedChassis));
+
+            StartCoroutine(AnimateItemEject(slot.GetComponent<RectTransform>(), slotIdx));
+            slotIdx++;
         }
+
+        // 2. 接着摆放生成的零件
+        foreach (var item in activeTask.GeneratedItems)
+        {
+            if (slotIdx >= FixedItemSlots.Length) break;
+
+            var slot = FixedItemSlots[slotIdx];
+            slot.gameObject.SetActive(true);
+
+            // 👇【核心修改】：物理重置高亮状态
+            slot.SetHighlight(false);
+
+            slot.transform.localScale = Vector3.zero;
+
+            int index = slotIdx;
+            InstancedComponent capturedItem = item;
+            slot.SetupComponent(item, (_) => OnItemSlotClicked(index, capturedItem));
+
+            StartCoroutine(AnimateItemEject(slot.GetComponent<RectTransform>(), slotIdx));
+            slotIdx++;
+        }
+
+        // 隐藏剩下的空格
+        for (int i = slotIdx; i < FixedItemSlots.Length; i++)
+        {
+            FixedItemSlots[i].gameObject.SetActive(false);
+        }
+    }
+    private void OnItemSlotClicked(int index, InstancedComponent item)
+    {
+        // 逻辑赋值
+        selectedItem = item;
+        selectedChassis = null;
+        ConfirmButton.interactable = true;
+
+        // 播放点击反馈音效 (可选)
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Generic_Click);
+
+        UpdateSalvageButtonState();
+
+        // 👇【执行高亮切换】
+        RefreshHighlights(index);
+    }
+
+    private void OnChassisSlotClicked(int index, InstancedChassis chassis)
+    {
+        // 逻辑赋值
+        selectedChassis = chassis;
+        selectedItem = null;
+        ConfirmButton.interactable = true;
+
+        // 播放点击反馈音效 (可选)
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Generic_Click);
+
+        UpdateSalvageButtonState();
+
+        // 👇【执行高亮切换】
+        RefreshHighlights(index);
     }
 
 
 
-    private void OnItemSlotClicked(int index, InstancedComponent item)
-    {
-        selectedItem = item;
-        ConfirmButton.interactable = true;
 
-        // --- 👇【核心重构：动态锁定粉碎按钮】---
+    private void UpdateSalvageButtonState()
+    {
         if (activeTask != null && activeTask.IsForceClaim)
         {
-            SalvageButton.interactable = false; // 强制置灰，点不动
-
-            // 视觉反馈：可以改个文本提醒玩家
+            SalvageButton.interactable = false;
             SalvageButton.GetComponentInChildren<TMP_Text>().text = "<color=red>禁止拆解</color>";
         }
         else
         {
-            SalvageButton.interactable = true; // 正常模式
+            SalvageButton.interactable = true;
             SalvageButton.GetComponentInChildren<TMP_Text>().text = "拆解以获得废料";
         }
-        // ----------------------------------------
+    }
 
+    private void RefreshHighlights(int selectedIdx)
+    {
         for (int i = 0; i < FixedItemSlots.Length; i++)
         {
+            // 只有当前正在显示的格子才参与逻辑
             if (FixedItemSlots[i].gameObject.activeSelf)
             {
-                FixedItemSlots[i].SetHighlight(i == index);
+                // 如果 i 等于传进来的点击索引，则开启高亮，否则关闭
+                FixedItemSlots[i].SetHighlight(i == selectedIdx);
+
+                // 【进阶体验】：未选中的格子可以稍微变暗一点点 (可选)
+                // CanvasGroup cg = FixedItemSlots[i].GetComponent<CanvasGroup>();
+                // if(cg != null) cg.alpha = (i == selectedIdx) ? 1.0f : 0.6f;
             }
         }
     }
+
     private IEnumerator AnimateItemEject(RectTransform rect, int index)
     {
-        // 1. 等待时序间隔
         yield return new WaitForSecondsRealtime(index * ItemStaggerDelay);
 
-        Vector2 finalPos = rect.anchoredPosition; // 记住你在编辑器里摆好的位置
-        Vector2 startPos = Vector2.zero;          // 从面板中心（0,0）出发
+        Vector2 finalPos = rect.anchoredPosition;
+        Vector2 startPos = Vector2.zero;
 
         float elapsed = 0;
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Loot_ItemEject);
 
-        // 播放发射音效
-        if (GlobalAudioManager.Instance != null)
-            // 找一个清脆的机械弹出声
-           
-            GlobalAudioManager.Instance.PlayUISound(UISoundType.Loot_ItemEject);
-            while (elapsed < EjectDuration)
-            {
-                elapsed += Time.unscaledDeltaTime; // 即使卡肉时间，UI 也要动
-                float t = elapsed / EjectDuration;
+        while (elapsed < EjectDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = EjectCurve.Evaluate(elapsed / EjectDuration);
 
-                // 缓动计算
-                float curveT = EjectCurve.Evaluate(t);
+            rect.anchoredPosition = Vector2.LerpUnclamped(startPos, finalPos, t);
+            rect.localScale = Vector3.one * Mathf.LerpUnclamped(0.5f, 1.0f, t);
+            rect.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(180, 0, t));
 
-                // 坐标插值
-                rect.anchoredPosition = Vector2.LerpUnclamped(startPos, finalPos, curveT);
+            yield return null;
+        }
 
-                // 缩放插值（从0.5倍爆出，最后带一点点回弹）
-                float scale = Mathf.LerpUnclamped(0.5f, 1.0f, curveT);
-                rect.localScale = Vector3.one * scale;
-
-                // 旋转动画（喷射时转个360度）
-                rect.localRotation = Quaternion.Euler(0, 0, Mathf.Lerp(180, 0, curveT));
-
-                yield return null;
-            }
-
-        // 落地反馈：微弱的屏幕震动
         if (ScreenEffectManager.Instance != null)
             ScreenEffectManager.Instance.TriggerShake(0.05f, 0.1f);
 
@@ -319,74 +354,83 @@ public class LootUIManager : MonoBehaviour
         rect.localScale = Vector3.one;
         rect.localRotation = Quaternion.identity;
     }
+
     // ==========================================
     // 核心交互：收下 / 粉碎 / 返回
     // ==========================================
     private void OnConfirmClicked()
     {
-        if (selectedItem != null)
+        Sprite iconToFly = null;
+        Vector3 startPos = Input.mousePosition;
+
+        // 寻找当前选中的格子位置
+        foreach (var slot in FixedItemSlots)
         {
-            // 1. 获取当前选中的格子视觉位置
-            Vector3 startPos = Input.mousePosition; // 默认位置
-
-            // 尝试获取精准的格子坐标
-            foreach (var slot in FixedItemSlots)
+            if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
             {
-                if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
-                {
-                    startPos = slot.transform.position;
-                    break;
-                }
+                startPos = slot.transform.position;
+                break;
             }
+        }
 
-            // 2. 触发飞行特效
-            if (JuicyLootEffectManager.Instance != null)
-            {
-                JuicyLootEffectManager.Instance.SpawnFlyEffect(selectedItem.BaseData.ComponentIcon, startPos);
-            }
-
-            // 3. 逻辑先行：数据入库（原有的逻辑保持不变）
-            PlayerInventoryManager.Instance.ComponentInventory.Add(selectedItem);
-            PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
-
-            Debug.Log($"【搜寻成功】获得了 Lv.{selectedItem.CurrentLevel} [{selectedItem.BaseData.ComponentName}]");
-
+        if (selectedChassis != null)
+        {
+            iconToFly = selectedChassis.BaseData.ChassisSprite;
+            PlayerInventoryManager.Instance.ChassisInventory.Add(selectedChassis);
+            Debug.Log($"【底盘入库】获得了 [{selectedChassis.BaseData.ChassisName}]");
             ConcludeTask();
         }
+        else if (selectedItem != null)
+        {
+            iconToFly = selectedItem.BaseData.ComponentIcon;
+            PlayerInventoryManager.Instance.ComponentInventory.Add(selectedItem);
+            Debug.Log($"【零件入库】获得了 Lv.{selectedItem.CurrentLevel} [{selectedItem.BaseData.ComponentName}]");
+            ConcludeTask();
+        }
+
+        if (iconToFly != null && JuicyLootEffectManager.Instance != null)
+        {
+            JuicyLootEffectManager.Instance.SpawnFlyEffect(iconToFly, startPos);
+        }
+
+        PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
     }
+
     private void OnSalvageClicked()
     {
-        if (selectedItem != null)
+        int scrapVal = 5;
+        Vector3 startPos = Input.mousePosition;
+
+        foreach (var slot in FixedItemSlots)
         {
-            var blueprint = selectedItem.BaseData;
-            var lvData = blueprint.GetLevelData(selectedItem.CurrentLevel);
-            int scrapVal = lvData != null ? lvData.ScrapValue : 5;
-
-            // --- 👇【核心新增】：触发喷涌动画 ---
-            if (JuicyLootEffectManager.Instance != null)
+            if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
             {
-                // 获取当前选中格子的位置
-                Vector3 startPos = Input.mousePosition;
-                foreach (var slot in FixedItemSlots)
-                {
-                    if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
-                    {
-                        startPos = slot.transform.position;
-                        break;
-                    }
-                }
-                JuicyLootEffectManager.Instance.SpawnScrapExplosion(startPos, scrapVal);
+                startPos = slot.transform.position;
+                break;
             }
-            // ----------------------------------
-
-            if (GlobalResourceManager.Instance != null) GlobalResourceManager.Instance.ModifyMaterials(scrapVal);
-            ConcludeTask();
         }
+
+        if (selectedChassis != null)
+        {
+            scrapVal = selectedChassis.BaseData.ScrapValue;
+        }
+        else if (selectedItem != null)
+        {
+            var lvData = selectedItem.BaseData.GetLevelData(selectedItem.CurrentLevel);
+            scrapVal = lvData != null ? lvData.ScrapValue : 5;
+        }
+
+        if (JuicyLootEffectManager.Instance != null)
+        {
+            JuicyLootEffectManager.Instance.SpawnScrapExplosion(startPos, scrapVal);
+        }
+
+        GlobalResourceManager.Instance?.ModifyMaterials(scrapVal);
+        ConcludeTask();
     }
 
     private void OnReturnClicked()
     {
-        // 啥也不干，只是切回上一个面板
         ItemPanel.SetActive(false);
         HubPanel.SetActive(true);
         RefreshHubUI();
@@ -394,7 +438,7 @@ public class LootUIManager : MonoBehaviour
 
     private void ConcludeTask()
     {
-        activeTask.IsClaimed = true; // 状态机锁死：已处理完毕
+        activeTask.IsClaimed = true;
         ItemPanel.SetActive(false);
         HubPanel.SetActive(true);
         RefreshHubUI();
@@ -403,19 +447,14 @@ public class LootUIManager : MonoBehaviour
     private void OnLeaveHubClicked()
     {
         CloseAllPanels();
-
-        // 🌟 确保在这里恢复正常音质
         MusicManager.Instance?.SetImmersionMode(false);
-
         if (onHubClosedCallback != null) onHubClosedCallback.Invoke();
     }
 
     private string TranslateTag(SubTag tag)
     {
-        // 可以在这里扩展你的翻译字典
         switch (tag)
         {
-            //通用
             case SubTag.StrongAcid: return "强酸";
             case SubTag.Melee: return "近战";
             case SubTag.Ranged: return "远程";
@@ -425,7 +464,6 @@ public class LootUIManager : MonoBehaviour
             case SubTag.Devotion: return "奉献";
             case SubTag.Smash: return "强击";
             case SubTag.Knockback: return "冲力";
-            //科技
             case SubTag.Wasteland: return "废土";
             case SubTag.Industry: return "工业";
             case SubTag.Firearms: return "枪械";
@@ -433,21 +471,16 @@ public class LootUIManager : MonoBehaviour
             case SubTag.Reload: return "装填";
             case SubTag.Kinetic: return "动能";
             case SubTag.Plasma: return "等离子";
-
-            //血肉
             case SubTag.Head: return "头颅";
             case SubTag.Organs: return "内脏";
             case SubTag.Limbs: return "四肢";
             case SubTag.Parasite: return "寄生";
             case SubTag.Pain: return "痛苦";
-
-            //魔法
             case SubTag.Artifact: return "遗物";
             case SubTag.Otherworld: return "异界";
             case SubTag.Mana: return "魔力";
             case SubTag.Chaos: return "混沌";
             case SubTag.Order: return "秩序";
-
             default: return tag.ToString();
         }
     }

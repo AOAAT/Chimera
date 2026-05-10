@@ -17,6 +17,6 @@ MonoBehaviour:
     ForceClaim: 1
     ComponentBlueprint: {fileID: 0}
     Level: 0
-    LootPool: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
+    LootPool: {fileID: 11400000, guid: d3e3295d92ed4ed4b92893656f7322bd, type: 2}
     ProtocolBuff: {fileID: 0}
     ProtocolDuration: 0

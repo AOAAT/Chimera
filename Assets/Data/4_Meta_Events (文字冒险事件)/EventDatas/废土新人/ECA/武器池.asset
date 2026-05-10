@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 287dab3adb3a63c4daacfde82844844c, type: 3}
+  m_Name: "\u6B66\u5668\u6C60"
+  m_EditorClassIdentifier: 
+  Tasks:
+  - Mode: 3
+    TripleChoiceProbability: 1
+    Weight_Lv1: 0
+    Weight_Lv2: 0
+    Weight_Lv3: 0
+    Weight_Lv4: 0
+    PoolSource: 0
+    CustomMacroMix: 
+    CustomSubTagMix: 
+    CustomPool:
+    - ComponentBlueprint: {fileID: 11400000, guid: 91ef5cfb3c19d7043866cf6d2e217b94, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 93c16bc94ac36474db8a871afb263af7, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+  - Mode: 3
+    TripleChoiceProbability: 1
+    Weight_Lv1: 0
+    Weight_Lv2: 0
+    Weight_Lv3: 0
+    Weight_Lv4: 0
+    PoolSource: 0
+    CustomMacroMix: 
+    CustomSubTagMix: 
+    CustomPool:
+    - ComponentBlueprint: {fileID: 11400000, guid: fdd713c4ae2586945b08b27b3c93ad3f, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: cfb41f70b3d02e24eb229d3541b01cc0, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0

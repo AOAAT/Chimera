@@ -29,7 +29,6 @@ public class LootSequenceDirector : MonoBehaviour
         if (nodeLoot != null) combinedConfigs.AddRange(nodeLoot.Tasks);
 
         // 2. 同类排序 (优先级：保底单抽 -> 盲盒 -> 自选标签 -> 定制极品)
-        // 巧妙利用 Enum 的底层 int 值 (0,1,2,3) 进行自然排序！
         combinedConfigs = combinedConfigs.OrderBy(t => (int)t.Mode).ToList();
 
         // 3. 包装成运行时状态机
@@ -53,48 +52,101 @@ public class LootSequenceDirector : MonoBehaviour
     {
         if (task.IsBoxOpened) return; // 已经开过光了，绝对不能再 Roll！
 
-        List<InstancedComponent> loot = new List<InstancedComponent>();
+        // 🌟 核心修改：清空旧数据，准备直接写入
+        task.GeneratedItems.Clear();
+        task.GeneratedChassis.Clear();
 
         switch (task.Config.Mode)
         {
             case LootDropMode.MacroCategorySingle:
-                var macros1 = GetTargetMacrosForTask(task.Config);
-                // 👇【修复点】：传入 task.Config 供底层读取权重
-                loot = GenerateLoot(c => macros1.Contains(c.MacroCategory), task.Config, currentDepthContext);
+                var macros = GetTargetMacrosForTask(task.Config);
+                task.GeneratedItems = GenerateLoot(c => macros.Contains(c.MacroCategory), task.Config, currentDepthContext);
                 break;
 
             case LootDropMode.SystemAssignedTag:
-                var pool2 = GetTagPoolForTask(task.Config);
-                if (pool2.Count > 0)
+                var tagPool = GetTagPoolForTask(task.Config);
+                if (tagPool.Count > 0)
                 {
-                    SubTag sysTag = pool2.OrderBy(x => Guid.NewGuid()).First();
-                    // 👇【修复点】：传入 task.Config
-                    loot = GenerateLoot(c => c.BaseSubTags.Contains(sysTag), task.Config, currentDepthContext);
+                    SubTag sysTag = tagPool[UnityEngine.Random.Range(0, tagPool.Count)];
+                    task.GeneratedItems = GenerateLoot(c => c.BaseSubTags.Contains(sysTag), task.Config, currentDepthContext);
                 }
                 break;
 
             case LootDropMode.PlayerDrivenFilter:
-                // 注意：走到这里时，玩家一定已经选好了标签，并存在了 LockedTag 里！
                 if (task.LockedTag.HasValue)
                 {
-                    // 👇【修复点】：传入 task.Config
-                    loot = GenerateLoot(c => c.BaseSubTags.Contains(task.LockedTag.Value), task.Config, currentDepthContext);
+                    task.GeneratedItems = GenerateLoot(c => c.BaseSubTags.Contains(task.LockedTag.Value), task.Config, currentDepthContext);
                 }
                 break;
 
             case LootDropMode.CustomPoolDrop:
-                loot = GenerateCustomLoot(task.Config.CustomPool, task.Config.TripleChoiceProbability);
+                // 🌟 核心修改：调用统一的自定义生成器，不再使用局部变量 loot
+                Internal_ExecuteCustomRoll(task);
                 break;
         }
 
-        // 锁死数据！
-        task.GeneratedItems = loot;
+        // 标记已开启
         task.IsBoxOpened = true;
-        Debug.Log($"【盲盒开启】生成了 {loot.Count} 个装备，数据已锁死！");
+
+        int totalCount = task.GeneratedItems.Count + task.GeneratedChassis.Count;
+        Debug.Log($"<color=green>【盲盒开启】</color> 模式:{task.Config.Mode} | 生成组件:{task.GeneratedItems.Count} | 生成底盘:{task.GeneratedChassis.Count}");
+    }
+    // ==========================================
+    // 专用逻辑：处理包含底盘的自定义奖励
+    private void Internal_ExecuteCustomRoll(ActiveLootTask task)
+    {
+        var pool = task.Config.CustomPool;
+        if (pool == null || pool.Count == 0) return;
+
+        // 1. 决定是单抽还是三选一
+        int targetCount = UnityEngine.Random.value <= task.Config.TripleChoiceProbability ? 3 : 1;
+
+        // 2. 随机抽取 Entry
+        var drawnEntries = pool.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
+
+        foreach (var entry in drawnEntries)
+        {
+            if (entry.ChassisBlueprint != null)
+            {
+                // 底盘：直接入库，无视等级
+                task.GeneratedChassis.Add(new InstancedChassis(entry.ChassisBlueprint));
+            }
+            else if (entry.ComponentBlueprint != null)
+            {
+                // 零件：读取 entry.Level，并增加防呆保护 (最小1级)
+                int safeLevel = Mathf.Max(1, entry.Level);
+                task.GeneratedItems.Add(new InstancedComponent(entry.ComponentBlueprint, safeLevel));
+
+                // Debug.Log($"[自定义掉落] 注入零件: {entry.ComponentBlueprint.ComponentName} | 等级: {safeLevel}");
+            }
+        }
+    }// ==========================================
+    private void GenerateCustomLoot(ActiveLootTask task)
+    {
+        var pool = task.Config.CustomPool;
+        if (pool == null || pool.Count == 0) return;
+
+        // 判定是单抽还是三选一
+        int targetCount = UnityEngine.Random.value <= task.Config.TripleChoiceProbability ? 3 : 1;
+        var drawnEntries = pool.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
+
+        foreach (var entry in drawnEntries)
+        {
+            if (entry.ChassisBlueprint != null)
+            {
+                // 核心：如果是底盘奖励，实例化底盘实体（无等级）
+                task.GeneratedChassis.Add(new InstancedChassis(entry.ChassisBlueprint));
+            }
+            else if (entry.ComponentBlueprint != null)
+            {
+                // 如果是组件奖励，按配置等级实例化
+                task.GeneratedItems.Add(new InstancedComponent(entry.ComponentBlueprint, entry.Level));
+            }
+        }
     }
 
     // ==========================================
-    // 辅助工具：提取候选标签池供 UI 展示
+    // 辅助工具与权重算法
     // ==========================================
     public List<SubTag> GetTagChoicesForTask(ActiveLootTask task, int count)
     {
@@ -102,7 +154,6 @@ public class LootSequenceDirector : MonoBehaviour
         return pool.OrderBy(x => Guid.NewGuid()).Take(count).ToList();
     }
 
-    // (以下是从旧代码复用的底层算法，保持不变)
     private List<SubTag> GetTagPoolForTask(LootTaskConfig task)
     {
         if (task.PoolSource == TagPoolSource.CustomSubTags) return task.CustomSubTagMix.Distinct().ToList();
@@ -119,7 +170,6 @@ public class LootSequenceDirector : MonoBehaviour
         return new List<MacroCategory> { currentMacroContext };
     }
 
-    // 👇 接收 task 参数，读取策划配的等级权重
     private List<InstancedComponent> GenerateLoot(Func<ComponentDataSO, bool> filter, LootTaskConfig task, int depth)
     {
         var validBps = PlayerInventoryManager.Instance.AllComponentDatabase.Where(filter).ToList();
@@ -128,19 +178,9 @@ public class LootSequenceDirector : MonoBehaviour
         int targetCount = UnityEngine.Random.value <= task.TripleChoiceProbability ? 3 : 1;
         var drawn = validBps.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
 
-        // 调用 RollLevel 时，把 task 传进去读权重
         return drawn.Select(bp => new InstancedComponent(bp, RollLevel(bp, task))).ToList();
     }
 
-    private List<InstancedComponent> GenerateCustomLoot(List<CustomDropEntry> customPool, float tripleProb)
-    {
-        if (customPool == null || customPool.Count == 0) return new List<InstancedComponent>();
-        int targetCount = UnityEngine.Random.value <= tripleProb ? 3 : 1;
-        var drawn = customPool.OrderBy(x => Guid.NewGuid()).Take(targetCount).ToList();
-        return drawn.Select(entry => new InstancedComponent(entry.Blueprint, entry.Level)).ToList();
-    }
-
-    // 核心：完全读取策划配置的等级权重！
     private int RollLevel(ComponentDataSO bp, LootTaskConfig task)
     {
         int w1 = task.Weight_Lv1;
@@ -148,13 +188,12 @@ public class LootSequenceDirector : MonoBehaviour
         int w3 = task.Weight_Lv3;
         int w4 = task.Weight_Lv4;
 
-        // 图纸防污染保护 (如果该图纸最低爆2级，清空1级权重)
         if (bp.MinDropLevel > 1) w1 = 0;
         if (bp.MinDropLevel > 2) w2 = 0;
         if (bp.MinDropLevel > 3) w3 = 0;
 
         int totalW = w1 + w2 + w3 + w4;
-        if (totalW <= 0) return bp.MinDropLevel; // 兜底
+        if (totalW <= 0) return bp.MinDropLevel;
 
         int roll = UnityEngine.Random.Range(0, totalW);
         if (roll < w1) return 1;
@@ -163,27 +202,10 @@ public class LootSequenceDirector : MonoBehaviour
         return 4;
     }
 
-    // --- 请在 LootSequenceDirector.cs 中追加以下方法 ---
-
     public void StartImmediateLoot(InstancedComponent item, System.Action onComplete = null)
     {
-        Debug.Log($"<color=#FFD700>【定向打捞】</color> 正在展示特定奖励: {item.BaseData.ComponentName}");
-
-        // 1. 构建一个临时的、运行时的任务数据
-        LootTaskConfig mockConfig = new LootTaskConfig
-        {
-            Mode = LootDropMode.CustomPoolDrop // 使用自定义模式，不进行随机 Roll
-        };
-
-        ActiveLootTask task = new ActiveLootTask
-        {
-            Config = mockConfig,
-            IsBoxOpened = true, // 强制标记为已开启，防止再次 Roll
-            GeneratedItems = new List<InstancedComponent> { item } // 塞入那件特定奖励
-        };
-
-        // 2. 包装成任务列表并开启 UI
-        List<ActiveLootTask> tasks = new List<ActiveLootTask> { task };
-        LootUIManager.Instance.OpenHub(tasks, onComplete);
+        LootTaskConfig mockConfig = new LootTaskConfig { Mode = LootDropMode.CustomPoolDrop };
+        ActiveLootTask task = new ActiveLootTask { Config = mockConfig, IsBoxOpened = true, GeneratedItems = new List<InstancedComponent> { item } };
+        LootUIManager.Instance.OpenHub(new List<ActiveLootTask> { task }, onComplete);
     }
 }
