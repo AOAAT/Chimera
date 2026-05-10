@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: MagazineControl
   m_EditorClassIdentifier: 
   MaxAmmo: 2
-  ReloadTime: 2
+  ReloadTime: 1.5

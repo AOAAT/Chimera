@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2224c867f6f08e1419f4e45d84d4644b, type: 3}
   m_Name: OpeningCrits
   m_EditorClassIdentifier: 
-  GuaranteedCount: 4
+  GuaranteedCount: 3
   ShardBreakVFX: {fileID: 0}

@@ -41,7 +41,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 8eb6ab21ffbced64a86b8718790898f9, type: 2}
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: 
+    SpecialMechanicDesc: "\u8BE5\u7EC4\u4EF6\u6240\u5C5E\u5947\u7F8E\u62C9\u4E0A\u6240\u642D\u8F7D\u7684\u6B66\u5668\u7684\u6700\u5927\u653B\u51FB\u529B\u63D0\u9AD815\uFF0C\u6700\u5C0F\u653B\u51FB\u529B\u51CF\u5C1110."
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

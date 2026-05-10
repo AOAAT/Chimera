@@ -52,37 +52,37 @@ public class RuntimeChimeraData
     public List<ECAAction> GlobalOnBattleStartActions = new List<ECAAction>();
     public bool CanFireWhileManualMoving = false;
     // --- RuntimeChimeraData.cs 逻辑加固版 ---
-
+    public Dictionary<ComponentDataSO, Dictionary<StatType, float>> ComponentLocalOffsets = new Dictionary<ComponentDataSO, Dictionary<StatType, float>>();
     public void Assemble(ChassisDataSO chassis, InstancedComponent[] components, Transform entityTransform = null)
     {
-        // 1. 初始化清空
+        // --- 1. 彻底肃清旧状态 ---
         GlobalOnFireActions.Clear();
         GlobalOnHitActions.Clear();
-        GlobalOnKillActions.Clear();
         GlobalOnBattleStartActions.Clear();
         AllEquippedSOs.Clear();
         GlobalStats.Clear();
-        Tags.Clear();
+        ComponentLocalOffsets.Clear(); // 清空原子修正字典
         EquippedWeapons.Clear();
+
         MaxHP = MaxAP = TotalPowerCost = TotalMass = TotalEnginePower = 0;
-        CoreActiveSkill = null;
+        this.ActiveChassisSO = chassis;
 
         if (chassis == null) return;
 
-
-        this.ActiveChassisSO = chassis;
-        // 2. 底盘基础登记
+        // --- 2. 阶段 A：基础数据登记 (注册阶段) ---
         UnitName = chassis.ChassisName;
         LogicCenterOffset = chassis.LogicCenterOffset;
+
+        // 登记底盘基础属性
         ProcessStats(chassis.BaseStats, false, null);
 
-        // 3. 第一遍循环：登记所有零件
+        // 循环登记零件基础属性
         foreach (var compInstance in components)
         {
             if (compInstance == null || compInstance.BaseData == null) continue;
 
             var compSO = compInstance.BaseData;
-            AllEquippedSOs.Add(compSO);
+            AllEquippedSOs.Add(compSO); // 关键：先加入列表，供后续积木扫描
 
             var levelData = compSO.GetLevelData(compInstance.CurrentLevel);
             if (levelData == null) continue;
@@ -93,6 +93,7 @@ public class RuntimeChimeraData
 
             if (compSO.Type == ComponentType.Weapon)
             {
+                // 🌟 核心修复：先创建 RuntimeWeapon 对象
                 RuntimeWeapon newWeapon = new RuntimeWeapon
                 {
                     WeaponName = compSO.ComponentName,
@@ -101,12 +102,14 @@ public class RuntimeChimeraData
                     DeliveryType = compSO.DeliveryType,
                     ProjectilePrefab = compSO.ProjectilePrefab
                 };
-                // 【判空保护】：OnHit/OnFire 列表可能为 null
+
                 if (levelData.OnHitActions != null) newWeapon.OnHitActions.AddRange(levelData.OnHitActions);
                 if (levelData.OnFireActions != null) newWeapon.OnFireActions.AddRange(levelData.OnFireActions);
 
-                ProcessStats(levelData.Stats, true, newWeapon);
                 EquippedWeapons.Add(newWeapon);
+
+                // 🌟 核心修复：传入刚创建好的 newWeapon 引用，防止 ProcessStats 内部报 NullRef
+                ProcessStats(levelData.Stats, true, newWeapon);
             }
             else
             {
@@ -117,10 +120,11 @@ public class RuntimeChimeraData
                     SafeDodgeDistance = compSO.SafeDodgeDistance;
                     CoreActiveSkill = levelData.ActiveSkill;
                 }
+                // 非武器组件，传入 null
                 ProcessStats(levelData.Stats, false, null);
             }
 
-            // 收集全局效果
+            // 收集非武器类组件的全局开火/命中/开战协议
             if (compSO.Type != ComponentType.Weapon)
             {
                 if (levelData.OnFireActions != null) GlobalOnFireActions.AddRange(levelData.OnFireActions);
@@ -129,28 +133,25 @@ public class RuntimeChimeraData
             }
         }
 
-        // 4. 第二遍循环：逻辑触发
-        // --- A. 底盘积木 (加固判空) ---
-        if (chassis.OnAssembleActions != null && chassis.OnAssembleActions.Count > 0)
+        // --- 3. 阶段 B：执行积木逻辑 (修正阶段) ---
+        // 此时 AllEquippedSOs 已经满了，底盘积木可以正常通过 ByMacro 扫描到科技/血肉件了
+
+        // A. 执行底盘积木
+        if (chassis.OnAssembleActions != null)
         {
             ECAContext chassisCtx = new ECAContext { ChassisData = this, SourceEntity = entityTransform };
             foreach (var action in chassis.OnAssembleActions)
                 if (action != null) action.Execute(chassisCtx);
         }
-
-        // 底盘开战协议
         if (chassis.OnBattleStartActions != null) GlobalOnBattleStartActions.AddRange(chassis.OnBattleStartActions);
 
-        // --- B. 零件积木 (加固判空) ---
+        // B. 执行零件积木
         foreach (var compInstance in components)
         {
             if (compInstance == null || compInstance.BaseData == null) continue;
-
             var levelData = compInstance.BaseData.GetLevelData(compInstance.CurrentLevel);
-            if (levelData == null) continue;
 
-            // 👇【核心报错修复点】：检查列表是否为 null
-            if (levelData.OnAssembleActions != null && levelData.OnAssembleActions.Count > 0)
+            if (levelData != null && levelData.OnAssembleActions != null && levelData.OnAssembleActions.Count > 0)
             {
                 ECAContext compCtx = new ECAContext
                 {
@@ -163,21 +164,57 @@ public class RuntimeChimeraData
             }
         }
 
+        // --- 4. 阶段 C：最终解算汇总 ---
         RefreshFinalStats();
     }
+
+
+    // 3. 属性修改入口：处理原子偏离
+    public void ModifyStat(ComponentDataSO targetSO, StatType stat, float delta)
+    {
+        // 如果是耗电量或武器属性，计入零件私有偏移
+        if (IsComponentSpecificStat(stat))
+        {
+            if (!ComponentLocalOffsets.ContainsKey(targetSO))
+                ComponentLocalOffsets.Add(targetSO, new Dictionary<StatType, float>());
+
+            if (ComponentLocalOffsets[targetSO].ContainsKey(stat))
+                ComponentLocalOffsets[targetSO][stat] += delta;
+            else
+                ComponentLocalOffsets[targetSO].Add(stat, delta);
+        }
+
+        // 无论什么属性，都同步到全局池中，确保总电量/总血量实时变动
+        if (GlobalStats.ContainsKey(stat)) GlobalStats[stat] += delta;
+        else GlobalStats.Add(stat, delta);
+
+        // 实时触发汇总刷新
+        RefreshFinalStats();
+    }
+
+    // --- RuntimeChimeraData.cs 内部方法 ---
 
     private void RefreshFinalStats()
     {
         MaxHP = GetGlobalStat(StatType.AddedHP);
         MaxAP = GetGlobalStat(StatType.AddedAP);
-        TotalPowerCost = GetGlobalStat(StatType.PowerCost);
         TotalMass = GetGlobalStat(StatType.AddedMass);
         TotalEnginePower = GetGlobalStat(StatType.EnginePower);
+
+        // 👈 核心恢复：总耗电量直接读取汇总后的 GlobalStats
+        TotalPowerCost = GetGlobalStat(StatType.PowerCost);
     }
-    private void RefreshStatCache()
+    private bool IsComponentSpecificStat(StatType type)
     {
-        cachedFlattenedStats.Clear();
-        foreach (StatType type in System.Enum.GetValues(typeof(StatType))) cachedFlattenedStats[type] = GetGlobalStat(type);
+        return type == StatType.MaxDamage ||
+               type == StatType.MinDamage ||
+               type == StatType.MaxRange ||
+               type == StatType.MinRange ||
+               type == StatType.AttackSpeed ||
+               type == StatType.CriticalChance ||
+               type == StatType.CritMultiplier ||
+               type == StatType.PowerCost || // 👈 【关键修改】：耗电量现在是原子的了
+               type == StatType.ProjectileSpeed;
     }
 
     private void ProcessStats(List<StatEntry> stats, bool isWeaponLocal, RuntimeWeapon weaponRef)
@@ -185,55 +222,28 @@ public class RuntimeChimeraData
         if (stats == null) return;
         foreach (var stat in stats)
         {
-            if (isWeaponLocal && IsWeaponSpecificStat(stat.StatID))
+            // 👇【核心加固】：只有当确定是武器属性，且武器引用确实存在时，才往私有池塞
+            if (isWeaponLocal && weaponRef != null && IsWeaponSpecificStat(stat.StatID))
             {
-                if (weaponRef.WeaponStats.ContainsKey(stat.StatID)) weaponRef.WeaponStats[stat.StatID] += stat.Value;
-                else weaponRef.WeaponStats.Add(stat.StatID, stat.Value);
+                if (weaponRef.WeaponStats.ContainsKey(stat.StatID))
+                    weaponRef.WeaponStats[stat.StatID] += stat.Value;
+                else
+                    weaponRef.WeaponStats.Add(stat.StatID, stat.Value);
             }
             else
             {
-                if (GlobalStats.ContainsKey(stat.StatID)) GlobalStats[stat.StatID] += stat.Value;
-                else GlobalStats.Add(stat.StatID, stat.Value);
+                // 其他所有情况（或者是武器的全局属性如 Mass, PowerCost），统一进入 Global 池
+                if (GlobalStats.ContainsKey(stat.StatID))
+                    GlobalStats[stat.StatID] += stat.Value;
+                else
+                    GlobalStats.Add(stat.StatID, stat.Value);
             }
         }
     }
 
-    public void ModifyStat(ComponentDataSO targetSO, StatType stat, float delta)
-    {
-        if (IsWeaponSpecificStat(stat))
-        {
-            foreach (var weapon in EquippedWeapons)
-            {
-                if (weapon.SourceSO == targetSO)
-                {
-                    if (weapon.WeaponStats.ContainsKey(stat)) weapon.WeaponStats[stat] += delta;
-                    else weapon.WeaponStats[stat] = delta;
 
-                    switch (stat)
-                    {
-                        case StatType.MinDamage: case StatType.MaxDamage: weapon.WeaponStats[stat] = Mathf.Max(0.1f, weapon.WeaponStats[stat]); break;
-                        case StatType.AttackSpeed: weapon.WeaponStats[stat] = Mathf.Max(1.0f, weapon.WeaponStats[stat]); break;
-                        case StatType.CriticalChance: weapon.WeaponStats[stat] = Mathf.Max(0f, weapon.WeaponStats[stat]); break;
-                        case StatType.MaxRange: weapon.WeaponStats[stat] = Mathf.Max(0.5f, weapon.WeaponStats[stat]); break;
-                        case StatType.CritMultiplier:
-                            // 暴击伤害倍率至少是 1.0 (即不加伤)，防止配置错误导致暴击反而没伤害
-                            weapon.WeaponStats[stat] = Mathf.Max(1.0f, weapon.WeaponStats[stat]);
-                            break;
-                    }
-                    return;
-                }
-            }
-        }
-        if (GlobalStats.ContainsKey(stat)) GlobalStats[stat] += delta;
-        else GlobalStats.Add(stat, delta);
-        switch (stat)
-        {
-            case StatType.AddedHP: MaxHP = Mathf.Max(1f, GetGlobalStat(StatType.AddedHP)); break;
-            case StatType.AddedAP: MaxAP = Mathf.Max(0f, GetGlobalStat(StatType.AddedAP)); break;
-            case StatType.PowerCost: TotalPowerCost = Mathf.Max(0f, GetGlobalStat(StatType.PowerCost)); break;
-            case StatType.AddedMass: TotalMass = Mathf.Max(0.1f, GetGlobalStat(StatType.AddedMass)); break;
-        }
-    }
+
+
 
     private bool IsWeaponSpecificStat(StatType type)
     {

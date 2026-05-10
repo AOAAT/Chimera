@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fe41f0a09cfc9744b8db966d8134079, type: 3}
   m_Name: ApplyTempMod
   m_EditorClassIdentifier: 
-  DamageMult: 2
-  CritChanceMult: 1
+  DamageMult: 1.5
+  CritChanceMult: 1.5

@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2957678fce0341b4cae6c96f24112dfa, type: 3}
   m_Name: BalanceScale
   m_EditorClassIdentifier: 
-  BonusAttackSpeed: 0
-  BonusCriticalChance: 0
+  BonusAttackSpeed: 50
+  BonusCriticalChance: 0.2

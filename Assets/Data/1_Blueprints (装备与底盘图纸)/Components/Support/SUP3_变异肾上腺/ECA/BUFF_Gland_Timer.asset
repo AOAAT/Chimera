@@ -22,11 +22,12 @@ MonoBehaviour:
   MaxStacks: 1
   StatModifiers: []
   OnApplyActions: []
-  TickInterval: 1
+  TickInterval: 5
   OnTickActions:
   - {fileID: 11400000, guid: f2b6bd306108b9f4baef844fa99f3fe0, type: 2}
   OnRemoveActions: []
   OnMaxStacksActions: []
+  OnHolderDeathActions: []
   OverrideAI: 0
   OverrideMovementLogic: 2
   OverrideSafeDodgeDistance: 8

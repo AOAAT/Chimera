@@ -17,12 +17,13 @@ MonoBehaviour:
   BuffIcon: {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
   ParticleColor: {r: 1, g: 1, b: 1, a: 1}
   DurationType: 1
-  BaseDuration: 5
+  BaseDuration: 3
   StackType: 0
   MaxStacks: 1
   StatModifiers:
   - StatID: 15
-    Value: 1000
+    Value: 200
+    ModType: 0
   OnApplyActions: []
   TickInterval: 1
   OnTickActions: []

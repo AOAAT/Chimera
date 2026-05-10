@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97c248c35ae7db14090b3c43aac4cbfd, type: 3}
   m_Name: L1_ChainsawCritMechanic
   m_EditorClassIdentifier: 
-  CritIncreasePerAttack: 0.02
+  CritIncreasePerAttack: 0.1

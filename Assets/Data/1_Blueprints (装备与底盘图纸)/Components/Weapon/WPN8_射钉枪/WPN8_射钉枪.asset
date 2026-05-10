@@ -44,7 +44,7 @@ MonoBehaviour:
       Value: 0
       ModType: 0
     - StatID: 15
-      Value: 200
+      Value: 150
       ModType: 0
     - StatID: 16
       Value: 0.1
@@ -60,7 +60,7 @@ MonoBehaviour:
     OnAssembleActions: []
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: 
+    SpecialMechanicDesc: "\u5BF9\u654C\u4EBA\u9020\u6210\u4F24\u5BB3\u7684\u540C\u65F6\uFF0C\u4F1A\u65BD\u52A0\u4E00\u5C42\u6C38\u4E45\u4E14\u53EF\u53E0\u52A0\u7684\u201C\u523A\u9489\u201Ddebuff\uFF0C\u6BCF\u53E0\u52A05\u5C42\uFF0C\u5C31\u4F1A\u6D88\u9664\u6240\u6709\u7684\u523A\u9489debuff\uFF0C\u5E76\u5BF9\u654C\u4EBA\u9020\u621050\u771F\u5B9E\u4F24\u5BB3"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

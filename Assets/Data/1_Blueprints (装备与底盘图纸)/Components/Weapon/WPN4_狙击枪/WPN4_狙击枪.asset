@@ -60,7 +60,7 @@ MonoBehaviour:
     OnAssembleActions: []
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: 
+    SpecialMechanicDesc: "\u4E00\u67AA\u4E00\u4E2A\u3002"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 

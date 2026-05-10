@@ -37,11 +37,11 @@ MonoBehaviour:
     - {fileID: 0}
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: 
+    SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u9A6C\u8D70\u65E5]\u5411\u76EE\u6807\u654C\u4EBA\u53D1\u52A8\u4E00\u6B21*\u51B2\u649E*\u3002\u6D88\u80173\u70B9\u9B54\u529B\uFF0C\u51B7\u5374\u65F6\u95F48\u79D2\u3002\u6CE8\uFF1A\u51B2\u649E\u4F1A\u4F9D\u636E\u5355\u4F4D\u7684\u8D28\u91CF\u548C\u901F\u5EA6\u5BF9\u81EA\u8EAB\u548C\u654C\u4EBA\u9020\u6210\u4F24\u5BB3\u3002"
     ActiveSkill:
       HasActiveSkill: 1
       SkillName: "\u9A6C\u8D70\u65E5"
-      SkillIcon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+      SkillIcon: {fileID: 21300000, guid: f20f08251c4a15f4ea83f456b746ba82, type: 3}
       CPCost: 3
       Cooldown: 8
       OnSkillCastActions:

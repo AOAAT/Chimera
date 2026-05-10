@@ -17,7 +17,7 @@ MonoBehaviour:
   ChassisSprite: {fileID: 21300000, guid: a8721178fa4c96341855b58be07c0c25, type: 3}
   DetailBackgroundSprite: {fileID: 0}
   Description: "\u8FD9\u56E2\u626D\u66F2\u7684\u8840\u8089\u6BCF\u6B21\u53D7\u4F24\u90FD\u4F1A\u53D1\u51FA\u75DB\u82E6\u7684\u54C0\u568E\uFF0C\u7531\u6B64\u5F97\u540D\u3002"
-  SpecialMechanicDesc: "\u6BCF\u4E2A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684*\u8840\u8089*\u7C7B\u578B\u7684\u7EC4\u4EF6\u90FD\u4F1A\u4E3A\u5355\u4F4D\u6574\u4F53\u63D0\u4F9B10\u70B9\u8840\u91CF\u52A0\u6210\u3002"
+  SpecialMechanicDesc: "\u6BCF\u4E2A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684*\u8840\u8089*\u7C7B\u578B\u7684\u7EC4\u4EF6\u90FD\u4F1A\u4E3A\u5355\u4F4D\u6574\u4F53\u63D0\u4F9B30\u70B9\u8840\u91CF\u52A0\u6210\u3002"
   MacroCategory: 1
   SubTags: 1300000014000000
   BaseStats:
@@ -25,7 +25,7 @@ MonoBehaviour:
     Value: 10
     ModType: 0
   - StatID: 0
-    Value: 100
+    Value: 200
     ModType: 0
   - StatID: 1
     Value: 50

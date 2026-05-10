@@ -40,7 +40,7 @@ MonoBehaviour:
     - {fileID: 0}
     OnBattleStartActions: []
     BonusTags: 
-    SpecialMechanicDesc: 
+    SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u5FC3\u80FD\u6C72\u53D6]\u6D88\u8017\u5F53\u524D\u7684\u6240\u6709CP\u503C\uFF0C\u5355\u4F4D\u83B7\u5F97\u6C38\u4E45\u4F24\u5BB3\u52A0\u6DF1buff\uFF0Cbuff\u5C42\u6570\u7B49\u540C\u4E8E\u6D88\u8017\u7684\u9B54\u529B\u503C\u7684\u4E00\u500D\u3002"
     ActiveSkill:
       HasActiveSkill: 1
       SkillName: "\u5FC3\u80FD\u6C72\u53D6"

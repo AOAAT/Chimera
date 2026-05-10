@@ -16,5 +16,5 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 4a00182dfcdd185408fdbd04b250f9c9, type: 3}
   - {fileID: 8300000, guid: 7a184232c31cbf24ebaa89509c6dd8d9, type: 3}
   CriticalClipsOverride: []
-  Volume: 0.1
+  Volume: 0.2
   PitchJitter: 0.1

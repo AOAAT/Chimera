@@ -25,10 +25,10 @@ MonoBehaviour:
     Value: 10
     ModType: 0
   - StatID: 0
-    Value: 100
+    Value: 200
     ModType: 0
   - StatID: 1
-    Value: 50
+    Value: 200
     ModType: 0
   BasePrice: 200
   ScrapValue: 50
@@ -61,4 +61,5 @@ MonoBehaviour:
     DefaultComponentScale: 1
   OnAssembleActions:
   - {fileID: 11400000, guid: 8b8eaf21db13a3c4f96cb403eee190dc, type: 2}
+  - {fileID: 11400000, guid: 6d5f842c8fac308409229d1fa7872034, type: 2}
   OnBattleStartActions: []
