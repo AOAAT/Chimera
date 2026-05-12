@@ -145,46 +145,41 @@ public class LinearLaserController : MonoBehaviour
 
     private void ExecuteCasting(float damageToApply)
     {
+        // 1. 扫描射线路径上的敌人
         int mask = originalContext.IsEnemyFire ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
-        RaycastHit2D[] hits = Physics2D.CircleCastAll(shooter.position, config.BeamWidth, lockDirection, finalRange, mask | LayerMask.GetMask("Default"));
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(shooter.position, config.BeamWidth, lockDirection, finalRange, mask);
 
         var sortedHits = hits.OrderBy(h => h.distance).ToList();
         int piercingCount = 0;
 
         foreach (var hit in sortedHits)
         {
-            if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Default"))
-            {
-                break;
-            }
-
             DamageReceiver dr = hit.collider.GetComponentInParent<DamageReceiver>();
             if (dr != null && piercingCount < config.MaxTargets)
             {
-                ECAContext hitCtx = new ECAContext
+                // 🌟 【ECA 2.0 核心】：不再在这里 TakeDamage
+                // 而是为激光照射到的每一个目标，分发一次命中管线
+
+                // 构造激光命中快照
+                ECAContext laserHitCtx = new ECAContext
                 {
-                    ImpactPoint = hit.point,
-                    PrimaryTarget = dr.transform,
                     SourceEntity = shooter,
+                    PrimaryTarget = dr.transform,
+                    ImpactPoint = hit.point,
                     SourceWeapon = originalContext.SourceWeapon,
                     BaseDamage = damageToApply * Mathf.Pow(config.PiercingDecay, piercingCount),
+                    IsCriticalHit = originalContext.IsCriticalHit,
                     IsEnemyFire = originalContext.IsEnemyFire,
-                    PiercingIndex = piercingCount,
-                    StrikeDirection = lockDirection
+                    TemporaryDamageModifier = originalContext.TemporaryDamageModifier // 继承激光原本的加成
                 };
 
-                if (onHitActions != null)
-                {
-                    foreach (var action in onHitActions)
-                    {
-                        if (action != null) action.Execute(hitCtx);
-                    }
-                }
+                // 呼叫武器的 OnHit 管线 (此时会自动触发 DealDamage 和 附魔效果)
+                originalContext.SourceWeapon.TriggerHitPipeline(dr.transform, hit.point, laserHitCtx);
+
                 piercingCount++;
             }
         }
     }
-
     private void RenderProceduralLine(Vector2 direction, float noise)
     {
         Vector3 start = shooter.position;

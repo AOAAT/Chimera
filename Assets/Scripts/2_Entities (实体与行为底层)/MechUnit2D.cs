@@ -49,19 +49,20 @@ public class MechUnit2D : MonoBehaviour
     }
     private void Update()
     {
-        // 只有在战斗激活，且机甲活着的时候才跳动
+        // 只有在战斗中且机甲存活时，才执行 ECA 周期管线
         if (CombatDirector.Instance == null || !CombatDirector.Instance.IsCombatActive) return;
         if (cachedCombatData == null || (GetComponent<DamageReceiver>()?.CurrentHP <= 0)) return;
 
-        // 构造一个每帧更新的上下文
+        // 💓 泵入心跳上下文
         ECAContext tickContext = new ECAContext
         {
             SourceEntity = this.transform,
             ChassisData = this.cachedCombatData,
-            ImpactPoint = this.transform.position
+            ImpactPoint = this.transform.position,
+            IsEnemyFire = GetComponent<DamageReceiver>().isEnemy
         };
 
-        // 💓 执行所有心跳积木
+        // 按优先级顺序执行所有在零件里配好的 OnTick 积木
         foreach (var action in cachedCombatData.GlobalOnTickActions)
         {
             if (action == null || tickContext.ExecutionAborted) break;
