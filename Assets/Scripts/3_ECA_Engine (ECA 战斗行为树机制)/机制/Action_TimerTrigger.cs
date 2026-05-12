@@ -25,10 +25,15 @@ public class Action_TimerTrigger : ECAAction
 
         if (context.CustomStates[timerKey] >= Interval)
         {
-            context.CustomStates[timerKey] = 0f; // 重置
+            context.CustomStates[timerKey] = 0f;
 
-            // 🚀 触发真正的行为 (如：大象腿冲撞、肾上腺素打针)
+            // 🌟 重点：在触发下一个积木（发射积木）之前，
+            // 必须确保 context 里的 SourceComponentSO 是正确的！
+            // 这样发射积木才知道去哪找逻辑代理。
+            // (注：由于 OnTick 是在组件循环里被加入列表的，我们通常已经在 context 里带了 source)
+
             ActionToExecute.Execute(context);
         }
+        //Debug.Log($"<color=lime>【心跳】</color> {context.SourceEntity.name} 的计时器进度: {context.CustomStates[timerKey]}");
     }
 }

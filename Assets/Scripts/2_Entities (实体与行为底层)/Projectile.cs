@@ -30,6 +30,7 @@ public class Projectile : MonoBehaviour
 
     // --- Projectile.cs 局部修改 ---
 
+    private float speedOverride = -1f;
 
     public void FireV2(ECAContext fireContext)
     {
@@ -47,7 +48,7 @@ public class Projectile : MonoBehaviour
         this.lastPosition = transform.position;
 
         float speedMult = CombatSandbox.GetSpeed(1f);
-        this.speed = (weaponData != null ? weaponData.GetStat(StatType.ProjectileSpeed) : 10f) * speedMult;
+        this.speed = (speedOverride > 0 ? speedOverride : (weaponData != null ? weaponData.GetStat(StatType.ProjectileSpeed) : 10f)) * speedMult;
 
         this.hasHit = false;
         this.lifeTimer = 5f;
@@ -129,36 +130,69 @@ public class Projectile : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
+
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
         if (receiver != null && shooter != null)
         {
+            // 永远不打自己
             if (receiver.transform == shooter || receiver.transform.IsChildOf(shooter)) return;
 
             bool isTargetEnemy = receiver.isEnemy;
-            // 🌟 核心逻辑：如果是奶弹(hitAllies)，则寻找同阵营；否则寻找敌对阵营
-            bool isValidHit = hitAllies ? (isEnemyFire == isTargetEnemy) : (isEnemyFire != isTargetEnemy);
 
-            if (isValidHit) HitTarget(receiver.transform);
+            // --- 👇【ECA 2.0 判定逻辑】---
+            bool isValidHit = false;
+
+            if (this.hitAllies) // 如果是奶弹
+            {
+                // 只有当目标的阵营 和 我方阵营 一致时，才判定为命中
+                isValidHit = (this.isEnemyFire == isTargetEnemy);
+            }
+            else // 如果是普通子弹
+            {
+                // 只有当目标的阵营 和 我方阵营 相反时，才判定为命中
+                isValidHit = (this.isEnemyFire != isTargetEnemy);
+            }
+            // ----------------------------
+
+            if (isValidHit)
+            {
+                HitTarget(receiver.transform);
+            }
         }
     }
     private void HitTarget(Transform actualHitTarget)
     {
         if (hasHit) return;
+
+        // 🌟【核心修复】：如果撞到的是射手本人，或者是射手的受击盒（子物体），直接穿透，不判定为命中
+        if (actualHitTarget == shooter || (shooter != null && actualHitTarget.IsChildOf(shooter)))
+        {
+            return;
+        }
+
         hasHit = true;
+
+        // 调试日志：确认真正命中了有效目标
+        Debug.Log($"<color=cyan>【子弹-撞击】</color> 有效命中: {actualHitTarget.name} | 奶弹模式: {this.hitAllies}");
 
         if (weaponData != null && capturedContext != null)
         {
-            // 🌟 【ECA 2.0 核心】：不再直接 TakeDamage
-            // 而是将控制权交还给武器的“命中管线”
+            // 将控制权交还给所属零件的 OnHit 管线
             weaponData.TriggerHitPipeline(actualHitTarget, transform.position, capturedContext);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=orange>【子弹-警告】</color> 命中后无法分发管线，缺少上下文。");
         }
 
         DespawnMe();
     }
-
     private void DespawnMe()
     {
         if (myPrefabSource != null) SimplePool.Despawn(myPrefabSource, gameObject);
         else Destroy(gameObject);
     }
+
+    public void SetSpeedOverride(float s) => speedOverride = s;
+
 }

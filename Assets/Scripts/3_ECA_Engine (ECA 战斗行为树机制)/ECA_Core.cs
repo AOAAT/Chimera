@@ -37,17 +37,20 @@ public class ECAContext
     public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
 }
 
+// --- ECA_Core.cs (基类部分) ---
 public abstract class ECAAction : ScriptableObject
 {
-    [Header("=== ECA 2.0 优先级 (小值先行) ===")]
+    [Header("=== ECA 2.0 优先级 ===")]
     public int Priority = 200;
 
-    public abstract void Execute(ECAContext context);
+    // --- 👇【核心新增】：契约配置数据 ---
+    [HideInInspector] public bool IsAccessory = false; // 是否作为配件使用
 
-    [Header("=== 配件注入契约 (Injection Contract) ===")]
-    public ComponentType AllowedComponentTypes = ComponentType.Weapon; // 只能装在武器上？
-    public WeaponDeliveryType RequiredDelivery = WeaponDeliveryType.Ranged; // 必须是远程？
-    public List<SubTag> RequiredTags = new List<SubTag>(); // 必须有[动能]标签？
+    [HideInInspector] public ComponentType AllowedComponentType = ComponentType.Weapon;
+    [HideInInspector] public WeaponDeliveryType RequiredDelivery = WeaponDeliveryType.Ranged;
+    [HideInInspector] public List<SubTag> RequiredTags = new List<SubTag>();
+    public Dictionary<string, float> CustomStates;
+    public abstract void Execute(ECAContext context);
 }
 
 // ==========================================

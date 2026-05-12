@@ -1,68 +1,80 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿// --- Action_FireFriendlyProjectile_V2.cs (增加速度控制) ---
+using UnityEngine;
 using System.Linq;
 
-[CreateAssetMenu(fileName = "FireFriendlyProjectile", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 发射友方增益弹")]
+[CreateAssetMenu(fileName = "FireFriendlyProjectile", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 发射友方增益弹 V2")]
 public class Action_FireFriendlyProjectile : ECAAction
 {
-    [Header("=== 核心配置 ===")]
+    [Header("=== 发射配置 ===")]
     public GameObject ProjectilePrefab;
     public float Range = 10f;
+
+    // 👇【核心新增】：允许直接在积木里设置子弹速度
     public float ProjectileSpeed = 15f;
 
-    [Header("=== 效果配置 ===")]
-    public BuffDataSO BuffToApply;
+    public Action_FireFriendlyProjectile() { Priority = 200; }
+
+    // --- Action_FireFriendlyProjectile.cs ---
 
     public override void Execute(ECAContext context)
     {
-        if (context.SourceEntity == null || ProjectilePrefab == null || BuffToApply == null) return;
+        if (context.SourceEntity == null || ProjectilePrefab == null) return;
 
+        // 1. 获取队友并根据距离排序
+        var allies = context.IsEnemyFire ? CombatDirector.ActiveEnemies : CombatDirector.ActivePlayerUnits;
         float realRange = CombatSandbox.GetDist(Range);
 
-        // 【核心修复】：重新定义“谁是我的队友”
-        // 如果我是敌机（IsEnemyFire = true），那我的队友列表就是 ActiveEnemies
-        // 如果我是玩家机甲，我的队友就是 ActivePlayerUnits
-        var allies = context.IsEnemyFire ? CombatDirector.ActiveEnemies : CombatDirector.ActivePlayerUnits;
+        var target = allies
+            .Where(a => a != null && a.CurrentHP > 0 && a.transform != context.SourceEntity)
+            .Where(a => Vector3.Distance(context.SourceEntity.position, a.transform.position) <= realRange)
+            .OrderBy(a => Vector3.Distance(context.SourceEntity.position, a.transform.position))
+            .FirstOrDefault();
 
-        var validTargets = allies.Where(a =>
-            a != null &&
-            a.CurrentHP > 0 &&
-            a.transform != context.SourceEntity &&
-            Vector3.Distance(context.SourceEntity.position, a.transform.position) <= realRange
-        ).ToList();
-
-        if (validTargets.Count == 0)
+        // 👇 探测点：如果搜不到人，报出当前阵营和范围
+        if (target == null)
         {
-            // Debug.Log($"[{context.SourceEntity.name}] 附近没有队友，取消增益弹发射。");
+            Debug.LogWarning($"<color=yellow>【肾上腺-搜寻失败】</color> 阵营:{(context.IsEnemyFire ? "怪" : "玩家")} | 搜索人数:{allies.Count} | 半径:{realRange}。附近没有活着的队友！");
             return;
         }
-        // 2. 随机抽取一个队友
-        DamageReceiver target = validTargets[Random.Range(0, validTargets.Count)];
 
-        // 3. 构造“针管”专用虚拟武器数据
-        RuntimeWeapon needleWeapon = new RuntimeWeapon
+        // 2. 逻辑代理回查
+        RuntimeWeapon myRuntimeModule = null;
+        if (context.ChassisData != null && context.SourceComponentSO != null)
         {
-            WeaponName = "肾上腺注射器",
-            ProjectilePrefab = this.ProjectilePrefab
+            context.ChassisData.ComponentToRuntimeMap.TryGetValue(context.SourceComponentSO, out myRuntimeModule);
+        }
+
+        if (myRuntimeModule == null)
+        {
+            Debug.LogError($"<color=red>【肾上腺-代理丢失】</color> 无法找到零件 [{context.SourceComponentSO.ComponentName}] 的逻辑代理！");
+            return;
+        }
+
+        // 3. 计算物理参数
+        Vector2 fireDir = (target.transform.position - context.SourceEntity.position).normalized;
+        Vector3 spawnPos = context.SourceEntity.position + (Vector3)fireDir * 0.8f;
+        float angle = Mathf.Atan2(fireDir.y, fireDir.x) * Mathf.Rad2Deg;
+
+        ECAContext projectileCtx = new ECAContext
+        {
+            SourceEntity = context.SourceEntity,
+            PrimaryTarget = target.transform,
+            ImpactPoint = spawnPos,
+            SourceWeapon = myRuntimeModule,
+            ChassisData = context.ChassisData,
+            IsEnemyFire = context.IsEnemyFire,
+            HitAllies = true,
+            CustomStates = context.CustomStates
         };
-        needleWeapon.WeaponStats[StatType.ProjectileSpeed] = ProjectileSpeed;
 
-        // 给这发子弹注入“命中即上Buff”的逻辑积木
-        Action_ApplyBuffUniversal applyAction = ScriptableObject.CreateInstance<Action_ApplyBuffUniversal>();
-        applyAction.BuffToApply = this.BuffToApply;
-        applyAction.TargetMode = BuffTargetMode.Single;
-        needleWeapon.OnHitActions.Add(applyAction);
-
-        // 4. 正式发射
-        GameObject projObj = SimplePool.Spawn(ProjectilePrefab, context.SourceEntity.position, Quaternion.identity);
+        GameObject projObj = SimplePool.Spawn(ProjectilePrefab, spawnPos, Quaternion.AngleAxis(angle, Vector3.forward));
         Projectile pScript = projObj.GetComponent<Projectile>();
-        Debug.Log($"<color=#00FF00>【异变肾上腺】</color> 锁定队友 {target.name}，发射强效针剂！");
+
         if (pScript != null)
         {
-            // 👇【核心修复】：设置 HitAllies 标记
-            context.HitAllies = true;
-            context.PrimaryTarget = target.transform;
-            pScript.FireV2(context);
+            pScript.SetSpeedOverride(ProjectileSpeed);
+            pScript.FireV2(projectileCtx);
+            Debug.Log($"<color=#00FF00>【肾上腺-发射成功】</color> 目标:{target.name} | 子弹速度:{ProjectileSpeed}");
         }
     }
 }

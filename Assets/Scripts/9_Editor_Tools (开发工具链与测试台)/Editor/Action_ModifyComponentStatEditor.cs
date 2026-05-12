@@ -17,6 +17,12 @@ public class Action_ModifyComponentStatEditor : Editor
         EditorGUILayout.HelpBox("小值先行。例：闸门 0-99，修正 100-199，发射 200。", MessageType.None);
         EditorGUILayout.EndVertical();
         EditorGUILayout.Space();
+        // --- 2. 👇【核心新增】：配件契约折叠区 ---
+        RenderAccessoryContract();
+
+        EditorGUILayout.Space();
+
+
         // 1. 绘制目标过滤
         EditorGUILayout.LabelField("修改谁？", EditorStyles.boldLabel);
         SerializedProperty filterProp = serializedObject.FindProperty("Filter");
@@ -62,5 +68,34 @@ public class Action_ModifyComponentStatEditor : Editor
         }
         serializedObject.ApplyModifiedProperties();
     }
+
+    private void RenderAccessoryContract()
+    {
+        SerializedProperty isAccProp = serializedObject.FindProperty("IsAccessory");
+
+        EditorGUILayout.BeginVertical("helpbox");
+
+        // 核心勾选框
+        isAccProp.boolValue = EditorGUILayout.ToggleLeft(" 🛠️ 作为附魔配件使用 (开启注入契约)", isAccProp.boolValue, EditorStyles.boldLabel);
+
+        if (isAccProp.boolValue)
+        {
+            EditorGUILayout.Space(5);
+            EditorGUI.indentLevel++;
+
+            EditorGUILayout.LabelField("注入准入条件：", EditorStyles.miniBoldLabel);
+
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("AllowedComponentType"), new GUIContent("限定组件大类"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("RequiredDelivery"), new GUIContent("限定投递方式"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("RequiredTags"), new GUIContent("必需标签 (Any)"), true);
+
+            EditorGUILayout.HelpBox("只有完全满足上述条件的零件插槽，才能装配此积木。", MessageType.Info);
+
+            EditorGUI.indentLevel--;
+        }
+
+        EditorGUILayout.EndVertical();
+    }
 }
+
 #endif

@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79fb6de9a3b07c243ada44a32898984e, type: 3}
+  m_Name: "\u7CBE\u82F1\u654C\u4EBA\u6D4B\u8BD5 3"
+  m_EditorClassIdentifier: 
+  Archetype: 1
+  EnemyID: ENM_011
+  EnemyName: "\u7CBE\u82F11"
+  Description: "\u654C\u4EBA\u98CE\u5473\u63CF\u8FF0..."
+  EnemySprite: {fileID: 0}
+  AnimController: {fileID: 0}
+  Chassis: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
+  Components:
+  - {fileID: 11400000, guid: 56f16421136b3de4eac516be9bd4a0c5, type: 2}
+  - {fileID: 11400000, guid: 383b00d390eab144489877dc1c723224, type: 2}
+  - {fileID: 11400000, guid: 54cc2028646d9214b899fd6258e34f69, type: 2}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: a36b01428b40c82458828f346f715996, type: 2}
+  EliteComponentLevel: 1
+  MovementLogic: 0
+  TargetingLogic: 1
+  StopDistance: 0.5
+  HoverDistance: 5
+  BaseStats: []
+  SanPenalties: []
+  VisualScaleMultiplier: 1
+  OverrideShadow: 0
+  ShadowOffset: {x: 0, y: -0.8}
+  ShadowWidth: 1.5
+  ShadowHeight: 0.5
+  Skills: []
+  OnSpawnActions: []
+  OnDeathActions: []
+  OnTakeDamageActions: []
+  CorpseLingerTime: 5
+  FadeDuration: 1.5

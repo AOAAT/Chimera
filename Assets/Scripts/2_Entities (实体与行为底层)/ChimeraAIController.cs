@@ -293,6 +293,7 @@ public class ChimeraAIController : MonoBehaviour
             }
         }
         rb.drag = 0.5f; rb.velocity = velocity;
+        Debug.Log($"<color=cyan>【物理反馈】</color> 执行冲刺，速度: {rb.velocity.magnitude}");
     }
 
     private void OnCollisionEnter2D(Collision2D col)

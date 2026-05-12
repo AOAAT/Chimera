@@ -251,7 +251,8 @@ public class WeaponModule : MonoBehaviour
             IsEnemyFire = IAmEnemy, // 【修复】：不再是 false，而是跟随机甲阵营
             SourceEntity = mechRoot,
             TemporaryCritModifier = 1.0f,
-            TemporaryDamageModifier = 1.0f
+            TemporaryDamageModifier = 1.0f,
+             CustomStates = weaponData.CustomStates
         };
 
         if (weaponData.OnFireActions != null) foreach (var a in weaponData.OnFireActions) { if (a != null) a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }

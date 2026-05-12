@@ -47,29 +47,47 @@ public class MechUnit2D : MonoBehaviour
         if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
         sg.sortingLayerName = SortingLayerName;
     }
+    // --- MechUnit2D.cs 必须包含此 Update 方法 ---
     private void Update()
     {
-        // 只有在战斗中且机甲存活时，才执行 ECA 周期管线
+        // 只有在战斗激活且机甲存活时才跳动
         if (CombatDirector.Instance == null || !CombatDirector.Instance.IsCombatActive) return;
-        if (cachedCombatData == null || (GetComponent<DamageReceiver>()?.CurrentHP <= 0)) return;
 
-        // 💓 泵入心跳上下文
-        ECAContext tickContext = new ECAContext
-        {
-            SourceEntity = this.transform,
-            ChassisData = this.cachedCombatData,
-            ImpactPoint = this.transform.position,
-            IsEnemyFire = GetComponent<DamageReceiver>().isEnemy
-        };
+        var receiver = GetComponent<DamageReceiver>();
+        if (cachedCombatData == null || (receiver != null && receiver.CurrentHP <= 0)) return;
 
-        // 按优先级顺序执行所有在零件里配好的 OnTick 积木
-        foreach (var action in cachedCombatData.GlobalOnTickActions)
+        // 🌟【核心修复】：遍历映射表，确保每个零件的心跳都有明确的身份记录
+        foreach (var kvp in cachedCombatData.ComponentToRuntimeMap)
         {
-            if (action == null || tickContext.ExecutionAborted) break;
-            action.Execute(tickContext);
+            ComponentDataSO compSO = kvp.Key;
+            RuntimeWeapon runtimeProxy = kvp.Value;
+
+            // 如果这个零件根本没有配心跳积木，直接跳过，节省性能
+            if (runtimeProxy.OnTickActions == null || runtimeProxy.OnTickActions.Count == 0) continue;
+
+            // 构造带有精准身份的上下文
+            ECAContext tickContext = new ECAContext
+            {
+                SourceEntity = this.transform,
+                ChassisData = this.cachedCombatData,
+                SourceComponentSO = compSO,      // 👈 关键身份：解决后续积木找代理时的 NullRef
+                SourceWeapon = runtimeProxy,     // 关键引用
+                ImpactPoint = this.transform.position,
+                IsEnemyFire = receiver.isEnemy,
+                CustomStates = this.cachedCombatData.PersistentStates
+            };
+
+            // 按优先级顺序执行该零件下的所有心跳动作
+            foreach (var action in runtimeProxy.OnTickActions)
+            {
+                if (action == null || tickContext.ExecutionAborted) break;
+                action.Execute(tickContext);
+            }
         }
     }
 
+    // 辅助方法：确保从实例中抓取正确的等级数据（此处为示意，建议在 RuntimeData 中缓存 Level）
+    private int compInstance_Level_Placeholder(ComponentDataSO so) => 1;
     // ==========================================
     // 🚀 入口 A：玩家机甲初始化
     // ==========================================

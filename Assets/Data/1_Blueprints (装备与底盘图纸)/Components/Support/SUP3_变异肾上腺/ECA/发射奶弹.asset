@@ -10,9 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c6ad5e20e8a0cbe4f955440b247d8b31, type: 3}
-  m_Name: FireFriendlyProjectile
+  m_Name: "\u53D1\u5C04\u5976\u5F39"
   m_EditorClassIdentifier: 
-  ProjectilePrefab: {fileID: 5847406748405371688, guid: bb397546b3df4904ca6646c4c4563a63, type: 3}
+  Priority: 310
+  IsAccessory: 0
+  AllowedComponentType: 1
+  RequiredDelivery: 1
+  RequiredTags: 
+  ProjectilePrefab: {fileID: 5847406748405371688, guid: 3aae2cc64182af0488f24bad8818f73a, type: 3}
   Range: 1000
   ProjectileSpeed: 100
-  BuffToApply: {fileID: 11400000, guid: 10988944664d1d34fb9c7b0c2f881580, type: 2}

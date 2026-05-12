@@ -10,9 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b9b3e1eb3829f646a4d78eeaf9cd2f5, type: 3}
-  m_Name: "ApplyBuff_\u80BE\u4E0A\u817A"
+  m_Name: "\u65BD\u52A0\u653B\u901Fbuff"
   m_EditorClassIdentifier: 
-  BuffToApply: {fileID: 11400000, guid: b503f435e44cf834ab020c3f2b780026, type: 2}
+  Priority: 200
+  IsAccessory: 0
+  AllowedComponentType: 1
+  RequiredDelivery: 1
+  RequiredTags: 
+  BuffToApply: {fileID: 11400000, guid: 10988944664d1d34fb9c7b0c2f881580, type: 2}
   Stacks: 1
   TargetMode: 0
   CenterType: 0
