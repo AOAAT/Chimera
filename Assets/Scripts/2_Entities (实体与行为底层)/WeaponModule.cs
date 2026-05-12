@@ -256,63 +256,45 @@ public class WeaponModule : MonoBehaviour
 
         if (weaponData.OnFireActions != null) foreach (var a in weaponData.OnFireActions) { if (a != null) a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
         if (ownerData != null && ownerData.GlobalOnFireActions != null) foreach (var a in ownerData.GlobalOnFireActions) { if (a != null) a.Execute(fireContext); if (fireContext.ExecutionAborted) return; }
-
+        if (fireContext.IsHandledByCustomDelivery)
+        {
+            // Debug.Log($"[{weaponData.WeaponName}] 发射权已被特殊积木接管，不再生成默认载荷。");
+            return;
+        }
         // --- 阶段 B：分发管线 ---
         foreach (var target in currentMultiTargets)
         {
             if (target == null) continue;
 
-            // 再次随机独立伤害（确保多目标不共用同一个数值）
-            float baseDmg = Random.Range(seedMin, seedMax);
-            float critChance = (GetFinalWeaponStat(StatType.CriticalChance) + weaponData.BonusCriticalChance) * fireContext.TemporaryCritModifier;
-            bool isCrit = Random.value <= critChance;
-
-            float damageToDeliver = baseDmg * fireContext.TemporaryDamageModifier;
-            if (isCrit)
-            {
-                float critMult = GetFinalWeaponStat(StatType.CritMultiplier);
-                if (critMult <= 1.0f) critMult = 2.0f; // 1.5保底
-                damageToDeliver *= critMult;
-            }
-
-            ECAContext hitContext = new ECAContext
-            {
-                ImpactPoint = (weaponData.DeliveryType == WeaponDeliveryType.Melee) ? target.position : muzzlePoint.position,
-                PrimaryTarget = target,
-                BaseDamage = damageToDeliver,
-                SourceWeapon = weaponData,
-                ChassisData = ownerData,
-                IsEnemyFire = false,
-                SourceEntity = mechRoot,
-                IsCriticalHit = isCrit
-            };
             if (weaponData.DeliveryType == WeaponDeliveryType.Ranged)
             {
-                GameObject projObj = SimplePool.Spawn(weaponData.ProjectilePrefab, muzzlePoint.position, actualHinge.rotation);
+                // --- 👇【核心重构点】：使用 FireV2 发射 ---
+
+                // A. 计算指向目标的角度
+                Vector2 dir = (target.position - muzzlePoint.position).normalized;
+                float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+
+                // B. 从对象池生成子弹
+                GameObject projObj = SimplePool.Spawn(weaponData.ProjectilePrefab, muzzlePoint.position, rotation);
                 Projectile pScript = projObj.GetComponent<Projectile>();
+
                 if (pScript != null)
                 {
-                    pScript.Fire(
-                        target,
-                        damageToDeliver,
-                        weaponData,
-                        ownerData,
-                        this.mechRoot,
-                        IAmEnemy,
-                        isCrit,
-                        0,
-                        false,
-                        weaponData.ProjectilePrefab // 👈 传这个用于对象池归还
-                    );
+                    // 🌟 关键：调用 FireV2，把我们刚算好的 fireContext 传进去
+                    pScript.FireV2(fireContext);
                 }
+                // ------------------------------------------
             }
             else
             {
-                if (weaponData.OnHitActions != null) foreach (var a in weaponData.OnHitActions) if (a != null) a.Execute(hitContext);
-                if (ownerData != null && ownerData.GlobalOnHitActions != null) foreach (var a in ownerData.GlobalOnHitActions) if (a != null) a.Execute(hitContext);
+                // 近战逻辑：直接触发命中管线
+                weaponData.TriggerHitPipeline(target, target.position, fireContext);
             }
         }
     }
+
+
 
     private void InitiateAttack(Transform target)
     {

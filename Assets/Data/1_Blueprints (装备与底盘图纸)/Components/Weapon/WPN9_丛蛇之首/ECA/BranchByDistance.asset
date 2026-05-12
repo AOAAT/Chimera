@@ -12,10 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b34868e917c5460419524feb3bbdf5c9, type: 3}
   m_Name: BranchByDistance
   m_EditorClassIdentifier: 
+  Priority: 200
   ThresholdDistance: 30
   NearActions:
   - {fileID: 11400000, guid: e4c5e68f0a117c4438eed5afdb8aea4d, type: 2}
-  - {fileID: 11400000, guid: 10af810592a1b2b44a0a3a734b2b11a7, type: 2}
   FarActions:
   - {fileID: 11400000, guid: c1ff5822657ee5943a52a112f227c74a, type: 2}
-  - {fileID: 11400000, guid: 10af810592a1b2b44a0a3a734b2b11a7, type: 2}

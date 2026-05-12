@@ -1,46 +1,53 @@
-﻿using UnityEngine;
+﻿// --- ECA_Core.cs (全量兼容版) ---
+using UnityEngine;
 using System.Collections.Generic;
 
-// ==========================================
-// 1. ECA 通讯上下文 (全功能集成版)
-// ==========================================
 public class ECAContext
 {
-    // --- 基础战斗数据 ---
+    // --- 1. 基础战斗数据 (旧脚本强依赖) ---
     public Vector3 ImpactPoint;
     public Transform PrimaryTarget;
     public float BaseDamage;
     public RuntimeWeapon SourceWeapon;
-    public bool IsCriticalHit;
+    public bool IsCriticalHit;          // 确保名字和旧版完全一致
     public RuntimeChimeraData ChassisData;
     public ComponentDataSO SourceComponentSO;
     public bool IsEnemyFire;
     public Transform SourceEntity;
 
-    // --- 逻辑控制 ---
+    // --- 2. 逻辑控制 (2.0 新增) ---
     public bool ExecutionAborted = false;
+    public bool IsHandledByCustomDelivery = false;
     public float TemporaryCritModifier = 1.0f;
     public float TemporaryDamageModifier = 1.0f;
+    public int KillCountThisAction = 0;
 
-    // --- 👇【系统化扩展 A】：线性穿透参数 (用于凝望者/轨道炮) ---
+    // --- 3. 物理与特殊参数 (兼容旧积木) ---
     public int PiercingIndex = 0;
     public Vector2 StrikeDirection;
+    public float ImpactVelocity;
+    public float ImpactMass;
+    public Vector2 ImpactNormal;
+    public int Generation = 0;
 
-    // --- 👇【系统化扩展 B】：动能物理参数 (用于牛牛/冲撞) ---
-    public float ImpactVelocity;         // 碰撞瞬间的相对速度
-    public float ImpactMass;             // 发动者的质量
-    public Vector2 ImpactNormal;         // 碰撞法线
+    // 👇【核心新增】：支持奶弹等友军判定
+    public bool HitAllies = false;
 
-    // --- 通讯字典 ---
+    // --- 4. 通讯字典 ---
     public Dictionary<string, float> CustomStates = new Dictionary<string, float>();
 }
 
-// ==========================================
-// 2. ECA 行为基类
-// ==========================================
 public abstract class ECAAction : ScriptableObject
 {
+    [Header("=== ECA 2.0 优先级 (小值先行) ===")]
+    public int Priority = 200;
+
     public abstract void Execute(ECAContext context);
+
+    [Header("=== 配件注入契约 (Injection Contract) ===")]
+    public ComponentType AllowedComponentTypes = ComponentType.Weapon; // 只能装在武器上？
+    public WeaponDeliveryType RequiredDelivery = WeaponDeliveryType.Ranged; // 必须是远程？
+    public List<SubTag> RequiredTags = new List<SubTag>(); // 必须有[动能]标签？
 }
 
 // ==========================================

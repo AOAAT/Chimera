@@ -68,6 +68,9 @@ public class ComponentDataSO : ScriptableObject
     public MovementStrategy MovementLogic = MovementStrategy.Active_Firepower;
     public float SafeDodgeDistance = 8f;
 
+    [Header("=== 插槽性能 (Srength Lever) ===")]
+    public int MaxSocketCount = 2; // 该型号组件天生带几个孔
+
     public ComponentLevelData GetLevelData(int level)
     {
         var data = LevelMatrix.Find(x => x.Level == level);

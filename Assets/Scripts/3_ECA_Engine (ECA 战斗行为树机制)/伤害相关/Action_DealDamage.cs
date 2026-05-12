@@ -1,27 +1,31 @@
-﻿using UnityEngine;
+﻿// --- Action_DealDamage.cs ---
+using UnityEngine;
 
-[CreateAssetMenu(fileName = "Action_DealDamage", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 造成单体伤害")]
+[CreateAssetMenu(fileName = "NewDealDamage", menuName = "Chimera Protocol/2. ECA 机制积木/结算 - 最终伤害扣除")]
 public class Action_DealDamage : ECAAction
 {
-    [Range(0f, 5f)] public float DamageMultiplier = 1.0f;
     public bool IsTrueDamage = false;
+
+    public Action_DealDamage() { Priority = 300; } // 强制设定结算优先级
 
     public override void Execute(ECAContext context)
     {
         if (context.PrimaryTarget == null) return;
 
         DamageReceiver receiver = context.PrimaryTarget.GetComponentInParent<DamageReceiver>();
-        if (receiver != null)
+        if (receiver != null && receiver.CurrentHP > 0)
         {
-            // --- 👇【关键修复点】：将 context 的临时倍率乘进去 ---
-            float finalDamage = context.BaseDamage * this.DamageMultiplier * context.TemporaryDamageModifier;
+            // 🌟 核心：读取所有积木叠加后的最终倍率
+            float finalDmg = context.BaseDamage * context.TemporaryDamageModifier;
 
-            string wpnName = context.SourceWeapon != null ? context.SourceWeapon.WeaponName : "未知来源";
+            float hpBefore = receiver.CurrentHP;
+            receiver.TakeDamage(finalDmg, context.SourceWeapon.WeaponName, IsTrueDamage, context.IsCriticalHit);
 
-            // 调试日志：展示最终结算公式
-     
-
-            receiver.TakeDamage(finalDamage, wpnName, IsTrueDamage, context.IsCriticalHit);
+            // 记录击杀
+            if (hpBefore > 0 && receiver.CurrentHP <= 0)
+            {
+                context.KillCountThisAction++;
+            }
         }
     }
 }

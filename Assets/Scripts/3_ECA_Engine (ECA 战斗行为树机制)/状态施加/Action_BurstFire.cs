@@ -1,70 +1,41 @@
-﻿using UnityEngine;
+﻿// --- Action_BurstFire.cs (V2.0) ---
+using UnityEngine;
 using System.Collections;
 
-[CreateAssetMenu(fileName = "BurstFire", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 爆发连射")]
+[CreateAssetMenu(fileName = "BurstFire_V2", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 爆发连射 V2")]
 public class Action_BurstFire : ECAAction
 {
-    [Header("=== 连发配置 ===")]
     public int ShotCount = 3;
     public float Interval = 0.1f;
-    [Tooltip("每发子弹相对于总伤害的占比 (0.6 代表每发造成总威力的 60%)")]
-    public float DamageRatio = 0.6f;
+
+    public Action_BurstFire() { Priority = 200; }
 
     public override void Execute(ECAContext context)
     {
         if (context.SourceWeapon == null || context.PrimaryTarget == null) return;
 
-        // 启动连射协程
+        // 开启协程处理连射逻辑
         CombatDirector.Instance.StartCoroutine(DoBurst(context));
+
+        // 标记已处理
+        context.IsHandledByCustomDelivery = true;
     }
 
     private IEnumerator DoBurst(ECAContext context)
     {
-        // 1. 缓存数据（防止 context 在异步期间被改写）
-        Transform target = context.PrimaryTarget;
-        RuntimeWeapon weapon = context.SourceWeapon;
-        RuntimeChimeraData owner = context.ChassisData;
-        Transform shooter = context.SourceEntity;
-
-        // 👇【核心修复】：应用瞬时伤害倍率，并计算单发威力
-        float baseOutput = context.BaseDamage * context.TemporaryDamageModifier;
-        float finalDmgPerShot = baseOutput * DamageRatio;
-
-        bool isEnemy = context.IsEnemyFire;
-        bool crit = context.IsCriticalHit;
+        GameObject prefab = context.SourceWeapon.ProjectilePrefab;
 
         for (int i = 0; i < ShotCount; i++)
         {
-            if (target == null || !target.gameObject.activeInHierarchy) yield break;
+            if (context.PrimaryTarget == null || !context.PrimaryTarget.gameObject.activeInHierarchy) yield break;
 
-            // 实时修正角度
-            Vector2 dir = (target.position - context.ImpactPoint).normalized;
+            Vector2 dir = (context.PrimaryTarget.position - context.ImpactPoint).normalized;
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
-            // 生成实体
-            GameObject proj = SimplePool.Spawn(weapon.ProjectilePrefab, context.ImpactPoint, Quaternion.AngleAxis(angle, Vector3.forward));
-
+            GameObject proj = SimplePool.Spawn(prefab, context.ImpactPoint, Quaternion.AngleAxis(angle, Vector3.forward));
             Projectile pScript = proj.GetComponent<Projectile>();
-            if (pScript != null)
-            {
-                // 👇【参数完全对齐】：9 个参数
-                // --- Action_BurstFire.cs 约第 51 行 ---
-                pScript.Fire(
-                    target,
-                    finalDmgPerShot,
-                    weapon,
-                    owner,
-                    shooter,
-                    isEnemy,
-                    crit,
-                    0,
-                    false,
-                    weapon.ProjectilePrefab // 👈 【修复】：传入武器自带的子弹预制体
-                );
-            }
 
-            if (ScreenEffectManager.Instance != null)
-                ScreenEffectManager.Instance.TriggerShake(0.05f, 0.05f);
+            if (pScript != null) pScript.FireV2(context);
 
             yield return new WaitForSeconds(Interval);
         }

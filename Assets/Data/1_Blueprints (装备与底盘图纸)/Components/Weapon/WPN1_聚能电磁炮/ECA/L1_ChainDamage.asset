@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7984b1afe5f1c8468608a80b5e2b41d, type: 3}
   m_Name: L1_ChainDamage
   m_EditorClassIdentifier: 
+  Priority: 200
   MaxTargets: 2
-  ChainRadius: 25
+  ChainRadius: 100
   DamageRatio: 0.5
   IsTrueDamage: 0
   LightningPrefab: {fileID: 1356839212223178731, guid: 82f3607e2a0d86445aaf57a140c09e7c, type: 3}

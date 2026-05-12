@@ -60,22 +60,21 @@ public class Action_CandleDeathSpread : ECAAction
 
             if (pScript != null)
             {
-                pScript.Fire(
-                    target.transform,
-                    finalBulletDamage,
-                    infectorWeapon,
-                    null, // 此时由于是死后触发，不再强挂 ChassisData
-                    context.SourceEntity,
-                    deadUnitIsEnemy,  // 维持死者的阵营层级，确保物理碰撞能打到它的队友
-                    false,
-                    0,
-                    true,             // 允许命中同僚
-                    ProjectilePrefab
-                );
+                // 👇【核心修复】：构造新上下文，并传递代际 (Generation)
+                ECAContext spreadCtx = new ECAContext
+                {
+                    SourceEntity = context.SourceEntity,
+                    PrimaryTarget = target.transform,
+                    SourceWeapon = infectorWeapon,
+                    IsEnemyFire = deadUnitIsEnemy,
+                    BaseDamage = finalBulletDamage,
+                    Generation = context.Generation + 1, // 🌟 代际递增
+                    HitAllies = true // 传染是打自己人
+                };
+                pScript.FireV2(spreadCtx);
             }
         }
     }
-
     /// <summary>
     /// 【全场扫描】：找到指定阵营中等级最高的烛火武器
     /// </summary>

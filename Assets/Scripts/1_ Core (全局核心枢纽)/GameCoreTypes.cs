@@ -98,20 +98,29 @@ public class StatEntry
     public BuffModifierType ModType = BuffModifierType.Additive;
 }
 
+// --- GameCoreTypes.cs ---
+
 [Serializable]
 public class ComponentLevelData
 {
-    public int Level = 1; public int BasePrice = 100; public int ScrapValue = 10;
+    public int Level = 1;
+    public int BasePrice = 100;
+    public int ScrapValue = 10;
     public List<StatEntry> Stats = new List<StatEntry>();
+
+    // 原有的管线
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
     public List<ECAAction> OnBattleStartActions = new List<ECAAction>();
+
+    // --- 👇【核心新增】：正式开辟 OnTick 生命周期管线 ---
+    public List<ECAAction> OnTickActions = new List<ECAAction>();
+
     public List<SubTag> BonusTags = new List<SubTag>();
     [TextArea] public string SpecialMechanicDesc = "...";
     public ActiveSkillConfig ActiveSkill = new ActiveSkillConfig();
 }
-
 [Serializable]
 public class ActiveSkillConfig
 {

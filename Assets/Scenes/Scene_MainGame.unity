@@ -1960,7 +1960,7 @@ MonoBehaviour:
   ForcedLayers:
   - LayerIndex: 1
     NodeCount: 1
-    ForcedType: 7
+    ForcedType: 1
   Weight_NormalEnemy: 60
   Weight_Unknown: 40
   Weight_Event: 10

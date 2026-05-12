@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d00335ea8fe9ec46a1420d923d42d4e, type: 3}
   m_Name: ModifyCP
   m_EditorClassIdentifier: 
+  Priority: 0
   Amount: -0.5
   BlockIfInsufficient: 1

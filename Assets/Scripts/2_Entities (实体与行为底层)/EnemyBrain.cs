@@ -175,13 +175,28 @@ public class EnemyBrain : MonoBehaviour
         FinishSkillExecution();
     }
 
+    // --- EnemyBrain.cs 约第 180 行 FireProjectile 方法 ---
     private void FireProjectile(Transform target, ECAContext ctx, RuntimeEnemySkill rSkill)
     {
         Vector3 spawnPos = myHitboxCollider != null ? myHitboxCollider.bounds.center : transform.position;
         Vector2 attackDir = (target.position - spawnPos).normalized;
         GameObject proj = Instantiate(rSkill.SkillData.ProjectilePrefab, spawnPos, Quaternion.AngleAxis(Mathf.Atan2(attackDir.y, attackDir.x) * Mathf.Rad2Deg, Vector3.forward));
+
         Projectile p = proj.GetComponent<Projectile>();
-        if (p != null) p.Fire(target, ctx.BaseDamage, rSkill.DummyWeapon, null, this.transform, true, false, 0, false, rSkill.SkillData.ProjectilePrefab);
+        if (p != null)
+        {
+            // 👇【核心修复】：为怪物构造一个符合 2.0 协议的 Context
+            ECAContext enemyFireCtx = new ECAContext
+            {
+                SourceEntity = this.transform,
+                PrimaryTarget = target,
+                SourceWeapon = rSkill.DummyWeapon,
+                IsEnemyFire = true,
+                BaseDamage = ctx.BaseDamage,
+                ImpactPoint = spawnPos
+            };
+            p.FireV2(enemyFireCtx);
+        }
     }
 
     private void CheckInterrupt()

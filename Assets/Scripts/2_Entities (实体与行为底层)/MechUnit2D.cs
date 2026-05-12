@@ -47,6 +47,27 @@ public class MechUnit2D : MonoBehaviour
         if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
         sg.sortingLayerName = SortingLayerName;
     }
+    private void Update()
+    {
+        // 只有在战斗激活，且机甲活着的时候才跳动
+        if (CombatDirector.Instance == null || !CombatDirector.Instance.IsCombatActive) return;
+        if (cachedCombatData == null || (GetComponent<DamageReceiver>()?.CurrentHP <= 0)) return;
+
+        // 构造一个每帧更新的上下文
+        ECAContext tickContext = new ECAContext
+        {
+            SourceEntity = this.transform,
+            ChassisData = this.cachedCombatData,
+            ImpactPoint = this.transform.position
+        };
+
+        // 💓 执行所有心跳积木
+        foreach (var action in cachedCombatData.GlobalOnTickActions)
+        {
+            if (action == null || tickContext.ExecutionAborted) break;
+            action.Execute(tickContext);
+        }
+    }
 
     // ==========================================
     // 🚀 入口 A：玩家机甲初始化

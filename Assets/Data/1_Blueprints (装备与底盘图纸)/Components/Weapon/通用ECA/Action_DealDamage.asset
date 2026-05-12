@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da424b0baaf19fd4f97fb636579eea1a, type: 3}
   m_Name: Action_DealDamage
   m_EditorClassIdentifier: 
-  DamageMultiplier: 1
+  Priority: 999
   IsTrueDamage: 0

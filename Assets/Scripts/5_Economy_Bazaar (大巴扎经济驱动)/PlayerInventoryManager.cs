@@ -45,6 +45,8 @@ public class InstancedComponent
     }
 
     public bool IsEquipped => !string.IsNullOrEmpty(EquippedUnitID);
+    public List<string> SocketedAccessoryIDs = new List<string>();
+    public int GetMaxSockets() => BaseData.MaxSocketCount;
 }
 
 // ==========================================

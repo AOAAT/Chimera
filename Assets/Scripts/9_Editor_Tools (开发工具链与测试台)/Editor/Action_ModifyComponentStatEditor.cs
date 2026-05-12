@@ -10,6 +10,13 @@ public class Action_ModifyComponentStatEditor : Editor
     {
         serializedObject.Update();
 
+        EditorGUILayout.BeginVertical("box");
+        GUI.color = new Color(0.8f, 0.8f, 1f); // 给优先级框上个淡蓝色
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("Priority"), new GUIContent("⚡ 执行优先级 (Priority)"));
+        GUI.color = Color.white;
+        EditorGUILayout.HelpBox("小值先行。例：闸门 0-99，修正 100-199，发射 200。", MessageType.None);
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.Space();
         // 1. 绘制目标过滤
         EditorGUILayout.LabelField("修改谁？", EditorStyles.boldLabel);
         SerializedProperty filterProp = serializedObject.FindProperty("Filter");

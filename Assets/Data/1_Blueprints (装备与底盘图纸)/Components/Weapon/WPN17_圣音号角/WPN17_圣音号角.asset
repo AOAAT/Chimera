@@ -55,8 +55,8 @@ MonoBehaviour:
     OnFireActions:
     - {fileID: 11400000, guid: f1f827c8fbecbc2419971ad2f29debdb, type: 2}
     - {fileID: 11400000, guid: 31aea80c88aac1d44bdd5a33d6c9199e, type: 2}
-    - {fileID: 11400000, guid: 10af810592a1b2b44a0a3a734b2b11a7, type: 2}
-    OnHitActions: []
+    OnHitActions:
+    - {fileID: 11400000, guid: ecaff477a361891499a0888c0ee4da19, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
     BonusTags: 

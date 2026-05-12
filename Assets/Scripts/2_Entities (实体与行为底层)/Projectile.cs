@@ -26,29 +26,31 @@ public class Projectile : MonoBehaviour
 
     // 【新增】：射线检测的缓存数组，避免每帧分配内存
     private RaycastHit2D[] hitResults = new RaycastHit2D[5];
+    private ECAContext capturedContext; // 记录发射时的上下文
 
-    public void Fire(Transform target, float damage, RuntimeWeapon data, RuntimeChimeraData owner, Transform shooter, bool isEnemy, bool isCrit, int gen, bool targetAllies, GameObject sourcePrefab)
+    // --- Projectile.cs 局部修改 ---
+
+
+    public void FireV2(ECAContext fireContext)
     {
-        this.target = target;
-        this.damage = damage;
-        this.weaponData = data;
-        this.ownerData = owner;
-        this.shooter = shooter;
-        this.isEnemyFire = isEnemy;
-        this.isCritical = isCrit;
-        this.generation = gen;
-        this.hitAllies = targetAllies;
-        this.myPrefabSource = sourcePrefab;
+        this.capturedContext = fireContext;
+        this.target = fireContext.PrimaryTarget;
+        this.shooter = fireContext.SourceEntity;
+        this.weaponData = fireContext.SourceWeapon;
+        this.isEnemyFire = fireContext.IsEnemyFire;
+
+        // 👇 从 Context 中同步代际和过滤逻辑
+        this.generation = fireContext.Generation;
+        this.hitAllies = fireContext.HitAllies;
+
+        this.currentDirection = transform.right;
+        this.lastPosition = transform.position;
 
         float speedMult = CombatSandbox.GetSpeed(1f);
-        this.speed = (data != null ? data.GetStat(StatType.ProjectileSpeed) : 10f) * speedMult;
+        this.speed = (weaponData != null ? weaponData.GetStat(StatType.ProjectileSpeed) : 10f) * speedMult;
 
         this.hasHit = false;
         this.lifeTimer = 5f;
-        currentDirection = transform.right;
-
-        // --- 核心修复 1：初始化位置时，立即记录当前位置 ---
-        lastPosition = transform.position;
         gameObject.layer = LayerMask.NameToLayer("Projectile");
     }
 
@@ -116,7 +118,7 @@ public class Projectile : MonoBehaviour
                 {
                     this.target = receiver.transform;
                     transform.position = hit.point;
-                    HitTarget();
+                    HitTarget(receiver.transform);
                     return;
                 }
             }
@@ -127,48 +129,28 @@ public class Projectile : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (hasHit) return;
-
         DamageReceiver receiver = collision.GetComponentInParent<DamageReceiver>();
         if (receiver != null && shooter != null)
         {
             if (receiver.transform == shooter || receiver.transform.IsChildOf(shooter)) return;
 
             bool isTargetEnemy = receiver.isEnemy;
+            // 🌟 核心逻辑：如果是奶弹(hitAllies)，则寻找同阵营；否则寻找敌对阵营
             bool isValidHit = hitAllies ? (isEnemyFire == isTargetEnemy) : (isEnemyFire != isTargetEnemy);
 
-            if (isValidHit)
-            {
-                this.target = receiver.transform;
-                HitTarget();
-            }
+            if (isValidHit) HitTarget(receiver.transform);
         }
     }
-
-    private void HitTarget()
+    private void HitTarget(Transform actualHitTarget)
     {
         if (hasHit) return;
         hasHit = true;
 
-        ECAContext context = new ECAContext
+        if (weaponData != null && capturedContext != null)
         {
-            ImpactPoint = transform.position,
-            PrimaryTarget = target,
-            BaseDamage = damage,
-            SourceWeapon = weaponData,
-            ChassisData = ownerData,
-            IsEnemyFire = this.isEnemyFire,
-            IsCriticalHit = this.isCritical,
-            SourceEntity = shooter
-        };
-        context.CustomStates["Gen"] = generation;
-
-        if (weaponData?.OnHitActions != null)
-        {
-            foreach (var action in weaponData.OnHitActions) if (action != null) action.Execute(context);
-        }
-        if (ownerData?.GlobalOnHitActions != null)
-        {
-            foreach (var action in ownerData.GlobalOnHitActions) if (action != null) action.Execute(context);
+            // 🌟 【ECA 2.0 核心】：不再直接 TakeDamage
+            // 而是将控制权交还给武器的“命中管线”
+            weaponData.TriggerHitPipeline(actualHitTarget, transform.position, capturedContext);
         }
 
         DespawnMe();

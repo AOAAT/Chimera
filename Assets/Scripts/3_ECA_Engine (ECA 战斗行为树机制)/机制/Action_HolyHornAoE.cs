@@ -1,70 +1,50 @@
-﻿using UnityEngine;
-using System.Linq;
+﻿// --- Action_HolyHornAoE.cs (V2.0 加固版) ---
+using UnityEngine;          // 👈 解决 Vector3 不存在的报错
 using System.Collections.Generic;
+using System.Linq;           // 👈 解决 List 过滤和 Count() 逻辑
 
-[CreateAssetMenu(fileName = "HolyHornAoE", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 圣音号角(距离衰减+击杀回蓝)")]
+[CreateAssetMenu(fileName = "HolyHornAoE_V2", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 圣音号角 V2")]
 public class Action_HolyHornAoE : ECAAction
 {
-    [Header("=== 范围与衰减 ===")]
+    [Header("=== 范围配置 ===")]
     public float MaxRadius = 5.0f;
-    [Tooltip("贴脸时的额外伤害倍率 (例如 3.0 代表 0 距离时伤害翻 3 倍)")]
-    public float MaxProximityMultiplier = 3.0f;
 
-    [Header("=== 击杀奖赏 ===")]
-    public float CPRecoverOnKill = 1.0f;
+    // 构造函数设定优先级：属于投递层 (Priority 200)
+    public Action_HolyHornAoE()
+    {
+        Priority = 200;
+    }
 
     public override void Execute(ECAContext context)
     {
-        if (context.SourceEntity == null) return;
+        // 核心加固：如果没有来源实体或武器，直接熔断
+        if (context.SourceEntity == null || context.SourceWeapon == null) return;
 
-        // 1. 确定中心点和真实半径
-        Vector3 center = context.SourceEntity.position;
+        // 1. 计算适配沙盒的真实半径
         float realRadius = CombatSandbox.GetDist(MaxRadius);
 
-        // 2. 检索范围内敌人
+        // 2. 搜寻范围内的存活敌人 (使用 Vector3.Distance)
+        // 注意：这里需要确保 CombatDirector.ActiveEnemies 是 List 类型
         var targets = CombatDirector.ActiveEnemies
-            .Where(e => e != null && e.CurrentHP > 0 && Vector3.Distance(center, e.transform.position) <= realRadius)
+            .Where(e => e != null && e.CurrentHP > 0 && Vector3.Distance(context.SourceEntity.position, e.transform.position) <= realRadius)
             .ToList();
 
-        if (targets.Count == 0) return;
+        // 3. 判定目标是否存在
+        // 👈 修复 CS0019：确保 Count 是属性或 Count() 是方法
+        if (targets == null || targets.Count == 0) return;
 
-        int totalKills = 0;
-
+        // 4. 【ECA 2.0 核心】：分发命中管线
+        // 我们不再这里直接扣血，而是让每个人都走一遍该武器的 OnHit 流程（从而兼容附魔）
         foreach (var t in targets)
         {
-            // 3. 👇【核心算法】：计算距离倍率
-            float dist = Vector3.Distance(center, t.transform.position);
-            // 归一化距离 (0是贴脸, 1是边缘)
-            float t_dist = Mathf.Clamp01(dist / realRadius);
-            // 线性插值倍率：贴脸时最大, 边缘时 1.0
-            float distMult = Mathf.Lerp(MaxProximityMultiplier, 1.0f, t_dist);
-
-            // 4. 执行真实伤害
-            float finalDmg = context.BaseDamage * context.TemporaryDamageModifier * distMult;
-
-            // 记录击杀
-            float hpBefore = t.CurrentHP;
-            t.TakeDamage(finalDmg, "圣音号角", true); // 👈 强制 TrueDamage
-
-            if (hpBefore > 0 && t.CurrentHP <= 0)
-            {
-                totalKills++;
-            }
+            // 呼叫 RuntimeWeapon 中新写的 TriggerHitPipeline
+            context.SourceWeapon.TriggerHitPipeline(t.transform, t.transform.position, context);
         }
 
-        // 5. 击杀回馈：哪怕一嗓子震死 5 个，我们也老老实实回蓝
-        if (totalKills > 0 && GlobalCPManager.Instance != null)
-        {
-            float totalRecover = totalKills * CPRecoverOnKill;
-            GlobalCPManager.Instance.ModifyCP(totalRecover);
-            Debug.Log($"<color=#FFD700>【圣音收割】</color> 震碎了 {totalKills} 个单位，回收能量 {totalRecover:F1}");
+        // 5. 【ECA 2.0 核心】：标记发射权已被接管
+        // 告诉 WeaponModule：我已经通过 AOE 方式处理了攻击，你不用再发那一颗默认子弹了
+        context.IsHandledByCustomDelivery = true;
 
-            // 击杀成功时，来一个强力的卡肉反馈
-            if (GameFeelManager.Instance != null) GameFeelManager.Instance.RequestHitStop(0.12f, 0.01f);
-        }
-
-        // 6. 视觉反馈：圣音震波
-        if (ScreenEffectManager.Instance != null)
-            ScreenEffectManager.Instance.TriggerShake(0.3f, 0.2f);
+        Debug.Log($"<color=#FFD700>【圣音分发】</color> 成功对 {targets.Count} 个目标分发了命中管线。");
     }
 }

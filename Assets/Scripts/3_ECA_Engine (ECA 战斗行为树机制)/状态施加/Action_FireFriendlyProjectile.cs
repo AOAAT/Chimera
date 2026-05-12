@@ -59,22 +59,10 @@ public class Action_FireFriendlyProjectile : ECAAction
         Debug.Log($"<color=#00FF00>【异变肾上腺】</color> 锁定队友 {target.name}，发射强效针剂！");
         if (pScript != null)
         {
-
-
-            // 参数列表：目标, 伤害(0), 武器, 机甲黑盒, 开火者, 是否敌火, 是否暴击, 代际, 是否奶弹(true)
-            // --- Action_FireFriendlyProjectile.cs 约第 65 行 ---
-            pScript.Fire(
-                target.transform,
-                0f,
-                needleWeapon,
-                context.ChassisData,
-                context.SourceEntity,
-                context.IsEnemyFire,
-                false,
-                0,
-                true,
-                ProjectilePrefab // 👈 【修复】：传入积木面板上拖入的预制体
-            );
+            // 👇【核心修复】：设置 HitAllies 标记
+            context.HitAllies = true;
+            context.PrimaryTarget = target.transform;
+            pScript.FireV2(context);
         }
     }
 }
