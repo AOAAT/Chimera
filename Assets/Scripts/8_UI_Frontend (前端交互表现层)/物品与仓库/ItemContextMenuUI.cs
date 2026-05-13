@@ -10,7 +10,8 @@ public class ItemContextMenuUI : MonoBehaviour
     public Button UpgradeButton;
     public Button DismantleButton; // 👇【新增】：拆解按钮
     public TMP_Text ErrorPromptText;
-
+    public Button RefitButton;
+    private InstancedAccessory currentAccessory;
     private InstancedComponent currentComponent;
     private InstancedChassis currentChassis;
 
@@ -24,20 +25,29 @@ public class ItemContextMenuUI : MonoBehaviour
     {
         UpgradeButton.onClick.AddListener(OnUpgradeClicked);
         DismantleButton.onClick.AddListener(OnDismantleClicked);
+
+        // 👇【核心补丁】：如果你之前漏掉了这一行，改装按钮点击后将毫无反应
+        if (RefitButton != null)
+        {
+            RefitButton.onClick.AddListener(OnRefitClicked);
+        }
     }
 
     // 接收右键点击，在鼠标位置展开菜单
-    public void ShowMenu(InstancedComponent comp, InstancedChassis chassis, Vector2 screenPos)
+    public void ShowMenu(InstancedComponent comp, InstancedChassis chassis, InstancedAccessory accessory, Vector2 screenPos)
     {
         currentComponent = comp;
         currentChassis = chassis;
+        currentAccessory = accessory; // 👈 解决变量不存在报错
+
         gameObject.SetActive(true);
         ErrorPromptText.text = "";
         MenuRect.position = screenPos;
 
         // 动态显示：只有组件可以强化！底盘点右键，强化按钮会直接隐藏
         UpgradeButton.gameObject.SetActive(currentComponent != null);
-
+        UpgradeButton.gameObject.SetActive(comp != null);
+        RefitButton.gameObject.SetActive(comp != null); // 👈 只有零件可以改装
         int scrapVal = 0;
         if (comp != null)
         {
@@ -74,6 +84,17 @@ public class ItemContextMenuUI : MonoBehaviour
         else
         {
             ShowError(errorMsg);
+        }
+    }
+
+    public void OnRefitClicked()
+    {
+        if (currentComponent != null)
+        {
+            // --- 👇 使用我们刚刚写的静态安全方法 ---
+            ComponentRefitUI.SafeOpen(currentComponent);
+
+            HideMenu();
         }
     }
 

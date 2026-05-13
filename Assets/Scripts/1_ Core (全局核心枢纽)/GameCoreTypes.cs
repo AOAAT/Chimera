@@ -107,6 +107,7 @@ public class ComponentLevelData
     public int BasePrice = 100;
     public int ScrapValue = 10;
     public List<StatEntry> Stats = new List<StatEntry>();
+    public int MaxSocketCount = 1;
 
     // 原有的管线
     public List<ECAAction> OnFireActions = new List<ECAAction>();

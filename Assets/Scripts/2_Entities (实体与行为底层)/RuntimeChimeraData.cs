@@ -28,9 +28,15 @@ public class RuntimeWeapon
 
     public void SortActions()
     {
-        OnFireActions.Sort((a, b) => (a != null && b != null) ? a.Priority.CompareTo(b.Priority) : 0);
-        OnHitActions.Sort((a, b) => (a != null && b != null) ? a.Priority.CompareTo(b.Priority) : 0);
-        OnTickActions.Sort((a, b) => (a != null && b != null) ? a.Priority.CompareTo(b.Priority) : 0); // 🌟 同步排序
+        // 使用 LINQ 进行空值过滤并排序
+        OnFireActions = OnFireActions.Where(a => a != null).OrderBy(a => a.Priority).ToList();
+        OnHitActions = OnHitActions.Where(a => a != null).OrderBy(a => a.Priority).ToList();
+
+        // 🌟【新增】：别忘了心跳管线也要排序！
+        if (OnTickActions != null)
+        {
+            OnTickActions = OnTickActions.Where(a => a != null).OrderBy(a => a.Priority).ToList();
+        }
     }
 
     public void TriggerHitPipeline(Transform target, Vector3 hitPos, ECAContext fireCtx)
@@ -148,10 +154,15 @@ public class RuntimeChimeraData
                 ProjectilePrefab = compSO.ProjectilePrefab
             };
 
-            // B. 👇【核心修复】：全量拷贝积木管线，包含 OnTick
+            // B. 全量拷贝积木管线 (底稿)
             if (levelData.OnHitActions != null) runtimeProxy.OnHitActions = new List<ECAAction>(levelData.OnHitActions);
             if (levelData.OnFireActions != null) runtimeProxy.OnFireActions = new List<ECAAction>(levelData.OnFireActions);
-            if (levelData.OnTickActions != null) runtimeProxy.OnTickActions = new List<ECAAction>(levelData.OnTickActions); // 🌟 关键：拷贝心跳积木
+            if (levelData.OnTickActions != null) runtimeProxy.OnTickActions = new List<ECAAction>(levelData.OnTickActions);
+
+            // --- 👇【核心新增】：配件积木注入 ---
+            // 在这里，我们将芯片里的逻辑“缝合”进刚刚拷贝好的 runtimeProxy 管线中
+            InjectAccessoryData(compInstance, runtimeProxy);
+            // ------------------------------------
 
             ComponentToRuntimeMap[compSO] = runtimeProxy;
 
@@ -180,14 +191,15 @@ public class RuntimeChimeraData
                 if (levelData.OnHitActions != null) GlobalOnHitActions.AddRange(levelData.OnHitActions);
                 if (levelData.OnBattleStartActions != null) GlobalOnBattleStartActions.AddRange(levelData.OnBattleStartActions);
             }
-            // 全局心跳备份
             if (levelData.OnTickActions != null) GlobalOnTickActions.AddRange(levelData.OnTickActions);
         }
 
         // --- 4. 逻辑动作执行与大排序 ---
         ExecuteAssembleActions(chassis, components, entityTransform);
 
+        // 🌟 核心：注入完成后，必须进行大排序，确保芯片积木（配件）按照 Priority 正确插队
         foreach (var proxy in ComponentToRuntimeMap.Values) proxy.SortActions();
+
         GlobalOnFireActions.Sort((a, b) => a.Priority.CompareTo(b.Priority));
         GlobalOnHitActions.Sort((a, b) => a.Priority.CompareTo(b.Priority));
         GlobalOnBattleStartActions.Sort((a, b) => a.Priority.CompareTo(b.Priority));
@@ -195,6 +207,11 @@ public class RuntimeChimeraData
 
         RefreshFinalStats();
     }
+
+    /// <summary>
+    /// 【配件注入工具】：将插槽芯片内的逻辑与数值压入运行时代理
+    /// </summary>
+
 
     // 辅助方法：分离 Assemble 积木执行逻辑，保持主方法清晰
     private void ExecuteAssembleActions(ChassisDataSO chassis, InstancedComponent[] components, Transform entityTransform)
@@ -217,13 +234,49 @@ public class RuntimeChimeraData
             }
         }
     }
-    // 👇【配件系统占位接口】
-    private void InjectAccessoryActions(InstancedComponent comp, RuntimeWeapon runtimeWpn)
+    private void InjectAccessoryData(InstancedComponent compInstance, RuntimeWeapon runtimeProxy)
     {
-        // 这里的逻辑在未来配件系统实现后补全：
-        // foreach(var accID in comp.SocketedAccessoryIDs) { ... }
-    }
+        if (compInstance.SocketedAccessoryIDs == null || compInstance.SocketedAccessoryIDs.Count == 0) return;
 
+        foreach (string accID in compInstance.SocketedAccessoryIDs)
+        {
+            var accessory = PlayerInventoryManager.Instance.GetAccessoryInstance(accID);
+            if (accessory == null || accessory.BaseData == null) continue;
+
+            AccessoryDataSO data = accessory.BaseData;
+
+            // 1. 静态数值注入 (保持不变)
+            if (data.StaticStatModifiers != null)
+                ProcessStats(data.StaticStatModifiers, true, runtimeProxy);
+
+            // 2. 精准管线注入
+            // -----------------------------------------------------
+            // A. 注入战斗管线 (绑定在零件代理上)
+            if (data.InjectedOnFireActions != null) runtimeProxy.OnFireActions.AddRange(data.InjectedOnFireActions);
+            if (data.InjectedOnHitActions != null) runtimeProxy.OnHitActions.AddRange(data.InjectedOnHitActions);
+            if (data.InjectedOnTickActions != null) runtimeProxy.OnTickActions.AddRange(data.InjectedOnTickActions);
+
+            // B. 注入初始化管线 (绑定在全局池中，随零件生效)
+            if (data.InjectedOnAssembleActions != null)
+            {
+                // 注意：Assemble 积木由于是瞬时触发，在这里需要立即手动执行一次，或者加入全局列表
+                foreach (var action in data.InjectedOnAssembleActions)
+                {
+                    if (action == null) continue;
+                    // 构造一个临时的 Context 执行初始化加成
+                    ECAContext ctx = new ECAContext { ChassisData = this, SourceComponentSO = compInstance.BaseData };
+                    action.Execute(ctx);
+                }
+            }
+
+            if (data.InjectedOnBattleStartActions != null)
+            {
+                // 将配件的开战逻辑合并到机甲的全局开战序列中
+                GlobalOnBattleStartActions.AddRange(data.InjectedOnBattleStartActions);
+            }
+            // -----------------------------------------------------
+        }
+    }
     private void ProcessStats(List<StatEntry> stats, bool isWeaponLocal, RuntimeWeapon weaponRef)
     {
         if (stats == null) return;

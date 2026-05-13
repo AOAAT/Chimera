@@ -78,7 +78,8 @@ public class GlobalWarehouseUI : MonoBehaviour
     {
         // 1. 第一级：加入“全部资产”选项
         MainCategoryDropdown.ClearOptions();
-        MainCategoryDropdown.AddOptions(new List<string> { "全部资产", "装甲底盘", "机甲组件" });
+        // 👇【核心新增】：配件选项
+        MainCategoryDropdown.AddOptions(new List<string> { "全部资产", "装甲底盘", "机甲组件", "逻辑配件" });
         MainCategoryDropdown.value = 0; // 👈 默认为“全部”
 
         // 2. 第二级：类型检索 (保持不变)
@@ -146,68 +147,61 @@ public class GlobalWarehouseUI : MonoBehaviour
     {
         if (!gameObject.activeSelf) return;
 
-        // 彻底物理清理
+        // 1. 彻底清理旧格子
         foreach (Transform child in ContentRoot) Destroy(child.gameObject);
-
-        int mainCategory = MainCategoryDropdown.value; // 0:All, 1:Chassis, 2:Component
-        int selectedTypeIdx = TypeDropdown.value - 1;
-        int selectedTagIdx = TagDropdown.value - 1;
-
         int displayCount = 0;
 
-        // --- 分支 A：处理底盘 (只有在 0:全部 或 1:底盘 模式下显示) ---
+        int mainCategory = MainCategoryDropdown.value; // 0:全部, 1:底盘, 2:组件, 3:配件
+
+        // --- 分支 A：底盘 ---
         if (mainCategory == 0 || mainCategory == 1)
         {
-            var chassisList = PlayerInventoryManager.Instance.ChassisInventory.AsEnumerable();
-
-            // 应用标签筛选
-            if (selectedTagIdx >= 0)
+            foreach (var chassis in PlayerInventoryManager.Instance.ChassisInventory)
             {
-                SubTag requiredTag = availableTags[selectedTagIdx];
-                chassisList = chassisList.Where(c => c.BaseData.SubTags.Contains(requiredTag));
-            }
-
-            foreach (var chassis in chassisList)
-            {
-                var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                slotObj.SetupChassis(chassis, null);
-                displayCount++;
+                // 👇【核心加固点 A】：必须先判定图纸是否存在，才准生成 UI！
+                if (chassis != null && chassis.BaseData != null)
+                {
+                    var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                    slotObj.GetComponent<InventoryItemSlotUI>().SetupChassis(chassis, null);
+                    displayCount++;
+                }
             }
         }
 
-        // --- 分支 B：处理组件 (只有在 0:全部 或 2:组件 模式下显示) ---
+        // --- 分支 B：组件 ---
         if (mainCategory == 0 || mainCategory == 2)
         {
-            var compList = PlayerInventoryManager.Instance.ComponentInventory.AsEnumerable();
-
-            // 1. 应用类型筛选 (仅在组件模式下生效，全部模式下不看类型)
-            if (mainCategory == 2 && selectedTypeIdx >= 0)
+            foreach (var comp in PlayerInventoryManager.Instance.ComponentInventory)
             {
-                ComponentType requiredType = availableTypes[selectedTypeIdx];
-                compList = compList.Where(c => c.BaseData.Type == requiredType);
+                // 👇【核心加固点 B】：过滤掉那些没有图纸的“幽灵组件”
+                if (comp != null && comp.BaseData != null)
+                {
+                    var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                    slotObj.GetComponent<InventoryItemSlotUI>().SetupComponent(comp, null);
+                    displayCount++;
+                }
             }
+        }
 
-            // 2. 应用标签筛选
-            if (selectedTagIdx >= 0)
+        // --- 分支 C：配件芯片 ---
+        if (mainCategory == 0 || mainCategory == 3)
+        {
+            foreach (var acc in PlayerInventoryManager.Instance.AccessoryInventory)
             {
-                SubTag requiredTag = availableTags[selectedTagIdx];
-                compList = compList.Where(c => c.BaseData.BaseSubTags.Contains(requiredTag));
-            }
-
-            // 3. 排序规则：未搭载优先
-            compList = compList.OrderBy(c => c.IsEquipped).ThenBy(c => c.BaseData.ComponentName);
-
-            foreach (var comp in compList)
-            {
-                var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                slotObj.SetupComponent(comp, null);
-                displayCount++;
+                // 👇【核心加固点 C】：过滤空芯片
+                if (acc != null && acc.BaseData != null)
+                {
+                    var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                    slotObj.GetComponent<InventoryItemSlotUI>().SetupAccessory(acc, (selected) => {
+                        Debug.Log($"选中了芯片: {selected.BaseData.AccessoryName}");
+                    });
+                    displayCount++;
+                }
             }
         }
 
         if (EmptyWarningText != null) EmptyWarningText.SetActive(displayCount == 0);
     }
-
     private string TranslateComponentType(ComponentType type)
     {
         switch (type)

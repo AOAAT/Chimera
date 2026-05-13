@@ -29,6 +29,7 @@ public class InstancedChassis
 // 2. 散件实体的“身份证” (引入等级)
 // ==========================================
 [Serializable]
+// --- PlayerInventoryManager.cs ---
 public class InstancedComponent
 {
     public string InstanceID;
@@ -36,19 +37,52 @@ public class InstancedComponent
     public string EquippedUnitID;
     public int CurrentLevel = 1;
 
+    // 👇【核心新增】：在这里添加插槽列表
+    public List<string> SocketedAccessoryIDs = new List<string>();
+
     public InstancedComponent(ComponentDataSO data, int level)
     {
         InstanceID = Guid.NewGuid().ToString();
         BaseData = data;
         CurrentLevel = level;
         EquippedUnitID = string.Empty;
+
+        // 👇【核心新增】：确保初始化
+        SocketedAccessoryIDs = new List<string>();
+    }
+    public int GetMaxSockets()
+    {
+        if (BaseData == null) return 0;
+
+        var lvData = BaseData.GetLevelData(this.CurrentLevel);
+        return lvData != null ? lvData.MaxSocketCount : 0;
     }
 
+    // 快捷判断：是否还能塞芯片？
+    public bool HasEmptySocket() => SocketedAccessoryIDs.Count < GetMaxSockets();
     public bool IsEquipped => !string.IsNullOrEmpty(EquippedUnitID);
-    public List<string> SocketedAccessoryIDs = new List<string>();
-    public int GetMaxSockets() => BaseData.MaxSocketCount;
 }
 
+
+
+[Serializable]
+public class InstancedAccessory
+{
+    public string InstanceID;
+    public AccessoryDataSO BaseData;
+
+    // 当前插在哪个零件上？(InstanceID)
+    public string ParentComponentID = string.Empty;
+
+    public InstancedAccessory(AccessoryDataSO data)
+    {
+        InstanceID = Guid.NewGuid().ToString();
+        BaseData = data;
+        ParentComponentID = string.Empty;
+    }
+
+    public bool IsEquipped => !string.IsNullOrEmpty(ParentComponentID);
+}
 // ==========================================
 // 3. 机甲的持久化档案
 // ==========================================
@@ -106,12 +140,34 @@ public class PlayerInventoryManager : MonoBehaviour
     [Header("=== 测试作弊专用 ===")]
     public List<ChassisDataSO> DebugChassisBundle = new List<ChassisDataSO>(); // 改为 List
     public List<ComponentDataSO> DebugComponentBundle = new List<ComponentDataSO>();
+    public List<AccessoryDataSO> DebugAccessoryBundle = new List<AccessoryDataSO>();
+    [Header("=== 芯片仓库 ===")]
+    public List<InstancedAccessory> AccessoryInventory = new List<InstancedAccessory>();
+
+    // 获取所有闲置芯片（用于 UI 列表展示）
+    public List<InstancedAccessory> GetIdleAccessories()
+    {
+        return AccessoryInventory.FindAll(a => !a.IsEquipped);
+    }
+
+    // 通过 ID 寻找芯片实例
+    public InstancedAccessory GetAccessoryInstance(string id)
+    {
+        return AccessoryInventory.Find(a => a.InstanceID == id);
+    }
+
+    // 获得新芯片入库
+    public void AddAccessoryToInventory(AccessoryDataSO so)
+    {
+        AccessoryInventory.Add(new InstancedAccessory(so));
+        OnInventoryChanged?.Invoke(); // 触发 UI 刷新
+    }
 
     [Tooltip("预设的机甲名称库，玩家新建机甲时会从中随机抽取")]
     public List<string> DefaultNamePool = new List<string> {
     "苍穹破裂者", "铁肺", "苦难摇篮", "西西弗斯", "黑匣子",
     "零号病人", "柴油之心", "锈蚀审判", "无声呐喊", "利维坦",
-    "赤红风暴","小小","哈基米","故障机器人","危险流浪者","高达"
+    "赤红风暴","小小","哈基米","故障机器人","危险流浪者","高达","RaChatZ"
 };
 
     // 运行时剩余可用的名称
@@ -119,8 +175,17 @@ public class PlayerInventoryManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance == null)
+        {
+            Instance = this;
+            Debug.Log("<color=green>【系统】</color> 资产总管已上线。");
+        }
+        else
+        {
+            Debug.LogError($"<color=red>【致命警告】</color> 场景中存在重复的 PlayerInventoryManager！物体名为：{gameObject.name}。系统已将其自动销毁。");
+            Destroy(this.gameObject);
+            return;
+        }
 
         // 洗库操作 1：给旧底盘发身份证
         foreach (var c in ChassisInventory)
@@ -179,6 +244,23 @@ public class PlayerInventoryManager : MonoBehaviour
                 Debug.Log("<color=orange>【Debug】</color> 编辑器指令：零件包已注入。");
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            if (DebugAccessoryBundle != null && DebugAccessoryBundle.Count > 0)
+            {
+                foreach (var chipSO in DebugAccessoryBundle)
+                {
+                    // 👇【核心加固】：只有图纸不为空，且 ID 不为空时才准入库
+                    if (chipSO != null && !string.IsNullOrEmpty(chipSO.AccessoryID))
+                    {
+                        AddAccessoryToInventory(chipSO);
+                    }
+                }
+                Debug.Log("<color=#FF00FF>【Debug】</color> 逻辑芯片包已注入。");
+            }
+        }
+
 #endif
     }
     public string GetNextAvailableName()
@@ -271,7 +353,18 @@ public class PlayerInventoryManager : MonoBehaviour
 
     public InstancedComponent ExecuteMerge(InstancedComponent a, InstancedComponent b)
     {
-        if (!CanMerge(a, b)) return null;
+        // --- 👇【核心新增】：配件无损回收协议 ---
+        // a 是主目标（保留配件），b 是祭品（配件退回仓库）
+        if (b.SocketedAccessoryIDs != null && b.SocketedAccessoryIDs.Count > 0)
+        {
+            foreach (string accID in b.SocketedAccessoryIDs)
+            {
+                var acc = GetAccessoryInstance(accID);
+                if (acc != null) acc.ParentComponentID = string.Empty; // 解绑，回归自由身
+            }
+            Debug.Log($"<color=yellow>【回收】</color> 祭品 [{b.BaseData.ComponentName}] 的配件已安全退回仓库。");
+        }
+        // ------------------------------------
 
         ComponentInventory.Remove(a);
         ComponentInventory.Remove(b);
@@ -308,6 +401,17 @@ public class PlayerInventoryManager : MonoBehaviour
             }
         }
 
+        foreach (string compID in unit.EquippedComponentIDs)
+        {
+            var comp = ComponentInventory.Find(c => c.InstanceID == compID);
+            if (comp != null)
+            {
+                comp.EquippedUnitID = string.Empty;
+                // 注意：这里不需要释放芯片，因为芯片是插在“零件”里的，而不是插在“机甲”里的。
+                // 只要零件回库，芯片就跟着零件走。
+            }
+        }
+
         // 3. 将机甲名称归还池子 (可选)
         ReturnNameToPool(unit.UnitName);
 
@@ -319,8 +423,77 @@ public class PlayerInventoryManager : MonoBehaviour
 
         Debug.Log($"<color=yellow>【解体成功】</color> 底盘与组件已回归原始库存。");
     }
+
+    public void DismantleComponent(InstancedComponent target)
+    {
+        if (target == null || target.IsEquipped) return;
+
+        // --- 👇【核心新增】：拆解零件时，强制弹出所有配件 ---
+        if (target.SocketedAccessoryIDs != null && target.SocketedAccessoryIDs.Count > 0)
+        {
+            foreach (string accID in target.SocketedAccessoryIDs)
+            {
+                var acc = GetAccessoryInstance(accID);
+                if (acc != null) acc.ParentComponentID = string.Empty;
+            }
+        }
+        // -------------------------------------------
+
+        ComponentInventory.Remove(target);
+        ForceTriggerInventoryEvent();
+    }
+
+
     public void ForceTriggerInventoryEvent()
     {
         OnInventoryChanged?.Invoke();
+    }
+    public bool EquipAccessoryToComponent(string accessoryInstanceID, InstancedComponent targetComp, out string error)
+    {
+        var chip = GetAccessoryInstance(accessoryInstanceID);
+        if (chip == null || chip.IsEquipped)
+        {
+            error = "芯片不存在或已被占用";
+            return false;
+        }
+
+        if (AccessoryValidator.CanFitAccessory(targetComp, chip.BaseData, out error))
+        {
+            // 1. 建立双向绑定
+            targetComp.SocketedAccessoryIDs.Add(accessoryInstanceID);
+            chip.ParentComponentID = targetComp.InstanceID;
+
+            Debug.Log($"<color=#00FF00>【芯片注入】</color> [{chip.BaseData.AccessoryName}] 已成功装入 [{targetComp.BaseData.ComponentName}]");
+
+            OnInventoryChanged?.Invoke();
+            return true;
+        }
+
+        return false;
+    }
+
+    public void UnequipAccessoryFromComponent(string accessoryInstanceID, InstancedComponent targetComp)
+    {
+        var chip = GetAccessoryInstance(accessoryInstanceID);
+        if (chip != null && targetComp.SocketedAccessoryIDs.Contains(accessoryInstanceID))
+        {
+            targetComp.SocketedAccessoryIDs.Remove(accessoryInstanceID);
+            chip.ParentComponentID = string.Empty;
+
+            Debug.Log($"<color=yellow>【芯片剥离】</color> 已从零件中回收芯片。");
+            OnInventoryChanged?.Invoke();
+        }
+    }
+
+    public void ValidateAccessoryCapacity(InstancedComponent comp)
+    {
+        int max = comp.GetMaxSockets();
+        while (comp.SocketedAccessoryIDs.Count > max)
+        {
+            // 强制弹出最后一个配件
+            string lastAccID = comp.SocketedAccessoryIDs[comp.SocketedAccessoryIDs.Count - 1];
+            UnequipAccessoryFromComponent(lastAccID, comp);
+            Debug.LogWarning($"<color=orange>【硬件降级】</color> 零件插槽收缩，配件已自动弹出。");
+        }
     }
 }
