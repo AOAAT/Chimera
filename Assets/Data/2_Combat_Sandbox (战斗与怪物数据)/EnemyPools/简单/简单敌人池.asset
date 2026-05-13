@@ -19,3 +19,7 @@ MonoBehaviour:
   AllowedNodeTypes: 01000000020000000300000004000000
   LayoutList:
   - {fileID: 11400000, guid: 4a80c51a73cb00e4d805205a667beea5, type: 2}
+  - {fileID: 11400000, guid: 9a4dd0cbc7bf1eb47b0be57a77c78165, type: 2}
+  - {fileID: 11400000, guid: cf075c42e973e714493a11f45c685602, type: 2}
+  - {fileID: 11400000, guid: fc0370ccef558324bae4a24eae631324, type: 2}
+  - {fileID: 11400000, guid: 0d1eee6e290d6534481bf1eee53ab3c1, type: 2}
