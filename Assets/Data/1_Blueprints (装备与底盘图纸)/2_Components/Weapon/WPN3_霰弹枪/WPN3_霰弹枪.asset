@@ -52,9 +52,6 @@ MonoBehaviour:
     - StatID: 19
       Value: 200
       ModType: 0
-    - StatID: 18
-      Value: 6
-      ModType: 0
     MaxSocketCount: 3
     OnFireActions:
     - {fileID: 11400000, guid: e86cce55e7dd419449dbb6e9321f19d7, type: 2}
@@ -143,4 +140,3 @@ MonoBehaviour:
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8
-  MaxSocketCount: 2

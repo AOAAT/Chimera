@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4509f6968fc4688458b2504ccaa95eb1, type: 3}
   m_Name: BurstFire
   m_EditorClassIdentifier: 
+  Priority: 200
+  IsAccessory: 0
+  AllowedComponentType: 1
+  RequiredDelivery: 1
+  RequiredTags: 
   ShotCount: 3
   Interval: 0.2
-  DamageMult: 0.5
+  DamageMultiplier: 1

@@ -12,4 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b202fa83043ba145ad4823657763d79, type: 3}
   m_Name: FanFire
   m_EditorClassIdentifier: 
+  Priority: 200
+  IsAccessory: 0
+  AllowedComponentType: 1
+  RequiredDelivery: 1
+  RequiredTags: 
+  PelletCount: 6
+  DamageMultiplier: 1
   SpreadAngle: 40
