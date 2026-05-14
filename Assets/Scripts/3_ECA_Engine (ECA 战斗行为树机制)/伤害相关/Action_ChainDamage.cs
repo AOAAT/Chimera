@@ -1,64 +1,86 @@
-﻿// --- START OF FILE Action_ChainDamage.cs ---
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ChainDamage", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 造成连锁伤害 (Chain Damage)")]
+[CreateAssetMenu(fileName = "ChainDamage_V2", menuName = "Chimera Protocol/2. ECA 机制积木/战斗 - 逻辑连锁 V2")]
 public class Action_ChainDamage : ECAAction
 {
-    [Header("=== 连锁核心参数 ===")]
-    public int MaxTargets = 2;
-    public float ChainRadius = 5f;
-    [Range(0f, 1f)] public float DamageRatio = 0.5f;
-    public bool IsTrueDamage = false;
+    [Header("=== 连锁核心配置 ===")]
+    [Tooltip("最高允许连锁到第几代？(0代表不连锁，1代表跳跃一次，以此类推)")]
+    public int MaxGeneration = 1;
 
-    [Header("=== 视觉表现 (闪电特效) ===")]
-    [Tooltip("拖入我们做好的 LaserBeam 预制体 (建议做成曲折的闪电贴图)")]
+    public int MaxTargetsPerJump = 2;
+    public float ChainRadius = 5f;
+
+    [Range(0f, 1f)]
+    [Tooltip("每一代相对于前一代的伤害衰减")]
+    public float DamageDecay = 0.7f;
+
+    [Header("=== 视觉表现 ===")]
     public GameObject LightningPrefab;
-    [Tooltip("闪电在屏幕上残留的时间 (秒)")]
     public float LightningDuration = 0.2f;
+
+    // 🌟 设置优先级为 400 (属于后效层)，确保主目标的伤害扣除已经完成
+    public Action_ChainDamage() { Priority = 400; }
 
     public override void Execute(ECAContext context)
     {
-        if (context.PrimaryTarget == null) return;
+        // 1. 【逻辑锁】：如果当前代际已经达到或超过上限，强行熔断，防止无限套娃
+        if (context.Generation >= MaxGeneration) return;
 
-        float realRadius = ChainRadius * (CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f);
-        float chainDamage = context.BaseDamage * DamageRatio;
+        if (context.SourceWeapon == null || context.PrimaryTarget == null) return;
 
-        // 核心索敌：寻找主目标半径内的存活敌人 (按距离排序)
-        var chainTargets = FindObjectsOfType<DamageReceiver>()
-            .Where(r => r.isEnemy != context.IsEnemyFire && r.CurrentHP > 0)
-            .Where(r => r.transform != context.PrimaryTarget)
+        // 2. 获取沙盒缩放后的真实半径
+        float realRadius = CombatSandbox.GetDist(ChainRadius);
+
+        // 3. 寻找潜在受害者 (利用 CombatDirector 的静态列表，性能极高)
+        var pool = context.IsEnemyFire ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
+
+        var nextTargets = pool
+            .Where(r => r != null && r.CurrentHP > 0 && r.transform != context.PrimaryTarget) // 排除自己
             .Where(r => Vector3.Distance(context.ImpactPoint, r.transform.position) <= realRadius)
-            .OrderBy(r => Vector3.Distance(context.ImpactPoint, r.transform.position))
-            .Take(MaxTargets).ToList();
+            .OrderBy(r => Vector3.Distance(context.ImpactPoint, r.transform.position)) // 就近原则
+            .Take(MaxTargetsPerJump).ToList();
 
-        // 👇【视觉重构：闪电接力赛！】
-        // 第一道闪电的起点，肯定是武器命中主目标的位置 (ImpactPoint)
-        Vector3 lastLightningPos = context.ImpactPoint;
+        if (nextTargets.Count == 0) return;
 
-        foreach (var target in chainTargets)
+        // 4. 【管线分发】：为每个连锁目标开启新的人生（新的 Context）
+        foreach (var target in nextTargets)
         {
-            // 1. 造成电击伤害
-            target.TakeDamage(chainDamage, context.SourceWeapon.WeaponName + " (连锁电弧)", IsTrueDamage, context.IsCriticalHit);
+            // 绘制闪电视觉
+            DrawLightning(context.ImpactPoint, target.transform.position);
 
-            // 2. 寻找敌人的受击中心 (防射脚底)
-            Vector3 currentTargetPos = target.transform.position;
-            Collider2D col = target.GetComponentInChildren<Collider2D>();
-            if (col != null) currentTargetPos = col.bounds.center;
-
-            // 3. 绘制闪电连线！(从上一个电击点，连向这个倒霉蛋)
-            if (LightningPrefab != null)
+            // --- 👇【核心注入】：构造下一代 Context ---
+            ECAContext nextCtx = new ECAContext
             {
-                GameObject lightningObj = Instantiate(LightningPrefab, lastLightningPos, Quaternion.identity);
-                LaserBeam laserScript = lightningObj.GetComponent<LaserBeam>();
-                if (laserScript != null)
-                {
-                    laserScript.Fire(lastLightningPos, currentTargetPos, LightningDuration);
-                }
-            }
+                SourceEntity = context.SourceEntity,
+                PrimaryTarget = target.transform,
+                ImpactPoint = target.transform.position,
+                SourceWeapon = context.SourceWeapon,
+                ChassisData = context.ChassisData,
+                IsEnemyFire = context.IsEnemyFire,
 
-            // 4. 将当前倒霉蛋的位置，作为下一道闪电的起点！(接力传递)
-            lastLightningPos = currentTargetPos;
+                // 核心逻辑接力：
+                Generation = context.Generation + 1, // 🌟 代际递增
+                BaseDamage = context.BaseDamage * DamageDecay, // 🌟 伤害衰减
+
+                // 继承修饰符
+                TemporaryDamageModifier = context.TemporaryDamageModifier,
+                TemporaryCritModifier = context.TemporaryCritModifier,
+                CustomStates = context.CustomStates
+            };
+
+            // 🚀 重新调用来源武器的命中管线！
+            // 这会导致该武器上插的所有 OnHit 积木（如：腐蚀、吸血）在这个新目标上重新跑一遍
+            context.SourceWeapon.TriggerHitPipeline(target.transform, target.transform.position, nextCtx);
         }
+    }
+
+    private void DrawLightning(Vector3 start, Vector3 end)
+    {
+        if (LightningPrefab == null) return;
+        GameObject lightningObj = Instantiate(LightningPrefab, start, Quaternion.identity);
+        LaserBeam laser = lightningObj.GetComponent<LaserBeam>();
+        if (laser != null) laser.Fire(start, end, LightningDuration);
     }
 }

@@ -55,6 +55,7 @@ MonoBehaviour:
     - StatID: 18
       Value: 6
       ModType: 0
+    MaxSocketCount: 3
     OnFireActions:
     - {fileID: 11400000, guid: e86cce55e7dd419449dbb6e9321f19d7, type: 2}
     - {fileID: 11400000, guid: 6628257c4b99b2e41b4e3378244219f1, type: 2}
@@ -64,6 +65,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u6BCF\u6B21\u653B\u51FB\u65F6\uFF0C\u4F1A\u5728\u6247\u5F62\u533A\u57DF\u53D1\u5C046\u9897\u56FA\u5B9A\u5F39\u9053\u7684\u5B50\u5F39\uFF0C\u540C\u65F6\u7ED9\u5947\u7F8E\u62C9\u65BD\u52A0\u5F3A\u540E\u5750\u529B\u3002\n\u6BCF\u53D1\u5C042\u53D1\u5B50\u5F39\u5C31\u9700\u8981\u8FDB\u884C\u4E00\u6B211.5\u79D2\u7684\u88C5\u586B\u3002"
     ActiveSkill:
@@ -104,6 +106,7 @@ MonoBehaviour:
     - StatID: 18
       Value: 8
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: e86cce55e7dd419449dbb6e9321f19d7, type: 2}
     - {fileID: 11400000, guid: 6628257c4b99b2e41b4e3378244219f1, type: 2}
@@ -113,6 +116,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u6BCF\u6B21\u653B\u51FB\u65F6\uFF0C\u4F1A\u5728\u6247\u5F62\u533A\u57DF\u53D1\u5C048\u9897\u56FA\u5B9A\u5F39\u9053\u7684\u5B50\u5F39\uFF0C\u540C\u65F6\u7ED9\u5947\u7F8E\u62C9\u65BD\u52A0\u5F3A\u540E\u5750\u529B\u3002\n\u6BCF\u53D1\u5C042\u53D1\u5B50\u5F39\u5C31\u9700\u8981\u8FDB\u884C\u4E00\u6B211.5\u79D2\u7684\u88C5\u586B\u3002"
     ActiveSkill:
@@ -139,3 +143,4 @@ MonoBehaviour:
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8
+  MaxSocketCount: 2

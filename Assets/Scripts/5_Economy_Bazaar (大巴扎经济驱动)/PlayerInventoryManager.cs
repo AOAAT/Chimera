@@ -54,8 +54,11 @@ public class InstancedComponent
     {
         if (BaseData == null) return 0;
 
+        // 🌟 关键：去等级矩阵里找当前等级的数据
         var lvData = BaseData.GetLevelData(this.CurrentLevel);
-        return lvData != null ? lvData.MaxSocketCount : 0;
+
+        // 如果找到了就用配置的，找不到（比如配置丢了）就给 1 个保底
+        return lvData != null ? lvData.MaxSocketCount : 1;
     }
 
     // 快捷判断：是否还能塞芯片？

@@ -115,7 +115,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
                 Destroy(child.gameObject);
             }
 
-            for (int i = 0; i < component.BaseData.MaxSocketCount; i++)
+            int actualMax = component.GetMaxSockets();
+            for (int i = 0; i < actualMax; i++)
             {
                 GameObject dot = Instantiate(SocketDotPrefab, SocketIndicatorRoot);
                 Image dotImg = dot.GetComponent<Image>();
@@ -146,7 +147,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             foreach (Transform child in SocketIndicatorRoot.transform) Destroy(child.gameObject);
 
             // 根据 MaxSocketCount 生成
-            for (int i = 0; i < component.BaseData.MaxSocketCount; i++)
+            int actualMax = component.GetMaxSockets();
+            for (int i = 0; i < actualMax; i++)
             {
                 GameObject dot = Instantiate(SocketDotPrefab, SocketIndicatorRoot.transform);
                 Image dotImg = dot.GetComponent<Image>();

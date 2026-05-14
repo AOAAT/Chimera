@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 773521e11f984574fae989a2f6b4e41a, type: 3}
+  m_Name: "\u901F\u5C04\u82AF\u7247"
+  m_EditorClassIdentifier: 
+  AccessoryID: ACC_003
+  AccessoryName: "\u901F\u5C04\u82AF\u7247"
+  Description: "\u63CF\u8FF0\u8BE5\u82AF\u7247\u7684\u903B\u8F91\u529F\u80FD..."
+  AccessoryIcon: {fileID: 21300000, guid: 64dfe1a75797d9f41b7097d8d39d5b11, type: 3}
+  Rarity: 1
+  AllowedTypes: 01000000
+  LimitByDelivery: 0
+  RequiredDelivery: 1
+  RequiredTags: 
+  InjectedOnFireActions:
+  - {fileID: 11400000, guid: 96e9b0a4a4e570843af5b0028f4c9454, type: 2}
+  InjectedOnHitActions: []
+  InjectedOnTickActions: []
+  InjectedOnAssembleActions: []
+  InjectedOnBattleStartActions: []
+  StaticStatModifiers: []

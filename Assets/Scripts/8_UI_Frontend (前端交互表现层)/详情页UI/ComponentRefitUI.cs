@@ -65,8 +65,10 @@ public class ComponentRefitUI : MonoBehaviour
     {
         // 1. 刷新左侧插槽 (根据零件最大孔位动态生成)
         foreach (Transform child in SocketListRoot) Destroy(child.gameObject);
-        int currentMax = editingComponent.GetMaxSockets();
-        for (int i = 0; i < editingComponent.BaseData.MaxSocketCount; i++)
+
+        // --- 👇【核心修正】：同步改为实例化的动态上限 ---
+        int actualMax = editingComponent.GetMaxSockets();
+        for (int i = 0; i < editingComponent.GetMaxSockets(); i++)
         {
             var socketObj = Instantiate(SocketSlotPrefab, SocketListRoot);
             var script = socketObj.GetComponent<SocketSlotUI>();

@@ -4904,10 +4904,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 801539495}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 91.5, y: -21.880001}
-  m_SizeDelta: {x: 163, y: 23.76}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &479983635
 MonoBehaviour:
@@ -18537,6 +18537,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1433d191b73efff4fae0b05fe4820e0e, type: 2}
   DebugAccessoryBundle:
   - {fileID: 11400000, guid: a5b6f5f7baf7a40469eace2f2930134a, type: 2}
+  - {fileID: 11400000, guid: 4051a1faf3a370344b460a321c2f74da, type: 2}
+  - {fileID: 11400000, guid: 19cafbdde41f31046b9f3ac03664bfd6, type: 2}
   AccessoryInventory: []
   DefaultNamePool:
   - "\u82CD\u7A79\u7834\u88C2\u8005"
