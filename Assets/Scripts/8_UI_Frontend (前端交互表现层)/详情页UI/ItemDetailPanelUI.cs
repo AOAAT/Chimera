@@ -29,7 +29,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public GameObject Panel_Movement;
     public GameObject Panel_Support;
     public GameObject Panel_Chassis;
-
+    public GameObject Panel_Accessory;
     [Header("=== 动态背景库 ===")]
     public Sprite[] Bg_Weapon = new Sprite[4];
     public Sprite[] Bg_Core = new Sprite[4];
@@ -47,6 +47,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         public TMP_Text TacticalRoleText;
         public TMP_Text SpecialMechanicText; // 👈 机制文本引用
         public TMP_Text ScrapValueText;
+
     }
 
     [Header("=== 各属性文本绑定 ===")]
@@ -82,6 +83,9 @@ public class ItemDetailPanelUI : MonoBehaviour
     public TMP_Text Chassis_PowerCostText;
     public TMP_Text Chassis_MassText;
     public TMP_Text Chassis_BlockText;
+
+    public CommonUIElements Accessory_Common;
+
 
     public Transform TagsContainer;
     public GameObject TagPrefab;
@@ -130,7 +134,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         Panel_Movement?.SetActive(false);
         Panel_Support?.SetActive(false);
         Panel_Chassis?.SetActive(false);
-
+        Panel_Accessory?.SetActive(false); // 🌟 这一行必须加！
         gameObject.SetActive(true);
         if (canvasGroup) canvasGroup.alpha = 1f;
 
@@ -157,8 +161,9 @@ public class ItemDetailPanelUI : MonoBehaviour
         Panel_Core?.SetActive(false);
         Panel_Movement?.SetActive(false);
         Panel_Support?.SetActive(false);
-
+        Panel_Accessory?.SetActive(false); // 🌟 这一行也必须加！
         gameObject.SetActive(true);
+
         if (canvasGroup) canvasGroup.alpha = 1f;
 
         if (Panel_Chassis != null) Panel_Chassis.SetActive(true);
@@ -448,6 +453,45 @@ public class ItemDetailPanelUI : MonoBehaviour
             yield return new WaitForSecondsRealtime(staggerDelay);
         }
         activeTagRoutine = null;
+    }
+
+    public void ShowAccessoryDetail(InstancedAccessory instance)
+    {
+        if (instance == null || instance.BaseData == null) return;
+        transform.SetAsLastSibling();
+        openTime = Time.time;
+        targetAnchorRect = null;
+
+        // 关闭其他所有面板
+        Panel_Weapon?.SetActive(false);
+        Panel_Core?.SetActive(false);
+        Panel_Movement?.SetActive(false);
+        Panel_Support?.SetActive(false);
+        Panel_Chassis?.SetActive(false);
+
+        // 开启配件面板
+        if (Panel_Accessory != null)
+        {
+            Panel_Accessory.SetActive(true);
+            gameObject.SetActive(true);
+            if (canvasGroup) canvasGroup.alpha = 1f;
+
+            // 填充数据 (复用你最喜欢的 FillCommonData 方法)
+            FillCommonData(
+                Accessory_Common,
+                instance.BaseData.AccessoryName,
+                "", // 配件暂无等级
+                instance.BaseData.AccessoryIcon,
+                instance.BaseData.Description,
+                instance.BaseData.ScrapValue,
+                "逻辑配件",
+                instance.BaseData.SpecialMechanicDesc
+            );
+        }
+
+        // 处理标签渲染 (配件大类固定为“魔法/逻辑”)
+        RenderTags(MacroCategory.Magic, null, instance.BaseData.RequiredTags, 0);
+        RefreshSwitchers();
     }
     // --- 4. 必要的翻译辅助函数 ---
     private string TranslateSubTag(SubTag tag)

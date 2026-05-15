@@ -180,11 +180,12 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void SetupAccessory(InstancedAccessory accessory, Action<InstancedAccessory> onSelected)
     {
+
         cachedAccessory = accessory;
         cachedComponent = null;
         cachedChassis = null;
         isUnequipSlot = false;
-
+ 
         if (accessory != null && accessory.BaseData != null)
         {
             ItemIcon.sprite = accessory.BaseData.AccessoryIcon;
@@ -285,17 +286,24 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         }
     }
 
+    // --- 找到 OnPointerEnter 方法，增加配件分支 ---
+
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (isUnequipSlot) return;
 
-        if (cachedComponent != null && cachedComponent.BaseData != null)
+        if (cachedComponent != null)
         {
             ItemDetailPanelUI.Instance?.ShowComponentDetail(cachedComponent);
         }
-        else if (cachedChassis != null && cachedChassis.BaseData != null)
+        else if (cachedChassis != null)
         {
             ItemDetailPanelUI.Instance?.ShowChassisDetail(cachedChassis.BaseData);
+        }
+        // --- 👇【核心新增】：配件悬停判定 ---
+        else if (cachedAccessory != null)
+        {
+            ItemDetailPanelUI.Instance?.ShowAccessoryDetail(cachedAccessory);
         }
     }
 

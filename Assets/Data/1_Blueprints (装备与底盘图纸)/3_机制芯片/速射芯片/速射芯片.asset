@@ -14,7 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AccessoryID: ACC_003
   AccessoryName: "\u901F\u5C04\u82AF\u7247"
-  Description: "\u63CF\u8FF0\u8BE5\u82AF\u7247\u7684\u903B\u8F91\u529F\u80FD..."
+  Description: "\u5FEB\u901F\u53D1\u5C04"
+  SpecialMechanicDesc: 111111111111
+  ScrapValue: 20
   AccessoryIcon: {fileID: 21300000, guid: 64dfe1a75797d9f41b7097d8d39d5b11, type: 3}
   Rarity: 1
   AllowedTypes: 01000000

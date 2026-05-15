@@ -451,6 +451,33 @@ public class PlayerInventoryManager : MonoBehaviour
     {
         OnInventoryChanged?.Invoke();
     }
+
+    public void ExecuteDismantleAccessory(InstancedAccessory acc)
+    {
+        // 安全拦截：如果是空的，或者正插在武器上，禁止拆解
+        if (acc == null || acc.IsEquipped)
+        {
+            Debug.LogWarning("【系统拦截】尝试拆解不存在或正在使用的芯片。");
+            return;
+        }
+
+        // 1. 经济结算：读取该芯片图纸里配好的 ScrapValue
+        if (GlobalResourceManager.Instance != null)
+        {
+            GlobalResourceManager.Instance.ModifyMaterials(acc.BaseData.ScrapValue);
+        }
+
+        // 2. 物理注销：从列表里彻底踢出
+        if (AccessoryInventory.Contains(acc))
+        {
+            AccessoryInventory.Remove(acc);
+        }
+
+        Debug.Log($"<color=red>【逻辑粉碎】</color> 成功熔毁了芯片 [{acc.BaseData.AccessoryName}]");
+
+        // 3. 广播刷新：让仓库 UI 发现少了一个东西，自动重刷
+        ForceTriggerInventoryEvent();
+    }
     public bool EquipAccessoryToComponent(string accessoryInstanceID, InstancedComponent targetComp, out string error)
     {
         var chip = GetAccessoryInstance(accessoryInstanceID);

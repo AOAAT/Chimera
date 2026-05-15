@@ -129,6 +129,21 @@ public class ItemContextMenuUI : MonoBehaviour
             // 从真实库存里抹杀它！
             PlayerInventoryManager.Instance.ChassisInventory.Remove(currentChassis);
         }
+        else if (currentAccessory != null)
+        {
+            if (currentAccessory.IsEquipped) { ShowError("无法拆解：该芯片正处于激活状态！"); return; }
+
+            int scrapVal = currentAccessory.BaseData.ScrapValue;
+
+            // 物理回收
+            PlayerInventoryManager.Instance.ExecuteDismantleAccessory(currentAccessory);
+
+            // 特效反馈
+            if (JuicyLootEffectManager.Instance != null)
+                JuicyLootEffectManager.Instance.SpawnScrapExplosion(MenuRect.position, scrapVal);
+
+            HideMenu();
+        }
 
         // 3. 把钱打到账上！
         if (GlobalResourceManager.Instance != null)
