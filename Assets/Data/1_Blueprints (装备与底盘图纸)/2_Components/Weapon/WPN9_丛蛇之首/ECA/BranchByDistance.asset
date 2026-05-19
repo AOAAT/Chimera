@@ -13,6 +13,10 @@ MonoBehaviour:
   m_Name: BranchByDistance
   m_EditorClassIdentifier: 
   Priority: 200
+  IsAccessory: 0
+  AllowedComponentType: 1
+  RequiredDelivery: 1
+  RequiredTags: 
   ThresholdDistance: 30
   NearActions:
   - {fileID: 11400000, guid: e4c5e68f0a117c4438eed5afdb8aea4d, type: 2}

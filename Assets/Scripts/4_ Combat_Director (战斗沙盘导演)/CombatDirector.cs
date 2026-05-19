@@ -107,8 +107,7 @@ public class CombatDirector : MonoBehaviour
     }
     public void EnterCombatPhase(MapNodeData nodeData, EncounterLayoutSO overrideLayout = null)
     {
-        // A. 执行物理层面的清理 (确保战场是干净的)
-        // 注意：此时 PerformFullCleanup 内部不再清空 pendingEvent，所以它是安全的
+        // A. 执行物理层面的清理
         PerformFullCleanup();
 
         // B. UI 强制唤醒
@@ -128,17 +127,13 @@ public class CombatDirector : MonoBehaviour
         isCheckingWinCondition = false;
         if (nodeData != null) currentNodeData = nodeData;
 
-        // D. 【核心分支】：判定加载来源
+        // D. 【关键：确定布局数据】
         if (overrideLayout != null)
         {
-            // 模式 1：由事件积木强插的战斗 (如：新手引导)
             this.CurrentLayout = overrideLayout;
-            Debug.Log($"<color=orange>【模式：剧情】</color> 载入特定布局：{overrideLayout.name}");
         }
         else
         {
-            // 模式 2：点击大地图正常进入的随机战斗
-            // 只有在随机战斗时，才彻底清空之前的剧情钩子 (防止污染)
             pendingEventOnVictory = null;
             pendingEventOnFailure = null;
 
@@ -146,17 +141,21 @@ public class CombatDirector : MonoBehaviour
             {
                 int stage = RunManager.Instance.CurrentStage;
                 int layer = (nodeData != null) ? nodeData.LayerIndex : 1;
-                MapNodeType combatType = (nodeData != null) ? nodeData.HiddenRealType : MapNodeType.Enemy_Mixed;
+                MapNodeType combatType = (nodeData != null) ? nodeData.HiddenRealType : MapNodeType.Enemy_Tech;
                 this.CurrentLayout = RunManager.Instance.GetNextEncounter(stage, layer, combatType);
             }
         }
 
-        // E. 物理环境实例化
+        // --- 👇【核心加固逻辑】：只有布局确定后，再处理增援 ---
         if (this.CurrentLayout != null)
         {
+            // 1. 物理环境实例化
             SetupArenaVisuals();
             SpawnEnemiesFromLayout();
             GenerateForbiddenZones();
+
+            // 2. 启动增援时间轴 (增加 Instance 判空保护)
+          
         }
         else
         {
@@ -329,6 +328,19 @@ public class CombatDirector : MonoBehaviour
             }
         }
 
+        if (CurrentLayout != null && CurrentLayout.ReinforcementData != null)
+        {
+            if (ReinforcementManager.Instance != null)
+            {
+                ReinforcementManager.Instance.StartTimeline(CurrentLayout.ReinforcementData);
+            }
+        }
+        else if (ReinforcementManager.Instance != null)
+        {
+            ReinforcementManager.Instance.StopTimeline();
+        }
+
+
         // 3. UI 状态锁定：防止战斗中进行非法操作
         if (StartBattleButton != null) StartBattleButton.interactable = false;
 
@@ -362,8 +374,11 @@ public class CombatDirector : MonoBehaviour
 
         Debug.Log("<color=green>【战斗导演】全员通电完成，逻辑闭环已启动，战斗正式开始！</color>");
     }
+    // --- 替换 CombatDirector.cs 中的整个 Update 方法 ---
+    // --- CombatDirector.cs 修改后的 Update 方法 ---
     private void Update()
     {
+        // 1. 处理空气墙生成
         if (!wallsGenerated)
         {
             if (ArenaReference == null) return;
@@ -371,16 +386,47 @@ public class CombatDirector : MonoBehaviour
             wallsGenerated = true;
         }
 
+        // 2. 状态锁：只有在战斗激活且正在检查胜负时才继续
         if (!IsCombatActive || !isCheckingWinCondition) return;
 
-        bool allEnemiesDead = ActiveEnemies.All(e => e == null || e.CurrentHP <= 0);
-        if (allEnemiesDead)
+        // ---------------------------------------------------------
+        // ⚔️ 核心胜利判定分支
+        // ---------------------------------------------------------
+
+        // 检查场上当前是否有活着的敌人
+        bool isFieldEmpty = ActiveEnemies.All(e => e == null || e.CurrentHP <= 0);
+
+        // 分支 A：当前布局配置了【增援数据】
+        if (CurrentLayout != null && CurrentLayout.ReinforcementData != null)
         {
-            TriggerSettlement(true);
-            return;
+            // 调用我们补全的 IsTimelineFinished
+            bool isTimelineDone = (ReinforcementManager.Instance != null) && ReinforcementManager.Instance.IsTimelineFinished;
+
+            // 增援战胜利条件：所有阶段投递完毕 且 场上敌人杀光
+            if (isTimelineDone && isFieldEmpty)
+            {
+                TriggerSettlement(true);
+                return;
+            }
+        }
+        // 分支 B：普通布局（没有增援）
+        else
+        {
+            // 歼灭战胜利条件：只要场上杀光即赢
+            if (isFieldEmpty)
+            {
+                TriggerSettlement(true);
+                return;
+            }
         }
 
+        // ---------------------------------------------------------
+        // 💀 核心失败判定
+        // ---------------------------------------------------------
+
+        // 检查玩家单位存活状态
         bool allPlayersDead = ActivePlayerUnits.All(p => p == null || p.CurrentHP <= 0);
+
         if (allPlayersDead)
         {
             TriggerSettlement(false);

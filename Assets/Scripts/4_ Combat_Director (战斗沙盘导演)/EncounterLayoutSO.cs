@@ -27,4 +27,8 @@ public class EncounterLayoutSO : ScriptableObject
     [Header("=== 战利品掉落序列 (The Bazaar Loot) ===")]
     public LootSequenceSO NodeLootSequence;
 
+    [Header("=== 动态增援 (可选) ===")]
+    [Tooltip("如果拖入数据，则开启时间轴刷怪机制；留空则维持传统歼灭战")]
+    public ReinforcementConfigSO ReinforcementData;
+
 }

@@ -49,12 +49,15 @@ MonoBehaviour:
     - StatID: 16
       Value: 0.2
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: 50dc2efe5ff6c414e9c575513fde4d82, type: 2}
+    - {fileID: 11400000, guid: 959a7c9575c80bb4984caf8b69c77c3e, type: 2}
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u5728\u94FE\u952F\u672A\u66B4\u51FB\u524D\uFF0C\u94FE\u952F\u7684\u6BCF\u6B21\u653B\u51FB\u90FD\u4F1A\u4E3A\u5947\u7F8E\u62C9\u63D0\u4F9B+10%\u4E34\u65F6\u66B4\u51FB\u7387\u3002\u4E34\u65F6\u66B4\u51FB\u7387\u5728\u94FE\u952F\u66B4\u51FB\u540E\u6E05\u7A7A\u3002"
     ActiveSkill:
@@ -89,12 +92,15 @@ MonoBehaviour:
     - StatID: 16
       Value: 0.2
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: 3564de6d7526d4544a92502fa15bda6f, type: 2}
+    - {fileID: 11400000, guid: 959a7c9575c80bb4984caf8b69c77c3e, type: 2}
     OnHitActions:
     - {fileID: 11400000, guid: 11bbfa8fd292a5e4488729d52664438a, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u5728\u94FE\u952F\u672A\u66B4\u51FB\u524D\uFF0C\u94FE\u952F\u7684\u6BCF\u6B21\u653B\u51FB\u90FD\u4F1A\u4E3A\u5947\u7F8E\u62C9\u63D0\u4F9B+15%\u4E34\u65F6\u66B4\u51FB\u7387\u3002\u4E34\u65F6\u66B4\u51FB\u7387\u5728\u94FE\u952F\u66B4\u51FB\u540E\u6E05\u7A7A\u3002"
     ActiveSkill:
