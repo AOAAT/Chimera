@@ -2262,7 +2262,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e41365d4bea76a4eb4563f4eb20b8fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TotalLayers: 20
+  TotalLayers: 12
   MinNodesPerLayer: 2
   MaxNodesPerLayer: 4
   ForcedLayers:
@@ -2670,7 +2670,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 8ff32f405caf1b3489b22a1ba70ed169, type: 3}
+  m_Sprite: {fileID: 21300000, guid: f12c653e28bc0c94dbbfd7ea74c9850d, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2948,8 +2948,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6, y: -255}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: -5, y: -251}
+  m_SizeDelta: {x: 250.3999, y: 71.1523}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &337562760
 MonoBehaviour:
