@@ -279,10 +279,13 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         {
             if (isUnequipSlot || IsLootMode) return;
 
-            if (cachedComponent != null) ItemContextMenuUI.Instance.ShowMenu(cachedComponent, null, null, Input.mousePosition);
-            else if (cachedChassis != null) ItemContextMenuUI.Instance.ShowMenu(null, cachedChassis, null, Input.mousePosition);
-            // 👇 新增：配件右键
-            else if (cachedAccessory != null) ItemContextMenuUI.Instance.ShowMenu(null, null, cachedAccessory, Input.mousePosition);
+            // --- 👇【加固 D】：通过这种三元运算符，确保只有一个参数是不为 null 的 ---
+            if (cachedComponent != null)
+                ItemContextMenuUI.Instance.ShowMenu(cachedComponent, null, null, Input.mousePosition);
+            else if (cachedChassis != null)
+                ItemContextMenuUI.Instance.ShowMenu(null, cachedChassis, null, Input.mousePosition);
+            else if (cachedAccessory != null)
+                ItemContextMenuUI.Instance.ShowMenu(null, null, cachedAccessory, Input.mousePosition);
         }
     }
 

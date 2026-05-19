@@ -34,34 +34,62 @@ public class ItemContextMenuUI : MonoBehaviour
     }
 
     // 接收右键点击，在鼠标位置展开菜单
+    // --- 请找到 ShowMenu 方法，全量替换为以下“安全封板版” ---
+
     public void ShowMenu(InstancedComponent comp, InstancedChassis chassis, InstancedAccessory accessory, Vector2 screenPos)
     {
+        // --- 👇【加固 A】：基础状态清理 ---
         currentComponent = comp;
         currentChassis = chassis;
-        currentAccessory = accessory; // 👈 解决变量不存在报错
+        currentAccessory = accessory;
 
-        gameObject.SetActive(true);
-        ErrorPromptText.text = "";
+        // 确保菜单物体处于激活状态
+        this.gameObject.SetActive(true);
+        if (ErrorPromptText != null) ErrorPromptText.text = "";
         MenuRect.position = screenPos;
 
-        // 动态显示：只有组件可以强化！底盘点右键，强化按钮会直接隐藏
-        UpgradeButton.gameObject.SetActive(currentComponent != null);
-        UpgradeButton.gameObject.SetActive(comp != null);
-        RefitButton.gameObject.SetActive(comp != null); // 👈 只有零件可以改装
+        // --- 👇【加固 B】：按钮逻辑熔断 ---
+
+        // 1. 强化按钮 (只有零件且非配件时显示)
+        if (UpgradeButton != null)
+        {
+            UpgradeButton.gameObject.SetActive(comp != null && accessory == null);
+        }
+
+        // 2. 核心重点：彻底隐藏改装按钮 (防止未完成的功能导致崩溃)
+        if (RefitButton != null)
+        {
+            RefitButton.gameObject.SetActive(false); // 👈 强制关闭
+        }
+
+        // 3. 拆解按钮 (万能显示)
+        if (DismantleButton != null)
+        {
+            DismantleButton.gameObject.SetActive(true);
+        }
+
+        // --- 👇【加固 C】：废料数值计算防崩 ---
         int scrapVal = 0;
-        if (comp != null)
+        if (comp != null && comp.BaseData != null)
         {
             var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
-            scrapVal = lvData != null ? lvData.ScrapValue : 5;
+            scrapVal = (lvData != null) ? lvData.ScrapValue : 5;
         }
-        else if (chassis != null)
+        else if (chassis != null && chassis.BaseData != null)
         {
             scrapVal = chassis.BaseData.ScrapValue;
         }
+        else if (accessory != null && accessory.BaseData != null)
+        {
+            scrapVal = accessory.BaseData.ScrapValue;
+        }
 
-        DismantleButton.GetComponentInChildren<TMP_Text>().text = $"就地拆解 (+{scrapVal}废料)";
+        if (DismantleButton != null)
+        {
+            var txt = DismantleButton.GetComponentInChildren<TMP_Text>();
+            if (txt != null) txt.text = $"就地拆解 (+{scrapVal}废料)";
+        }
     }
-
     public void HideMenu()
     {
         gameObject.SetActive(false);

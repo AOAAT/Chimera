@@ -241,8 +241,14 @@ public class CombatDirector : MonoBehaviour
         forbiddenZonesContainer = new GameObject("[Forbidden Zones]");
         forbiddenZonesContainer.transform.SetParent(this.transform);
 
-        Vector3 centerPos = CurrentArenaCenter;
-        int noDeployLayer = LayerMask.NameToLayer("NoDeploy");
+        // --- 👇【关键修正 A】：对齐物理参考点 ---
+        // 强制禁区容器的坐标与战场地板保持绝对一致，保证坐标系的原点重合
+        if (ArenaReference != null)
+            forbiddenZonesContainer.transform.position = ArenaReference.transform.position;
+        else
+            forbiddenZonesContainer.transform.localPosition = Vector3.zero;
+
+        forbiddenZonesContainer.transform.localScale = Vector3.one;
 
         if (CurrentLayout == null || CurrentLayout.ForbiddenZones == null) return;
 
@@ -251,37 +257,37 @@ public class CombatDirector : MonoBehaviour
             GameObject zonePhysicsObj = new GameObject("Zone_Blocker_Physics");
             zonePhysicsObj.transform.SetParent(forbiddenZonesContainer.transform);
 
-            Vector3 zonePos = centerPos + new Vector3(rect.x + rect.width / 2f, rect.y - rect.height / 2f, 0f);
-            zonePhysicsObj.transform.position = zonePos;
-            zonePhysicsObj.transform.localScale = Vector3.one;
+            // --- 👇【关键修正 B】：左上角转中心点算法 ---
+            // rect.x, rect.y 是你在编辑器里画出的“矩形左上角”相对于中心点的坐标
+            // 中心点 X = 左边距 + 宽度的一半
+            // 中心点 Y = 顶边距 - 高度的一半 (Unity世界坐标向下为负)
+            Vector3 zoneCenterPos = new Vector3(rect.x + rect.width / 2f, rect.y - rect.height / 2f, 0f);
+            zonePhysicsObj.transform.localPosition = zoneCenterPos;
 
+            // 注入物理碰撞
             BoxCollider2D col = zonePhysicsObj.AddComponent<BoxCollider2D>();
             col.size = new Vector2(rect.width, rect.height);
             col.isTrigger = true;
+            zonePhysicsObj.layer = LayerMask.NameToLayer("NoDeploy");
 
-            if (noDeployLayer != -1) zonePhysicsObj.layer = noDeployLayer;
-
+            // 注入红色半透明视觉
             if (WhitePixelSprite != null)
             {
                 GameObject visualObj = new GameObject("Zone_Visual");
                 visualObj.transform.SetParent(zonePhysicsObj.transform);
                 visualObj.transform.localPosition = Vector3.zero;
-
                 SpriteRenderer sr = visualObj.AddComponent<SpriteRenderer>();
                 sr.sprite = WhitePixelSprite;
 
-                Vector2 spriteSize = sr.sprite.bounds.size;
-                float scaleX = rect.width / spriteSize.x;
-                float scaleY = rect.height / spriteSize.y;
+                // 归一化缩放：目标宽高 / 图片原始尺寸
+                Vector2 spriteWorldSize = sr.sprite.bounds.size;
+                visualObj.transform.localScale = new Vector3(rect.width / spriteWorldSize.x, rect.height / spriteWorldSize.y, 1f);
 
-                visualObj.transform.localScale = new Vector3(scaleX, scaleY, 1f);
-                sr.color = new Color(1f, 0f, 0f, 0.2f);
+                sr.color = new Color(1f, 0f, 0f, 0.3f);
                 sr.sortingLayerName = "DeployZone";
-                sr.sortingOrder = 0;
             }
         }
     }
-
     /// <summary>
     /// 【核心事件】：玩家点击“开始战斗”
     /// </summary>
