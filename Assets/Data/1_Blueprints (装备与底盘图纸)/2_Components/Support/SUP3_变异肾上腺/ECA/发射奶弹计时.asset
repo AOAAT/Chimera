@@ -17,5 +17,5 @@ MonoBehaviour:
   AllowedComponentType: 1
   RequiredDelivery: 1
   RequiredTags: 
-  Interval: 1
+  Interval: 5
   ActionToExecute: {fileID: 11400000, guid: f2b6bd306108b9f4baef844fa99f3fe0, type: 2}

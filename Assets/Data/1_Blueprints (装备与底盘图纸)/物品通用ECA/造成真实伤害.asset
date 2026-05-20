@@ -10,7 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da424b0baaf19fd4f97fb636579eea1a, type: 3}
-  m_Name: Action_DealDamage
+  m_Name: "\u9020\u6210\u771F\u5B9E\u4F24\u5BB3"
   m_EditorClassIdentifier: 
   Priority: 999
-  IsTrueDamage: 0
+  IsAccessory: 0
+  AllowedComponentType: 1
+  RequiredDelivery: 1
+  RequiredTags: 
+  IsTrueDamage: 1

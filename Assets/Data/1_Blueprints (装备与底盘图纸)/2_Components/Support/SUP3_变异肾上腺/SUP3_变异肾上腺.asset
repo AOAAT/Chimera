@@ -25,8 +25,8 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 0
-    BasePrice: 0
-    ScrapValue: 0
+    BasePrice: 40
+    ScrapValue: 10
     Stats:
     - StatID: 4
       Value: 0
@@ -34,6 +34,7 @@ MonoBehaviour:
     - StatID: 0
       Value: 50
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions:
     - {fileID: 11400000, guid: 29aa6755390db2144b97b468a31bed6d, type: 2}
@@ -42,12 +43,12 @@ MonoBehaviour:
     OnTickActions:
     - {fileID: 11400000, guid: 7be67b0c82d249841ba7d47cfc4da48c, type: 2}
     BonusTags: 
-    SpecialMechanicDesc: 
+    SpecialMechanicDesc: "\u6BCF5\u79D2\u949F\uFF0C\u4E3A\u4E00\u4E2A\u968F\u673A\u53CB\u65B9\u65BD\u52A0\u653B\u901F\u589E\u52A0buff\uFF0Cbuff\u6301\u7EED3\u79D2"
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: 
       SkillIcon: {fileID: 0}
-      CPCost: 0
+      CPCost: 40
       Cooldown: 0
       OnSkillCastActions: []
   DeliveryType: 1
@@ -67,4 +68,3 @@ MonoBehaviour:
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8
-  MaxSocketCount: 2

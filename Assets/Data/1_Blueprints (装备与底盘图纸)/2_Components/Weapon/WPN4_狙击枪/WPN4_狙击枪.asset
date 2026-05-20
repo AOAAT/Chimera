@@ -32,10 +32,10 @@ MonoBehaviour:
       Value: 15
       ModType: 0
     - StatID: 10
-      Value: 120
+      Value: 100
       ModType: 0
     - StatID: 11
-      Value: 100
+      Value: 80
       ModType: 0
     - StatID: 13
       Value: 100
@@ -52,6 +52,7 @@ MonoBehaviour:
     - StatID: 19
       Value: 300
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: 8693eeb1f6cbd5847950ee8cdbc6e189, type: 2}
     OnHitActions:
@@ -59,6 +60,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: cf4c400e919d46844b5d3eaf59b631dd, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u4E00\u67AA\u4E00\u4E2A\u3002"
     ActiveSkill:
@@ -96,6 +98,7 @@ MonoBehaviour:
     - StatID: 19
       Value: 300
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: 8693eeb1f6cbd5847950ee8cdbc6e189, type: 2}
     OnHitActions:
@@ -103,6 +106,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: cf4c400e919d46844b5d3eaf59b631dd, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u4E00\u67AA\u4E00\u4E2A\u3002"
     ActiveSkill:

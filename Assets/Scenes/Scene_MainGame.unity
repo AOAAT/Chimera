@@ -2312,7 +2312,7 @@ MonoBehaviour:
   ForcedLayers:
   - LayerIndex: 1
     NodeCount: 1
-    ForcedType: 1
+    ForcedType: 7
   Weight_NormalEnemy: 60
   Weight_Unknown: 40
   Weight_Event: 10
@@ -18789,7 +18789,7 @@ MonoBehaviour:
   CurrentSAN: 100
   Materials: 0
   DaysSurvived: 1
-  MaxPowerCapacity: 160
+  MaxPowerCapacity: 150
   SanityCollapseEvent: {fileID: 11400000, guid: 197ad286e5bb1264794ed7af3743c875, type: 2}
 --- !u!114 &1436878914
 MonoBehaviour:

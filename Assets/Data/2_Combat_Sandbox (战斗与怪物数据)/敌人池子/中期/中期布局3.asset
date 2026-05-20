@@ -69,4 +69,4 @@ MonoBehaviour:
     width: 3
     height: 3
   NodeLootSequence: {fileID: 11400000, guid: 48bd226115a8e204f9e35e9f89acc9b6, type: 2}
-  ReinforcementData: {fileID: 0}
+  ReinforcementData: {fileID: 11400000, guid: d7ae97b88a9b6dc4f8487913432c1ab7, type: 2}
