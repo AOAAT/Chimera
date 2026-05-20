@@ -55,10 +55,11 @@ public class WeaponModule : MonoBehaviour
 
         if (weaponData == null || actualHinge == null) return;
 
-        // --- 👇【核心新增】：死亡断电判定 ---
+        // --- 💀 核心移除：删掉了对 IsCombatActive 的检查 ---
+        // 只要有能源且没死，武器就应该工作
+
         if (mechReceiver != null && mechReceiver.CurrentHP <= 0)
         {
-            // 停止动画，停止索敌，直接跳过
             if (myAnimator != null) myAnimator.enabled = false;
             lockedTarget = null;
             return;

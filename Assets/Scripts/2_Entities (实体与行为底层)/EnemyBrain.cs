@@ -53,6 +53,10 @@ public class EnemyBrain : MonoBehaviour
     {
         if (isDead || CurrentState == AIState.Dead) return;
 
+        // --- 💀 核心移除：删掉了对 IsCombatActive 的检查 ---
+
+        if (myReceiver.CurrentHP <= 0) return;
+
         if (myReceiver.CurrentHP < lastFrameHP)
         {
             ExecuteECAActions(MyData.OnTakeDamageActions, null);

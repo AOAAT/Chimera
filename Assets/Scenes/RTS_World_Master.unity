@@ -12906,9 +12906,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1241586650}
-  - component: {fileID: 1241586649}
   - component: {fileID: 1241586648}
   - component: {fileID: 1241586647}
+  - component: {fileID: 1241586651}
   m_Layer: 0
   m_Name: '[RTS_Logic]'
   m_TagString: Untagged
@@ -12947,19 +12947,6 @@ MonoBehaviour:
   MapWidth: 100
   MapHeight: 12
   CellSize: 1
---- !u!114 &1241586649
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1241586646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef5be651081d20c4ab68ebc5043d23a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MechBasePrefab: {fileID: 2724532761662945261, guid: a723d5ae80659514499dca258d25699b, type: 3}
 --- !u!4 &1241586650
 Transform:
   m_ObjectHideFlags: 0
@@ -12975,6 +12962,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1241586651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1241586646}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9262400579ef8a1408075fae7a1a8c1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MechBasePrefab: {fileID: 2724532761662945261, guid: a723d5ae80659514499dca258d25699b, type: 3}
+  EnemyPool:
+  - {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
+  BaseEnemyPrefab: {fileID: 6389588871143762209, guid: 8dd8ed2a30fb161449e99fbc12a1fb18, type: 3}
 --- !u!1 &1246512421
 GameObject:
   m_ObjectHideFlags: 0

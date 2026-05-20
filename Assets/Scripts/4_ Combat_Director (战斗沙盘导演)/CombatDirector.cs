@@ -58,6 +58,7 @@ public class CombatDirector : MonoBehaviour
     private void Awake()
     {
         if (Instance == null) Instance = this;
+        IsCombatActive = true;
     }
 
     public static void ClearUnitRegistry()
