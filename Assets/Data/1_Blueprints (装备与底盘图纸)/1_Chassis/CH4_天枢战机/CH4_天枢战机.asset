@@ -36,7 +36,7 @@ MonoBehaviour:
   - StatID: 2
     Value: 10
     ModType: 0
-  BasePrice: 200
+  BasePrice: 150
   ScrapValue: 50
   LogicCenterOffset: {x: 0, y: 0}
   Sockets:

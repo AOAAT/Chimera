@@ -1,63 +1,54 @@
-﻿// --- RTSClickIndicator.cs (打包安全加固版) ---
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RTSClickIndicator : MonoBehaviour
 {
-    [Header("=== 视觉配置 ===")]
-    [Tooltip("请在 Inspector 面板中拖入你想要显示的箭头/圆点贴图")]
-    public Sprite ArrowSprite;
+    [Header("=== 抵达判定 ===")]
+    public float ReachThreshold = 0.6f;
 
-    public float Duration = 0.5f;
+    [Header("=== 呼吸动效 ===")]
+    public float RotationSpeed = 120f;
+    public float PulseSpeed = 2f;
+    public float PulseAmount = 0.2f;
 
-    private float timer = 0f;
-    private SpriteRenderer[] parts;
+    private Vector3 initialScale;
 
     void Start()
     {
-        // 1. 【防遮挡】：让它稍微靠近摄像机一点，防止被地板遮住
-        transform.position = new Vector3(transform.position.x, transform.position.y, -1f);
+        initialScale = transform.localScale;
 
-        parts = new SpriteRenderer[4];
-        for (int i = 0; i < 4; i++)
-        {
-            GameObject go = new GameObject("ArrowPart");
-            go.transform.SetParent(this.transform, false);
-            var sr = go.AddComponent<SpriteRenderer>();
+        if (GlobalAudioManager.Instance != null)
+            GlobalAudioManager.Instance.PlayUISound(UISoundType.Generic_Click);
 
-            // 2. 👇【核心修复】：使用面板拖入的资源，彻底移除 UnityEditor 依赖
-            if (ArrowSprite != null)
-            {
-                sr.sprite = ArrowSprite;
-            }
-            else
-            {
-                // 如果策划忘了拖图，我们给一个默认的 Log 提示
-                Debug.LogWarning("【系统提示】RTSClickIndicator 缺少贴图引用！请在预制体面板拖入贴图。");
-            }
-
-            sr.color = new Color(0, 1, 0, 0.9f); // 亮绿色
-            sr.sortingLayerName = "UI";
-            sr.sortingOrder = 100;
-            parts[i] = sr;
-
-            float angle = i * 90 * Mathf.Deg2Rad;
-            go.transform.localPosition = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0) * 0.6f;
-            go.transform.localScale = Vector3.one * 0.25f;
-        }
+        // 深度对齐：确保在地面和机甲之间
+        transform.position = new Vector3(transform.position.x, transform.position.y, -0.5f);
     }
 
     void Update()
     {
-        timer += Time.deltaTime;
-        float p = timer / Duration;
-        if (p >= 1f) { Destroy(gameObject); return; }
+        // 1. 平滑自转
+        transform.Rotate(Vector3.forward, RotationSpeed * Time.deltaTime);
 
-        foreach (var sr in parts)
+        // 2. 呼吸缩放 (吸纳自 PersistentWaypoint)
+        float pulse = 1.0f + Mathf.PingPong(Time.time * PulseSpeed, PulseAmount);
+        transform.localScale = initialScale * pulse;
+
+        // 3. 抵达检测逻辑
+        if (BattleCommandManager.Instance != null)
         {
-            // 动画：向中心靠拢
-            sr.transform.localPosition = Vector3.Lerp(sr.transform.localPosition, Vector3.zero, p);
-            // 渐隐
-            Color c = sr.color; c.a = 1 - p; sr.color = c;
+            var units = BattleCommandManager.Instance.SelectedUnits;
+            foreach (var unit in units)
+            {
+                if (unit == null) continue;
+
+                Vector2 unitPos2D = unit.transform.position;
+                Vector2 myPos2D = transform.position;
+
+                if (Vector2.Distance(unitPos2D, myPos2D) < ReachThreshold)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
+            }
         }
     }
 }

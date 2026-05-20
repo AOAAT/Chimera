@@ -101,9 +101,9 @@ public class EntityHUD : MonoBehaviour
 
         // 1. 生存组 Fading
         float targetSurvivalAlpha = 0;
-        bool forceShow = (!targetReceiver.isEnemy && AlwaysShowIfPlayer) ||
-                         (BattleCommandManager.Instance != null && BattleCommandManager.Instance.SelectedUnit != null && BattleCommandManager.Instance.SelectedUnit.gameObject == targetReceiver.gameObject);
-
+        bool isSelected = BattleCommandManager.Instance != null &&
+                             BattleCommandManager.Instance.SelectedUnits.Contains(targetReceiver.GetComponent<ChimeraAIController>());
+        bool forceShow = (!targetReceiver.isEnemy && AlwaysShowIfPlayer) || isSelected;
         if (forceShow || survivalDisplayTimer > 0) targetSurvivalAlpha = 1;
         if (survivalDisplayTimer > 0 && !forceShow) survivalDisplayTimer -= Time.deltaTime;
 

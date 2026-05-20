@@ -15,7 +15,7 @@ MonoBehaviour:
   PoolWeight: 10
   TargetStage: 1
   MinDepth: 0
-  MaxDepth: 5
+  MaxDepth: 7
   AllowedNodeTypes: 01000000020000000300000004000000
   LayoutList:
   - {fileID: 11400000, guid: 4a80c51a73cb00e4d805205a667beea5, type: 2}

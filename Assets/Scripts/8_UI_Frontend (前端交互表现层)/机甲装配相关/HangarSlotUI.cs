@@ -1,107 +1,105 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.EventSystems;
 
-public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class HangarSlotUI : MonoBehaviour
 {
-    [Header("=== 状态切换节点 ===")]
+    [Header("=== RTS 生产配置 ===")]
+    public GameObject MechPrefab; // 指向 [Base_Mech_Unit]
     public GameObject EmptyStateObj;
     public GameObject OccupiedStateObj;
 
-    [Header("=== 占用态 UI 绑定 ===")]
+    [Header("=== 视觉展现 ===")]
     public RectTransform UnitVisualContainer;
     public TMP_Text UnitNameText;
-    public TMP_Text HPText;
-    public TMP_Text APText;
-    public TMP_Text PowerText;
-
-    // 👇【核心修复】：锁死底层换算率，统一暴露 PreviewScale
-    [Header("=== 视觉缩放与排版控制 ===")]
-    [Range(0.1f, 3f)]
     public float PreviewScale = 1.0f;
-    private const float WorldToUIMultiplier = 100f; // 锁死
-
-    [Header("=== 战场部署设置 ===")]
-    public GameObject MechPrefab;
 
     private SavedUnitProfile bindedProfile;
-    public int mySlotIndex = -1;
-    public GameObject DeployedStampObj;
-
-    private GameObject dragGhost;
-    private RectTransform ghostRect;
-    private Canvas rootCanvas;
+    private int mySlotIndex = -1;
 
     public void RefreshSlot(int index, SavedUnitProfile profile)
     {
         mySlotIndex = index;
         bindedProfile = profile;
 
-        if (profile == null || profile.ChassisData == null)
+        bool hasUnit = (profile != null && profile.ChassisData != null);
+        EmptyStateObj.SetActive(!hasUnit);
+        OccupiedStateObj.SetActive(hasUnit);
+
+        if (hasUnit)
         {
-            EmptyStateObj.SetActive(true);
-            OccupiedStateObj.SetActive(false);
-            if (DeployedStampObj != null) DeployedStampObj.SetActive(false);
+            UnitNameText.text = profile.UnitName;
+            BuildUnitVisual(profile);
+        }
+    }
+
+    public void OnSlotClicked()
+    {
+        if (bindedProfile == null)
+        {
+            // 槽位为空：打开车间新建机甲
+            HangarMenuUI.Instance.TriggerCreateNewUnit(mySlotIndex);
         }
         else
         {
-            EmptyStateObj.SetActive(false);
-            OccupiedStateObj.SetActive(true);
-
-            float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
-            foreach (string compID in profile.EquippedComponentIDs)
+            // 槽位已有：Shift+点击=生产，普通点击=详情
+            if (Input.GetKey(KeyCode.LeftShift))
             {
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null && comp.BaseData != null)
-                {
-                    var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
-                    if (lvData != null) maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
-                }
+                TryInstantSpawn();
             }
-
-            UnitNameText.text = profile.UnitName;
-            HPText.text = $"HP: {profile.CurrentHP} / {maxHP}";
-            APText.text = $"AP: {profile.CurrentAP}";
-            PowerText.text = $"耗电: {CalculateTotalPowerCost(profile)}";
-
-            BuildUnitVisual(profile);
-
-            bool isDeployed = profile.IsDeployed;
-            CanvasGroup group = GetComponent<CanvasGroup>();
-            if (group == null) group = gameObject.AddComponent<CanvasGroup>();
-            group.alpha = isDeployed ? 0.5f : 1.0f;
-
-            if (DeployedStampObj != null) DeployedStampObj.SetActive(isDeployed);
+            else
+            {
+                HangarMenuUI.Instance.TriggerOpenUnitDetail(mySlotIndex, bindedProfile);
+            }
         }
     }
 
-    private float CalculateTotalPowerCost(SavedUnitProfile profile)
+    private void TryInstantSpawn()
     {
-        if (profile == null || profile.ChassisData == null) return 0f;
+        // 1. 电网负载审计
+        int cost = GlobalResourceManager.Instance.CalculateUnitPowerCost(bindedProfile);
+        int available = GlobalResourceManager.Instance.MaxPowerCapacity - GlobalResourceManager.Instance.GetTotalUsedPower();
 
-        float power = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.PowerCost);
-
-        if (PlayerInventoryManager.Instance == null) return power;
-
-        foreach (string compID in profile.EquippedComponentIDs)
+        if (available < cost)
         {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (comp != null && comp.BaseData != null)
-            {
-                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
-                if (lvData != null) power += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
-            }
+            Debug.LogWarning("【RTS】电力负载过高，无法调度更多机甲！");
+            return;
         }
-        return power;
+
+        // 2. 确定生产位置 (相机中心点吸附网格)
+        Vector3 spawnPos = Camera.main.transform.position;
+        spawnPos.z = 0;
+        if (RTSGridSystem.Instance != null)
+        {
+            spawnPos = RTSGridSystem.Instance.GetSnappedWorldPos(spawnPos);
+        }
+
+        // 3. 实例化与初始化
+        GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
+        MechUnit2D mechScript = newMech.GetComponent<MechUnit2D>();
+
+        // 注入数据 (关键：此方法内部会运行 Assemble 逻辑)
+        mechScript.InitUnitData(bindedProfile);
+
+        // 4. 🔥 物理标准契约重塑 (RTS 核心：圆形碰撞)
+        var oldBox = newMech.GetComponent<BoxCollider2D>();
+        if (oldBox != null) oldBox.enabled = false;
+
+        CircleCollider2D circle = newMech.GetComponent<CircleCollider2D>();
+        if (circle == null) circle = newMech.AddComponent<CircleCollider2D>();
+        circle.radius = 0.35f;
+
+        // 5. 表现反馈
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
+        PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
+
+        Debug.Log($"<color=#00FF00>【战地调度】机甲 {bindedProfile.UnitName} 已空降成功。</color>");
     }
 
+    // 渲染 UI 缩略图逻辑 (保持原样，不省略)
     private void BuildUnitVisual(SavedUnitProfile profile)
     {
         foreach (Transform child in UnitVisualContainer) Destroy(child.gameObject);
-
-        // PreviewScale 缩放！
         UnitVisualContainer.localScale = Vector3.one * PreviewScale;
 
         GameObject chassisObj = new GameObject("UI_ChassisBase");
@@ -114,173 +112,25 @@ public class HangarSlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         {
             int slotIdx = profile.SlotIndices[i];
             string compID = profile.EquippedComponentIDs[i];
-
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp == null || comp.BaseData == null) continue;
 
             var slotDef = profile.ChassisData.Sockets[slotIdx];
-
-            GameObject slotObj = new GameObject($"UI_Slot_{slotDef.SlotName}");
+            GameObject slotObj = new GameObject($"Socket_{slotIdx}");
             slotObj.transform.SetParent(chassisObj.transform, false);
             RectTransform slotRect = slotObj.AddComponent<RectTransform>();
-            slotRect.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
+            slotRect.anchoredPosition = slotDef.LocalPosition * 100f;
             slotRect.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
 
-            GameObject hingeObj = new GameObject("UI_Hinge");
-            hingeObj.transform.SetParent(slotRect, false);
-            hingeObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
-            hingeObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
+            GameObject visObj = new GameObject("Visual");
+            visObj.transform.SetParent(slotRect, false);
+            visObj.transform.localRotation = Quaternion.Euler(0, 0, comp.BaseData.BaseRotationOffset);
+            visObj.transform.localScale = Vector3.one * (slotDef.DefaultComponentScale * comp.BaseData.VisualScaleMultiplier);
 
-            GameObject visObj = new GameObject("Sprite_Visual");
-            visObj.transform.SetParent(hingeObj.transform, false);
             Image compImg = visObj.AddComponent<Image>();
             compImg.sprite = comp.BaseData.ComponentIcon;
             compImg.SetNativeSize();
-            compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
+            compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * 100f;
         }
-    }
-
-    public void OnSlotClicked()
-    {
-        if (bindedProfile != null && bindedProfile.IsDeployed)
-        {
-            Debug.LogWarning("【系统提示】该机甲正在战场执行任务，无法改装！");
-            return;
-        }
-
-        bool isEmptySlot = (bindedProfile == null || bindedProfile.ChassisData == null);
-
-        if (isEmptySlot) HangarMenuUI.Instance.TriggerCreateNewUnit(mySlotIndex);
-        else HangarMenuUI.Instance.TriggerOpenUnitDetail(mySlotIndex, bindedProfile);
-    }
-
-    public void OnBeginDrag(PointerEventData eventData)
-    {
-        if (bindedProfile == null || bindedProfile.ChassisData == null || bindedProfile.IsDeployed) return;
-        if (eventData.button != PointerEventData.InputButton.Left) return;
-
-        if (rootCanvas == null) rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
-
-        dragGhost = new GameObject("UI_DragGhost");
-        dragGhost.transform.SetParent(rootCanvas.transform, false);
-        dragGhost.transform.SetAsLastSibling();
-        ghostRect = dragGhost.AddComponent<RectTransform>();
-
-        if (UnitVisualContainer.childCount > 0)
-        {
-            GameObject visualClone = Instantiate(UnitVisualContainer.GetChild(0).gameObject, dragGhost.transform);
-            visualClone.transform.localPosition = Vector3.zero;
-            visualClone.transform.localScale = Vector3.one * PreviewScale;
-        }
-
-        CanvasGroup group = dragGhost.AddComponent<CanvasGroup>();
-        group.alpha = 0.6f;
-        group.blocksRaycasts = false;
-
-        UpdateGhostPosition(eventData);
-    }
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        if (dragGhost != null) UpdateGhostPosition(eventData);
-    }
-
-    public void OnEndDrag(PointerEventData eventData)
-    {
-        if (dragGhost != null) Destroy(dragGhost);
-        if (bindedProfile == null || bindedProfile.ChassisData == null || bindedProfile.IsDeployed) return;
-
-        GameObject droppedObj = eventData.pointerCurrentRaycast.gameObject;
-        if (droppedObj != null)
-        {
-            HangarSlotUI targetSlot = droppedObj.GetComponentInParent<HangarSlotUI>();
-            if (targetSlot != null && targetSlot != this)
-            {
-                int sourceIndex = this.mySlotIndex;
-                int targetIndex = targetSlot.mySlotIndex;
-                var inventory = PlayerInventoryManager.Instance.HangarUnits;
-
-                if (inventory[targetIndex] != null && inventory[targetIndex].IsDeployed)
-                {
-                    Debug.LogWarning("【防撞预警】目标车位上的机甲正在前线交战，无法挪车！");
-                    return;
-                }
-
-                SavedUnitProfile temp = inventory[sourceIndex];
-                inventory[sourceIndex] = inventory[targetIndex];
-                inventory[targetIndex] = temp;
-                HangarMenuUI.Instance.RefreshHangar();
-                return;
-            }
-        }
-
-        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsDeploymentPhase)
-        {
-            Debug.LogWarning("【部署拒绝】当前不在战前部署阶段！");
-            return;
-        }
-
-        if (MechPrefab == null) return;
-
-        Vector3 worldPoint = Camera.main.ScreenToWorldPoint(eventData.position);
-        Vector2 dropPos2D = new Vector2(worldPoint.x, worldPoint.y);
-
-        int noDeployLayerMask = LayerMask.GetMask("NoDeploy");
-        Collider2D forbiddenHit = Physics2D.OverlapCircle(dropPos2D, 0.5f, noDeployLayerMask);
-        if (forbiddenHit != null) return;
-
-        Collider2D[] allHits = Physics2D.OverlapPointAll(dropPos2D);
-        bool isValidDeployZone = false;
-        foreach (var hit in allHits)
-        {
-            if (hit.CompareTag("DeployZone"))
-            {
-                isValidDeployZone = true;
-                break;
-            }
-        }
-
-        if (isValidDeployZone)
-        {
-            // 1. 算一下这台待空投的机甲要吃多少电
-            int thisMechPower = GlobalResourceManager.Instance.CalculateUnitPowerCost(bindedProfile);
-
-            // 2. 算一下战场上其他的机甲已经占了多少电
-            int currentlyUsed = GlobalResourceManager.Instance.GetTotalUsedPower();
-
-            // 3. 算总账：如果加上这台就爆闸了！
-            if (currentlyUsed + thisMechPower > GlobalResourceManager.Instance.MaxPowerCapacity)
-            {
-                Debug.LogWarning($"【空投驳回】电网超载！这台机甲需要 {thisMechPower} 电量，剩余可用电量仅 {GlobalResourceManager.Instance.MaxPowerCapacity - currentlyUsed}！");
-
-                // (未来这里可以接一个屏幕红字飘字的错误提示)
-                return; // 直接拦截！跳出，机甲弹回原位！
-            }
-
-            // ==========================================
-            // 安检通过，正式空投！
-            // ==========================================
-            bindedProfile.IsDeployed = true;
-            Vector3 spawnPos = new Vector3(dropPos2D.x, dropPos2D.y, 0f);
-            GameObject newMech = Instantiate(MechPrefab, spawnPos, Quaternion.identity);
-
-            MechUnit2D mechScript = newMech.GetComponent<MechUnit2D>();
-            if (mechScript != null) mechScript.InitUnitData(bindedProfile);
-
-            HangarMenuUI.Instance.RefreshHangar();
-
-            // 强行刷新全局顶部资源栏的电量刻度！
-            PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
-        }
-    }
-
-    private void UpdateGhostPosition(PointerEventData eventData)
-    {
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            rootCanvas.transform as RectTransform,
-            eventData.position,
-            eventData.pressEventCamera,
-            out Vector2 localPointerPosition);
-        ghostRect.localPosition = localPointerPosition;
     }
 }

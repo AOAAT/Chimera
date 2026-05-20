@@ -193,18 +193,28 @@ public class ReinforcementManager : MonoBehaviour
 
         GameObject enemyObj = null;
 
+        // 【新增逻辑】尝试获取 CombatDirector 中的活动敌人容器作为父节点
+        Transform enemyContainer = null;
+        if (CombatDirector.Instance != null)
+        {
+            Transform foundContainer = CombatDirector.Instance.transform.Find("[Active Enemies]");
+            if (foundContainer != null) enemyContainer = foundContainer;
+        }
+
         try
         {
             if (data.Archetype == EnemyArchetype.Modular)
             {
                 if (CombatDirector.Instance.ModularEnemyPrefab == null) Debug.LogError("<color=red>[Spawn-Debug] 致命错误：ModularEnemyPrefab 丢失！</color>");
-                enemyObj = Instantiate(CombatDirector.Instance.ModularEnemyPrefab, pos, Quaternion.identity);
+                // 【重构逻辑】将敌人作为子物体实例化到容器中
+                enemyObj = Instantiate(CombatDirector.Instance.ModularEnemyPrefab, pos, Quaternion.identity, enemyContainer);
                 enemyObj.GetComponent<MechUnit2D>()?.InitAsEliteEnemy(data);
             }
             else
             {
                 if (CombatDirector.Instance.BaseEnemyPrefab == null) Debug.LogError("<color=red>[Spawn-Debug] 致命错误：BaseEnemyPrefab 丢失！</color>");
-                enemyObj = Instantiate(CombatDirector.Instance.BaseEnemyPrefab, pos, Quaternion.identity);
+                // 【重构逻辑】将敌人作为子物体实例化到容器中
+                enemyObj = Instantiate(CombatDirector.Instance.BaseEnemyPrefab, pos, Quaternion.identity, enemyContainer);
                 EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
                 if (brain != null) brain.MyData = data;
                 else Debug.LogError($"<color=red>[Spawn-Debug] 预制体上缺少 EnemyBrain 组件！</color>");
@@ -250,7 +260,9 @@ public class ReinforcementManager : MonoBehaviour
             if (physCol != null) physCol.isTrigger = originalTriggerState;
         }
     }
+
     public bool IsTimelineFinished => allPhasesFinished;
+
     public float Progress
     {
         get

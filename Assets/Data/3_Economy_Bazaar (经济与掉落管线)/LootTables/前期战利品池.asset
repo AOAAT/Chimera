@@ -90,19 +90,19 @@ MonoBehaviour:
       Level: 0
     - ComponentBlueprint: {fileID: 11400000, guid: d424ca5c6e64c514cbd97d9ab05a9129, type: 2}
       ChassisBlueprint: {fileID: 0}
-      Level: 0
-    - ComponentBlueprint: {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
-      ChassisBlueprint: {fileID: 0}
-      Level: 0
+      Level: 1
     - ComponentBlueprint: {fileID: 0}
       ChassisBlueprint: {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
-      Level: 0
+      Level: 1
     - ComponentBlueprint: {fileID: 0}
       ChassisBlueprint: {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
-      Level: 0
-    - ComponentBlueprint: {fileID: 0}
-      ChassisBlueprint: {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
-      Level: 0
+      Level: 1
     - ComponentBlueprint: {fileID: 11400000, guid: 1433d191b73efff4fae0b05fe4820e0e, type: 2}
       ChassisBlueprint: {fileID: 0}
-      Level: 0
+      Level: 1
+    - ComponentBlueprint: {fileID: 0}
+      ChassisBlueprint: {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
+      Level: 1
+    - ComponentBlueprint: {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 1

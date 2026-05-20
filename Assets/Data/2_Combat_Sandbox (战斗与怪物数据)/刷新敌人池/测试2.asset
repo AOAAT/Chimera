@@ -17,7 +17,7 @@ MonoBehaviour:
     Direction: 0
     Duration: 20
     SpawnInterval: 5
-    MaxEnemiesOnField: 5
+    MaxEnemiesOnField: 4
     MaxPerSpawn: 3
     PhaseEnemyPool:
     - {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
@@ -27,8 +27,8 @@ MonoBehaviour:
     Direction: 4
     Duration: 20
     SpawnInterval: 5
-    MaxEnemiesOnField: 6
-    MaxPerSpawn: 4
+    MaxEnemiesOnField: 5
+    MaxPerSpawn: 3
     PhaseEnemyPool:
     - {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
     - {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
