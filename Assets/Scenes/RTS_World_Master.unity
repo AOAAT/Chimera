@@ -5073,8 +5073,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   KeyboardSpeed: 20
   DragSensitivity: 1.5
-  MinX: 0
-  MaxX: 100
+  MinX: 10
+  MaxX: 90
 --- !u!224 &532180386 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4429230961049966036, guid: 55de2045bc1e1c44981a15bf870414b6, type: 3}
