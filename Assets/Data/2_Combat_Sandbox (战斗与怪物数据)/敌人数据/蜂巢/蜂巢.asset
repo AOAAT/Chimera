@@ -30,7 +30,7 @@ MonoBehaviour:
     Value: 50
     ModType: 0
   - StatID: 30
-    Value: 150
+    Value: 140
     ModType: 0
   - StatID: 32
     Value: 2
