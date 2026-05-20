@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PoolWeight: 10
   TargetStage: 1
-  MinDepth: 7
+  MinDepth: 5
   MaxDepth: 20
   AllowedNodeTypes: 01000000020000000300000004000000
   LayoutList:

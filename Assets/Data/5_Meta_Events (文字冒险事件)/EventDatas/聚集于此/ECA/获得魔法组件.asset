@@ -13,9 +13,17 @@ MonoBehaviour:
   m_Name: "\u83B7\u5F97\u9B54\u6CD5\u7EC4\u4EF6"
   m_EditorClassIdentifier: 
   Rewards:
-  - Mode: 1
-    ComponentBlueprint: {fileID: 0}
+  - Mode: 0
+    ForceClaim: 0
+    ComponentBlueprint: {fileID: 11400000, guid: b23cfdf770727b746871901a4dd5b6ef, type: 2}
     Level: 0
-    LootPool: {fileID: 11400000, guid: 123a11ef8e93806448cf8b36a0ef0762, type: 2}
+    LootPool: {fileID: 0}
+    ProtocolBuff: {fileID: 0}
+    ProtocolDuration: 0
+  - Mode: 0
+    ForceClaim: 0
+    ComponentBlueprint: {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
+    Level: 0
+    LootPool: {fileID: 0}
     ProtocolBuff: {fileID: 0}
     ProtocolDuration: 0

@@ -122,6 +122,50 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &5314768
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5314770}
+  - component: {fileID: 5314769}
+  m_Layer: 0
+  m_Name: '[DebugConsole]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &5314769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5314768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d54afd79795a564d93f1fe91774c216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &5314770
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5314768}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.018000126, y: 0.017999977, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &28388064
 GameObject:
   m_ObjectHideFlags: 0
@@ -10005,7 +10049,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 899615175}
-  - component: {fileID: 899615174}
   - component: {fileID: 899615173}
   m_Layer: 0
   m_Name: '[7. Reinforcement Manager]'
@@ -10026,20 +10069,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5385b2a3462eaa47b3061b3370e8506, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &899615174
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 899615172}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f166c90b836528045a0e96ee0beaa204, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  UIAtlas: {fileID: 11400000, guid: 1abb550a1533c9a438175fb8150be203, type: 2}
-  PoolSize: 15
 --- !u!4 &899615175
 Transform:
   m_ObjectHideFlags: 0
@@ -11558,8 +11587,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: 8.4, y: -90.7}
+  m_SizeDelta: {x: 200.8061, y: 54.1814}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &995130643
 MonoBehaviour:
@@ -12998,7 +13027,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u4F60\u597D\u54C7\uFF01\u770B\u5230\u8FD9\u884C\u5B57\uFF0C\u8BF4\u660E\u4F60\u6682\u505C\u6E38\u620F\u5566\u3002\n\n\u8FD9\u6B3E\u6E38\u620F\u662F\u6211\u5728\u8BFE\u4F59\u65F6\u95F4\u4E00\u4E2A\u4EBA\u65AD\u65AD\u7EED\u7EED\u5236\u4F5C\u7684\uFF0C\u6E38\u620F\u5B8C\u6210\u5EA6\u53EF\u4EE5\u8BF4\u8FD8\u4E0D\u7B97\u5B8C\u5584\uFF1A\u5F88\u591A\u4F18\u5316\u6E38\u620F\u4F53\u9A8C\u7684\u90E8\u5206\u8FD8\u6CA1\u6709\u505A\u597D\uFF0C\u6E38\u620F\u6570\u503C\u662F\u7528\u811A\u586B\u7684\uFF0C\u97F3\u6548\u8FD8\u6CA1\u6709\u914D\u7F6E\u5B8C\u5168\uFF0C\u65B0\u624B\u5F15\u5BFC\u4E5F\u8FD8\u6CA1\u6709\u5B8C\u5168\u505A\u597D\u3002\u5728\u8FD9\u91CC\u6211\u9700\u8981\u5148\u5411\u73A9\u5BB6\uFF0C\u4E5F\u5C31\u662F\u60A8\uFF0C\u9053\u4E2A\u6B49\u3002\n\n\u5982\u679C\u60A8\u5728\u6E38\u620F\u8FC7\u7A0B\u4E2D\u9047\u5230\u56F0\u6270\uFF0C\u8FD9\u91CC\u6709\u51E0\u4E2A\u5C0F\u63D0\u793A\uFF0C\u5C31\u7B97\u662F\u66F2\u7EBF\u6551\u56FD\uFF0C\u5B8C\u5584\u4E00\u4E0B\u6211\u8FD8\u6CA1\u641E\u5B8C\u7684\u65B0\u624B\u6559\u7A0B\u5427\uFF08\u5FC3\u865A\uFF09\n1.\u5728\u4ED3\u5E93\u4E2D\uFF0C\u60A8\u53EF\u4EE5\u53F3\u952E\u5DF2\u6709\u7684\u7269\u54C1\uFF0C\u8FDB\u884C\u5347\u7EA7\u6216\u62C6\u89E3\u3002\u53EA\u8981\u6709\u4E24\u4E2A\u76F8\u540C\u4E14\u540C\u7B49\u7EA7\u7EC4\u4EF6\uFF0C\u60A8\u5C31\u53EF\u4EE5\u5411\u4E0A\u5408\u6210\u66F4\u9AD8\u7EA7\uFF08\u76EE\u524D\u7531\u4E8E\u6570\u503C\u8FD8\u4E0D\u5B8C\u5584\uFF0C\u6700\u9AD8\u4E3A2\u7EA7\uFF09\n2.\u60A8\u53EF\u4EE5\u540C\u65F6\u6D3E\u9063\u591A\u4E2A\u5355\u4F4D\uFF0C\u53EA\u8981\u5B83\u4EEC\u603B\u7684\u80FD\u8017\u6CA1\u6709\u8D85\u8FC7\u60A8\u5DE6\u4E0B\u89D2\u663E\u793A\u7684\u4EA7\u7535\u91CF\u5373\u53EF\u3002\u8BD5\u7740\u5C06\u591A\u4E2A\u5947\u7F8E\u62C9\u62D6\u62FD\u4E0A\u573A\u5427\uFF01\n3.\u5728\u5947\u7F8E\u62C9\u7BA1\u7406\u9875\u9762\uFF0C\u60A8\u53EF\u4EE5\u70B9\u51FB\u5DF2\u6709\u7684\u5947\u7F8E\u62C9\u8FDB\u884C\u4FEE\u6539\uFF1B\u6216\u8005\u70B9\u51FB\u56DE\u6536\u5947\u7F8E\u62C9\uFF0C\u5C06\u5E95\u76D8\u548C\u7EC4\u4EF6\u8FDB\u884C\u5168\u91CF\u56DE\u6536\u3002\n4.\u4E3B\u52A8\u6280\u80FD\u53EF\u4EE5\u901A\u8FC7\u6309\u6570\u5B57\u5FEB\u6377\u952E1~4\u6216\u624B\u52A8\u70B9\u51FB\u56FE\u6807\u91CA\u653E\u3002\n5.\u60A8\u53EF\u4EE5\u5DE6\u952E\u70B9\u51FB\u5355\u4F4D\u8FDB\u884C\u9009\u4E2D\uFF0C\u53F3\u952E\u63A7\u5236\u79FB\u52A8\u6216\u6307\u5B9A\u653B\u51FB\u76EE\u6807\u3002\n\n\u611F\u8C22\u60A8\u8FD9\u4E2A\u5C0F\u9879\u76EE\u7684\u652F\u6301\uFF01\n\u5982\u679C\u60A8\u6709bug\u6216\u5EFA\u8BAE\u5E0C\u671B\u53CD\u9988\uFF0C\u53EF\u4EE5\u901A\u8FC7\u90AE\u7BB1\u6216\u5FAE\u4FE1\u8054\u7CFB\u6211\u3002\u60A8\u7684\u6BCF\u4E00\u4E2A\u53CD\u9988\u6211\u90FD\u5C06\u611F\u6FC0\u4E0D\u5C3D\uFF01\n\n\u90AE\u7BB1\uFF1A2072377707@qq.com\n\u5FAE\u4FE1\uFF1AHSX18653015867\n"
+  m_text: "\u4F60\u597D\u54C7\uFF01\u770B\u5230\u8FD9\u884C\u5B57\uFF0C\u8BF4\u660E\u4F60\u6682\u505C\u6E38\u620F\u5566\u3002\n\n\u8FD9\u6B3E\u6E38\u620F\u662F\u6211\u5728\u8BFE\u4F59\u65F6\u95F4\u4E00\u4E2A\u4EBA\u65AD\u65AD\u7EED\u7EED\u5236\u4F5C\u7684\uFF0C\u6E38\u620F\u5B8C\u6210\u5EA6\u53EF\u4EE5\u8BF4\u8FD8\u4E0D\u7B97\u5B8C\u5584\uFF1A\u5F88\u591A\u4F18\u5316\u6E38\u620F\u4F53\u9A8C\u7684\u90E8\u5206\u8FD8\u6CA1\u6709\u505A\u597D\uFF0C\u6E38\u620F\u6570\u503C\u662F\u7528\u811A\u586B\u7684\uFF0C\u97F3\u6548\u8FD8\u6CA1\u6709\u914D\u7F6E\u5B8C\u5168\uFF0C\u65B0\u624B\u5F15\u5BFC\u4E5F\u8FD8\u6CA1\u6709\u5B8C\u5168\u505A\u597D\u3002\u5728\u8FD9\u91CC\u6211\u9700\u8981\u5148\u5411\u73A9\u5BB6\uFF0C\u4E5F\u5C31\u662F\u60A8\uFF0C\u9053\u4E2A\u6B49\u3002\n\n\u5982\u679C\u60A8\u5728\u6E38\u620F\u8FC7\u7A0B\u4E2D\u9047\u5230\u56F0\u6270\uFF0C\u8FD9\u91CC\u6709\u51E0\u4E2A\u5C0F\u63D0\u793A\uFF0C\u5C31\u7B97\u662F\u66F2\u7EBF\u6551\u56FD\uFF0C\u5B8C\u5584\u4E00\u4E0B\u6211\u8FD8\u6CA1\u641E\u5B8C\u7684\u65B0\u624B\u6559\u7A0B\u5427\uFF08\u5FC3\u865A\uFF09\n1.\u5728\u4ED3\u5E93\u4E2D\uFF0C\u60A8\u53EF\u4EE5\u53F3\u952E\u5DF2\u6709\u7684\u7269\u54C1\uFF0C\u8FDB\u884C\u5347\u7EA7\u6216\u62C6\u89E3\u3002\u53EA\u8981\u6709\u4E24\u4E2A\u76F8\u540C\u4E14\u540C\u7B49\u7EA7\u7EC4\u4EF6\uFF0C\u60A8\u5C31\u53EF\u4EE5\u5411\u4E0A\u5408\u6210\u66F4\u9AD8\u7EA7\uFF08\u76EE\u524D\u7531\u4E8E\u6570\u503C\u8FD8\u4E0D\u5B8C\u5584\uFF0C\u6700\u9AD8\u4E3A2\u7EA7\uFF09\n2.\u60A8\u53EF\u4EE5\u540C\u65F6\u6D3E\u9063\u591A\u4E2A\u5355\u4F4D\uFF0C\u53EA\u8981\u5B83\u4EEC\u603B\u7684\u80FD\u8017\u6CA1\u6709\u8D85\u8FC7\u60A8\u5DE6\u4E0B\u89D2\u663E\u793A\u7684\u4EA7\u7535\u91CF\u5373\u53EF\u3002\u8BD5\u7740\u5C06\u591A\u4E2A\u5947\u7F8E\u62C9\u62D6\u62FD\u4E0A\u573A\u5427\uFF01\n3.\u5728\u5947\u7F8E\u62C9\u7BA1\u7406\u9875\u9762\uFF0C\u60A8\u53EF\u4EE5\u70B9\u51FB\u5DF2\u6709\u7684\u5947\u7F8E\u62C9\u8FDB\u884C\u4FEE\u6539\uFF1B\u6216\u8005\u70B9\u51FB\u56DE\u6536\u5947\u7F8E\u62C9\uFF0C\u5C06\u5E95\u76D8\u548C\u7EC4\u4EF6\u8FDB\u884C\u5168\u91CF\u56DE\u6536\u3002\n4.\u4E3B\u52A8\u6280\u80FD\u53EF\u4EE5\u901A\u8FC7\u6309\u6570\u5B57\u5FEB\u6377\u952E1~4\u6216\u624B\u52A8\u70B9\u51FB\u56FE\u6807\u91CA\u653E\u3002\n5.\u60A8\u53EF\u4EE5\u5DE6\u952E\u70B9\u51FB\u5355\u4F4D\u8FDB\u884C\u9009\u4E2D\uFF0C\u53F3\u952E\u63A7\u5236\u79FB\u52A8\u6216\u6307\u5B9A\u653B\u51FB\u76EE\u6807\u3002\n6.\u5728\u67E5\u770B\u7269\u54C1\u65F6\uFF0C\u5982\u679C\u4E0D\u6E05\u695A\u56FE\u6807\u4EE3\u8868\u7684\u542B\u4E49\uFF0C\u53EF\u4EE5\u6309\u4F4FALT\u952E\uFF0C\u4F1A\u6709\u60CA\u559C\uFF01\n\n\u611F\u8C22\u60A8\u8FD9\u4E2A\u5C0F\u9879\u76EE\u7684\u652F\u6301\uFF01\n\u5982\u679C\u60A8\u6709bug\u6216\u5EFA\u8BAE\u5E0C\u671B\u53CD\u9988\uFF0C\u53EF\u4EE5\u901A\u8FC7\u90AE\u7BB1\u6216\u5FAE\u4FE1\u8054\u7CFB\u6211\u3002\u60A8\u7684\u6BCF\u4E00\u4E2A\u53CD\u9988\u6211\u90FD\u5C06\u611F\u6FC0\u4E0D\u5C3D\uFF01\n\n\u90AE\u7BB1\uFF1A2072377707@qq.com\n\u5FAE\u4FE1\uFF1AHSX18653015867\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a7c32fc9abfdbbb47821df70fb4640e0, type: 2}
   m_sharedMaterial: {fileID: 3516691780971911443, guid: a7c32fc9abfdbbb47821df70fb4640e0, type: 2}
@@ -13602,7 +13631,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u8FD4\u56DE\u5730\u56FE"
+  m_text: "\u6253\u626B\u6218\u573A"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: a7c32fc9abfdbbb47821df70fb4640e0, type: 2}
   m_sharedMaterial: {fileID: 3516691780971911443, guid: a7c32fc9abfdbbb47821df70fb4640e0, type: 2}
@@ -13629,10 +13658,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
+  m_fontSize: 41.05
   m_fontSizeBase: 24
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
@@ -18615,8 +18644,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MaxUnitSlots: 8
   HangarUnits: []
-  ChassisInventory: []
-  ComponentInventory: []
+  ChassisInventory:
+  - InstanceID: 
+    BaseData: {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
+    EquippedUnitID: 
+  ComponentInventory:
+  - InstanceID: 
+    BaseData: {fileID: 11400000, guid: 51c6056a2e38d6d4f8703ae65194fcb5, type: 2}
+    EquippedUnitID: 
+    CurrentLevel: 0
+    SocketedAccessoryIDs: []
+  - InstanceID: 
+    BaseData: {fileID: 11400000, guid: f4c49cd81940d294da52b833a645210f, type: 2}
+    EquippedUnitID: 
+    CurrentLevel: 0
+    SocketedAccessoryIDs: []
+  - InstanceID: 
+    BaseData: {fileID: 11400000, guid: 0727bcb0aabb4394ba41df90985f78ef, type: 2}
+    EquippedUnitID: 
+    CurrentLevel: 0
+    SocketedAccessoryIDs: []
+  - InstanceID: 
+    BaseData: {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
+    EquippedUnitID: 
+    CurrentLevel: 0
+    SocketedAccessoryIDs: []
+  - InstanceID: 
+    BaseData: {fileID: 11400000, guid: 7f3bebc9a55b30d4097e7fc74c091c1c, type: 2}
+    EquippedUnitID: 
+    CurrentLevel: 0
+    SocketedAccessoryIDs: []
   AllChassisDatabase:
   - {fileID: 11400000, guid: 8dbfecefb6715fb4faf93bee9ad3c518, type: 2}
   - {fileID: 11400000, guid: e5707376bbce7d84ca79d50726b3a5c1, type: 2}
@@ -18649,7 +18706,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5521639a2636b2e429b672faefea847a, type: 2}
   - {fileID: 11400000, guid: e1f5d9dee5183e44bb840a2a2931bbd0, type: 2}
   - {fileID: 11400000, guid: 587bc4e5d7b8f3d45b1f3f844e9d3212, type: 2}
-  - {fileID: 11400000, guid: 23028e4444c836148b36a899c6241600, type: 2}
   - {fileID: 11400000, guid: 1efdf3b34cba87447937797fe584ec65, type: 2}
   - {fileID: 11400000, guid: 1433d191b73efff4fae0b05fe4820e0e, type: 2}
   DebugChassisBundle:
@@ -24365,8 +24421,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 24, y: 117}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 8.1521, y: 100.5}
+  m_SizeDelta: {x: 349.1246, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1807006403
 MonoBehaviour:
@@ -24415,15 +24471,15 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
+  m_fontSize: 37.85
   m_fontSizeBase: 36
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -25902,8 +25958,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CombatUIPanel: {fileID: 1627183690}
   StartBattleButton: {fileID: 1704023339}
-  NavHangarButton: {fileID: 0}
-  NavWarehouseButton: {fileID: 0}
+  NavHangarButton: {fileID: 1789799453}
+  NavWarehouseButton: {fileID: 365630852}
   SettlementPanel: {fileID: 1306027755}
   SettlementTitleText: {fileID: 1807006403}
   ReturnToMapButton: {fileID: 995130643}
@@ -25911,7 +25967,7 @@ MonoBehaviour:
   BaseEnemyPrefab: {fileID: 6389588871143762209, guid: 8dd8ed2a30fb161449e99fbc12a1fb18, type: 3}
   WhitePixelSprite: {fileID: 21300000, guid: 8789d15ba6093e942acc186967a8babb, type: 3}
   ModularEnemyPrefab: {fileID: 2724532761662945261, guid: 6caa4bfb811f9854caf770a1920c62d6, type: 3}
-  BoundaryThickness: 2
+  BoundaryThickness: 0
   CurrentLayout: {fileID: 0}
   NavigationPanel: {fileID: 885293073}
 --- !u!114 &1973191907
@@ -28177,6 +28233,7 @@ SceneRoots:
   - {fileID: 2084414084}
   - {fileID: 1174434948}
   - {fileID: 899615175}
+  - {fileID: 5314770}
   - {fileID: 1181035856}
   - {fileID: 781804931}
   - {fileID: 704089790691060775}

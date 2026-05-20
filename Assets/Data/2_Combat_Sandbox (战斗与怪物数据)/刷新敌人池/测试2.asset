@@ -10,24 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c7ad65007ffad2847854c04c373933fa, type: 3}
-  m_Name: "\u6D4B\u8BD51"
+  m_Name: "\u6D4B\u8BD52"
   m_EditorClassIdentifier: 
   Phases:
   - PhaseName: "\u9636\u6BB5\u4E00"
     Direction: 0
-    Duration: 10
-    SpawnInterval: 4
-    MaxEnemiesOnField: 5
-    MaxPerSpawn: 2
+    Duration: 20
+    SpawnInterval: 5
+    MaxEnemiesOnField: 6
+    MaxPerSpawn: 3
     PhaseEnemyPool:
     - {fileID: 11400000, guid: fc2f7ff275652454e986f984371d00e8, type: 2}
     - {fileID: 11400000, guid: a89fff735b851ea42a304e7c3e185d53, type: 2}
+    - {fileID: 11400000, guid: 7eb969159f934094abc09ad8cc374746, type: 2}
   - PhaseName: "\u9636\u6BB52"
     Direction: 4
-    Duration: 10
-    SpawnInterval: 4
-    MaxEnemiesOnField: 5
-    MaxPerSpawn: 2
+    Duration: 20
+    SpawnInterval: 5
+    MaxEnemiesOnField: 7
+    MaxPerSpawn: 4
     PhaseEnemyPool:
     - {fileID: 11400000, guid: 1350b6a220e606244810eb6b335d00d0, type: 2}
     - {fileID: 11400000, guid: 7e344d7d0ede19f47819a956a76e1132, type: 2}
+    - {fileID: 11400000, guid: 24e2f021283bb48408271339c3c53d00, type: 2}

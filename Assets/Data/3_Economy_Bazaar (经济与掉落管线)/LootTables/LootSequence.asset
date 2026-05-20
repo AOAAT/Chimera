@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Tasks:
   - Mode: 0
-    TripleChoiceProbability: 0
+    TripleChoiceProbability: 1
     Weight_Lv1: 1
     Weight_Lv2: 0
     Weight_Lv3: 0
     Weight_Lv4: 0
-    PoolSource: 0
-    CustomMacroMix: 
+    PoolSource: 1
+    CustomMacroMix: 00000000
     CustomSubTagMix: 
     CustomPool: []

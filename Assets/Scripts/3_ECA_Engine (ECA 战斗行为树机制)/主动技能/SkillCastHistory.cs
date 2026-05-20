@@ -26,15 +26,27 @@ public class SkillCastHistory : MonoBehaviour
 
     public void Record(ActiveSkillConfig config)
     {
-        // 核心锁死：缸中之脑不能复刻自己
-        if (config == null || config.SkillName == "缸中之脑") return;
+        if (config == null) return;
+
+        // 🌟【核心修复 C】：深度扫描。如果这个技能的动作列表里含有 Mirror 类型的积木，严禁录入！
+        bool containsMirrorAction = false;
+        foreach (var action in config.OnSkillCastActions)
+        {
+            if (action is Action_MirrorLastSkill)
+            {
+                containsMirrorAction = true;
+                break;
+            }
+        }
+
+        if (containsMirrorAction || config.SkillName.Contains("缸中"))
+        {
+            // Debug.Log("【审计】跳过镜像类技能的录入。");
+            return;
+        }
 
         MemorizedSkill = config;
-
-        // 广播：新招式已录入！
         OnMemoryChanged?.Invoke(config);
-
-        Debug.Log($"<color=#00FF00>【记忆录入成功】</color> 招式：{config.SkillName}");
     }
 
     public void Clear()

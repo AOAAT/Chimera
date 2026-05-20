@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: "\u8FDB\u5165\u6218\u6597"
   m_EditorClassIdentifier: 
   SpecialLayout: {fileID: 11400000, guid: 83d2ab10ab7448f489e95710d6dc1b96, type: 2}
-  NextEventOnVictory: {fileID: 11400000, guid: e3792dbc378b9764ea8e7ed820c19353, type: 2}
-  NextEventOnFailure: {fileID: 11400000, guid: 5da16265188bd1d4aa5306fc85e0a650, type: 2}
+  NextEventOnVictory: {fileID: 0}
+  NextEventOnFailure: {fileID: 0}

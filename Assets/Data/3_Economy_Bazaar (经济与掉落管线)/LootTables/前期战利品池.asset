@@ -63,6 +63,9 @@ MonoBehaviour:
     - ComponentBlueprint: {fileID: 0}
       ChassisBlueprint: {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
       Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 1433d191b73efff4fae0b05fe4820e0e, type: 2}
+      ChassisBlueprint: {fileID: 0}
+      Level: 0
   - Mode: 3
     TripleChoiceProbability: 0.4
     Weight_Lv1: 0
@@ -99,4 +102,7 @@ MonoBehaviour:
       Level: 0
     - ComponentBlueprint: {fileID: 0}
       ChassisBlueprint: {fileID: 11400000, guid: 6a1dce447af176b4da2d4314df754014, type: 2}
+      Level: 0
+    - ComponentBlueprint: {fileID: 11400000, guid: 1433d191b73efff4fae0b05fe4820e0e, type: 2}
+      ChassisBlueprint: {fileID: 0}
       Level: 0

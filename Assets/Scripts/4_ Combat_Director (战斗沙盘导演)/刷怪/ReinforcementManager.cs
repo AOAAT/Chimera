@@ -1,11 +1,46 @@
-﻿// --- 修改 ReinforcementManager.cs ---
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using static ReinforcementConfigSO;
 
 public class ReinforcementManager : MonoBehaviour
 {
-    public static ReinforcementManager Instance;
+    // --------------------------------------------------------
+    // 🌟 核心升级：自动生成且跨场景永生的单例模式
+    // --------------------------------------------------------
+    private static ReinforcementManager _instance;
+    public static ReinforcementManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindObjectOfType<ReinforcementManager>(true);
+
+                if (_instance == null)
+                {
+                    GameObject go = new GameObject("[Auto-Generated] Reinforcement Manager");
+                    _instance = go.AddComponent<ReinforcementManager>();
+
+                    DontDestroyOnLoad(go);
+                    Debug.Log("<color=yellow>[System] 检测到总署丢失，已通过代码自动重构 ReinforcementManager！</color>");
+                }
+            }
+            return _instance;
+        }
+    }
+
+    private void Awake()
+    {
+        if (_instance == null)
+        {
+            _instance = this;
+            DontDestroyOnLoad(this.gameObject);
+        }
+        else if (_instance != this)
+        {
+            Destroy(this.gameObject);
+        }
+    }
 
     private ReinforcementConfigSO config;
     private int currentPhaseIndex = 0;
@@ -17,19 +52,21 @@ public class ReinforcementManager : MonoBehaviour
     public bool IsAllPhasesFinished => allPhasesFinished;
     public int CurrentPhaseDisplay => currentPhaseIndex + 1;
 
-    private void Awake() => Instance = this;
-
     public void StartTimeline(ReinforcementConfigSO data)
     {
-        if (data == null || data.Phases.Count == 0) return;
+        if (data == null || data.Phases.Count == 0)
+        {
+            Debug.LogError("<color=red>[Spawn-Debug] 启动失败：传入的增援配置为空或没有阶段！</color>");
+            return;
+        }
 
         config = data;
         currentPhaseIndex = 0;
         allPhasesFinished = false;
         isActive = true;
 
+        Debug.Log($"<color=#FF4500>[Spawn-Debug] 增援序列启动，共包含 {config.Phases.Count} 个阶段。</color>");
         LoadPhase(0);
-        Debug.Log($"<color=#FF4500>【增援总署】战斗序列启动，共 {config.Phases.Count} 个阶段。</color>");
     }
 
     public void StopTimeline() => isActive = false;
@@ -40,15 +77,15 @@ public class ReinforcementManager : MonoBehaviour
         {
             allPhasesFinished = true;
             isActive = false;
+            Debug.Log("<color=green>[Spawn-Debug] 所有阶段投递完毕！</color>");
             return;
         }
 
         currentPhaseIndex = index;
         BattlePhase phase = config.Phases[currentPhaseIndex];
         phaseTimer = phase.Duration;
-        spawnTimer = 2.0f; // 每个阶段载入后，2秒后进行第一次刷怪尝试
-
-        Debug.Log($"<color=#FFA500>【阶段切换】进入阶段 {CurrentPhaseDisplay}: {phase.PhaseName} (持续{phase.Duration}s)</color>");
+        spawnTimer = 2.0f;
+        Debug.Log($"<color=#FFA500>[Spawn-Debug] 载入阶段 {CurrentPhaseDisplay}: {phase.PhaseName}，将在2秒后首次刷怪。</color>");
     }
 
     private void Update()
@@ -58,31 +95,27 @@ public class ReinforcementManager : MonoBehaviour
 
         BattlePhase currentPhase = config.Phases[currentPhaseIndex];
 
-        // 1. 阶段计时
         phaseTimer -= Time.deltaTime;
         spawnTimer -= Time.deltaTime;
 
-        // --- 👇 核心逻辑：阶段提前跳跃 (Phase Skip) ---
-        // 如果当前阶段还有时间，但场上怪已经没了，且不是最后一波
+        CombatDirector.ActiveEnemies.RemoveAll(e => e == null);
+
         if (phaseTimer > 0.5f && CombatDirector.ActiveEnemies.Count == 0)
         {
-            Debug.Log("<color=cyan>【战术压制】场上敌人已被清空，强制跳跃至下一阶段！</color>");
             GoToNextPhase();
             return;
         }
 
-        // 2. 正常时间耗尽跳转
         if (phaseTimer <= 0)
         {
             GoToNextPhase();
             return;
         }
 
-        // 3. 刷怪逻辑
         if (spawnTimer <= 0)
         {
-            TrySpawnWave(currentPhase);
             spawnTimer = currentPhase.SpawnInterval;
+            TrySpawnWave(currentPhase);
         }
     }
 
@@ -95,7 +128,6 @@ public class ReinforcementManager : MonoBehaviour
         else
         {
             allPhasesFinished = true;
-            Debug.Log("<color=green>【增援总署】所有战斗序列投递完毕，等待最终清场。</color>");
         }
     }
 
@@ -106,78 +138,119 @@ public class ReinforcementManager : MonoBehaviour
         int quota = phase.MaxEnemiesOnField - CombatDirector.ActiveEnemies.Count;
         int spawnCount = Mathf.Min(phase.MaxPerSpawn, quota);
 
-        if (spawnCount <= 0 || phase.PhaseEnemyPool.Count == 0) return;
+        var validEnemies = phase.PhaseEnemyPool.FindAll(e => e != null);
+        if (spawnCount <= 0 || validEnemies.Count == 0)
+        {
+            Debug.LogWarning($"<color=orange>[Spawn-Debug] 警告：需要刷怪但池子里没有合法配置！有效敌人数量: {validEnemies.Count}</color>");
+            return;
+        }
+
+        Debug.Log($"<color=#00FFFF>[Spawn-Debug] 准备投放波次！计划投放 {spawnCount} 只，当前场上 {CombatDirector.ActiveEnemies.Count} 只。</color>");
 
         Vector2 arenaSize = CombatDirector.Instance.CurrentArenaSize;
         Vector3 arenaCenter = CombatDirector.Instance.CurrentArenaCenter;
 
         for (int i = 0; i < spawnCount; i++)
         {
-            // 1. 确定这一只怪到底从哪边出来
             SpawnSide actualSide = phase.Direction;
-            if (actualSide == SpawnSide.RandomFourSides)
-                actualSide = (SpawnSide)Random.Range(0, 4);
-            else if (actualSide == SpawnSide.Horizontal)
-                actualSide = Random.value > 0.5f ? SpawnSide.Left : SpawnSide.Right;
-            else if (actualSide == SpawnSide.Vertical)
-                actualSide = Random.value > 0.5f ? SpawnSide.Top : SpawnSide.Bottom;
+            if (actualSide == SpawnSide.RandomFourSides) actualSide = (SpawnSide)Random.Range(0, 4);
+            else if (actualSide == SpawnSide.Horizontal) actualSide = Random.value > 0.5f ? SpawnSide.Left : SpawnSide.Right;
+            else if (actualSide == SpawnSide.Vertical) actualSide = Random.value > 0.5f ? SpawnSide.Top : SpawnSide.Bottom;
 
-            // 2. 解算坐标与进场冲力方向
             Vector3 spawnPos = Vector3.zero;
             Vector2 impulseDir = Vector2.zero;
-
-            float margin = 1.0f; // 距离边缘的内缩距离
+            float margin = 2.5f;
 
             switch (actualSide)
             {
                 case SpawnSide.Right:
-                    spawnPos = new Vector3(arenaCenter.x + arenaSize.x / 2f - margin, arenaCenter.y + Random.Range(-arenaSize.y / 3f, arenaSize.y / 3f), 0);
+                    spawnPos = new Vector3(arenaCenter.x + arenaSize.x / 2f - margin, arenaCenter.y + Random.Range(-arenaSize.y / 4f, arenaSize.y / 4f), 0);
                     impulseDir = Vector2.left;
                     break;
                 case SpawnSide.Left:
-                    spawnPos = new Vector3(arenaCenter.x - arenaSize.x / 2f + margin, arenaCenter.y + Random.Range(-arenaSize.y / 3f, arenaSize.y / 3f), 0);
+                    spawnPos = new Vector3(arenaCenter.x - arenaSize.x / 2f + margin, arenaCenter.y + Random.Range(-arenaSize.y / 4f, arenaSize.y / 4f), 0);
                     impulseDir = Vector2.right;
                     break;
                 case SpawnSide.Top:
-                    spawnPos = new Vector3(arenaCenter.x + Random.Range(-arenaSize.x / 3f, arenaSize.x / 3f), arenaCenter.y + arenaSize.y / 2f - margin, 0);
+                    spawnPos = new Vector3(arenaCenter.x + Random.Range(-arenaSize.x / 4f, arenaSize.x / 4f), arenaCenter.y + arenaSize.y / 2f - margin, 0);
                     impulseDir = Vector2.down;
                     break;
                 case SpawnSide.Bottom:
-                    spawnPos = new Vector3(arenaCenter.x + Random.Range(-arenaSize.x / 3f, arenaSize.x / 3f), arenaCenter.y - arenaSize.y / 2f + margin, 0);
+                    spawnPos = new Vector3(arenaCenter.x + Random.Range(-arenaSize.x / 4f, arenaSize.x / 4f), arenaCenter.y - arenaSize.y / 2f + margin, 0);
                     impulseDir = Vector2.up;
                     break;
             }
 
-            // 3. 执行刷新
-            EnemyDataSO randomEnemy = phase.PhaseEnemyPool[Random.Range(0, phase.PhaseEnemyPool.Count)];
+            EnemyDataSO randomEnemy = validEnemies[Random.Range(0, validEnemies.Count)];
             SpawnEntity(randomEnemy, spawnPos, impulseDir);
         }
     }
 
     private void SpawnEntity(EnemyDataSO data, Vector3 pos, Vector2 impulseDir)
     {
-        GameObject enemyObj;
-        if (data.Archetype == EnemyArchetype.Modular)
+        if (data == null) return;
+        Debug.Log($"<color=#FFFF00>[Spawn-Debug] 正在实例化: {data.EnemyName} 于坐标 {pos}</color>");
+
+        GameObject enemyObj = null;
+
+        try
         {
-            enemyObj = Instantiate(CombatDirector.Instance.ModularEnemyPrefab, pos, Quaternion.identity);
-            enemyObj.GetComponent<MechUnit2D>()?.InitAsEliteEnemy(data);
+            if (data.Archetype == EnemyArchetype.Modular)
+            {
+                if (CombatDirector.Instance.ModularEnemyPrefab == null) Debug.LogError("<color=red>[Spawn-Debug] 致命错误：ModularEnemyPrefab 丢失！</color>");
+                enemyObj = Instantiate(CombatDirector.Instance.ModularEnemyPrefab, pos, Quaternion.identity);
+                enemyObj.GetComponent<MechUnit2D>()?.InitAsEliteEnemy(data);
+            }
+            else
+            {
+                if (CombatDirector.Instance.BaseEnemyPrefab == null) Debug.LogError("<color=red>[Spawn-Debug] 致命错误：BaseEnemyPrefab 丢失！</color>");
+                enemyObj = Instantiate(CombatDirector.Instance.BaseEnemyPrefab, pos, Quaternion.identity);
+                EnemyBrain brain = enemyObj.GetComponent<EnemyBrain>();
+                if (brain != null) brain.MyData = data;
+                else Debug.LogError($"<color=red>[Spawn-Debug] 预制体上缺少 EnemyBrain 组件！</color>");
+            }
         }
-        else
+        catch (System.Exception e)
         {
-            enemyObj = Instantiate(CombatDirector.Instance.BaseEnemyPrefab, pos, Quaternion.identity);
-            enemyObj.GetComponent<EnemyBrain>().MyData = data;
+            Debug.LogError($"<color=red>[Spawn-Debug] 实例化过程抛出异常: {e.Message}</color>");
+            return;
         }
+
+        if (enemyObj == null) return;
+
+        StartCoroutine(PhaseEntryRoutine(enemyObj));
 
         Rigidbody2D rb = enemyObj.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
-            // 使用传入的方向施加冲力
-            rb.AddForce(impulseDir * 5f, ForceMode2D.Impulse);
+            rb.AddForce(impulseDir * 8f, ForceMode2D.Impulse);
+            Debug.Log($"<color=cyan>[Spawn-Debug] 已对 {data.EnemyName} 施加入场推力。</color>");
+        }
+
+        DamageReceiver newReceiver = enemyObj.GetComponent<DamageReceiver>();
+        if (newReceiver != null && CombatDirector.ActiveEnemies != null)
+        {
+            CombatDirector.ActiveEnemies.Add(newReceiver);
+            Debug.Log($"<color=green>[Spawn-Debug] 户口登记成功！当前场上敌人总数: {CombatDirector.ActiveEnemies.Count}</color>");
+        }
+    }
+
+    private System.Collections.IEnumerator PhaseEntryRoutine(GameObject unit)
+    {
+        if (unit == null) yield break;
+
+        Collider2D physCol = unit.GetComponent<Collider2D>();
+        if (physCol != null)
+        {
+            bool originalTriggerState = physCol.isTrigger;
+            physCol.isTrigger = true;
+
+            yield return new WaitForSeconds(0.5f);
+
+            if (physCol != null) physCol.isTrigger = originalTriggerState;
         }
     }
     public bool IsTimelineFinished => allPhasesFinished;
-
-    // 逻辑进度算法：算出当前在总阶段中的进度 (0.0 ~ 1.0)
     public float Progress
     {
         get
@@ -188,11 +261,9 @@ public class ReinforcementManager : MonoBehaviour
             float totalPhases = config.Phases.Count;
             float completedPhasesBase = (float)currentPhaseIndex / totalPhases;
 
-            // 算出当前阶段内部走过的比例
             float currentPhaseDuration = config.Phases[currentPhaseIndex].Duration;
             float currentPhasePercent = 1f - Mathf.Clamp01(phaseTimer / currentPhaseDuration);
 
-            // 映射到全局总进度
             return completedPhasesBase + (currentPhasePercent / totalPhases);
         }
     }

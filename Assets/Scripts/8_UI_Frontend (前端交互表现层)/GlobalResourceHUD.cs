@@ -50,14 +50,6 @@ public class GlobalResourceHUD : MonoBehaviour
             DepthText.text = $"当前层数: {MapManager.Instance.CurrentLayer}";
         }
 
-        // --- 👇【新增】：增援进度监控 ---
-        if (ReinforcementManager.Instance != null && CombatDirector.Instance != null && CombatDirector.Instance.IsCombatActive)
-        {
-            float currentProgress = ReinforcementManager.Instance.Progress;
-            int currentPhase = ReinforcementManager.Instance.CurrentPhaseDisplay;
 
-            // 可以在这里输出到日志，或者更新你的进度条 UI
-            // 例如：Debug.Log($"【实时进度】阶段:{currentPhase} | 进度:{currentProgress:P0}");
-        }
     }
 }

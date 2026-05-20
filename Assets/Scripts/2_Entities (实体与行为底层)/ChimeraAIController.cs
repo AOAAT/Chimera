@@ -19,24 +19,23 @@ public class ChimeraAIController : MonoBehaviour
     private float dashTimer = 0f;
 
     [Header("=== 战术视觉引用 ===")]
-    public GameObject WaypointPrefab; // 在 Inspector 中拖入你的路点预制体
+    public GameObject WaypointPrefab;
     private GameObject currentWaypointInstance;
-
 
     private Vector2? manualMovePoint = null;
     private Transform manualAttackTarget = null;
 
-    // 向武器模块暴露：当前是否正处于手控位移中
     public bool IsManuallyMoving => manualMovePoint.HasValue;
 
-
     private float maxWeaponRange, minWeaponRange, optimalFireRange;
+
     public void AbortDash()
     {
         isDashing = false;
         if (rb != null) rb.velocity = Vector2.zero;
-        rb.drag = 5f; // 恢复正常摩擦力
+        rb.drag = 5f;
     }
+
     public void Initialize(RuntimeChimeraData data)
     {
         runtimeData = data;
@@ -46,34 +45,31 @@ public class ChimeraAIController : MonoBehaviour
         myBuffMgr = GetComponent<BuffManager>();
         if (myBuffMgr != null) myBuffMgr.OnBuffsChanged += RecalculateSpeedAndRanges;
         RecalculateSpeedAndRanges();
+
+        // 👇 新增的 AI 唤醒日志
+        string uName = runtimeData != null ? runtimeData.UnitName : "未知型号";
+        Debug.Log($"<color=#B0C4DE>[AI-Debug] 逻辑中枢已唤醒。实体: {gameObject.name}, 数据代号: {uName}</color>");
     }
 
     private void OnDestroy() { if (myBuffMgr != null) myBuffMgr.OnBuffsChanged -= RecalculateSpeedAndRanges; }
 
     public void SetManualMovePoint(Vector2 point)
     {
-        // --- 👇 核心逻辑 A：互斥熔断 ---
-        manualAttackTarget = null; // 移动时，立即断开集火红线
-
+        manualAttackTarget = null;
         manualMovePoint = point;
 
-        // --- 👇 核心逻辑 B：路点视觉管理 ---
         if (currentWaypointInstance != null) Destroy(currentWaypointInstance);
 
         if (WaypointPrefab != null)
         {
             currentWaypointInstance = Instantiate(WaypointPrefab, new Vector3(point.x, point.y, 0), Quaternion.identity);
         }
-
-        Debug.Log("<color=cyan>【指令】</color> 正在脱离交火，前往坐标点。");
     }
+
     public void SetManualTarget(Transform target)
     {
-        // --- 👇 核心逻辑 C：互斥熔断 ---
-        ClearMoveCommand(); // 锁定敌人时，立即停止当前的路径导航
-
+        ClearMoveCommand();
         manualAttackTarget = target;
-        Debug.Log($"<color=red>【指令】</color> 已截获目标信号：{target.name}，开始拉扯集火。");
     }
 
     public void ClearMoveCommand()
@@ -81,10 +77,10 @@ public class ChimeraAIController : MonoBehaviour
         manualMovePoint = null;
         if (currentWaypointInstance != null)
         {
-            // 这里可以播放一个“抵达”或“消失”的微弱特效
             Destroy(currentWaypointInstance);
         }
     }
+
     public bool HasManualTarget() => manualAttackTarget != null;
     public Transform GetManualTarget() => manualAttackTarget;
 
@@ -95,7 +91,6 @@ public class ChimeraAIController : MonoBehaviour
         float speedMult = CombatSandbox.GetSpeed(1f);
         float distMult = CombatSandbox.GetDist(1f);
 
-        // 1. 计算引擎出力 (支持 Buff 修正)
         float pwr = runtimeData.TotalEnginePower;
         if (myBuffMgr != null)
         {
@@ -104,7 +99,6 @@ public class ChimeraAIController : MonoBehaviour
 
         CurrentSpeed = GameFormulas.CalcMoveSpeed(pwr, runtimeData.TotalMass, speedMult);
 
-        // 2. 计算射程区间 (支持 Buff 修正)
         maxWeaponRange = 0f; minWeaponRange = 0f; optimalFireRange = float.MaxValue;
 
         if (runtimeData.EquippedWeapons.Count == 0) optimalFireRange = 1.5f * distMult;
@@ -117,7 +111,6 @@ public class ChimeraAIController : MonoBehaviour
 
                 if (myBuffMgr != null)
                 {
-                    // 👇【核心系统调用】
                     rMax = myBuffMgr.GetAdjustedStat(StatType.MaxRange, rMax);
                     rMin = myBuffMgr.GetAdjustedStat(StatType.MinRange, rMin);
                 }
@@ -133,27 +126,26 @@ public class ChimeraAIController : MonoBehaviour
 
     private void Update()
     {
-        // 如果血量归零，强制停止所有物理输出
         if (myReceiver == null || myReceiver.CurrentHP <= 0)
         {
             if (rb != null) rb.velocity = Vector2.zero;
             return;
         }
 
-        if (myReceiver == null || myReceiver.CurrentHP <= 0) { if (rb != null) rb.velocity = Vector2.zero; return; }
         if (runtimeData == null || (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive))
-        { if (rb != null) rb.velocity = Vector2.zero; return; }
+        {
+            if (rb != null) rb.velocity = Vector2.zero;
+            return;
+        }
 
         if (isStaggered) { staggerTimer -= Time.deltaTime; if (staggerTimer <= 0) { isStaggered = false; rb.drag = 5f; } return; }
         if (isDashing) { dashTimer -= Time.deltaTime; if (dashTimer <= 0) { isDashing = false; rb.drag = 5f; } return; }
 
-        // 1. 索敌逻辑：手控目标具有绝对持久性
         if (manualAttackTarget != null && !IsTargetValid(manualAttackTarget))
         {
-            manualAttackTarget = null; // 目标死亡或消失，清除锁定
+            manualAttackTarget = null;
         }
 
-        // 2. 只有在没有有效手控目标时，才跑自动索敌
         if (manualAttackTarget != null)
         {
             currentTarget = manualAttackTarget;
@@ -179,7 +171,6 @@ public class ChimeraAIController : MonoBehaviour
         var targetList = iAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
         if (targetList.Count == 0) { currentTarget = null; return; }
 
-        // 自动索敌逻辑 (按距离找最近)
         DamageReceiver bestCandidate = null; float minDist = float.MaxValue;
         for (int i = 0; i < targetList.Count; i++)
         {
@@ -193,25 +184,28 @@ public class ChimeraAIController : MonoBehaviour
 
     private void HandleMovement()
     {
-        // 优先级 A：手控位移 (手动风筝/撤离)
         if (manualMovePoint.HasValue)
         {
             float dist = Vector2.Distance(transform.position, manualMovePoint.Value);
-            // 抵达判定阈值：0.4米
             if (dist < 0.4f)
             {
-                ClearMoveCommand(); // 抵达后，自动销毁地面光圈
-                rb.velocity = Vector2.zero;
+                ClearMoveCommand();
+                if (rb != null) rb.velocity = Vector2.zero;
             }
             else
             {
-                rb.velocity = (manualMovePoint.Value - (Vector2)transform.position).normalized * CurrentSpeed;
+                if (rb != null) rb.velocity = (manualMovePoint.Value - (Vector2)transform.position).normalized * CurrentSpeed;
             }
             return;
         }
 
-        // 优先级 B：AI 自动位移
-        // (如果当前是锁定目标打，AI 也会尝试根据射程自动拉扯)
+        // 🌟 核心拦截机制：防止新怪入场时失去目标导致 NRE 断流和飞天
+        if (currentTarget == null)
+        {
+            if (rb != null) rb.velocity = Vector2.zero; // 原地挂机刹车
+            return;
+        }
+
         Vector2 dirToTarget = (currentTarget.position - transform.position).normalized;
         float distToTarget = Vector2.Distance(transform.position, currentTarget.position);
 
@@ -221,11 +215,6 @@ public class ChimeraAIController : MonoBehaviour
 
         if (rb != null) rb.velocity = targetVelocity;
     }
-
-
-    // ==========================================
-    // 物理接口与碰撞逻辑 (保持原有逻辑不变)
-    // ==========================================
 
     public void ApplyImpulse(Vector2 dir, float impulse, bool ignoreStun = false)
     {
@@ -240,15 +229,12 @@ public class ChimeraAIController : MonoBehaviour
             {
                 isStaggered = true;
                 staggerTimer = stunTime;
-                rb.velocity = Vector2.zero; // 物理熔断
+                rb.velocity = Vector2.zero;
                 rb.drag = 2f;
 
-                // 如果正在冲刺，强制强断
                 if (isDashing) AbortDash();
             }
         }
-
-        // 修复：直接使用物理推力，不再进行二次复杂的 deltaV 换算
         rb.AddForce(dir * impulse, ForceMode2D.Impulse);
     }
 
@@ -293,7 +279,6 @@ public class ChimeraAIController : MonoBehaviour
             }
         }
         rb.drag = 0.5f; rb.velocity = velocity;
-        Debug.Log($"<color=cyan>【物理反馈】</color> 执行冲刺，速度: {rb.velocity.magnitude}");
     }
 
     private void OnCollisionEnter2D(Collision2D col)

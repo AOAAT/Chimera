@@ -116,6 +116,16 @@ public class ActiveSkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             ExecuteSkillRequest(cpEnough && hasMemoryIfBrain, cd);
         }
+
+        bool isMirrorBrain = bindedController.SkillConfig.SkillName.Contains("缸中");
+        bool hasMemory = SkillCastHistory.Instance != null && SkillCastHistory.Instance.MemorizedSkill != null;
+
+        // 如果是缸中之脑且没记忆，强制置灰图标且不可交互
+        if (isMirrorBrain && !hasMemory)
+        {
+            SkillIcon.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+            // 如果玩家强行点，这里也可以拦截
+        }
     }
 
     public void OnSkillClicked()
