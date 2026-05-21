@@ -5,7 +5,6 @@ public class GlobalResourceHUD : MonoBehaviour
 {
     [Header("=== UI 文本绑定 ===")]
     public TMP_Text SanText;
-    public TMP_Text MaterialText;
     public TMP_Text PowerText;
     public TMP_Text DepthText;
 
@@ -34,7 +33,7 @@ public class GlobalResourceHUD : MonoBehaviour
         if (GlobalResourceManager.Instance != null)
         {
             SanText.text = $"SAN值: {GlobalResourceManager.Instance.CurrentSAN} / {GlobalResourceManager.Instance.MaxSAN}";
-            MaterialText.text = $"废料存量: {GlobalResourceManager.Instance.Materials}";
+           
 
             // 电网负载监控
             int usedPower = GlobalResourceManager.Instance.GetTotalUsedPower();

@@ -43,7 +43,7 @@ public class EventCondition_Universal : EventCondition
         {
             case EventResourceType.CurrentSAN: return GlobalResourceManager.Instance.CurrentSAN;
             case EventResourceType.MaxSAN: return GlobalResourceManager.Instance.MaxSAN;
-            case EventResourceType.CurrentScrap: return GlobalResourceManager.Instance.Materials;
+           
             case EventResourceType.CurrentCP: return GlobalCPManager.Instance?.CurrentCP ?? 0;
             case EventResourceType.MaxCP: return GlobalCPManager.Instance?.GetActualMaxCP() ?? 0;
             case EventResourceType.MaxPowerCapacity: return GlobalResourceManager.Instance.MaxPowerCapacity;
@@ -57,7 +57,7 @@ public class EventCondition_Universal : EventCondition
         switch (type)
         {
             case EventResourceType.CurrentSAN: return "理智度";
-            case EventResourceType.CurrentScrap: return "废料";
+ 
             case EventResourceType.MaxPowerCapacity: return "电网容量";
             default: return type.ToString();
         }

@@ -104,8 +104,6 @@ public class StatEntry
 public class ComponentLevelData
 {
     public int Level = 1;
-    public int BasePrice = 100;
-    public int ScrapValue = 10;
     public List<StatEntry> Stats = new List<StatEntry>();
     public int MaxSocketCount = 1;
 

@@ -12,7 +12,6 @@ public class GlobalResourceManager : MonoBehaviour
     public int MaxSAN = 100;
     public int CurrentSAN = 100;
 
-    public int Materials = 0;
     public int DaysSurvived = 1;
 
     // 👇【核心新增】：产能上限（玩家的可用电量总额）
@@ -89,11 +88,6 @@ public class GlobalResourceManager : MonoBehaviour
         {
             ExecuteGameOverProtocol();
         }
-    }
-    public void ModifyMaterials(int amount)
-    {
-        Materials = Mathf.Max(0, Materials + amount);
-        OnResourceChanged?.Invoke();
     }
 
     public void AdvanceDay()

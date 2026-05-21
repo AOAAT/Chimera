@@ -30,7 +30,7 @@ public class LootUIManager : MonoBehaviour
 
     [Header("交互按钮")]
     public Button ConfirmButton;       // 收下
-    public Button SalvageButton;       // 粉碎
+
     public Button ReturnButton;        // 返回大厅
 
     [Header("=== 弹射动画配置 ===")]
@@ -53,7 +53,7 @@ public class LootUIManager : MonoBehaviour
     {
         LeaveHubButton.onClick.AddListener(OnLeaveHubClicked);
         ConfirmButton.onClick.AddListener(OnConfirmClicked);
-        SalvageButton.onClick.AddListener(OnSalvageClicked);
+
         ReturnButton.onClick.AddListener(OnReturnClicked);
 
         // 👇【核心安全锁】：强行锁死这 3 个展示格子的右键菜单，绝对防作弊！
@@ -207,7 +207,6 @@ public class LootUIManager : MonoBehaviour
     {
         ItemPanel.SetActive(true);
         ConfirmButton.interactable = false;
-        SalvageButton.interactable = false;
         selectedItem = null;
         selectedChassis = null;
 
@@ -271,7 +270,7 @@ public class LootUIManager : MonoBehaviour
         // 播放点击反馈音效 (可选)
         GlobalAudioManager.Instance?.PlayUISound(UISoundType.Generic_Click);
 
-        UpdateSalvageButtonState();
+
 
         // 👇【执行高亮切换】
         RefreshHighlights(index);
@@ -287,28 +286,13 @@ public class LootUIManager : MonoBehaviour
         // 播放点击反馈音效 (可选)
         GlobalAudioManager.Instance?.PlayUISound(UISoundType.Generic_Click);
 
-        UpdateSalvageButtonState();
+
 
         // 👇【执行高亮切换】
         RefreshHighlights(index);
     }
 
 
-
-
-    private void UpdateSalvageButtonState()
-    {
-        if (activeTask != null && activeTask.IsForceClaim)
-        {
-            SalvageButton.interactable = false;
-            SalvageButton.GetComponentInChildren<TMP_Text>().text = "<color=red>禁止拆解</color>";
-        }
-        else
-        {
-            SalvageButton.interactable = true;
-            SalvageButton.GetComponentInChildren<TMP_Text>().text = "拆解以获得废料";
-        }
-    }
 
     private void RefreshHighlights(int selectedIdx)
     {
@@ -398,39 +382,7 @@ public class LootUIManager : MonoBehaviour
         PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
     }
 
-    private void OnSalvageClicked()
-    {
-        int scrapVal = 5;
-        Vector3 startPos = Input.mousePosition;
-
-        foreach (var slot in FixedItemSlots)
-        {
-            if (slot.gameObject.activeSelf && slot.HighlightFrame.activeSelf)
-            {
-                startPos = slot.transform.position;
-                break;
-            }
-        }
-
-        if (selectedChassis != null)
-        {
-            scrapVal = selectedChassis.BaseData.ScrapValue;
-        }
-        else if (selectedItem != null)
-        {
-            var lvData = selectedItem.BaseData.GetLevelData(selectedItem.CurrentLevel);
-            scrapVal = lvData != null ? lvData.ScrapValue : 5;
-        }
-
-        if (JuicyLootEffectManager.Instance != null)
-        {
-            JuicyLootEffectManager.Instance.SpawnScrapExplosion(startPos, scrapVal);
-        }
-
-        GlobalResourceManager.Instance?.ModifyMaterials(scrapVal);
-        ConcludeTask();
-    }
-
+  
     private void OnReturnClicked()
     {
         ItemPanel.SetActive(false);

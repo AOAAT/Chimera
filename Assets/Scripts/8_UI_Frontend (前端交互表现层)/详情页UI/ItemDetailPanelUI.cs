@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 🌟【强制加固】：这行代码会让 Unity 自动在物体上挂载 CanvasGroup，解决报错
 [RequireComponent(typeof(CanvasGroup))]
 public class ItemDetailPanelUI : MonoBehaviour
 {
@@ -13,7 +12,6 @@ public class ItemDetailPanelUI : MonoBehaviour
     private float openTime = 0f;
     private RectTransform targetAnchorRect;
 
-    // 🌟 内部引用
     private CanvasGroup canvasGroup;
 
     [Header("=== Alt 键透视系统 ===")]
@@ -30,6 +28,7 @@ public class ItemDetailPanelUI : MonoBehaviour
     public GameObject Panel_Support;
     public GameObject Panel_Chassis;
     public GameObject Panel_Accessory;
+
     [Header("=== 动态背景库 ===")]
     public Sprite[] Bg_Weapon = new Sprite[4];
     public Sprite[] Bg_Core = new Sprite[4];
@@ -45,9 +44,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         public TMP_Text LevelText;
         public TMP_Text DescriptionText;
         public TMP_Text TacticalRoleText;
-        public TMP_Text SpecialMechanicText; // 👈 机制文本引用
-        public TMP_Text ScrapValueText;
-
+        public TMP_Text SpecialMechanicText;
     }
 
     [Header("=== 各属性文本绑定 ===")]
@@ -86,27 +83,16 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     public CommonUIElements Accessory_Common;
 
-
     public Transform TagsContainer;
     public GameObject TagPrefab;
-    public Image[] Chassis_SocketIcons;
     private Coroutine activeTagRoutine;
+
     private void Awake()
     {
-        // 🌟 优先初始化 CanvasGroup
         canvasGroup = GetComponent<CanvasGroup>();
-
-        if (GetComponentInParent<UpgradePreviewPanelUI>() != null)
-        {
-            isTooltipMode = false;
-            if (canvasGroup) { canvasGroup.alpha = 1f; canvasGroup.blocksRaycasts = true; }
-            return;
-        }
-
         Instance = this;
         isTooltipMode = true;
 
-        // 🌟 初始彻底隐藏且不挡鼠标
         if (canvasGroup)
         {
             canvasGroup.alpha = 0f;
@@ -118,33 +104,33 @@ public class ItemDetailPanelUI : MonoBehaviour
     }
 
     // ==========================================
-    // ⚔️ 外部显示接口
+    // ⚔️ 外部显示接口 (已移除 diffData 参数)
     // ==========================================
 
-    public void ShowComponentDetail(InstancedComponent instance, UpgradePreviewData diffData = null)
+    public void ShowComponentDetail(InstancedComponent instance)
     {
         if (instance == null || instance.BaseData == null) return;
 
         openTime = Time.time;
-        targetAnchorRect = null; // 重置锚点，触发 LateUpdate 重新搜索
+        targetAnchorRect = null;
 
-        // 这种切换方式比 HidePanel 更快，不会闪烁
         Panel_Weapon?.SetActive(false);
         Panel_Core?.SetActive(false);
         Panel_Movement?.SetActive(false);
         Panel_Support?.SetActive(false);
         Panel_Chassis?.SetActive(false);
-        Panel_Accessory?.SetActive(false); // 🌟 这一行必须加！
+        Panel_Accessory?.SetActive(false);
+
         gameObject.SetActive(true);
         if (canvasGroup) canvasGroup.alpha = 1f;
 
         switch (instance.BaseData.Type)
         {
-            case ComponentType.Weapon: Panel_Weapon?.SetActive(true); FillWeaponData(instance, diffData); break;
-            case ComponentType.Core: Panel_Core?.SetActive(true); FillCoreData(instance, diffData); break;
-            case ComponentType.Movement: Panel_Movement?.SetActive(true); FillMovementData(instance, diffData); break;
+            case ComponentType.Weapon: Panel_Weapon?.SetActive(true); FillWeaponData(instance); break;
+            case ComponentType.Core: Panel_Core?.SetActive(true); FillCoreData(instance); break;
+            case ComponentType.Movement: Panel_Movement?.SetActive(true); FillMovementData(instance); break;
             case ComponentType.Support:
-            case ComponentType.Factory: Panel_Support?.SetActive(true); FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText, diffData); break;
+            case ComponentType.Factory: Panel_Support?.SetActive(true); FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText); break;
         }
 
         RenderTags(instance.BaseData.MacroCategory, instance.BaseData.Type, instance.BaseData.BaseSubTags, instance.CurrentLevel);
@@ -161,15 +147,14 @@ public class ItemDetailPanelUI : MonoBehaviour
         Panel_Core?.SetActive(false);
         Panel_Movement?.SetActive(false);
         Panel_Support?.SetActive(false);
-        Panel_Accessory?.SetActive(false); // 🌟 这一行也必须加！
-        gameObject.SetActive(true);
+        Panel_Chassis?.SetActive(true);
+        Panel_Accessory?.SetActive(false);
 
+        gameObject.SetActive(true);
         if (canvasGroup) canvasGroup.alpha = 1f;
 
-        if (Panel_Chassis != null) Panel_Chassis.SetActive(true);
-        FillCommonData(Chassis_Common, data.ChassisName, "", data.ChassisSprite, data.Description, data.ScrapValue, "载具底盘", data.SpecialMechanicDesc);
+        FillCommonData(Chassis_Common, data.ChassisName, "", data.ChassisSprite, data.Description, "载具底盘", data.SpecialMechanicDesc);
 
-        // 数值填充
         if (Chassis_HPText) Chassis_HPText.text = $"+{GetStat(data.BaseStats, StatType.AddedHP)}";
         if (Chassis_APText) Chassis_APText.text = $"+{GetStat(data.BaseStats, StatType.AddedAP)}";
         if (Chassis_PowerCostText) Chassis_PowerCostText.text = $"{GetStat(data.BaseStats, StatType.PowerCost)}";
@@ -180,25 +165,46 @@ public class ItemDetailPanelUI : MonoBehaviour
         RefreshSwitchers();
     }
 
-    public void HidePanel()
+    public void ShowAccessoryDetail(InstancedAccessory instance)
     {
-        if (isTooltipMode && canvasGroup != null)
-        {
-            canvasGroup.alpha = 0f;
-        }
+        if (instance == null || instance.BaseData == null) return;
+        transform.SetAsLastSibling();
+        openTime = Time.time;
+        targetAnchorRect = null;
 
         Panel_Weapon?.SetActive(false);
         Panel_Core?.SetActive(false);
         Panel_Movement?.SetActive(false);
         Panel_Support?.SetActive(false);
         Panel_Chassis?.SetActive(false);
+        Panel_Accessory?.SetActive(true);
+
+        gameObject.SetActive(true);
+        if (canvasGroup) canvasGroup.alpha = 1f;
+
+        FillCommonData(Accessory_Common, instance.BaseData.AccessoryName, "", instance.BaseData.AccessoryIcon, instance.BaseData.Description, "逻辑配件", instance.BaseData.SpecialMechanicDesc);
+
+        RenderTags(MacroCategory.Magic, null, instance.BaseData.RequiredTags, 0);
+        RefreshSwitchers();
+    }
+
+    public void HidePanel()
+    {
+        if (isTooltipMode && canvasGroup != null) canvasGroup.alpha = 0f;
+
+        Panel_Weapon?.SetActive(false);
+        Panel_Core?.SetActive(false);
+        Panel_Movement?.SetActive(false);
+        Panel_Support?.SetActive(false);
+        Panel_Chassis?.SetActive(false);
+        Panel_Accessory?.SetActive(false);
 
         targetAnchorRect = null;
         isAltModeActive = false;
     }
 
     // ==========================================
-    // 🔍 内部驱动 (Alt 键与位置)
+    // 🔍 内部驱动
     // ==========================================
 
     private void RefreshSwitchers()
@@ -229,7 +235,6 @@ public class ItemDetailPanelUI : MonoBehaviour
     {
         if (!isTooltipMode || canvasGroup.alpha < 0.1f) return;
 
-        // 🌟【位置追随加固】：只要没抓到锚点，就一直抓
         if (targetAnchorRect == null)
         {
             var pointerData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { position = Input.mousePosition };
@@ -238,7 +243,6 @@ public class ItemDetailPanelUI : MonoBehaviour
 
             foreach (var result in results)
             {
-                // 排除自己，寻找底下的格子
                 if (result.gameObject.transform.IsChildOf(this.transform)) continue;
                 var slot = result.gameObject.GetComponentInParent<InventoryItemSlotUI>();
                 if (slot != null) { targetAnchorRect = slot.GetComponent<RectTransform>(); break; }
@@ -261,164 +265,92 @@ public class ItemDetailPanelUI : MonoBehaviour
             myRect.position = new Vector3(slotCenter.x, slotCenter.y + offsetY, 0);
         }
 
-        // 点击空白处关闭
         if (Input.GetMouseButtonDown(0) && (Time.time - openTime) > 0.2f) HidePanel();
     }
 
-    // ==========================================
-    // 🎨 样式与颜色设置
-    // ==========================================
-
-    private void FillCommonData(CommonUIElements ui, string n, string lv, Sprite ic, string d, int s, string role, string mech)
+    private void FillCommonData(CommonUIElements ui, string n, string lv, Sprite ic, string d, string role, string mech)
     {
-        // ---------------------------------------------------------
-        // 🎨【主程提示】：这里就是设置默认文本颜色的地方
-        // ---------------------------------------------------------
-        Color defaultTextColor = Color.black;
-
         if (ui.NameText) ui.NameText.text = n;
         if (ui.DescriptionText) ui.DescriptionText.text = d;
         if (ui.TacticalRoleText) ui.TacticalRoleText.text = role;
-
-        // --- 👇 机制文本颜色设置 ---
-        if (ui.SpecialMechanicText)
-        {
-            ui.SpecialMechanicText.text = mech;
-            ui.SpecialMechanicText.color = defaultTextColor; // 👈 改这里！
-        }
-
-        if (ui.ScrapValueText) ui.ScrapValueText.text = "拆解价值: " + s.ToString();
+        if (ui.SpecialMechanicText) ui.SpecialMechanicText.text = mech;
         if (ui.IconImage) { ui.IconImage.sprite = ic; ui.IconImage.SetNativeSize(); }
         if (ui.LevelText) ui.LevelText.text = string.IsNullOrEmpty(lv) ? "" : $"Lv.{lv}";
     }
 
-    // (以下方法 FormatStat, FillWeaponData 等保持逻辑加固，请保留)
-    private string FormatStat(float value, StatType statType, UpgradePreviewData diffData)
+    private string FormatStat(float value, StatType statType)
     {
-        string baseStr = value.ToString("F0");
-        if (statType == StatType.CriticalChance) baseStr = (value * 100f).ToString("F0") + "%";
-        if (statType == StatType.AddedMass) baseStr = value.ToString("F1");
-        if (diffData == null) return baseStr;
-        int diffIdx = diffData.StatDiffs.FindIndex(d => d.StatID == statType);
-        if (diffIdx != -1)
-        {
-            var diff = diffData.StatDiffs[diffIdx];
-            if (diff.HasChanged)
-            {
-                string colorHex = diff.IsBuff ? "#00FF00" : "#FF4500";
-                string sign = diff.Delta > 0 ? "+" : "";
-                string deltaStr = (statType == StatType.CriticalChance) ? (diff.Delta * 100f).ToString("F0") + "%" : diff.Delta.ToString("F0");
-                return $"{baseStr} <color={colorHex}>({sign}{deltaStr})</color>";
-            }
-        }
-        return baseStr;
+        if (statType == StatType.CriticalChance) return (value * 100f).ToString("F0") + "%";
+        if (statType == StatType.AddedMass) return value.ToString("F1");
+        return value.ToString("F0");
     }
 
-    private void FillWeaponData(InstancedComponent instance, UpgradePreviewData diffData)
+    private void FillWeaponData(InstancedComponent instance)
     {
         var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
-        FillCommonData(Weapon_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, lvData.ScrapValue, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        FillCommonData(Weapon_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Weapon_Common.BackgroundImage, Bg_Weapon, instance.CurrentLevel);
-        if (Weapon_DamageText) Weapon_DamageText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinDamage), StatType.MinDamage, diffData)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxDamage), StatType.MaxDamage, diffData)}";
-        if (Weapon_RangeText) Weapon_RangeText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinRange), StatType.MinRange, diffData)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxRange), StatType.MaxRange, diffData)}";
-        if (Weapon_AttackSpeedText) Weapon_AttackSpeedText.text = FormatStat(GetStat(lvData.Stats, StatType.AttackSpeed), StatType.AttackSpeed, diffData);
-        if (Weapon_CritText) Weapon_CritText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.CriticalChance), StatType.CriticalChance, diffData)}";
-        if (Weapon_PowerCostText) Weapon_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData);
+
+        if (Weapon_DamageText) Weapon_DamageText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinDamage), StatType.MinDamage)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxDamage), StatType.MaxDamage)}";
+        if (Weapon_RangeText) Weapon_RangeText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinRange), StatType.MinRange)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxRange), StatType.MaxRange)}";
+        if (Weapon_AttackSpeedText) Weapon_AttackSpeedText.text = FormatStat(GetStat(lvData.Stats, StatType.AttackSpeed), StatType.AttackSpeed);
+        if (Weapon_CritText) Weapon_CritText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.CriticalChance), StatType.CriticalChance)}";
+        if (Weapon_PowerCostText) Weapon_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
     }
 
-    private void FillCoreData(InstancedComponent instance, UpgradePreviewData diffData)
+    private void FillCoreData(InstancedComponent instance)
     {
         var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
-        FillCommonData(Core_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, lvData.ScrapValue, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        FillCommonData(Core_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentLevel);
-        if (Core_HPText) Core_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP, diffData)}";
-        if (Core_APText) Core_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP, diffData)}";
-        if (Core_PowerCostText) Core_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData);
+
+        if (Core_HPText) Core_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
+        if (Core_APText) Core_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
+        if (Core_PowerCostText) Core_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
     }
 
-    private void FillMovementData(InstancedComponent instance, UpgradePreviewData diffData)
+    private void FillMovementData(InstancedComponent instance)
     {
         var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
-        FillCommonData(Movement_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, lvData.ScrapValue, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        FillCommonData(Movement_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentLevel);
-        if (Movement_SpeedText) Movement_SpeedText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.EnginePower), StatType.EnginePower, diffData)}";
-        if (Movement_HPText) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP, diffData)}";
-        if (Movement_APText) Movement_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP, diffData)}";
-        if (Movement_MassText) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass, diffData)}t";
-        if (Movement_PowerCostText) Movement_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData);
+
+        if (Movement_SpeedText) Movement_SpeedText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.EnginePower), StatType.EnginePower)}";
+        if (Movement_HPText) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
+        if (Movement_APText) Movement_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
+        if (Movement_MassText) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass)}t";
+        if (Movement_PowerCostText) Movement_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
     }
 
-    private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText, UpgradePreviewData diffData)
+    private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
     {
         var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
-        FillCommonData(common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, lvData.ScrapValue, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        FillCommonData(common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentLevel);
-        if (Support_HPText) Support_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP, diffData)}";
-        if (Support_APText) Support_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP, diffData)}";
-        if (Support_BlockText) Support_BlockText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedBlock), StatType.AddedBlock, diffData)}";
-        if (Support_MassText) Support_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass, diffData)}t";
-        if (powerText) powerText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost, diffData);
+
+        if (Support_HPText) Support_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
+        if (Support_APText) Support_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
+        if (Support_BlockText) Support_BlockText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedBlock), StatType.AddedBlock)}";
+        if (Support_MassText) Support_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass)}t";
+        if (powerText) powerText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
     }
 
     private float GetStat(List<StatEntry> stats, StatType type) { var e = stats.Find(x => x.StatID == type); return e != null ? e.Value : 0f; }
     private void SetLevelBackground(Image img, Sprite[] bgs, int lv) { if (img && bgs.Length >= 4) img.sprite = bgs[Mathf.Clamp(lv - 1, 0, 3)]; }
+
     private void RenderTags(MacroCategory macro, ComponentType? type, List<SubTag> subs, int lv)
     {
         if (!TagsContainer || !TagPrefab) return;
-
         if (activeTagRoutine != null) StopCoroutine(activeTagRoutine);
-        foreach (Transform child in TagsContainer)
-        {
-            child.gameObject.SetActive(false);
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in TagsContainer) Destroy(child.gameObject);
 
         List<(string text, Color bgColor)> tagsToCreate = new List<(string, Color)>();
+        Color macroColor = macro == MacroCategory.Tech ? new Color(0.2f, 0.6f, 1f) : (macro == MacroCategory.Flesh ? new Color(0.9f, 0.2f, 0.2f) : new Color(0.7f, 0.3f, 1f));
+        tagsToCreate.Add((macro == MacroCategory.Tech ? "科技" : (macro == MacroCategory.Flesh ? "血肉" : "魔法"), macroColor));
 
-        // --- 1. 定义大阵营底色 ---
-        Color macroColor;
-        switch (macro)
-        {
-            case MacroCategory.Tech:
-                macroColor = new Color(0.2f, 0.6f, 1f); // 科技：明亮的蓝色
-                break;
-            case MacroCategory.Flesh:
-                macroColor = new Color(0.9f, 0.2f, 0.2f); // 血肉：鲜艳的红色
-                break;
-            case MacroCategory.Magic:
-                macroColor = new Color(0.7f, 0.3f, 1f); // 秘术：迷幻的紫色
-                break;
-            default:
-                macroColor = Color.gray;
-                break;
-        }
-
-        // --- 2. 填充数据 ---
-        // A. 阵营标签 (使用上面定义的强色)
-        string macroName = macro == MacroCategory.Tech ? "科技" : (macro == MacroCategory.Flesh ? "血肉" : "魔法");
-        tagsToCreate.Add((macroName, macroColor));
-
-        // B. 其他标签 (建议使用浅灰色或白色作为底色，以便衬托黑色字体)
-        if (type.HasValue)
-        {
-            tagsToCreate.Add((TranslateComponentType(type.Value), new Color(0.9f, 0.9f, 0.9f)));
-        }
-
-        if (lv > 0)
-        {
-            // 稀有度标签也可以根据等级给一点淡色，或者统一白色
-            Color rColor = lv == 4 ? new Color(1f, 0.8f, 0.4f) : new Color(0.85f, 0.85f, 0.85f);
-            string rName = lv == 4 ? "传说" : (lv == 3 ? "史诗" : (lv == 2 ? "稀有" : "普通"));
-            tagsToCreate.Add((rName, rColor));
-        }
-
-        if (subs != null)
-        {
-            foreach (var sub in subs)
-            {
-                tagsToCreate.Add((TranslateSubTag(sub), new Color(0.8f, 0.8f, 0.8f)));
-            }
-        }
+        if (type.HasValue) tagsToCreate.Add((TranslateComponentType(type.Value), new Color(0.9f, 0.9f, 0.9f)));
+        if (lv > 0) tagsToCreate.Add((lv == 4 ? "传说" : (lv == 3 ? "史诗" : (lv == 2 ? "稀有" : "普通")), lv == 4 ? new Color(1f, 0.8f, 0.4f) : new Color(0.85f, 0.85f, 0.85f)));
+        if (subs != null) foreach (var sub in subs) tagsToCreate.Add((TranslateSubTag(sub), new Color(0.8f, 0.8f, 0.8f)));
 
         activeTagRoutine = StartCoroutine(StaggeredTagRoutine(tagsToCreate));
     }
@@ -426,79 +358,21 @@ public class ItemDetailPanelUI : MonoBehaviour
     private IEnumerator StaggeredTagRoutine(List<(string text, Color bgColor)> dataList)
     {
         yield return null;
-        float staggerDelay = 0.05f;
-
         foreach (var tagData in dataList)
         {
             GameObject tagObj = Instantiate(TagPrefab, TagsContainer);
-
-            // 🅰️ 字体颜色：强制设为黑色
-            TMP_Text txt = tagObj.GetComponentInChildren<TMP_Text>();
-            if (txt != null)
-            {
-                txt.text = tagData.text;
-                txt.color = Color.black; // 👈 强制变黑
-                txt.fontStyle = FontStyles.Bold; // 建议加粗，黑色粗体在彩色底上非常有高级感
-            }
-
-            // 🅱️ 背景底色：使用传入的颜色，透明度设高一点
-            Image img = tagObj.GetComponent<Image>();
-            if (img != null)
-            {
-                Color c = tagData.bgColor;
-                c.a = 0.9f; // 👈 设为 0.9，让彩色背景接近不透明，文字才清晰
-                img.color = c;
-            }
-
-            yield return new WaitForSecondsRealtime(staggerDelay);
+            tagObj.GetComponentInChildren<TMP_Text>().text = tagData.text;
+            tagObj.GetComponentInChildren<TMP_Text>().color = Color.black;
+            tagObj.GetComponent<Image>().color = tagData.bgColor;
+            yield return new WaitForSecondsRealtime(0.05f);
         }
         activeTagRoutine = null;
     }
 
-    public void ShowAccessoryDetail(InstancedAccessory instance)
-    {
-        if (instance == null || instance.BaseData == null) return;
-        transform.SetAsLastSibling();
-        openTime = Time.time;
-        targetAnchorRect = null;
-
-        // 关闭其他所有面板
-        Panel_Weapon?.SetActive(false);
-        Panel_Core?.SetActive(false);
-        Panel_Movement?.SetActive(false);
-        Panel_Support?.SetActive(false);
-        Panel_Chassis?.SetActive(false);
-
-        // 开启配件面板
-        if (Panel_Accessory != null)
-        {
-            Panel_Accessory.SetActive(true);
-            gameObject.SetActive(true);
-            if (canvasGroup) canvasGroup.alpha = 1f;
-
-            // 填充数据 (复用你最喜欢的 FillCommonData 方法)
-            FillCommonData(
-                Accessory_Common,
-                instance.BaseData.AccessoryName,
-                "", // 配件暂无等级
-                instance.BaseData.AccessoryIcon,
-                instance.BaseData.Description,
-                instance.BaseData.ScrapValue,
-                "逻辑配件",
-                instance.BaseData.SpecialMechanicDesc
-            );
-        }
-
-        // 处理标签渲染 (配件大类固定为“魔法/逻辑”)
-        RenderTags(MacroCategory.Magic, null, instance.BaseData.RequiredTags, 0);
-        RefreshSwitchers();
-    }
-    // --- 4. 必要的翻译辅助函数 ---
     private string TranslateSubTag(SubTag tag)
     {
         switch (tag)
         {
-            //通用
             case SubTag.StrongAcid: return "强酸";
             case SubTag.Melee: return "近战";
             case SubTag.Ranged: return "远程";
@@ -508,8 +382,6 @@ public class ItemDetailPanelUI : MonoBehaviour
             case SubTag.Devotion: return "奉献";
             case SubTag.Smash: return "强击";
             case SubTag.Knockback: return "冲力";
-
-            //科技
             case SubTag.Wasteland: return "废土";
             case SubTag.Industry: return "工业";
             case SubTag.Firearms: return "枪械";
@@ -517,24 +389,17 @@ public class ItemDetailPanelUI : MonoBehaviour
             case SubTag.Reload: return "装填";
             case SubTag.Kinetic: return "动能";
             case SubTag.Plasma: return "等离子";
-
-            //血肉
             case SubTag.Head: return "头颅";
             case SubTag.Organs: return "内脏";
             case SubTag.Limbs: return "四肢";
             case SubTag.Parasite: return "寄生";
             case SubTag.Pain: return "痛苦";
-
-            //魔法
             case SubTag.Artifact: return "遗物";
             case SubTag.Otherworld: return "异界";
             case SubTag.Mana: return "魔力";
             case SubTag.Chaos: return "混沌";
             case SubTag.Order: return "秩序";
-
             default: return tag.ToString();
-
-        
         }
     }
 

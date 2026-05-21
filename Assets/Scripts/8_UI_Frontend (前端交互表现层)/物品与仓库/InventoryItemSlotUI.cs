@@ -275,18 +275,7 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             onClickCallback?.Invoke();
             if (!isUnequipSlot) ItemDetailPanelUI.Instance?.HidePanel();
         }
-        else if (eventData.button == PointerEventData.InputButton.Right)
-        {
-            if (isUnequipSlot || IsLootMode) return;
-
-            // --- 👇【加固 D】：通过这种三元运算符，确保只有一个参数是不为 null 的 ---
-            if (cachedComponent != null)
-                ItemContextMenuUI.Instance.ShowMenu(cachedComponent, null, null, Input.mousePosition);
-            else if (cachedChassis != null)
-                ItemContextMenuUI.Instance.ShowMenu(null, cachedChassis, null, Input.mousePosition);
-            else if (cachedAccessory != null)
-                ItemContextMenuUI.Instance.ShowMenu(null, null, cachedAccessory, Input.mousePosition);
-        }
+      
     }
 
     // --- 找到 OnPointerEnter 方法，增加配件分支 ---

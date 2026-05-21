@@ -153,7 +153,7 @@ public class UnitDetailPanelUI : MonoBehaviour
         if (currentSlotIndex < 0 || currentProfile == null) return;
 
         // 1. 调用底层的原子化拆解
-        PlayerInventoryManager.Instance.DismantleUnit(currentSlotIndex);
+      
 
         // 2. 视觉反馈：震一下并关闭详情页
         if (ScreenEffectManager.Instance != null)

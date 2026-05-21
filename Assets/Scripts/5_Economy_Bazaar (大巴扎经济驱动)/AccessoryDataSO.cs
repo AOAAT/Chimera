@@ -13,8 +13,6 @@ public class AccessoryDataSO : ScriptableObject
     [TextArea(3, 5)]
     public string SpecialMechanicDesc = "功能描述：注入后..."; // 对应你的“功能描述”需求
 
-    [Header("=== 经济价值 ===")]
-    public int ScrapValue = 20; // 对应你的“拆解废料数”需求
     public Sprite AccessoryIcon;
     [Range(1, 4)] public int Rarity = 1; // 1:白, 2:蓝, 3:紫, 4:橙
 

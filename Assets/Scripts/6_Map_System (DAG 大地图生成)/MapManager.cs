@@ -116,12 +116,7 @@ public class MapManager : MonoBehaviour
             if (MapUIPanel != null) MapUIPanel.SetActive(false);
             EventDirector.Instance.EnterEventPhase(targetData);
         }
-        // C. 车间/商店节点
-        else if (activeType == MapNodeType.Workshop)
-        {
-            if (MapUIPanel != null) MapUIPanel.SetActive(false);
-            ShopDirector.Instance.EnterShopPhase(targetData);
-        }
+
     }
 
     // 👇【新增辅助方法】：判断这个类型是不是“打架”的节点
