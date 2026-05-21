@@ -22,16 +22,12 @@ public class MainMenuUI : MonoBehaviour
         if (QuitButton != null) QuitButton.onClick.AddListener(QuitGame);
     }
 
+    // --- 找到 MainMenuUI.cs 的 StartNewGame 方法 ---
     private void StartNewGame()
     {
-
-        if (MapManager.Instance != null) Destroy(MapManager.Instance.gameObject);
-        if (PlayerInventoryManager.Instance != null) Destroy(PlayerInventoryManager.Instance.gameObject);
-        if (GlobalResourceManager.Instance != null) Destroy(GlobalResourceManager.Instance.gameObject);
-        if (CombatDirector.Instance != null) Destroy(CombatDirector.Instance.gameObject);
-
+        // 之前这里是加载地图场景，现在改为加载你的 RTS 开发测试场景
         Time.timeScale = 1f;
-        SceneManager.LoadScene(1);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("RTS_World_Master"); // 填入你的 RTS 场景名
     }
 
     public void QuitGame()

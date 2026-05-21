@@ -59,4 +59,15 @@ public class CombatDirector : MonoBehaviour
     {
         IsCombatActive = active;
     }
+    public void ExecuteReturnToMap()
+    {
+        // 之前这里会呼叫 MapManager 回到地图，现在我们把它改成“原地待命”
+        Debug.Log("<color=cyan>【隔离模式】</color> 战斗结束，地图系统已挂起，留在当前战场。");
+
+        // 仅仅执行物理层清理，不执行 UI 切换
+        PerformFullCleanup();
+
+        // 如果你想测试完直接回机库，可以改为：
+        // if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.OpenHangar();
+    }
 }
