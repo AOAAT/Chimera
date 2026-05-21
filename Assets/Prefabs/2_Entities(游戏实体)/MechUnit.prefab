@@ -1,5 +1,53 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1751242588729421531
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7784669624799214926}
+  - component: {fileID: 9011327007400073112}
+  m_Layer: 0
+  m_Name: "\u9009\u4E2D\u63D0\u793A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &7784669624799214926
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1751242588729421531}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4923148941261226031}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9011327007400073112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1751242588729421531}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11e0ae89e87609247a2f461cfe4680eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BracketSize: 1.2
+  LineLength: 0.4
+  NormalColor: {r: 0, g: 1, b: 1, a: 0.8}
+  LockColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &2724532761662945261
 GameObject:
   m_ObjectHideFlags: 0
@@ -36,7 +84,8 @@ Transform:
   m_LocalPosition: {x: 0.019277662, y: 0.25498676, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 7784669624799214926}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7225761150544584164
@@ -154,7 +203,6 @@ MonoBehaviour:
   CurrentSpeed: 0
   isStaggered: 0
   isDashing: 0
-  WaypointPrefab: {fileID: 8954513958914949010, guid: 440ac5dc8e18b3d45b195defd1f9d214, type: 3}
 --- !u!114 &4163971379876546601
 MonoBehaviour:
   m_ObjectHideFlags: 0

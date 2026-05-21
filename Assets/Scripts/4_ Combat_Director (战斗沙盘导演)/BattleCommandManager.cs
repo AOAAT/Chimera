@@ -9,18 +9,18 @@ public class BattleCommandManager : MonoBehaviour
     [Header("=== RTS 选中序列 ===")]
     public List<ChimeraAIController> SelectedUnits = new List<ChimeraAIController>();
 
-    [Header("=== 视觉反馈预制体 ===")]
+    [Header("=== 视觉组件引用 ===")]
+    public RectTransform SelectionBoxUI;
     public GameObject ClickVFXPrefab;
 
+    private Vector2 dragStartMousePos; // 记录鼠标点击的原始屏幕位置
     private LineRenderer targetingLine;
-    private GameObject currentActiveMarker; // 追踪当前场上的唯一路径标识
+    private GameObject currentActiveMarker;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
 
-        // 初始化集火红线表现
         targetingLine = gameObject.AddComponent<LineRenderer>();
         targetingLine.startWidth = targetingLine.endWidth = 0.04f;
         targetingLine.material = new Material(Shader.Find("Sprites/Default"));
@@ -32,77 +32,160 @@ public class BattleCommandManager : MonoBehaviour
 
     private void Update()
     {
-        // 屏蔽点击 UI 菜单时的透传
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
-        HandleSelection(); // 左键逻辑
-        HandleCommand();   // 右键逻辑
+        HandleMarqueeSelection();
+        HandleCommand();
         UpdateTargetingLine();
     }
 
-    private void HandleSelection()
+    private void HandleMarqueeSelection()
     {
-        if (Input.GetMouseButtonDown(0)) // 左键点击
+        // --- 1. 起点记录 ---
+        if (Input.GetMouseButtonDown(0))
         {
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            int selectionMask = LayerMask.GetMask("Player_Body", "Player_Hitbox");
-            Collider2D hit = Physics2D.OverlapCircle(mousePos, 0.25f, selectionMask);
+            dragStartMousePos = Input.mousePosition;
+        }
 
-            // 1. 熄灭全场所有机甲的选中视觉
-            ClearAllSelectionVisuals();
+        // --- 2. 拖拽实时更新视觉 ---
+        if (Input.GetMouseButton(0))
+        {
+            UpdateSelectionBoxUI();
+        }
 
-            if (hit != null)
+        // --- 3. 终点判定 ---
+        if (Input.GetMouseButtonUp(0))
+        {
+            if (SelectionBoxUI.gameObject.activeSelf)
             {
-                var unit = hit.GetComponentInParent<ChimeraAIController>();
-                if (unit != null)
-                {
-                    // 2. 更新选中列表并激活视觉
-                    SelectedUnits.Clear();
-                    SelectedUnits.Add(unit);
-                    ApplySelectionVisuals(unit);
-                    Debug.Log($"<color=green>[Command-Log] 已选中机甲: {unit.name}. 当前选中总数: {SelectedUnits.Count}</color>");
-                    return;
-                }
+                SelectUnitsInRect();
+                SelectionBoxUI.gameObject.SetActive(false);
             }
-            // 点击空地清空选择
-            SelectedUnits.Clear();
+            else
+            {
+                SingleSelect();
+            }
         }
     }
 
+    // 🚀【核心修正】：UI 框选框的坐标转换算法
+    private void UpdateSelectionBoxUI()
+    {
+        Vector2 currentMousePos = Input.mousePosition;
+        float distance = Vector2.Distance(dragStartMousePos, currentMousePos);
+
+        // 只有拖拽距离超过一定阈值才显示框，防止点击时闪烁
+        if (distance < 10f) return;
+
+        if (!SelectionBoxUI.gameObject.activeSelf) SelectionBoxUI.gameObject.SetActive(true);
+
+        // --- 坐标转换魔法 ---
+        RectTransform parentRect = SelectionBoxUI.parent.GetComponent<RectTransform>();
+
+        // 将屏幕起终点转换为 UI 容器内的局部坐标
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, dragStartMousePos, null, out Vector2 localStart);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, currentMousePos, null, out Vector2 localEnd);
+
+        // 计算 UI 矩形的左下角 (Min) 和 右上角 (Max)
+        Vector2 min = Vector2.Min(localStart, localEnd);
+        Vector2 max = Vector2.Max(localStart, localEnd);
+
+        // 应用位置和大小
+        // 因为 UI 框的 Pivot 建议设为 (0,0) [左下角] 或 (0.5, 0.5) [中心]
+        // 这里我根据计算出的 min 位置设置 anchoredPosition
+        SelectionBoxUI.anchoredPosition = min;
+        SelectionBoxUI.sizeDelta = max - min;
+    }
+
+    private void SelectUnitsInRect()
+    {
+        // 1. 计算世界坐标系下的真实物理矩形
+        Vector3 p1 = Camera.main.ScreenToWorldPoint(dragStartMousePos);
+        Vector3 p2 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        Vector2 min = Vector2.Min(p1, p2);
+        Vector2 max = Vector2.Max(p1, p2);
+
+        ClearAllSelectionVisuals();
+        SelectedUnits.Clear();
+
+        // 2. 物理扫描
+        int layerMask = LayerMask.GetMask("Player_Body", "Player_Hitbox");
+        Collider2D[] hits = Physics2D.OverlapAreaAll(min, max, layerMask);
+
+        Debug.Log($"<color=yellow>【框选透视】物理扫描区域: {min} 到 {max} | 捕获碰撞体数量: {hits.Length} 个</color>");
+
+        // 3. 逐个筛选与鉴权
+        foreach (var hit in hits)
+        {
+            var unit = hit.GetComponentInParent<ChimeraAIController>();
+
+            // 嫌疑人 A：抓到了碰撞体，但它不是受控单位
+            if (unit == null)
+            {
+                Debug.LogWarning($"<color=orange>【框选透视】抓到了 {hit.name}，但它身上(或父级)没有挂载 ChimeraAIController 脚本！</color>");
+                continue;
+            }
+
+            if (!SelectedUnits.Contains(unit))
+            {
+                SelectedUnits.Add(unit);
+
+                // 嫌疑人 B：是受控单位，但忘记挂载特效脚本
+                TacticalBracket bracket = unit.GetComponentInChildren<TacticalBracket>(true);
+                if (bracket == null)
+                {
+                    Debug.LogError($"<color=red>【框选透视】成功选中了 {unit.gameObject.name}，但它身上缺少 TacticalBracket 脚本，无法显示四角提示框！</color>");
+                }
+
+                ApplySelectionVisuals(unit);
+            }
+        }
+
+        Debug.Log($"<color=green>【框选透视】最终成功编入小队的单位总数: {SelectedUnits.Count} 个</color>");
+    }
+
+    private void SingleSelect()
+    {
+        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Collider2D hit = Physics2D.OverlapCircle(mousePos, 0.3f, LayerMask.GetMask("Player_Body", "Player_Hitbox"));
+
+        ClearAllSelectionVisuals();
+        SelectedUnits.Clear();
+
+        if (hit != null)
+        {
+            var unit = hit.GetComponentInParent<ChimeraAIController>();
+            if (unit != null)
+            {
+                SelectedUnits.Add(unit);
+                ApplySelectionVisuals(unit);
+            }
+        }
+    }
+
+    // ==========================================
+    // 其余逻辑（右键、视觉）保持不变，加固清理
+    // ==========================================
+
     private void HandleCommand()
     {
-        // 没选中人或者没按右键，不执行
         if (SelectedUnits.Count == 0 || !Input.GetMouseButtonDown(1)) return;
-
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
 
-        // --- 核心修正：立即清理上一条指令留下的旧标识 ---
-        if (currentActiveMarker != null)
-        {
-            Debug.Log("<color=yellow>[Command-Log] 覆盖指令：正在销毁旧的路点标识。</color>");
-            Destroy(currentActiveMarker);
-        }
+        if (currentActiveMarker != null) Destroy(currentActiveMarker);
 
         foreach (var unit in SelectedUnits)
         {
             if (unit == null) continue;
-
-            if (enemyHit.collider != null)
-            {
-                // 指令：集火敌人
-                unit.SetManualTarget(enemyHit.collider.transform);
-            }
+            if (enemyHit.collider != null) unit.SetManualTarget(enemyHit.collider.transform);
             else
             {
-                // 指令：自由位移
                 unit.SetManualMovePoint(mousePos);
-
-                // 仅为第一个选中的单位生成路点，防止视觉污染
                 if (unit == SelectedUnits[0] && ClickVFXPrefab != null)
                 {
                     currentActiveMarker = Instantiate(ClickVFXPrefab, new Vector3(mousePos.x, mousePos.y, -0.5f), Quaternion.identity);
-                    Debug.Log($"<color=cyan>[Command-Log] 已在坐标 {mousePos} 创建新路点。Z轴已校准为-0.5</color>");
                 }
             }
         }
@@ -110,7 +193,6 @@ public class BattleCommandManager : MonoBehaviour
 
     private void ClearAllSelectionVisuals()
     {
-        // 寻找所有带大脑的单位并关闭框选
         ChimeraAIController[] all = FindObjectsOfType<ChimeraAIController>();
         foreach (var m in all)
         {
@@ -121,12 +203,9 @@ public class BattleCommandManager : MonoBehaviour
 
     private void ApplySelectionVisuals(ChimeraAIController unit)
     {
-        // 强制递归寻找支架组件并显示
-        TacticalBracket b = unit.GetComponentInChildren<TacticalBracket>(true);
-        if (b != null) b.Show(unit.HasManualTarget());
-
-        WeaponRangeVisualizer r = unit.GetComponent<WeaponRangeVisualizer>();
-        if (r != null) r.SetVisible(true);
+        TacticalBracket bracket = unit.GetComponentInChildren<TacticalBracket>(true);
+        if (bracket != null) bracket.Show(unit.HasManualTarget());
+        unit.GetComponent<WeaponRangeVisualizer>()?.SetVisible(true);
     }
 
     private void UpdateTargetingLine()
