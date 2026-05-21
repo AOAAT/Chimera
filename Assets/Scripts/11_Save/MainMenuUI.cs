@@ -26,7 +26,6 @@ public class MainMenuUI : MonoBehaviour
     {
 
         if (MapManager.Instance != null) Destroy(MapManager.Instance.gameObject);
-        if (RunManager.Instance != null) Destroy(RunManager.Instance.gameObject);
         if (PlayerInventoryManager.Instance != null) Destroy(PlayerInventoryManager.Instance.gameObject);
         if (GlobalResourceManager.Instance != null) Destroy(GlobalResourceManager.Instance.gameObject);
         if (CombatDirector.Instance != null) Destroy(CombatDirector.Instance.gameObject);

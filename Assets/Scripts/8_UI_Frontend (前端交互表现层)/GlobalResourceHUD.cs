@@ -6,7 +6,6 @@ public class GlobalResourceHUD : MonoBehaviour
     [Header("=== UI 文本绑定 ===")]
     public TMP_Text SanText;
     public TMP_Text PowerText;
-    public TMP_Text DepthText;
 
     private void Start()
     {
@@ -42,13 +41,6 @@ public class GlobalResourceHUD : MonoBehaviour
             string colorHex = usedPower > maxPower ? "#FF0000" : "#00FF00";
             PowerText.text = $"电网负载: <color={colorHex}>{usedPower}</color> / {maxPower}";
         }
-
-        // 地图深度监控
-        if (MapManager.Instance != null)
-        {
-            DepthText.text = $"当前层数: {MapManager.Instance.CurrentLayer}";
-        }
-
 
     }
 }

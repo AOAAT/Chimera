@@ -96,32 +96,25 @@ public class GlobalResourceManager : MonoBehaviour
         OnResourceChanged?.Invoke();
     }
 
+    // --- 请找到 GlobalResourceManager.cs 的 ExecuteGameOverProtocol 方法并替换 ---
     private void ExecuteGameOverProtocol()
     {
         Debug.Log("<color=red>【致命警告】</color> 理智归零。执行强制关机协议...");
 
-        // 1. 👇【核心加固】：强行切断战斗导演的 UI 链路
+        // 1. 清理战斗物理层
         if (CombatDirector.Instance != null)
         {
-            // 彻底隐藏结算面板，防止玩家点击“返回地图”
-            if (CombatDirector.Instance.SettlementPanel != null)
-                CombatDirector.Instance.SettlementPanel.SetActive(false);
-
-            // 隐藏部署界面
-            if (CombatDirector.Instance.CombatUIPanel != null)
-                CombatDirector.Instance.CombatUIPanel.SetActive(false);
-
-            // 清理战场实体
+            // 彻底清理战场实体、容器和池子
             CombatDirector.Instance.PerformFullCleanup();
         }
 
-        // 2. 隐藏大地图和其他 UI
+        // 2. 隐藏大地图和其他 UI (假设这些面板依然存在)
         if (MapManager.Instance != null && MapManager.Instance.MapUIPanel != null)
             MapManager.Instance.MapUIPanel.SetActive(false);
+
         if (PauseMenuUI.Instance != null && PauseMenuUI.Instance.GlobalPauseButton != null)
-        {
             PauseMenuUI.Instance.GlobalPauseButton.SetActive(false);
-        }
+
         // 3. 唤醒谢幕事件
         if (SanityCollapseEvent != null)
         {

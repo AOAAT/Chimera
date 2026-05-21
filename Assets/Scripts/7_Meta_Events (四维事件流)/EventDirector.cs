@@ -53,25 +53,27 @@ public class EventDirector : MonoBehaviour
     public void EnterEventPhase(MapNodeData nodeData)
     {
         currentNodeData = nodeData;
-        int currentStage = RunManager.Instance != null ? RunManager.Instance.CurrentStage : 1;
+
+        // 👇【核心修改】：直接获取当前层数，不再去 RunManager 找 Stage
         int currentLayer = MapManager.Instance != null ? MapManager.Instance.CurrentLayer : 1;
 
+        // 过滤掉不符合层数深度的池子（不再检查 TargetStage）
         var validPools = GlobalEventPools.Where(p =>
-            p.TargetStage == currentStage && currentLayer >= p.MinDepth && currentLayer <= p.MaxDepth && p.Events.Count > 0
+            currentLayer >= p.MinDepth && currentLayer <= p.MaxDepth && p.Events.Count > 0
         ).ToList();
 
         if (validPools.Count == 0) { ExecuteReturnToMap(); return; }
 
         var selectedPool = PickPoolByWeight(validPools);
 
+        // 基础条件审查
         var qualifiedEvents = selectedPool.Events.Where(e =>
         {
             if (e == null) return false;
             if (e.AppearanceConditions == null || e.AppearanceConditions.Count == 0) return true;
-            string dummyReason;
             foreach (var cond in e.AppearanceConditions)
             {
-                if (cond != null && !cond.Evaluate(out dummyReason)) return false;
+                if (cond != null && !cond.Evaluate(out _)) return false;
             }
             return true;
         }).ToList();
@@ -160,38 +162,40 @@ public class EventDirector : MonoBehaviour
         // 1. 注册可能存在的接力节点
         nextNodeAfterLoot = option.NextEventNode;
 
-        // 2. 深度扫描：判定本次选项是否会“劫持”流程（进入战斗、商店或大巴扎）
+        // 2. 👇【核心修复】：删除了对 TriggerSpecialCombat 的引用
         bool isFlowHijacked = option.Actions.Any(a =>
-            a is EventAction_TriggerSpecialCombat ||
-            a is EventAction_OpenSpecificUpgrade ||
-            (a is EventAction_UniversalGrant ug && ug.Rewards.Any(r => r.Mode == RewardType.RandomLootBox || r.Mode == RewardType.SpecificComponent))
+            a is EventAction_OpenSpecificUpgrade
+        // 这里原本是检查特殊战斗的地方，现在已经被肃清
         );
 
         // 3. 执行所有积木动作
         foreach (var action in option.Actions) if (action != null) action.Execute();
 
-        // 4. 流程分流
+        // ... 后续逻辑（流程分流）保持不变 ...
         if (isFlowHijacked)
         {
-            // 如果战斗或奖励已经开启，事件面板静默关闭，不要调用 ExecuteReturnToMap！
             if (EventPanel != null) EventPanel.SetActive(false);
-            Debug.Log("<color=orange>【逻辑守卫】</color> 检测到流程已被劫持（战斗/奖励），事件导演已移交控制权。");
         }
         else if (option.NextEventNode != null)
         {
-            // 没劫持，但有下一幕：直接跳转
             PlayEvent(option.NextEventNode);
         }
         else
         {
-            // 啥都没有且没被劫持：正常的文字事件结束，回大地图
             if (EventPanel != null) EventPanel.SetActive(false);
             ExecuteReturnToMap();
         }
     }
     public void ExecuteReturnToMap()
     {
-        if (MapManager.Instance != null)
-            MapManager.Instance.OnCombatVictory(currentNodeData);
+        // 既然 OnCombatVictory 被删了，我们直接开启地图面板并刷新视觉
+        if (MapManager.Instance != null && MapManager.Instance.MapUIPanel != null)
+        {
+            MapManager.Instance.MapUIPanel.SetActive(true);
+
+            // 尝试寻找地图视觉组件并重刷状态
+            MapVisualizer viz = MapManager.Instance.MapUIPanel.GetComponentInChildren<MapVisualizer>(true);
+            if (viz != null) viz.RefreshAllVisuals();
+        }
     }
 }

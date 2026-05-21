@@ -47,7 +47,7 @@ public class EventCondition_Universal : EventCondition
             case EventResourceType.CurrentCP: return GlobalCPManager.Instance?.CurrentCP ?? 0;
             case EventResourceType.MaxCP: return GlobalCPManager.Instance?.GetActualMaxCP() ?? 0;
             case EventResourceType.MaxPowerCapacity: return GlobalResourceManager.Instance.MaxPowerCapacity;
-            case EventResourceType.MapDepth: return MapManager.Instance?.CurrentLayer ?? 0;
+
             default: return 0;
         }
     }

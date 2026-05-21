@@ -64,7 +64,6 @@ public class WeaponModule : MonoBehaviour
             lockedTarget = null;
             return;
         }
-        if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return;
 
         if (!cachedIsEnemy) // 只限制玩家单位
         {

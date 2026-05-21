@@ -104,11 +104,12 @@ public class MapManager : MonoBehaviour
             return; // 核心拦截，防止进入后续的战斗逻辑
         }
 
-        // A. 遭遇战节点分流 (普通怪、精英、大怪)
         if (IsCombatNode(activeType))
         {
-            if (MapUIPanel != null) MapUIPanel.SetActive(false);
-            CombatDirector.Instance.EnterCombatPhase(targetData);
+            Debug.Log($"<color=orange>【RTS 路由】</color> 踏入冲突区域 {targetNodeID}，目前直接判定为路过。");
+
+            // 直接执行胜利后的回归逻辑（即：直接站上去，亮起后面的路）
+            OnCombatVictory(targetData);
         }
         // B. 文字事件节点
         else if (activeType == MapNodeType.Event)
@@ -132,24 +133,7 @@ public class MapManager : MonoBehaviour
 
     // 👇【新增】：打赢了回来，继续地图结算
 
-    public void OnCombatVictory(MapNodeData nodeData)
-    {
-        if (MapUIPanel != null) MapUIPanel.SetActive(true);
-
-        // --- 👇【核心加固】：这是唯一的“回地图音乐”触发点 ---
-        MusicManager.Instance?.SwitchState(MusicState.Map);
-
-        if (nodeData != null)
-        {
-            // 只有这里调用了 MoveToNode，节点状态才会变灰，前路才会亮起
-            MoveToNode(nodeData);
-        }
-
-        MapVisualizer visualizer = MapUIPanel.GetComponentInChildren<MapVisualizer>(true);
-        if (visualizer != null) visualizer.RefreshAllVisuals();
-    }
-    // 玩家实际到达该节点后的逻辑处理
-    // 玩家实际到达该节点后的逻辑处理
+  
     private void MoveToNode(MapNodeData newNode)
     {
         // 1. 把刚才站的节点状态设为“已通过”
@@ -188,5 +172,19 @@ public class MapManager : MonoBehaviour
         }
 
     }
+    public void OnCombatVictory(MapNodeData nodeData)
+    {
+        // 这个方法现在只负责两件事：显示地图、切换音乐
+        if (MapUIPanel != null) MapUIPanel.SetActive(true);
+        MusicManager.Instance?.SwitchState(MusicState.Map);
 
+        // 如果传入了节点，执行移动逻辑（亮起后续路线）
+        if (nodeData != null)
+        {
+            MoveToNode(nodeData);
+        }
+
+        MapVisualizer visualizer = MapUIPanel.GetComponentInChildren<MapVisualizer>(true);
+        if (visualizer != null) visualizer.RefreshAllVisuals();
+    }
 }
