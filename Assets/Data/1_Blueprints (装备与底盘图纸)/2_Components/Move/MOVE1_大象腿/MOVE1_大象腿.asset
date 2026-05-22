@@ -25,12 +25,7 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
     Stats:
-    - StatID: 4
-      Value: 12
-      ModType: 0
     - StatID: 2
       Value: 8
       ModType: 0
@@ -40,6 +35,7 @@ MonoBehaviour:
     - StatID: 1
       Value: 50
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
@@ -72,4 +68,3 @@ MonoBehaviour:
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8
-  MaxSocketCount: 2

@@ -25,20 +25,20 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 7
       ModType: 0
     - StatID: 1
       Value: 20
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions:
     - {fileID: 0}
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u5FC3\u80FD\u6C72\u53D6]\u6D88\u8017\u5F53\u524D\u7684\u6240\u6709\u9B54\u529B\u503C\uFF0C\u6240\u5C5E\u5947\u7F8E\u62C9\u83B7\u5F97\u6C38\u4E45\u4F24\u5BB3\u52A0\u6DF1buff\uFF0Cbuff\u5C42\u6570\u7B49\u540C\u4E8E\u6D88\u8017\u7684\u9B54\u529B\u503C\u7684\u4E00\u500D\u3002\n\u6CE8\uFF1A\u6BCF\u5C42\u4F24\u5BB3\u52A0\u6DF1buff\u4F1A\u63D0\u9AD81\u70B9\u5355\u4F4D\u7684\u57FA\u7840\u653B\u51FB\u529B\u3002"
     ActiveSkill:
@@ -50,23 +50,20 @@ MonoBehaviour:
       OnSkillCastActions:
       - {fileID: 11400000, guid: d3f813b5d1580934bab53fda4c497460, type: 2}
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
-      Value: 7
-      ModType: 0
     - StatID: 1
       Value: 20
       ModType: 0
     - StatID: 0
       Value: 20
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions:
     - {fileID: 0}
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u5FC3\u80FD\u6C72\u53D6]\u6D88\u8017\u5F53\u524D\u7684\u6240\u6709\u9B54\u529B\u503C\uFF0C\u6240\u5C5E\u5947\u7F8E\u62C9\u83B7\u5F97\u6C38\u4E45\u4F24\u5BB3\u52A0\u6DF1buff\uFF0Cbuff\u5C42\u6570\u7B49\u540C\u4E8E\u6D88\u8017\u7684\u9B54\u529B\u503C\u76842\u500D\u3002\n\u6CE8\uFF1A\u6BCF\u5C42\u4F24\u5BB3\u52A0\u6DF1buff\u4F1A\u63D0\u9AD81\u70B9\u5355\u4F4D\u7684\u57FA\u7840\u653B\u51FB\u529B\u3002"
     ActiveSkill:

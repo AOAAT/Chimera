@@ -25,10 +25,8 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 6
       ModType: 0
     - StatID: 1
@@ -37,10 +35,12 @@ MonoBehaviour:
     - StatID: 3
       Value: 3
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u72C2\u6218]\u57285\u79D2\u5185\u63D0\u9AD8\u5355\u4F4D\u6B66\u5668100\u70B9\u653B\u901F\u3002\u6D88\u80173\u70B9\u9B54\u529B\uFF0C\u51B7\u5374\u65F6\u95F415\u79D2\u3002"
     ActiveSkill:
@@ -50,24 +50,21 @@ MonoBehaviour:
       CPCost: 3
       Cooldown: 15
       OnSkillCastActions:
-      - {fileID: 11400000, guid: 4e2314065b660784eb7bd9a21067f00f, type: 2}
+      - {fileID: 0}
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
-      Value: 8
-      ModType: 0
     - StatID: 1
       Value: 60
       ModType: 0
     - StatID: 3
       Value: 5
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u72C2\u6218]\u57285\u79D2\u5185\u63D0\u9AD8\u5355\u4F4D\u6B66\u5668100\u70B9\u653B\u901F\u3002\u6D88\u80173\u70B9\u9B54\u529B\uFF0C\u51B7\u5374\u65F6\u95F48\u79D2\u3002"
     ActiveSkill:
@@ -77,7 +74,7 @@ MonoBehaviour:
       CPCost: 3
       Cooldown: 8
       OnSkillCastActions:
-      - {fileID: 11400000, guid: 4e2314065b660784eb7bd9a21067f00f, type: 2}
+      - {fileID: 0}
   DeliveryType: 1
   ProjectilePrefab: {fileID: 0}
   WindupAngle: -45

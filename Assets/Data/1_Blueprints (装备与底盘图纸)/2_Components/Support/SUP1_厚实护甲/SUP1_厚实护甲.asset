@@ -24,40 +24,9 @@ MonoBehaviour:
   BaseSubTags: 0400000005000000
   MinDropLevel: 1
   LevelMatrix:
-  - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
-    Stats:
-    - StatID: 4
-      Value: 6
-      ModType: 0
-    - StatID: 1
-      Value: 200
-      ModType: 0
-    - StatID: 3
-      Value: 3
-      ModType: 0
-    - StatID: 2
-      Value: 5
-      ModType: 0
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions: []
-    OnBattleStartActions: []
-    BonusTags: 
-    SpecialMechanicDesc: "\u63D0\u4F9B\u5927\u91CF\u62A4\u7532\u4E0E\u683C\u6321\u3002\n\u6CE8\uFF1A\u6BCF\u6B21\u53D7\u4F24\u90FD\u4F1A\u51CF\u514D\u7B49\u540C\u683C\u6321\u503C\u7684\u4F24\u5BB3\u3002"
-    ActiveSkill:
-      HasActiveSkill: 0
-      SkillName: 
-      SkillIcon: {fileID: 0}
-      CPCost: 0
-      Cooldown: 0
-      OnSkillCastActions: []
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 6
       ModType: 0
     - StatID: 1
@@ -69,10 +38,12 @@ MonoBehaviour:
     - StatID: 2
       Value: 5
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u63D0\u4F9B\u5927\u91CF\u62A4\u7532\u4E0E\u683C\u6321\u3002\n\u6CE8\uFF1A\u6BCF\u6B21\u53D7\u4F24\u90FD\u4F1A\u51CF\u514D\u7B49\u540C\u683C\u6321\u503C\u7684\u4F24\u5BB3\u3002"
     ActiveSkill:

@@ -24,16 +24,12 @@ MonoBehaviour:
   BaseSubTags: 1100000006000000
   MinDropLevel: 1
   LevelMatrix:
-  - Level: 0
-    BasePrice: 0
-    ScrapValue: 0
+  - Level: 1
     Stats:
-    - StatID: 4
-      Value: 0
-      ModType: 0
     - StatID: 0
       Value: 50
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions:
     - {fileID: 11400000, guid: 29aa6755390db2144b97b468a31bed6d, type: 2}
@@ -67,4 +63,3 @@ MonoBehaviour:
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8
-  MaxSocketCount: 2

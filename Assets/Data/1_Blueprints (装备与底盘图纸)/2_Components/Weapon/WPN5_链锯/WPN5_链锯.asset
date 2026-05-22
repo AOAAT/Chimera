@@ -25,12 +25,7 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
     Stats:
-    - StatID: 4
-      Value: 9
-      ModType: 0
     - StatID: 10
       Value: 15
       ModType: 0
@@ -68,10 +63,8 @@ MonoBehaviour:
       Cooldown: 0
       OnSkillCastActions: []
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 9
       ModType: 0
     - StatID: 10

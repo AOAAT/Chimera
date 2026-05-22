@@ -25,10 +25,8 @@ MonoBehaviour:
   MinDropLevel: 1
   LevelMatrix:
   - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 15
       ModType: 0
     - StatID: 10
@@ -52,6 +50,7 @@ MonoBehaviour:
     - StatID: 17
       Value: 50
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: f1f827c8fbecbc2419971ad2f29debdb, type: 2}
     - {fileID: 11400000, guid: 31aea80c88aac1d44bdd5a33d6c9199e, type: 2}
@@ -59,6 +58,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: ecaff477a361891499a0888c0ee4da19, type: 2}
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u8FD1\u6218\uFF0C\u5BF9\u654C\u4EBA\u9020\u6210\u8303\u56F4\u771F\u5B9E\u4F24\u5BB3\uFF08\u65E0\u89C6\u62A4\u7532\u4E0E\u683C\u6321\uFF09\u3002\u654C\u4EBA\u8DDD\u79BB\u5947\u7F8E\u62C9\u8D8A\u8FD1\uFF0C\u6240\u53D7\u4F24\u5BB3\u8D8A\u9AD8\u3002\u5982\u679C\u654C\u4EBA\u56E0\u4E3A\u6B64\u4F24\u5BB3\u800C\u6B7B\u4EA1\uFF0C\u5219\u4F1A\u83B7\u5F971\u70B9\u9B54\u529B\u56DE\u590D\u3002\u6BCF\u6B21\u653B\u51FB\u90FD\u4F1A\u6D88\u80170.5\u9B54\u529B\u503C"
     ActiveSkill:
@@ -69,10 +69,8 @@ MonoBehaviour:
       Cooldown: 0
       OnSkillCastActions: []
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 15
       ModType: 0
     - StatID: 10
@@ -96,6 +94,7 @@ MonoBehaviour:
     - StatID: 17
       Value: 50
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions:
     - {fileID: 11400000, guid: f1f827c8fbecbc2419971ad2f29debdb, type: 2}
     - {fileID: 11400000, guid: 31aea80c88aac1d44bdd5a33d6c9199e, type: 2}
@@ -103,6 +102,7 @@ MonoBehaviour:
     OnHitActions: []
     OnAssembleActions: []
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u8FD1\u6218\uFF0C\u5BF9\u654C\u4EBA\u9020\u6210\u8303\u56F4\u771F\u5B9E\u4F24\u5BB3\uFF08\u65E0\u89C6\u62A4\u7532\u4E0E\u683C\u6321\uFF09\u3002\u654C\u4EBA\u8DDD\u79BB\u5947\u7F8E\u62C9\u8D8A\u8FD1\uFF0C\u6240\u53D7\u4F24\u5BB3\u8D8A\u9AD8\u3002\u5982\u679C\u654C\u4EBA\u56E0\u4E3A\u6B64\u4F24\u5BB3\u800C\u6B7B\u4EA1\uFF0C\u5219\u4F1A\u83B7\u5F971\u70B9\u9B54\u529B\u56DE\u590D\u3002\u6BCF\u6B21\u653B\u51FB\u90FD\u4F1A\u6D88\u80170.5\u9B54\u529B\u503C"
     ActiveSkill:

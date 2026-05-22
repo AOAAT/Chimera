@@ -24,47 +24,22 @@ MonoBehaviour:
   BaseSubTags: 110000001800000016000000
   MinDropLevel: 1
   LevelMatrix:
-  - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
-    Stats:
-    - StatID: 4
-      Value: 6
-      ModType: 0
-    - StatID: 0
-      Value: 100
-      ModType: 0
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions:
-    - {fileID: 11400000, guid: 2a70b9a1ac1c8464eb267a0ebf963ae8, type: 2}
-    - {fileID: 11400000, guid: 8eb6ab21ffbced64a86b8718790898f9, type: 2}
-    OnBattleStartActions: []
-    BonusTags: 
-    SpecialMechanicDesc: "\u8BE5\u7EC4\u4EF6\u6240\u5C5E\u5947\u7F8E\u62C9\u4E0A\u6240\u642D\u8F7D\u7684\u6B66\u5668\u7684\u6700\u5927\u653B\u51FB\u529B\u63D0\u9AD810\uFF0C\u6700\u5C0F\u653B\u51FB\u529B\u51CF\u5C115."
-    ActiveSkill:
-      HasActiveSkill: 0
-      SkillName: 
-      SkillIcon: {fileID: 0}
-      CPCost: 0
-      Cooldown: 0
-      OnSkillCastActions: []
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 6
       ModType: 0
     - StatID: 0
       Value: 100
       ModType: 0
+    MaxSocketCount: 1
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions:
     - {fileID: 11400000, guid: 5dbe42af1a58d974da11a61ba8d3c3ea, type: 2}
     - {fileID: 11400000, guid: 7f8459c8b9188384fb8342f396c3a0a9, type: 2}
     OnBattleStartActions: []
+    OnTickActions: []
     BonusTags: 
     SpecialMechanicDesc: "\u8BE5\u7EC4\u4EF6\u6240\u5C5E\u5947\u7F8E\u62C9\u4E0A\u6240\u642D\u8F7D\u7684\u6B66\u5668\u7684\u6700\u5927\u653B\u51FB\u529B\u63D0\u9AD815\uFF0C\u6700\u5C0F\u653B\u51FB\u529B\u51CF\u5C1110."
     ActiveSkill:

@@ -24,57 +24,9 @@ MonoBehaviour:
   BaseSubTags: 020000000900000008000000
   MinDropLevel: 1
   LevelMatrix:
-  - Level: 1
-    BasePrice: 40
-    ScrapValue: 10
-    Stats:
-    - StatID: 4
-      Value: 9
-      ModType: 0
-    - StatID: 10
-      Value: 12
-      ModType: 0
-    - StatID: 11
-      Value: 8
-      ModType: 0
-    - StatID: 13
-      Value: 50
-      ModType: 0
-    - StatID: 14
-      Value: 0
-      ModType: 0
-    - StatID: 15
-      Value: 100
-      ModType: 0
-    - StatID: 16
-      Value: 0.1
-      ModType: 0
-    - StatID: 19
-      Value: 100
-      ModType: 0
-    MaxSocketCount: 1
-    OnFireActions:
-    - {fileID: 11400000, guid: 53a17e2bea6c51b449393353641ebed4, type: 2}
-    OnHitActions:
-    - {fileID: 11400000, guid: 0ab27058602ebff4290cafb838dc15e9, type: 2}
-    - {fileID: 11400000, guid: c1a36af09224097469f6870cdea61f87, type: 2}
-    OnAssembleActions: []
-    OnBattleStartActions: []
-    OnTickActions: []
-    BonusTags: 
-    SpecialMechanicDesc: "\u5728\u547D\u4E2D\u654C\u4EBA\u540E\u4F1A\u7ED9\u654C\u4EBA\u65BD\u52A0\u5F3A\u5927\u7684\u63A8\u529B\u3002"
-    ActiveSkill:
-      HasActiveSkill: 0
-      SkillName: 
-      SkillIcon: {fileID: 0}
-      CPCost: 0
-      Cooldown: 0
-      OnSkillCastActions: []
   - Level: 2
-    BasePrice: 0
-    ScrapValue: 0
     Stats:
-    - StatID: 4
+    - StatID: 0
       Value: 9
       ModType: 0
     - StatID: 10
