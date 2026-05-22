@@ -3,6 +3,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static Unity.VisualScripting.Member;
 
 public class AssemblyWorkshopUI : MonoBehaviour
 {
@@ -52,24 +53,33 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public GameObject UIConduitPrefab;
     private Dictionary<int, MechEnergyConduit> activeConduitMap = new Dictionary<int, MechEnergyConduit>();
 
+
+    private AssemblerBuilding currentCallSource;
     private void Awake()
     {
         if (Instance == null) Instance = this;
         gameObject.SetActive(false);
     }
 
-    public void OpenEmptyWorkshop(int slotIndex)
+    public void OpenEmptyWorkshop(int slotIndex, AssemblerBuilding source = null)
     {
+        // 🌟 核心：将传入的建筑来源记录下来
+        currentCallSource = source;
+
         MusicManager.Instance?.SetImmersionMode(true);
         gameObject.SetActive(true);
+
         currentEditingProfile = null;
         isCreatingNew = true;
         targetHangarSlotIndex = slotIndex;
+
         snapshot_SlotIndices.Clear();
         snapshot_EquippedComponentIDs.Clear();
         snapshot_DamageTaken = 0f;
+
         RefreshWorkshopState();
     }
+
 
     public void OpenWorkshopWithUnit(int slotIndex, SavedUnitProfile unitProfile)
     {
@@ -445,12 +455,35 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public void SaveAndExitWorkshop()
     {
         if (currentEditingProfile == null) { CancelAndExitWorkshop(); return; }
-        if (!ValidateUnitLegality(out string errorMsg)) { Debug.LogWarning(errorMsg); return; }
-        currentEditingProfile.UnitName = UnitNameInput.text;
-        PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
-        ExitToHangar();
-    }
 
+        // 验证合法性（必须有引擎和腿）
+        if (!ValidateUnitLegality(out string errorMsg)) { Debug.LogWarning(errorMsg); return; }
+
+        currentEditingProfile.UnitName = UnitNameInput.text;
+
+        if (currentCallSource != null)
+        {
+            // --- 🌟 路径 A：建筑产出模式 ---
+            // 告诉建筑：组装完成了，请在你的出口生出来
+            currentCallSource.SpawnMech(currentEditingProfile);
+
+            // 逻辑闭环：既然实体已经出来了，就不再进机库列表了
+            ExitToHangarDirectly();
+        }
+        else
+        {
+            // --- 🌟 路径 B：调试/机库模式 ---
+            if (targetHangarSlotIndex >= 0)
+                PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
+
+            ExitToHangar();
+        }
+    }
+    private void ExitToHangarDirectly()
+    {
+        gameObject.SetActive(false);
+        MusicManager.Instance?.SetImmersionMode(false);
+    }
     public void CancelAndExitWorkshop()
     {
         if (currentEditingProfile != null)

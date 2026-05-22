@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class AssemblerBuilding : BuildingBase
 {
+    [Header("=== 实体生产配置 ===")]
+    public GameObject MechBasePrefab; // 指向你的 [Base_Mech_Unit] 预制体
+
     [Header("=== 集合点配置 ===")]
     public Vector3 RallyWorldPos;
 
@@ -129,6 +132,54 @@ public class AssemblerBuilding : BuildingBase
 
     public void OpenWorkshop()
     {
-        Debug.Log($"<color=cyan>【组装中心】</color> 正在开启工坊...");
+        // 参数 1: -1 (代表不占用 0-7 号固定机库车位)
+        // 参数 2: this (代表将当前建筑实例传给工坊)
+        AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(-1, this);
     }
+    public void SpawnMech(SavedUnitProfile profile)
+    {
+        Vector3 spawnPos = GetSpawnWorldPos();
+
+        // --- 1. 出口占用检测与偏移 ---
+        // 检查出口 0.5 米范围内是否有其他单位（Layer 设为 Player_Body）
+        Collider2D hit = Physics2D.OverlapCircle(spawnPos, 0.5f, LayerMask.GetMask("Player_Body"));
+        if (hit != null)
+        {
+            // 如果被占了，产生一个随机的小偏移
+            Vector2 offset = Random.insideUnitCircle * 0.6f;
+            spawnPos += new Vector3(offset.x, offset.y, 0);
+            Debug.Log("<color=yellow>【组装】</color> 出口被占用，已执行防卡死偏移。");
+        }
+
+        // --- 2. 实例化机甲 ---
+        GameObject go = Instantiate(MechBasePrefab, spawnPos, Quaternion.identity);
+        MechUnit2D unit = go.GetComponent<MechUnit2D>();
+
+        // 注入数据 (注意：此时 AssemblyWorkshopUI 已经执行过 TryConsumeFromWarehouse 了)
+        unit.InitUnitData(profile);
+
+        // --- 3. RTS 物理重塑 (对齐你的 RTS 2.1 契约) ---
+        var oldCol = go.GetComponent<BoxCollider2D>();
+        if (oldCol != null) oldCol.enabled = false;
+        var circle = go.AddComponent<CircleCollider2D>();
+        circle.radius = 0.35f;
+
+        // --- 4. 自动奔赴集合点 ---
+        ChimeraAIController ai = go.GetComponent<ChimeraAIController>();
+        if (ai != null)
+        {
+            // 延迟一帧下令，确保 AI 初始化完成
+            StartCoroutine(SendToRallyPoint(ai));
+        }
+
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
+    }
+
+    private System.Collections.IEnumerator SendToRallyPoint(ChimeraAIController ai)
+    {
+        yield return null;
+        ai.SetManualMovePoint(RallyWorldPos);
+        Debug.Log($"<color=cyan>【调度】</color> 机甲已出厂，正在前往集合点。");
+    }
+
 }

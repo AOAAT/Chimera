@@ -18,6 +18,8 @@ public class ItemDetailPanelUI : MonoBehaviour
     private List<StatSwitcher> activeSwitchers = new List<StatSwitcher>();
     private bool isAltModeActive = false;
 
+    [Header("=== 模式切换 (新增) ===")]
+    private RectTransform fixedAnchor = null; // 如果不为 null，则锁定在此位置
     // ==========================================
     // 1. 核心面板容器
     // ==========================================
@@ -189,8 +191,26 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     public void HidePanel()
     {
+        // 1. 隐藏主容器
         if (isTooltipMode && canvasGroup != null) canvasGroup.alpha = 0f;
 
+        // 2. 停掉正在运行的标签生成协程，防止隐藏后还在“蹦”新标签
+        if (activeTagRoutine != null)
+        {
+            StopCoroutine(activeTagRoutine);
+            activeTagRoutine = null;
+        }
+
+        // 🌟 3. 核心修复：立即清空标签容器里的所有旧标签
+        if (TagsContainer != null)
+        {
+            foreach (Transform child in TagsContainer)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+
+        // 4. 隐藏各分类子面板
         Panel_Weapon?.SetActive(false);
         Panel_Core?.SetActive(false);
         Panel_Movement?.SetActive(false);
@@ -230,8 +250,36 @@ public class ItemDetailPanelUI : MonoBehaviour
         }
     }
 
+    public void SetFixedAnchor(RectTransform anchor)
+    {
+        fixedAnchor = anchor;
+        if (anchor != null)
+        {
+            // 开启显示，并强制设置为不跟随鼠标
+            isTooltipMode = false;
+            canvasGroup.alpha = 1f;
+
+            // 立即对齐坐标
+            RectTransform myRect = GetComponent<RectTransform>();
+            myRect.pivot = new Vector2(0.5f, 0.5f); // 固定模式通常采用中心对齐
+            myRect.position = anchor.position;
+            myRect.sizeDelta = anchor.sizeDelta; // 适配锚点大小
+        }
+        else
+        {
+            isTooltipMode = true;
+        }
+    }
+
+
     private void LateUpdate()
     {
+        if (fixedAnchor != null)
+        {
+            GetComponent<RectTransform>().position = fixedAnchor.position;
+            return;
+        }
+
         if (!isTooltipMode || canvasGroup.alpha < 0.1f) return;
 
         if (targetAnchorRect == null)

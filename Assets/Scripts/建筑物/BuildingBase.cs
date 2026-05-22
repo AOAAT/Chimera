@@ -21,8 +21,13 @@ public abstract class BuildingBase : MonoBehaviour
     [Header("=== 选中视觉 (可选) ===")]
     public GameObject SelectionVisual; // 建筑底部的青色光圈或边框
 
-    protected bool isSelected = false;
+    [Header("=== 建造反馈 (Ghost) ===")]
+    public SpriteRenderer GhostRenderer; // 指向建筑的主贴图
 
+    private List<SpriteRenderer> gridIndicators = new List<SpriteRenderer>();
+
+    protected bool isSelected = false;
+    public GameObject FunctionUIPrefab; // 指向刚才做的 UI_Module_Factory 或 UI_Module_Assembler
     // 运行时存储的子碰撞体引用
     protected List<BoxCollider2D> subColliders = new List<BoxCollider2D>();
     protected bool isPlaced = false;
@@ -146,4 +151,44 @@ public abstract class BuildingBase : MonoBehaviour
     }
 
     protected virtual void OnDeSelected() { }
+
+    public void InitGhostMode()
+    {
+        isPlaced = false;
+        // 1. 禁用所有物理碰撞
+        foreach (var col in GetComponentsInChildren<Collider2D>()) col.enabled = false;
+
+        // 2. 生成底部的网格指示器 (1x1 的小色块)
+        float cellSize = RTSGridSystem.Instance.CellSize;
+        foreach (Vector2Int offset in FootprintOffsets)
+        {
+            GameObject indicator = new GameObject("GridIndicator");
+            indicator.transform.SetParent(this.transform);
+            indicator.transform.localPosition = new Vector3(offset.x * cellSize, offset.y * cellSize, 0.1f);
+
+            var sr = indicator.AddComponent<SpriteRenderer>();
+            sr.sprite = RTSGridSystem.Instance.GetCell(0, 0).Flavor == TileFlavor.TechBase ? null : null; // 这里可以指定一个简单的白色色块Sprite
+            sr.size = new Vector2(cellSize * 0.9f, cellSize * 0.9f);
+            sr.sortingLayerName = "UI";
+            gridIndicators.Add(sr);
+        }
+    }
+    public void UpdateGhostVisual(bool isValid)
+    {
+        Color targetColor = isValid ? new Color(0, 1, 0, 0.5f) : new Color(1, 0, 0, 0.5f);
+        if (GhostRenderer != null) GhostRenderer.color = targetColor;
+
+        foreach (var sr in gridIndicators) sr.color = targetColor;
+    }
+    public void FinalizePlacement()
+    {
+        isPlaced = true;
+        foreach (var sr in gridIndicators) Destroy(sr.gameObject);
+        gridIndicators.Clear();
+
+        if (GhostRenderer != null) GhostRenderer.color = Color.white;
+        foreach (var col in GetComponentsInChildren<Collider2D>()) col.enabled = true;
+
+        OnPlaced(); // 调用原有的网格锁定逻辑
+    }
 }

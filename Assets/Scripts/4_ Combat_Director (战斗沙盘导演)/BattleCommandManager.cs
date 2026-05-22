@@ -120,19 +120,21 @@ public class BattleCommandManager : MonoBehaviour
         }
         else if (buildingHit != null)
         {
-            // 选中建筑
             BuildingBase building = buildingHit.GetComponentInParent<BuildingBase>();
             if (building != null)
             {
                 CurrentSelectedBuilding = building;
-                building.SetSelected(true); // 开启建筑选中视觉
-                Debug.Log($"<color=cyan>【选中建筑】</color> {building.BuildingName}");
+                building.SetSelected(true);
+
+                // --- 🌟 核心联动：刷新底部面板 ---
+                MainBuildingHUD.Instance.Refresh(building);
             }
         }
         else
         {
-            // 点击空地，全清
             CurrentSelectedBuilding = null;
+            // --- 🌟 核心联动：清空底部面板 ---
+            MainBuildingHUD.Instance.Refresh(null);
         }
     }
 
