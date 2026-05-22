@@ -18,6 +18,11 @@ public abstract class BuildingBase : MonoBehaviour
     [Tooltip("机甲产出的相对格点坐标（相对于枢轴点）。")]
     public Vector2Int SpawnOffset = new Vector2Int(1, 0);
 
+    [Header("=== 选中视觉 (可选) ===")]
+    public GameObject SelectionVisual; // 建筑底部的青色光圈或边框
+
+    protected bool isSelected = false;
+
     // 运行时存储的子碰撞体引用
     protected List<BoxCollider2D> subColliders = new List<BoxCollider2D>();
     protected bool isPlaced = false;
@@ -93,10 +98,12 @@ public abstract class BuildingBase : MonoBehaviour
     /// </summary>
     public Vector3 GetSpawnWorldPos()
     {
-        float cellSize = RTSGridSystem.Instance.CellSize;
+        // --- 🌟 核心修复：增加判空保护 ---
+        // 如果网格系统还没准备好，我们先假设格子大小是 1.0f
+        float cellSize = (RTSGridSystem.Instance != null) ? RTSGridSystem.Instance.CellSize : 1.0f;
+
         return transform.position + new Vector3(SpawnOffset.x * cellSize, SpawnOffset.y * cellSize, 0);
     }
-
     // ==========================================
     // ⚔️ 网格锁定协议
     // ==========================================
@@ -128,4 +135,15 @@ public abstract class BuildingBase : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawSphere(transform.position, 0.1f); // 枢轴点标记
     }
+
+    public virtual void SetSelected(bool state)
+    {
+        isSelected = state;
+        if (SelectionVisual != null) SelectionVisual.SetActive(state);
+
+        // 如果取消选中，也要隐藏虚线（由子类实现）
+        if (!state) OnDeSelected();
+    }
+
+    protected virtual void OnDeSelected() { }
 }
