@@ -8,7 +8,6 @@ public class BattleCommandManager : MonoBehaviour
 
     [Header("=== RTS 选中寄存器 ===")]
     public List<ChimeraAIController> SelectedUnits = new List<ChimeraAIController>();
-    // 🌟 新增：当前选中的建筑引用
     public BuildingBase CurrentSelectedBuilding;
 
     [Header("=== 视觉组件引用 ===")]
@@ -18,6 +17,7 @@ public class BattleCommandManager : MonoBehaviour
     private Vector2 dragStartMousePos;
     private LineRenderer targetingLine;
     private GameObject currentActiveMarker;
+
 
     private void Awake()
     {
@@ -35,12 +35,31 @@ public class BattleCommandManager : MonoBehaviour
     {
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
-        // 🌟 核心修复：如果正在放置，或者【这一帧刚刚放完建筑】，立即拦截所有选中逻辑
+        // 🌟 核心加固：多重防护拦截
         if (BuildingManager.Instance != null)
         {
-            if (BuildingManager.Instance.IsPlacing || BuildingManager.Instance.PlacementHappened)
+            bool isPlacing = BuildingManager.Instance.IsPlacing;
+            bool isLocked = BuildingManager.Instance.IsSelectionLocked;
+
+            if (isPlacing || isLocked)
             {
-                return;
+                // 1. 强制同步锚点
+                dragStartMousePos = Input.mousePosition;
+
+                // 2. 强制关闭视觉
+                if (SelectionBoxUI.gameObject.activeSelf)
+                {
+                    Debug.Log("<color=red>[Command-Guard]</color> 拦截到建造模式下的框选尝试，已关闭视觉");
+                    SelectionBoxUI.gameObject.SetActive(false);
+                }
+
+                // 3. 诊断 Log (如果此时还出现点击，查看是哪种状态)
+                if (Input.GetMouseButtonUp(0))
+                {
+                    Debug.Log($"<color=gray>[Command-Guard]</color> 拦截到 MouseUp。状态: Placing={isPlacing}, Locked={isLocked}");
+                }
+
+                return; // 彻底切断
             }
         }
 
@@ -146,19 +165,28 @@ public class BattleCommandManager : MonoBehaviour
 
     private void HandleMarqueeSelection()
     {
-        if (Input.GetMouseButtonDown(0)) dragStartMousePos = Input.mousePosition;
+        if (Input.GetMouseButtonDown(0))
+        {
+            dragStartMousePos = Input.mousePosition;
+            // Debug.Log("[Marquee] 记录起点: " + dragStartMousePos);
+        }
 
-        if (Input.GetMouseButton(0)) UpdateSelectionBoxUI();
+        if (Input.GetMouseButton(0))
+        {
+            UpdateSelectionBoxUI();
+        }
 
         if (Input.GetMouseButtonUp(0))
         {
             if (SelectionBoxUI.gameObject.activeSelf)
             {
+                Debug.Log("[Marquee] 框选释放，执行结算");
                 SelectUnitsInRect();
                 SelectionBoxUI.gameObject.SetActive(false);
             }
             else
             {
+                Debug.Log("[Marquee] 单击释放，执行选中");
                 SingleSelect();
             }
         }
@@ -191,18 +219,37 @@ public class BattleCommandManager : MonoBehaviour
 
     private void UpdateSelectionBoxUI()
     {
+        if (BuildingManager.Instance != null && (BuildingManager.Instance.IsPlacing || BuildingManager.Instance.IsSelectionLocked))
+        {
+            SelectionBoxUI.gameObject.SetActive(false);
+            return;
+        }
+
+
         Vector2 currentMousePos = Input.mousePosition;
-        if (Vector2.Distance(dragStartMousePos, currentMousePos) < 10f) return;
+        float distance = Vector2.Distance(dragStartMousePos, currentMousePos);
 
-        if (!SelectionBoxUI.gameObject.activeSelf) SelectionBoxUI.gameObject.SetActive(true);
-        RectTransform parentRect = SelectionBoxUI.parent.GetComponent<RectTransform>();
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, dragStartMousePos, null, out Vector2 localStart);
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, currentMousePos, null, out Vector2 localEnd);
+        // 只有拖拽距离超过 10 像素才显示
+        if (distance > 10f)
+        {
+            if (!SelectionBoxUI.gameObject.activeSelf)
+            {
+                // 🌟 这是最关键的触发点
+                Debug.Log($"<color=yellow>[Marquee-Trigger]</color> 开启框选框视觉。当前帧: {Time.frameCount}");
+                SelectionBoxUI.gameObject.SetActive(true);
+            }
 
-        Vector2 min = Vector2.Min(localStart, localEnd);
-        Vector2 max = Vector2.Max(localStart, localEnd);
-        SelectionBoxUI.anchoredPosition = min;
-        SelectionBoxUI.sizeDelta = max - min;
+            // --- 坐标转换计算 (保持不变) ---
+            RectTransform parentRect = SelectionBoxUI.parent.GetComponent<RectTransform>();
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, dragStartMousePos, null, out Vector2 localStart);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, currentMousePos, null, out Vector2 localEnd);
+
+            Vector2 min = Vector2.Min(localStart, localEnd);
+            Vector2 max = Vector2.Max(localStart, localEnd);
+
+            SelectionBoxUI.anchoredPosition = min;
+            SelectionBoxUI.sizeDelta = max - min;
+        }
     }
 
     private void ClearAllSelectionVisuals()
@@ -240,5 +287,13 @@ public class BattleCommandManager : MonoBehaviour
             }
         }
         targetingLine.enabled = false;
+    }
+
+    public void ForceClearSelectionBox()
+    {
+        if (SelectionBoxUI != null)
+        {
+            SelectionBoxUI.gameObject.SetActive(false);
+        }
     }
 }

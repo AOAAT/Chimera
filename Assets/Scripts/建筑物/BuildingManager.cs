@@ -8,14 +8,20 @@ public class BuildingManager : MonoBehaviour
     private BuildingDataSO currentPendingData;
     private BuildingBase ghostInstance;
     private bool isPlacing = false;
-    private bool placementHappenedThisFrame = false;
-    public bool PlacementHappened => placementHappenedThisFrame;
+    private bool isSelectionLocked = false;
+    public bool IsSelectionLocked => isSelectionLocked;
+
     private void Awake() => Instance = this;
 
-    // 🌟 由 UI 调用：开始建造流程
     public void StartPlacement(BuildingDataSO data)
     {
         if (isPlacing) CancelPlacement();
+
+        if (BattleCommandManager.Instance != null)
+        {
+            BattleCommandManager.Instance.SelectedUnits.Clear();
+            BattleCommandManager.Instance.ForceClearSelectionBox();
+        }
 
         currentPendingData = data;
         GameObject go = Instantiate(data.Prefab);
@@ -23,46 +29,57 @@ public class BuildingManager : MonoBehaviour
         ghostInstance.InitGhostMode();
 
         isPlacing = true;
+        Debug.Log("<color=#FF00FF>[Building-System]</color> 进入建造模式");
     }
 
     private void Update()
     {
+        // 🌟 核心加固：处理硬锁定解除
+        if (isSelectionLocked)
+        {
+            if (Input.GetMouseButtonUp(0))
+            {
+                // 延迟到下一帧解锁，或者在当前帧保持锁定直到 LateUpdate
+                StartCoroutine(UnlockSelectionNextFrame());
+                Debug.Log("<color=#00FF00>[Building-System]</color> 探测到鼠标抬起，请求解锁...");
+            }
+            return;
+        }
+
         if (!isPlacing || ghostInstance == null) return;
 
-        // --- 1. 严格网格吸附 ---
         Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos.z = 0;
-        ghostInstance.SnapToGrid(mouseWorldPos); // 调用 BuildingBase 里的吸附算法
+        ghostInstance.SnapToGrid(mouseWorldPos);
 
-        // --- 2. 合法性检查 ---
         bool isValid = CheckPlacementValidity();
         ghostInstance.UpdateGhostVisual(isValid);
 
-        // --- 3. 交互 ---
-        if (Input.GetMouseButtonDown(0) && isValid)
+        // 交互
+        if (Input.GetMouseButtonDown(0))
         {
-            ConfirmPlacement();
+            if (isValid)
+            {
+                Debug.Log("<color=#00FFFF>[Building-System]</color> 点击左键：位置合法，开始放置");
+                ConfirmPlacement();
+            }
+            else
+            {
+                Debug.LogWarning("<color=red>[Building-System]</color> 点击左键：位置非法，拦截放置");
+            }
         }
-        else if (Input.GetMouseButtonDown(1)) // 右键取消
+        else if (Input.GetMouseButtonDown(1))
         {
             CancelPlacement();
         }
     }
 
-    private bool CheckPlacementValidity()
+    private System.Collections.IEnumerator UnlockSelectionNextFrame()
     {
-        foreach (Vector2Int offset in ghostInstance.FootprintOffsets)
-        {
-            // 计算每个格子在全球网格中的索引
-            Vector3 cellWorldPos = ghostInstance.transform.position + new Vector3(offset.x, offset.y, 0);
-            Vector2Int gridIdx = RTSGridSystem.Instance.WorldToGrid(cellWorldPos);
-
-            GridCell cell = RTSGridSystem.Instance.GetCell(gridIdx.x, gridIdx.y);
-
-            // 判定：如果格子越界、已被占用、或不可行走，则非法
-            if (cell == null || cell.IsOccupied) return false;
-        }
-        return true;
+        // 🌟 确保在本帧剩余的所有 Update 逻辑中，锁定依然生效
+        yield return null;
+        isSelectionLocked = false;
+        Debug.Log("<color=#00FF00>[Building-System]</color> 锁定已彻底释放");
     }
 
     private void ConfirmPlacement()
@@ -70,11 +87,9 @@ public class BuildingManager : MonoBehaviour
         if (ConsumeResources(currentPendingData))
         {
             ghostInstance.FinalizePlacement();
-
-            // 🌟 核心：标记这一帧已经用来放建筑了，别再点别的了
-            placementHappenedThisFrame = true;
-
             isPlacing = false;
+            isSelectionLocked = true; // 开启硬锁定
+
             ghostInstance = null;
             currentPendingData = null;
             GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Attach);
@@ -86,19 +101,22 @@ public class BuildingManager : MonoBehaviour
         if (ghostInstance != null) Destroy(ghostInstance.gameObject);
         isPlacing = false;
         ghostInstance = null;
+        if (BattleCommandManager.Instance != null) BattleCommandManager.Instance.ForceClearSelectionBox();
+        Debug.Log("<color=orange>[Building-System]</color> 取消建造");
     }
 
-    private bool ConsumeResources(BuildingDataSO data)
+    private bool CheckPlacementValidity()
     {
-        // TODO: 对接 GlobalResourceManager
+        if (ghostInstance == null) return false;
+        foreach (Vector2Int offset in ghostInstance.FootprintOffsets)
+        {
+            Vector3 cellWorldPos = ghostInstance.transform.position + new Vector3(offset.x * RTSGridSystem.Instance.CellSize, offset.y * RTSGridSystem.Instance.CellSize, 0);
+            Vector2Int gridIdx = RTSGridSystem.Instance.WorldToGrid(cellWorldPos);
+            GridCell cell = RTSGridSystem.Instance.GetCell(gridIdx.x, gridIdx.y);
+            if (cell == null || cell.IsOccupied) return false;
+        }
         return true;
     }
 
-    private void LateUpdate()
-    {
-        if (placementHappenedThisFrame)
-        {
-            placementHappenedThisFrame = false;
-        }
-    }
+    private bool ConsumeResources(BuildingDataSO data) => true;
 }
