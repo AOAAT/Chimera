@@ -29,11 +29,16 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     public RectTransform SocketIndicatorRoot;
     public GameObject SocketDotPrefab;
 
+    [Header("=== 数量显示控件 (堆叠模式专用) ===")]
+    public GameObject QuantityBadge; // UI上的数字底框
+    public TMP_Text QuantityText;    // 数量文字，如 x5
+
     public void SetHighlight(bool isOn)
     {
         if (HighlightFrame != null) HighlightFrame.SetActive(isOn);
     }
 
+    // --- 1. 底盘单体初始化 (用于机库/详情) ---
     public void SetupChassis(InstancedChassis chassis, Action<InstancedChassis> onSelected)
     {
         cachedChassis = chassis;
@@ -53,6 +58,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             }
         }
 
+        if (QuantityBadge != null) QuantityBadge.SetActive(false);
+
         bool isEquipped = chassis != null && chassis.IsEquipped;
         if (EquippedOverlay != null) EquippedOverlay.SetActive(isEquipped);
 
@@ -61,6 +68,7 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         };
     }
 
+    // --- 2. 零件单体初始化 (兼容层) ---
     public void SetupComponent(InstancedComponent component, Action<InstancedComponent> onSelected)
     {
         cachedChassis = null;
@@ -82,6 +90,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
                 ItemLevelText.color = rarityColor;
             }
         }
+
+        if (QuantityBadge != null) QuantityBadge.SetActive(false);
 
         // 刷新配件插槽点
         if (SocketIndicatorRoot != null && SocketDotPrefab != null)
@@ -105,6 +115,63 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         };
     }
 
+    // --- 3. 核心：零件堆叠显示 (用于仓库/选配面板) ---
+    public void SetupComponentStack(ComponentStack stack, Action<ComponentStack> onSelected)
+    {
+        // 为了兼容详情页，创建一个临时实例
+        cachedComponent = new InstancedComponent(stack.BaseData, stack.Level);
+        cachedChassis = null;
+        isUnequipSlot = false;
+
+        ItemIcon.sprite = stack.BaseData.ComponentIcon;
+        ItemNameText.text = stack.BaseData.ComponentName;
+
+        Color rarityColor = GetRarityColor(stack.Level);
+        ItemNameText.color = rarityColor;
+
+        if (ItemLevelText != null)
+        {
+            ItemLevelText.gameObject.SetActive(true);
+            ItemLevelText.text = $"Lv.{stack.Level}";
+            ItemLevelText.color = rarityColor;
+        }
+
+        // 数量堆叠逻辑
+        if (QuantityBadge != null && QuantityText != null)
+        {
+            QuantityBadge.SetActive(stack.Quantity > 1);
+            QuantityText.text = $"x{stack.Quantity}";
+        }
+
+        if (EquippedOverlay != null) EquippedOverlay.SetActive(false);
+        if (SocketIndicatorRoot != null) SocketIndicatorRoot.gameObject.SetActive(false);
+
+        onClickCallback = () => onSelected?.Invoke(stack);
+    }
+
+    // --- 4. 核心：底盘堆叠显示 (用于仓库) ---
+    public void SetupChassisStack(ChassisStack stack, Action<ChassisStack> onSelected)
+    {
+        cachedChassis = new InstancedChassis(stack.BaseData);
+        cachedComponent = null;
+        isUnequipSlot = false;
+
+        ItemIcon.sprite = stack.BaseData.ChassisSprite;
+        ItemNameText.text = stack.BaseData.ChassisName;
+        ItemNameText.color = Color.white;
+
+        if (QuantityBadge != null && QuantityText != null)
+        {
+            QuantityBadge.SetActive(stack.Quantity > 1);
+            QuantityText.text = $"x{stack.Quantity}";
+        }
+
+        if (ItemLevelText != null) ItemLevelText.gameObject.SetActive(false);
+        if (EquippedOverlay != null) EquippedOverlay.SetActive(false);
+
+        onClickCallback = () => onSelected?.Invoke(stack);
+    }
+
     public void SetupUnequip(Action onSelected)
     {
         cachedChassis = null;
@@ -112,6 +179,7 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         isUnequipSlot = true;
 
         if (EquippedOverlay != null) EquippedOverlay.SetActive(false);
+        if (QuantityBadge != null) QuantityBadge.SetActive(false);
         ItemIcon.color = new Color(1, 1, 1, 0);
         ItemNameText.text = "【 卸载当前组件 】";
         ItemNameText.color = Color.red;
@@ -142,6 +210,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             return;
         }
 
+        if (QuantityBadge != null) QuantityBadge.SetActive(false);
+
         bool isEquipped = accessory.IsEquipped;
         if (EquippedOverlay != null) EquippedOverlay.SetActive(isEquipped);
 
@@ -155,7 +225,6 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         if (Time.time - lastClickTime < 0.2f) return;
         lastClickTime = Time.time;
 
-        // 🌟 只保留左键点击逻辑，右键逻辑已剔除
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             onClickCallback?.Invoke();

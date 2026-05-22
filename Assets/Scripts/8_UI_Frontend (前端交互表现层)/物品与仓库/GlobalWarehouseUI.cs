@@ -154,32 +154,26 @@ public class GlobalWarehouseUI : MonoBehaviour
         int mainCategory = MainCategoryDropdown.value; // 0:全部, 1:底盘, 2:组件, 3:配件
 
         // --- 分支 A：底盘 ---
+        // --- 分支 A：底盘 ---
         if (mainCategory == 0 || mainCategory == 1)
         {
-            foreach (var chassis in PlayerInventoryManager.Instance.ChassisInventory)
+            foreach (var stack in PlayerInventoryManager.Instance.GetChassisStacks())
             {
-                // 👇【核心加固点 A】：必须先判定图纸是否存在，才准生成 UI！
-                if (chassis != null && chassis.BaseData != null)
-                {
-                    var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                    slotObj.GetComponent<InventoryItemSlotUI>().SetupChassis(chassis, null);
-                    displayCount++;
-                }
+                var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                // 注意：我们需要在 InventoryItemSlotUI 里补一个 SetupChassisStack
+                slotObj.GetComponent<InventoryItemSlotUI>().SetupChassisStack(stack, null);
+                displayCount++;
             }
         }
 
         // --- 分支 B：组件 ---
         if (mainCategory == 0 || mainCategory == 2)
         {
-            foreach (var comp in PlayerInventoryManager.Instance.ComponentInventory)
+            foreach (var stack in PlayerInventoryManager.Instance.GetAvailableStacks())
             {
-                // 👇【核心加固点 B】：过滤掉那些没有图纸的“幽灵组件”
-                if (comp != null && comp.BaseData != null)
-                {
-                    var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                    slotObj.GetComponent<InventoryItemSlotUI>().SetupComponent(comp, null);
-                    displayCount++;
-                }
+                var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                slotObj.GetComponent<InventoryItemSlotUI>().SetupComponentStack(stack, null);
+                displayCount++;
             }
         }
 

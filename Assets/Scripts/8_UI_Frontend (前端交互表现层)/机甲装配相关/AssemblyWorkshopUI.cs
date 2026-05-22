@@ -315,10 +315,17 @@ public class AssemblyWorkshopUI : MonoBehaviour
         if (ScreenEffectManager.Instance != null) ScreenEffectManager.Instance.TriggerShake(0.1f, 0.1f);
         GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Attach);
     }
-
     public void OnClickGhostChassis()
     {
-        RightInventoryPanelUI.Instance.OpenForChassisSelection(() => PlayerInventoryManager.Instance.ChassisInventory, OnChassisSelectedFromInventory);
+        // 🌟 核心修复：直接从字典中获取底盘堆栈
+        RightInventoryPanelUI.Instance.OpenForChassisSelection(
+            () => PlayerInventoryManager.Instance.GetChassisStacks(),
+            (selectedChassisStack) => {
+                // 将 Stack 转换回逻辑需要的 Instanced 对象（这里需要手动解包一次）
+                InstancedChassis tempChassis = new InstancedChassis(selectedChassisStack.BaseData);
+                OnChassisSelectedFromInventory(tempChassis);
+            }
+        );
     }
 
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
@@ -339,39 +346,82 @@ public class AssemblyWorkshopUI : MonoBehaviour
         int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
         bool hasEquippedComp = (existingIdx != -1);
 
+        // 🌟 核心修复：从堆栈中筛选出符合该插槽类型的零件
         RightInventoryPanelUI.Instance.OpenForComponentSelection(
-            () => PlayerInventoryManager.Instance.ComponentInventory.FindAll(c => slotDef.AllowedTypes.Contains(c.BaseData.Type)),
+            () => PlayerInventoryManager.Instance.GetAvailableStacks()
+                  .Where(s => slotDef.AllowedTypes.Contains(s.BaseData.Type))
+                  .ToList(),
             hasEquippedComp,
-            (selectedComp) => OnComponentSelectedFromInventory(slotIndex, selectedComp)
+            (selectedStack) => {
+                // 如果选了东西，转回旧逻辑需要的实例（OnComponentSelectedFromInventory 内部会处理消耗逻辑）
+                if (selectedStack != null)
+                {
+                    InstancedComponent tempComp = new InstancedComponent(selectedStack.BaseData, selectedStack.Level);
+                    OnComponentSelectedFromInventory(slotIndex, tempComp);
+                }
+                else
+                {
+                    OnComponentSelectedFromInventory(slotIndex, null); // 触发卸载
+                }
+            }
         );
     }
 
     private void OnComponentSelectedFromInventory(int slotIndex, InstancedComponent selectedComp)
     {
+        // 1. 获取该插槽当前已装备的旧零件信息
         int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
         InstancedComponent oldComp = null;
-        if (existingIdx != -1) oldComp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == currentEditingProfile.EquippedComponentIDs[existingIdx]);
-
-        if (!isCreatingNew && !PlayerInventoryManager.Instance.ValidateHPBeforeUnequip(currentEditingProfile, oldComp, selectedComp))
-        {
-            Debug.LogWarning("【车间警报】血量过低，禁止拆除生存组件！");
-            return;
-        }
-
         if (existingIdx != -1)
         {
-            if (oldComp != null) oldComp.EquippedUnitID = string.Empty;
-            currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
-            currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
+            string oldID = currentEditingProfile.EquippedComponentIDs[existingIdx];
+            // 注意：这里需要根据旧 ID 找到之前的零件配置
+            // 由于我们改了堆叠系统，这里我们通过 Snapshot 记录的数据来找
+            oldComp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == oldID);
         }
 
+        // 2. 逻辑分支：安装新零件 OR 纯卸载
         if (selectedComp != null)
         {
-            selectedComp.EquippedUnitID = currentEditingProfile.UnitID;
+            // 尝试从仓库扣除实物
+            bool success = PlayerInventoryManager.Instance.TryConsumeFromWarehouse(selectedComp.BaseData, selectedComp.CurrentLevel);
+
+            if (!success)
+            {
+                Debug.LogWarning("【车间】库存不足，无法安装！");
+                return;
+            }
+
+            // 扣除成功，如果原本有旧零件，将旧零件还给仓库
+            if (oldComp != null)
+            {
+                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentLevel, 1);
+                // 从当前机甲逻辑列表中移除旧数据
+                currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
+                currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
+            }
+
+            // 将新零件装上机甲 (这里我们生成一个临时的 InstanceID 作为标识)
+            selectedComp.InstanceID = System.Guid.NewGuid().ToString();
             currentEditingProfile.SlotIndices.Add(slotIndex);
             currentEditingProfile.EquippedComponentIDs.Add(selectedComp.InstanceID);
+
+            // 为了详情页能搜到，同步存入临时列表（仅限本次车间会话）
+            PlayerInventoryManager.Instance.ComponentInventory.Add(selectedComp);
+
             OnComponentEquipped(slotIndex);
         }
+        else
+        {
+            // 玩家点击了“卸载”
+            if (oldComp != null)
+            {
+                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentLevel, 1);
+                currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
+                currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
+            }
+        }
+
         RefreshWorkshopState();
     }
 
@@ -405,23 +455,35 @@ public class AssemblyWorkshopUI : MonoBehaviour
     {
         if (currentEditingProfile != null)
         {
+            // 1. 将当前机甲身上所有的零件实物还给仓库
+            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
+            {
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (comp != null)
+                {
+                    PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentLevel, 1);
+                }
+            }
+
             if (isCreatingNew)
             {
+                // 如果是新建，直接名字还给池子，结束
                 PlayerInventoryManager.Instance.ReturnNameToPool(currentEditingProfile.UnitName);
-                var chassis = PlayerInventoryManager.Instance.ChassisInventory.Find(c => c.InstanceID == currentEditingProfile.ChassisInstanceID);
-                if (chassis != null) chassis.EquippedUnitID = string.Empty;
-                foreach (var compID in currentEditingProfile.EquippedComponentIDs)
-                {
-                    var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                    if (comp != null) comp.EquippedUnitID = string.Empty;
-                }
             }
             else
             {
+                // 如果是改装，则需要根据 snapshot 还原原始状态，并从仓库重新扣除原始零件
                 currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
                 currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
-                currentEditingProfile.CurrentHP = snapshot_HP;
-                currentEditingProfile.CurrentAP = snapshot_AP;
+
+                foreach (var originalCompID in snapshot_EquippedComponentIDs)
+                {
+                    var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == originalCompID);
+                    if (comp != null)
+                    {
+                        PlayerInventoryManager.Instance.TryConsumeFromWarehouse(comp.BaseData, comp.CurrentLevel);
+                    }
+                }
             }
         }
         ExitToHangar();

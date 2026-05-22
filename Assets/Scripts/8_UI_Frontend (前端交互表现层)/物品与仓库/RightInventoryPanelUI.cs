@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class RightInventoryPanelUI : MonoBehaviour
@@ -10,28 +11,26 @@ public class RightInventoryPanelUI : MonoBehaviour
     public InventoryItemSlotUI ItemSlotPrefab;
 
     [Tooltip("如果不为空，当仓库没东西时会自动显示这个提示字")]
-    public GameObject EmptyWarningText; // 【新增】防空堡垒
+    public GameObject EmptyWarningText;
 
-    // ==========================================
-    // 缓存“筛选逻辑”，用于热更新时重新去后台提货！
-    // ==========================================
     private enum PanelMode { None, Chassis, Component }
     private PanelMode currentMode = PanelMode.None;
 
-    private Func<List<InstancedChassis>> getChassisFunc;
-    private Action<InstancedChassis> onChassisSelectedCallback;
+    // 🌟 核心修复：更新 Func 签名以匹配新的堆叠结构
+    private Func<List<ChassisStack>> getChassisFunc;
+    private Action<ChassisStack> onChassisSelectedCallback;
 
-    private Func<List<InstancedComponent>> getComponentsFunc;
+    private Func<List<ComponentStack>> getComponentsFunc;
     private bool currentAllowUnequip;
-    private Action<InstancedComponent> onComponentSelectedCallback;
+    private Action<ComponentStack> onComponentSelectedCallback;
 
     private void Awake() { Instance = this; }
 
-    // 👇 【核心接线】：开机戴耳机，关机摘耳机
     private void Start()
     {
         PlayerInventoryManager.Instance.OnInventoryChanged += RefreshPanel;
     }
+
     private void OnDestroy()
     {
         if (PlayerInventoryManager.Instance != null)
@@ -44,18 +43,21 @@ public class RightInventoryPanelUI : MonoBehaviour
     }
 
     // ==========================================
-    // 打开面板入口 (参数变成了 Func 获取器！)
+    // 🚀 打开面板入口：针对底盘堆栈
     // ==========================================
-    public void OpenForChassisSelection(Func<List<InstancedChassis>> getChassis, Action<InstancedChassis> onChassisSelected)
+    public void OpenForChassisSelection(Func<List<ChassisStack>> getChassis, Action<ChassisStack> onChassisSelected)
     {
         currentMode = PanelMode.Chassis;
         getChassisFunc = getChassis;
         onChassisSelectedCallback = onChassisSelected;
         gameObject.SetActive(true);
-        RefreshPanel(); // 打开时立刻刷一次
+        RefreshPanel();
     }
 
-    public void OpenForComponentSelection(Func<List<InstancedComponent>> getComponents, bool allowUnequip, Action<InstancedComponent> onComponentSelected)
+    // ==========================================
+    // 🚀 打开面板入口：针对零件堆栈
+    // ==========================================
+    public void OpenForComponentSelection(Func<List<ComponentStack>> getComponents, bool allowUnequip, Action<ComponentStack> onComponentSelected)
     {
         currentMode = PanelMode.Component;
         getComponentsFunc = getComponents;
@@ -65,24 +67,22 @@ public class RightInventoryPanelUI : MonoBehaviour
         RefreshPanel();
     }
 
-    // ==========================================
-    // 【神级功能】：热更新引擎
-    // ==========================================
-    private void RefreshPanel()
+    public void RefreshPanel()
     {
-        if (!gameObject.activeSelf) return; // 如果面板没开着，就不浪费性能去刷
+        if (!gameObject.activeSelf) return;
 
         ClearShelf();
 
         if (currentMode == PanelMode.Chassis && getChassisFunc != null)
         {
-            var list = getChassisFunc.Invoke(); // 实时去后台现抓最新数据！
+            var list = getChassisFunc.Invoke();
             if (EmptyWarningText != null) EmptyWarningText.SetActive(list.Count == 0);
 
-            foreach (var chassis in list)
+            foreach (var stack in list)
             {
                 var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                slotObj.SetupChassis(chassis, (selected) => {
+                // 🌟 使用专门的堆叠设置方法
+                slotObj.SetupChassisStack(stack, (selected) => {
                     gameObject.SetActive(false);
                     onChassisSelectedCallback?.Invoke(selected);
                 });
@@ -93,6 +93,7 @@ public class RightInventoryPanelUI : MonoBehaviour
             var list = getComponentsFunc.Invoke();
             if (EmptyWarningText != null) EmptyWarningText.SetActive(list.Count == 0 && !currentAllowUnequip);
 
+            // 卸载槽位逻辑
             if (currentAllowUnequip)
             {
                 var unequipSlotObj = Instantiate(ItemSlotPrefab, ContentRoot);
@@ -102,12 +103,11 @@ public class RightInventoryPanelUI : MonoBehaviour
                 });
             }
 
-            foreach (var comp in list)
+            foreach (var stack in list)
             {
                 var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                slotObj.ItemIcon.color = Color.white;
-                slotObj.ItemNameText.color = Color.white;
-                slotObj.SetupComponent(comp, (selected) => {
+                // 🌟 使用专门的堆叠设置方法
+                slotObj.SetupComponentStack(stack, (selected) => {
                     gameObject.SetActive(false);
                     onComponentSelectedCallback?.Invoke(selected);
                 });
