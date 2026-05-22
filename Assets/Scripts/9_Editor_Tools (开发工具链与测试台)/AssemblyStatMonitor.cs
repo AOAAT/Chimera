@@ -108,7 +108,6 @@ public class AssemblyStatMonitor : MonoBehaviour
         UnitName = runtimeData.UnitName;
         Final_MaxHP = runtimeData.MaxHP;
         Final_MaxAP = runtimeData.MaxAP;
-        Final_TotalPowerCost = runtimeData.TotalPowerCost;
         Final_TotalMass = runtimeData.TotalMass;
         Final_TotalEnginePower = runtimeData.TotalEnginePower;
 

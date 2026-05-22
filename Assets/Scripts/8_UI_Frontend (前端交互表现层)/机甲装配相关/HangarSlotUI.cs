@@ -56,15 +56,7 @@ public class HangarSlotUI : MonoBehaviour
 
     private void TryInstantSpawn()
     {
-        // 1. 电网负载审计
-        int cost = GlobalResourceManager.Instance.CalculateUnitPowerCost(bindedProfile);
-        int available = GlobalResourceManager.Instance.MaxPowerCapacity - GlobalResourceManager.Instance.GetTotalUsedPower();
-
-        if (available < cost)
-        {
-            Debug.LogWarning("【RTS】电力负载过高，无法调度更多机甲！");
-            return;
-        }
+       
 
         // 2. 确定生产位置 (相机中心点吸附网格)
         Vector3 spawnPos = Camera.main.transform.position;

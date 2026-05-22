@@ -109,7 +109,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
             ChassisVisualRoot.gameObject.SetActive(false);
             HPText.text = "血量: -- / --";
             APText.text = "护甲: -- / --";
-            PowerText.text = "总耗电量: --";
             if (BlockText != null) BlockText.text = "格挡: --";
             if (MassText != null) MassText.text = "质量: --";
             if (SpeedText != null) SpeedText.text = "移速: --";
@@ -151,7 +150,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
             // C. 提取解算后的“真理数值”
             float maxHP = calcData.MaxHP;
             float maxAP = calcData.MaxAP;
-            float totalPower = calcData.TotalPowerCost;
             float totalBlock = calcData.GetGlobalStat(StatType.AddedBlock);
             float totalMass = calcData.TotalMass;
             float totalEngine = calcData.TotalEnginePower;
@@ -179,7 +177,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
             // 4. 刷新 UI 文字显示
             HPText.text = $"血量: {currentEditingProfile.CurrentHP:F0} / {maxHP:F0}";
             APText.text = $"护甲: {currentEditingProfile.CurrentAP:F0} / {maxAP:F0}";
-            PowerText.text = $"总耗电量: {totalPower:F0}";
 
             if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
             if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";

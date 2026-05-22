@@ -157,7 +157,6 @@ public class ItemDetailPanelUI : MonoBehaviour
 
         if (Chassis_HPText) Chassis_HPText.text = $"+{GetStat(data.BaseStats, StatType.AddedHP)}";
         if (Chassis_APText) Chassis_APText.text = $"+{GetStat(data.BaseStats, StatType.AddedAP)}";
-        if (Chassis_PowerCostText) Chassis_PowerCostText.text = $"{GetStat(data.BaseStats, StatType.PowerCost)}";
         if (Chassis_MassText) Chassis_MassText.text = $"{GetStat(data.BaseStats, StatType.AddedMass)}t";
         if (Chassis_BlockText) Chassis_BlockText.text = $"+{GetStat(data.BaseStats, StatType.AddedBlock)}";
 
@@ -295,7 +294,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Weapon_RangeText) Weapon_RangeText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinRange), StatType.MinRange)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxRange), StatType.MaxRange)}";
         if (Weapon_AttackSpeedText) Weapon_AttackSpeedText.text = FormatStat(GetStat(lvData.Stats, StatType.AttackSpeed), StatType.AttackSpeed);
         if (Weapon_CritText) Weapon_CritText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.CriticalChance), StatType.CriticalChance)}";
-        if (Weapon_PowerCostText) Weapon_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
+        
     }
 
     private void FillCoreData(InstancedComponent instance)
@@ -306,7 +305,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 
         if (Core_HPText) Core_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
         if (Core_APText) Core_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
-        if (Core_PowerCostText) Core_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
+        
     }
 
     private void FillMovementData(InstancedComponent instance)
@@ -319,7 +318,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Movement_HPText) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
         if (Movement_APText) Movement_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
         if (Movement_MassText) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass)}t";
-        if (Movement_PowerCostText) Movement_PowerCostText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
+        
     }
 
     private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
@@ -332,7 +331,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (Support_APText) Support_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
         if (Support_BlockText) Support_BlockText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedBlock), StatType.AddedBlock)}";
         if (Support_MassText) Support_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass)}t";
-        if (powerText) powerText.text = FormatStat(GetStat(lvData.Stats, StatType.PowerCost), StatType.PowerCost);
+        
     }
 
     private float GetStat(List<StatEntry> stats, StatType type) { var e = stats.Find(x => x.StatID == type); return e != null ? e.Value : 0f; }

@@ -5,7 +5,7 @@ public class GlobalResourceHUD : MonoBehaviour
 {
     [Header("=== UI 文本绑定 ===")]
     public TMP_Text SanText;
-    public TMP_Text PowerText;
+
 
     private void Start()
     {
@@ -32,14 +32,6 @@ public class GlobalResourceHUD : MonoBehaviour
         if (GlobalResourceManager.Instance != null)
         {
             SanText.text = $"SAN值: {GlobalResourceManager.Instance.CurrentSAN} / {GlobalResourceManager.Instance.MaxSAN}";
-           
-
-            // 电网负载监控
-            int usedPower = GlobalResourceManager.Instance.GetTotalUsedPower();
-            int maxPower = GlobalResourceManager.Instance.MaxPowerCapacity;
-
-            string colorHex = usedPower > maxPower ? "#FF0000" : "#00FF00";
-            PowerText.text = $"电网负载: <color={colorHex}>{usedPower}</color> / {maxPower}";
         }
 
     }

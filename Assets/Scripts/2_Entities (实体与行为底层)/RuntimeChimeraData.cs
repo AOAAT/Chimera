@@ -78,7 +78,6 @@ public class RuntimeChimeraData
     public ChassisDataSO ActiveChassisSO;
     public float MaxHP { get; private set; }
     public float MaxAP { get; private set; }
-    public float TotalPowerCost { get; private set; }
     public float TotalMass { get; private set; }
     public float TotalEnginePower { get; private set; }
     public Vector2 LogicCenterOffset { get; private set; }
@@ -123,7 +122,7 @@ public class RuntimeChimeraData
         EquippedWeapons.Clear();
         Tags.Clear();
 
-        MaxHP = MaxAP = TotalPowerCost = TotalMass = TotalEnginePower = 0;
+        MaxHP = MaxAP  = TotalMass = TotalEnginePower = 0;
         this.ActiveChassisSO = chassis;
 
         if (chassis == null) return;
@@ -323,7 +322,6 @@ public class RuntimeChimeraData
         MaxAP = GetGlobalStat(StatType.AddedAP);
         TotalMass = GetGlobalStat(StatType.AddedMass);
         TotalEnginePower = GetGlobalStat(StatType.EnginePower);
-        TotalPowerCost = GetGlobalStat(StatType.PowerCost);
     }
 
     private bool IsWeaponSpecificStat(StatType type) => (int)type >= 10 && (int)type <= 19;

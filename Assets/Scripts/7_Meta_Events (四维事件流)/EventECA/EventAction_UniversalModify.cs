@@ -18,9 +18,6 @@ public class EventAction_UniversalModify : EventAction
             case EventResourceType.MaxSAN:
                 GlobalResourceManager.Instance.MaxSAN += (int)Amount;
                 break;
-            case EventResourceType.MaxPowerCapacity:
-                GlobalResourceManager.Instance.ModifyMaxPower((int)Amount);
-                break;
             case EventResourceType.MaxCP:
                 if (GlobalCPManager.Instance != null) GlobalCPManager.Instance.BonusMaxCP += Amount;
                 break;

@@ -11,8 +11,6 @@ public class UnitDetailPanelUI : MonoBehaviour
     public TMP_Text NameText;
     public TMP_Text HPText;
     public TMP_Text APText;
-    public TMP_Text PowerText;
-    // 👇【核心新增】：三大硬核物理面板
     public TMP_Text BlockText;
     public TMP_Text MassText;
     public TMP_Text SpeedText;
@@ -46,7 +44,6 @@ public class UnitDetailPanelUI : MonoBehaviour
 
         // 1. 抓取底盘基准值
         float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
-        float totalPower = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.PowerCost);
         float totalBlock = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedBlock);
         float totalMass = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedMass);
         float totalEngine = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.EnginePower);
@@ -61,7 +58,6 @@ public class UnitDetailPanelUI : MonoBehaviour
                 if (lvData != null)
                 {
                     maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
-                    totalPower += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.PowerCost);
                     totalBlock += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedBlock);
                     totalMass += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedMass);
                     totalEngine += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.EnginePower);
@@ -75,7 +71,6 @@ public class UnitDetailPanelUI : MonoBehaviour
 
         // 4. 灌入数据
         HPText.text = $"血量: {profile.CurrentHP} / {maxHP}";
-        PowerText.text = $"总耗电量: {totalPower}";
 
         if (BlockText != null) BlockText.text = $"格挡: {totalBlock}";
         if (MassText != null) MassText.text = $"质量: {totalMass}t";

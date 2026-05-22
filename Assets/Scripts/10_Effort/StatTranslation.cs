@@ -10,7 +10,6 @@ public static class StatTranslation
         { StatType.AddedAP, "护甲强化" },
         { StatType.AddedBlock, "格挡加成" },
         { StatType.AddedMass, "质量加成" },
-        { StatType.PowerCost, "耗电量" },
         { StatType.EnginePower, "引擎动力" },
         { StatType.AttackSpeed, "攻击速度" },
         { StatType.CriticalChance, "暴击概率" },

@@ -8,7 +8,7 @@ using UnityEngine;
 public enum StatType
 {
     AddedHP = 0, AddedAP = 1, AddedMass = 2, AddedBlock = 3,
-    PowerCost = 4, EnginePower = 5,
+    EnginePower = 5,
     MaxDamage = 10, MinDamage = 11, CritMultiplier = 12,
     MaxRange = 13, MinRange = 14, AttackSpeed = 15,
     CriticalChance = 16, ExplosionRadius = 17, MultiShotCount = 18, ProjectileSpeed = 19,
