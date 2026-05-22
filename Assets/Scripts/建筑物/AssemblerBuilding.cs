@@ -32,10 +32,21 @@ public class AssemblerBuilding : BuildingBase
         dotContainer.transform.SetParent(this.transform);
         dotContainer.SetActive(false);
     }
+    // 🌟 第二步：重写 OnPlaced 方法
+    public override void OnPlaced()
+    {
+        // 先执行基类的网格锁定逻辑
+        base.OnPlaced();
+
+        // 核心修复：在建筑被正式放置到网格的那一刻，
+        // 获取当前真实的出口坐标，并设为初始集合点。
+        RallyWorldPos = GetSpawnWorldPos();
+
+        Debug.Log($"<color=cyan>【初始化】</color> {BuildingName} 已就位，初始集合点设为出口：{RallyWorldPos}");
+    }
     private void Start()
     {
-        // 此时 RTSGridSystem 肯定已经初始化完成了
-        RallyWorldPos = GetSpawnWorldPos();
+      
     }
     private void Update()
     {

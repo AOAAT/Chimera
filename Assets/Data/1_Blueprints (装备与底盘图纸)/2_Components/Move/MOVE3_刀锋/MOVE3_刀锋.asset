@@ -32,6 +32,9 @@ MonoBehaviour:
     - StatID: 5
       Value: 300
       ModType: 0
+    - StatID: 2
+      Value: 5
+      ModType: 0
     MaxSocketCount: 0
     OnFireActions: []
     OnHitActions: []

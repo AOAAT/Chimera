@@ -4,11 +4,12 @@ using System.Collections.Generic;
 public class BuildingManager : MonoBehaviour
 {
     public static BuildingManager Instance;
-
+    public bool IsPlacing => isPlacing;
     private BuildingDataSO currentPendingData;
     private BuildingBase ghostInstance;
     private bool isPlacing = false;
-
+    private bool placementHappenedThisFrame = false;
+    public bool PlacementHappened => placementHappenedThisFrame;
     private void Awake() => Instance = this;
 
     // 🌟 由 UI 调用：开始建造流程
@@ -66,18 +67,16 @@ public class BuildingManager : MonoBehaviour
 
     private void ConfirmPlacement()
     {
-        // 预留接口：消耗资源
         if (ConsumeResources(currentPendingData))
         {
             ghostInstance.FinalizePlacement();
 
-            // 预留接口：处理建造时间
-            // 目前为立即建造，不做任何延迟
+            // 🌟 核心：标记这一帧已经用来放建筑了，别再点别的了
+            placementHappenedThisFrame = true;
 
             isPlacing = false;
             ghostInstance = null;
             currentPendingData = null;
-
             GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Attach);
         }
     }
@@ -93,5 +92,13 @@ public class BuildingManager : MonoBehaviour
     {
         // TODO: 对接 GlobalResourceManager
         return true;
+    }
+
+    private void LateUpdate()
+    {
+        if (placementHappenedThisFrame)
+        {
+            placementHappenedThisFrame = false;
+        }
     }
 }

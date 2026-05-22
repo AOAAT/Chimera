@@ -31,17 +31,23 @@ public class BattleCommandManager : MonoBehaviour
         targetingLine.enabled = false;
         targetingLine.sortingLayerName = "UI";
     }
-
     private void Update()
     {
-        // 如果点击的是 UI 元素，拦截操作
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
-        HandleMarqueeSelection(); // 处理左键框选与单选
-        HandleCommand();          // 处理右键指令
-        UpdateTargetingLine();    // 更新集火指示线
-    }
+        // 🌟 核心修复：如果正在放置，或者【这一帧刚刚放完建筑】，立即拦截所有选中逻辑
+        if (BuildingManager.Instance != null)
+        {
+            if (BuildingManager.Instance.IsPlacing || BuildingManager.Instance.PlacementHappened)
+            {
+                return;
+            }
+        }
 
+        HandleMarqueeSelection();
+        HandleCommand();
+        UpdateTargetingLine();
+    }
     // ==========================================
     // ⚔️ 指令控制中枢 (已修复重复定义与逻辑冲突)
     // ==========================================
