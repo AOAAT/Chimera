@@ -5,6 +5,7 @@ using TMPro;
 public class MainBuildingHUD : MonoBehaviour
 {
     public static MainBuildingHUD Instance;
+    public BuildingBase CurrentTargetBuilding { get; private set; }
 
     [Header("=== 左侧：固定信息区 ===")]
     public GameObject InfoRoot;
@@ -23,37 +24,40 @@ public class MainBuildingHUD : MonoBehaviour
     /// </summary>
     public void Refresh(BuildingBase building)
     {
-        if (currentModule != null) Destroy(currentModule);
+        // 🌟 核心修复 1：物理清空舞台，确保没有任何残余
+        foreach (Transform child in FunctionStage)
+        {
+            Destroy(child.gameObject);
+        }
+        currentModule = null;
+
+        // 记录当前选中的建筑
+        CurrentTargetBuilding = building;
 
         if (building == null)
         {
             InfoRoot.SetActive(false);
-
-            // 🌟 确保隐藏详情页并清理标签
+            // 隐藏详情页
             ItemDetailPanelUI.Instance.SetFixedAnchor(null);
             ItemDetailPanelUI.Instance.HidePanel();
-
             return;
         }
-        // 3. 填充左侧基础信息
+
         InfoRoot.SetActive(true);
         BuildingName.text = building.BuildingName;
         BuildingIcon.sprite = building.BuildingIcon;
 
         if (building.FunctionUIPrefab != null)
         {
+            // 🌟 核心修复 2：将生成的实例记录在 currentModule
             currentModule = Instantiate(building.FunctionUIPrefab, FunctionStage);
 
-            // --- 尝试进行模块初始化 ---
-            var factoryModule = currentModule.GetComponent<FactoryUIModule>();
-            if (factoryModule != null) factoryModule.Initialize();
+            // 尝试初始化不同模块
+            var factory = currentModule.GetComponent<FactoryUIModule>();
+            if (factory != null) factory.Initialize();
 
-            // 🌟 这里对应你之前的报错点：现在有了 AssemblerUIModule 脚本，这里就不会报错了
-            var assemblerModule = currentModule.GetComponent<AssemblerUIModule>();
-            if (assemblerModule != null)
-            {
-                assemblerModule.Initialize(building as AssemblerBuilding);
-            }
+            var assembler = currentModule.GetComponent<AssemblerUIModule>();
+            if (assembler != null) assembler.Initialize(building as AssemblerBuilding);
         }
     }
 }

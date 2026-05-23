@@ -16,9 +16,12 @@ public class ChassisDataSO : ScriptableObject
     [TextArea] public string Description = "底盘风味描述";
     [TextArea] public string SpecialMechanicDesc = "特殊机制";
 
-    [Header("=== 标签驱动 (决定何种图掉落) ===")]
+    [Header("=== 标签 ===")]
     public MacroCategory MacroCategory = MacroCategory.Tech;
     public List<SubTag> SubTags = new List<SubTag>();
+
+    [Header("=== 工业生产数据 ===")]
+    public float BaseProductionTime = 10f; // 默认生产底盘需要 10 秒
 
     [Header("=== 底盘自身属性加成 ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();

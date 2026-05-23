@@ -12,6 +12,7 @@ public class ComponentDataSO : ScriptableObject
     public Sprite ComponentIcon;
     public ComponentType Type;
 
+
     [Header("=== 战术定位描述 (仅UI展示) ===")]
     public string TacticalRoleDesc = "远程单体";
 
@@ -23,6 +24,10 @@ public class ComponentDataSO : ScriptableObject
     public MacroCategory MacroCategory = MacroCategory.Tech;
     public List<SubTag> BaseSubTags = new List<SubTag>();
     [Range(1, 4)] public int MinDropLevel = 1;
+
+
+    [Header("=== 工业生产数据 ===")]
+    public float BaseProductionTime = 5f; // 默认生产零件需要 5秒
 
     [Header("=== 等级矩阵 (Level Matrix 1~4) ===")]
     public List<ComponentLevelData> LevelMatrix = new List<ComponentLevelData>();

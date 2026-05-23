@@ -17,6 +17,7 @@ MonoBehaviour:
   Description: "\u539F\u672C\u8BE5\u6838\u5FC3\u88AB\u8BBE\u5B9A\u4E3A\u6B7B\u6218\u4E0D\u9000\uFF0C\u76F4\u5230\u667A\u80FD\u673A\u68B0\u5728\u8840\u8089\u8BC5\u5492\u7684\u5F71\u54CD\u4E0B\u4E5F\u5F00\u59CB\u611F\u53D7\u5230\u75BC\u75DB\u2026\u2026"
   ComponentIcon: {fileID: 21300000, guid: 8102df1c47bbde64898452736043cf9d, type: 3}
   Type: 0
+  BaseProductionTime: 5
   TacticalRoleDesc: "\u5C31\u8FD1\u7D22\u654C\uFF0C\u706B\u529B\u4F18\u5148"
   AnimController: {fileID: 0}
   MuzzleOffset: {x: 0, y: 0}
@@ -24,33 +25,6 @@ MonoBehaviour:
   BaseSubTags: 0e000000
   MinDropLevel: 1
   LevelMatrix:
-  - Level: 1
-    Stats:
-    - StatID: 0
-      Value: 6
-      ModType: 0
-    - StatID: 1
-      Value: 50
-      ModType: 0
-    - StatID: 3
-      Value: 3
-      ModType: 0
-    MaxSocketCount: 1
-    OnFireActions: []
-    OnHitActions: []
-    OnAssembleActions: []
-    OnBattleStartActions: []
-    OnTickActions: []
-    BonusTags: 
-    SpecialMechanicDesc: "\u4E3B\u52A8\u6280\u80FD\uFF1A[\u72C2\u6218]\u57285\u79D2\u5185\u63D0\u9AD8\u5355\u4F4D\u6B66\u5668100\u70B9\u653B\u901F\u3002\u6D88\u80173\u70B9\u9B54\u529B\uFF0C\u51B7\u5374\u65F6\u95F415\u79D2\u3002"
-    ActiveSkill:
-      HasActiveSkill: 1
-      SkillName: "\u72C2\u6218"
-      SkillIcon: {fileID: 21300000, guid: 8102df1c47bbde64898452736043cf9d, type: 3}
-      CPCost: 3
-      Cooldown: 15
-      OnSkillCastActions:
-      - {fileID: 0}
   - Level: 2
     Stats:
     - StatID: 1

@@ -9,7 +9,7 @@ public class ComponentDataSOEditor : Editor
     SerializedProperty componentBaseID, componentName, description, componentIcon, type;
     SerializedProperty tacticalRoleDesc, animController, muzzleOffset;
     SerializedProperty macroCategory, baseSubTags, minDropLevel, levelMatrix;
-
+    SerializedProperty baseProductionTime;
     // 武器专属
     SerializedProperty deliveryType, projectilePrefab, targetingOverride;
     SerializedProperty windupAngle, strikeAngle, windupTimeRatio, strikeTimeRatio;
@@ -54,6 +54,7 @@ public class ComponentDataSOEditor : Editor
         targetingLogic = serializedObject.FindProperty("TargetingLogic");
         movementLogic = serializedObject.FindProperty("MovementLogic");
         safeDodgeDistance = serializedObject.FindProperty("SafeDodgeDistance");
+        baseProductionTime = serializedObject.FindProperty("BaseProductionTime");
     }
 
     public override void OnInspectorGUI()
@@ -182,6 +183,7 @@ public class ComponentDataSOEditor : Editor
     {
         EditorGUILayout.Space();
         EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.PropertyField(baseProductionTime);
         EditorGUILayout.LabelField("📊 数值矩阵 (Level Matrix)", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(macroCategory);
         EditorGUILayout.PropertyField(baseSubTags);

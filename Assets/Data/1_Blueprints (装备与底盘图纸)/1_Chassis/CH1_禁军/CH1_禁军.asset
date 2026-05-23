@@ -20,8 +20,9 @@ MonoBehaviour:
   SpecialMechanicDesc: "\u6BCF\u4E2A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684*\u79D1\u6280*\u7C7B\u578B\u7684\u7EC4\u4EF6\u90FD\u4F1A\u4E3A\u52A0\u88C5\u5728\u8BE5\u5E95\u76D8\u4E0A\u7684\u6B66\u5668\u63D0\u4F9B1\u70B9\u653B\u51FB\u52A0\u6210\u3002"
   MacroCategory: 0
   SubTags: 
+  BaseProductionTime: 10
   BaseStats:
-  - StatID: 4
+  - StatID: 0
     Value: 12
     ModType: 0
   - StatID: 0
@@ -36,8 +37,6 @@ MonoBehaviour:
   - StatID: 2
     Value: 8
     ModType: 0
-  BasePrice: 100
-  ScrapValue: 25
   LogicCenterOffset: {x: 0, y: 0}
   Sockets:
   - SlotName: "\u5934\u90E8"
