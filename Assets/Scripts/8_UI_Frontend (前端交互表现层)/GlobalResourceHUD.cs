@@ -3,9 +3,6 @@ using TMPro;
 
 public class GlobalResourceHUD : MonoBehaviour
 {
-    [Header("=== UI 文本绑定 ===")]
-    public TMP_Text SanText;
-
 
     private void Start()
     {
@@ -29,10 +26,6 @@ public class GlobalResourceHUD : MonoBehaviour
     }
     public void UpdateHUD()
     {
-        if (GlobalResourceManager.Instance != null)
-        {
-            SanText.text = $"SAN值: {GlobalResourceManager.Instance.CurrentSAN} / {GlobalResourceManager.Instance.MaxSAN}";
-        }
 
     }
 }

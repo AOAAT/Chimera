@@ -41,8 +41,7 @@ public class EventCondition_Universal : EventCondition
         if (GlobalResourceManager.Instance == null) return 0;
         switch (TargetResource)
         {
-            case EventResourceType.CurrentSAN: return GlobalResourceManager.Instance.CurrentSAN;
-            case EventResourceType.MaxSAN: return GlobalResourceManager.Instance.MaxSAN;
+         
            
             case EventResourceType.CurrentCP: return GlobalCPManager.Instance?.CurrentCP ?? 0;
             case EventResourceType.MaxCP: return GlobalCPManager.Instance?.GetActualMaxCP() ?? 0;

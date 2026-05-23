@@ -12,12 +12,7 @@ public class EventAction_UniversalModify : EventAction
 
         switch (TargetResource)
         {
-            case EventResourceType.CurrentSAN:
-                GlobalResourceManager.Instance.ModifySAN((int)Amount);
-                break;
-            case EventResourceType.MaxSAN:
-                GlobalResourceManager.Instance.MaxSAN += (int)Amount;
-                break;
+          
             case EventResourceType.MaxCP:
                 if (GlobalCPManager.Instance != null) GlobalCPManager.Instance.BonusMaxCP += Amount;
                 break;

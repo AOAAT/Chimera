@@ -3,12 +3,6 @@ using UnityEngine;
 
 public enum EnemyArchetype { Static, Modular }
 
-[System.Serializable]
-public struct SanPenaltyTier
-{
-    [Range(0f, 1f)] public float HpThreshold;
-    public int SanDeduction;
-}
 
 [CreateAssetMenu(fileName = "NewEnemyData", menuName = "Chimera Protocol/1. 核心图纸库/敌人本体 (Enemy)")]
 public class EnemyDataSO : ScriptableObject
@@ -41,7 +35,7 @@ public class EnemyDataSO : ScriptableObject
 
     [Header("=== 核心数值池 ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
-    public List<SanPenaltyTier> SanPenalties = new List<SanPenaltyTier>();
+    
 
     [Header("=== 通用视觉属性 ===")]
     [Range(0.1f, 5f)] public float VisualScaleMultiplier = 1.0f;
