@@ -1,18 +1,20 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class AssemblerBuilding : BuildingBase
 {
-    [Header("=== 实体生产配置 ===")]
-    public GameObject MechBasePrefab; // 指向你的 [Base_Mech_Unit] 预制体
-
     [Header("=== 集合点配置 ===")]
     public Vector3 RallyWorldPos;
 
-    [Header("=== 虚线参数 ===")]
-    public float DotSpacing = 0.5f; // 点与点之间的距离
-    public float ScrollSpeed = 2.0f; // 虚线滑动的速度
-    public float DotSize = 0.12f;   // 点的大小
+    [Header("=== 虚线视觉参数 (全程序化) ===")]
+    public float DotSpacing = 0.5f;   // 点与点之间的距离
+    public float ScrollSpeed = 2.0f;  // 虚线滑动的速度
+    public float DotSize = 0.12f;     // 点的大小
+    public Color LineColor = new Color(0, 1, 1, 0.8f); // 虚线颜色（青色）
+
+    [Header("=== 实体生产配置 ===")]
+    public GameObject MechBasePrefab; // 指向 [Base_Mech_Unit] 预制体
 
     private List<Transform> dotPool = new List<Transform>();
     private GameObject dotContainer;
@@ -21,52 +23,128 @@ public class AssemblerBuilding : BuildingBase
     protected override void Awake()
     {
         base.Awake();
-        // 把设置 RallyWorldPos 的那行代码从这里删掉！挪到下面的 Start 里。
 
-        // 1. 程序化创建一个简单的材质
+        // 1. 程序化创建材质（无需外部资源）
         internalMaterial = new Material(Shader.Find("Sprites/Default"));
-        internalMaterial.color = new Color(0, 1, 1, 0.8f);
+        internalMaterial.color = LineColor;
 
-        // 2. 创建容器
+        // 2. 初始化点阵容器
         dotContainer = new GameObject("RallyDotContainer");
         dotContainer.transform.SetParent(this.transform);
         dotContainer.SetActive(false);
     }
-    // 🌟 第二步：重写 OnPlaced 方法
-    public override void OnPlaced()
-    {
-        // 先执行基类的网格锁定逻辑
-        base.OnPlaced();
 
-        // 核心修复：在建筑被正式放置到网格的那一刻，
-        // 获取当前真实的出口坐标，并设为初始集合点。
-        RallyWorldPos = GetSpawnWorldPos();
-
-        Debug.Log($"<color=cyan>【初始化】</color> {BuildingName} 已就位，初始集合点设为出口：{RallyWorldPos}");
-    }
-    private void Start()
-    {
-      
-    }
     private void Update()
     {
+        // 只有被选中时才渲染虚线
         if (isSelected)
         {
             UpdateProceduralRallyLine();
         }
     }
 
-    /// <summary>
-    /// 全程序化生成虚线：通过在路径上分布小点实现
-    /// </summary>
+    // ==========================================
+    // 🏗️ 建筑生命周期：正式放置后初始化
+    // ==========================================
+    public override void OnPlaced()
+    {
+        base.OnPlaced();
+
+        // 🌟 核心修正：放置完成后，初始集合点设为第一个交互格的位置
+        if (InteractionOffsets != null && InteractionOffsets.Count > 0)
+        {
+            float cellSize = RTSGridSystem.Instance.CellSize;
+            RallyWorldPos = transform.position + new Vector3(InteractionOffsets[0].x * cellSize, InteractionOffsets[0].y * cellSize, 0);
+        }
+        else
+        {
+            RallyWorldPos = transform.position;
+        }
+    }
+
+    // ==========================================
+    // ⚔️ 生产逻辑：机甲产出与动态切门
+    // ==========================================
+    public void OpenWorkshop()
+    {
+        // 呼叫工坊，传递自身作为生产源
+        if (AssemblyWorkshopUI.Instance != null)
+        {
+            AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(-1, this);
+        }
+    }
+
+    public void SpawnMech(SavedUnitProfile profile)
+    {
+        Vector3 bestSpawnPos = CalculateBestSpawnLocation();
+
+        GameObject go = Instantiate(MechBasePrefab, bestSpawnPos, Quaternion.identity);
+
+        MechUnit2D unit = go.GetComponent<MechUnit2D>();
+        if (unit != null) unit.InitUnitData(profile);
+
+        // 🌟 核心修复：改写 Collider 初始化方式，避开 MissingComponentException
+        var oldCol = go.GetComponent<BoxCollider2D>();
+        if (oldCol != null) oldCol.enabled = false;
+
+        CircleCollider2D circle = go.GetComponent<CircleCollider2D>();
+        if (circle == null)
+        {
+            circle = go.AddComponent<CircleCollider2D>();
+        }
+        circle.radius = 0.35f;
+
+        ChimeraAIController ai = go.GetComponent<ChimeraAIController>();
+        if (ai != null) StartCoroutine(DelayedCommand(ai));
+
+        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
+    }
+
+    private Vector3 CalculateBestSpawnLocation()
+    {
+        if (InteractionOffsets == null || InteractionOffsets.Count == 0) return transform.position;
+
+        float cellSize = RTSGridSystem.Instance.CellSize;
+
+        // 🌟 动态切门核心算法：
+        // 权重 = 距离集合点的物理距离 + (如果被堵塞则增加 1000 米惩罚)
+        var sortedGates = InteractionOffsets
+            .Select(offset => transform.position + new Vector3(offset.x * cellSize, offset.y * cellSize, 0))
+            .OrderBy(pos => {
+                bool isBlocked = Physics2D.OverlapCircle(pos, 0.4f, LayerMask.GetMask("Player_Body", "Enemy_Body"));
+                return Vector3.Distance(pos, RallyWorldPos) + (isBlocked ? 1000f : 0f);
+            })
+            .ToList();
+
+        Vector3 finalPos = sortedGates[0];
+
+        // 极致兜底：如果所有门口都挤满了人（所有门权重都 > 1000）
+        if (Vector3.Distance(finalPos, RallyWorldPos) > 500f)
+        {
+            finalPos += (Vector3)Random.insideUnitCircle * 0.5f; // 随机挤出来
+            Debug.Log("<color=orange>【物流拥堵】</color> 建筑出口全线爆满，执行紧急偏移产出。");
+        }
+
+        return finalPos;
+    }
+
+    private System.Collections.IEnumerator DelayedCommand(ChimeraAIController ai)
+    {
+        yield return null; // 等待一帧，确保 AI 初始化完毕
+        ai.SetManualMovePoint(RallyWorldPos);
+    }
+
+    // ==========================================
+    // 🎨 视觉逻辑：全程序化虚线 (从中心格开始)
+    // ==========================================
     private void UpdateProceduralRallyLine()
     {
-        Vector3 start = GetSpawnWorldPos();
+        // 🌟 视觉修正：起点始终锁定在建筑的枢轴中心（transform.position）
+        Vector3 start = transform.position;
         Vector3 end = RallyWorldPos;
         float totalDist = Vector3.Distance(start, end);
 
-        // 如果距离太近，隐藏所有点
-        if (totalDist < 0.2f)
+        if (totalDist < 0.3f)
         {
             dotContainer.SetActive(false);
             return;
@@ -74,15 +152,10 @@ public class AssemblerBuilding : BuildingBase
 
         dotContainer.SetActive(true);
 
-        // 计算当前帧需要的点的数量
         int neededDots = Mathf.CeilToInt(totalDist / DotSpacing);
-
-        // 动态调整对象池大小
         AdjustDotPool(neededDots);
 
-        // 让虚线动起来：计算一个随时间变化的偏移量
         float timeOffset = (Time.time * ScrollSpeed) % DotSpacing;
-
         Vector3 dir = (end - start).normalized;
 
         for (int i = 0; i < dotPool.Count; i++)
@@ -94,11 +167,9 @@ public class AssemblerBuilding : BuildingBase
             }
 
             dotPool[i].gameObject.SetActive(true);
-
-            // 计算每个点的位置 = 起点 + 方向 * (索引 * 间距 + 时间偏移)
             float distOnLine = (i * DotSpacing) + timeOffset;
 
-            // 如果点超出了终点，就把它拉回到起点循环，实现流水效果
+            // 循环效果逻辑
             if (distOnLine > totalDist) distOnLine -= totalDist;
 
             dotPool[i].position = start + dir * distOnLine;
@@ -110,12 +181,10 @@ public class AssemblerBuilding : BuildingBase
         while (dotPool.Count < count)
         {
             GameObject dot = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Destroy(dot.GetComponent<MeshCollider>()); // 移除不需要的物理
+            Destroy(dot.GetComponent<MeshCollider>()); // 移除不需要的 3D 物理
 
             dot.transform.SetParent(dotContainer.transform);
             dot.transform.localScale = Vector3.one * DotSize;
-
-            // 应用程序生成的材质
             dot.GetComponent<MeshRenderer>().material = internalMaterial;
 
             dotPool.Add(dot.transform);
@@ -140,57 +209,4 @@ public class AssemblerBuilding : BuildingBase
     {
         if (dotContainer != null) dotContainer.SetActive(false);
     }
-
-    public void OpenWorkshop()
-    {
-        // 参数 1: -1 (代表不占用 0-7 号固定机库车位)
-        // 参数 2: this (代表将当前建筑实例传给工坊)
-        AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(-1, this);
-    }
-    public void SpawnMech(SavedUnitProfile profile)
-    {
-        Vector3 spawnPos = GetSpawnWorldPos();
-
-        // --- 1. 出口占用检测与偏移 ---
-        // 检查出口 0.5 米范围内是否有其他单位（Layer 设为 Player_Body）
-        Collider2D hit = Physics2D.OverlapCircle(spawnPos, 0.5f, LayerMask.GetMask("Player_Body"));
-        if (hit != null)
-        {
-            // 如果被占了，产生一个随机的小偏移
-            Vector2 offset = Random.insideUnitCircle * 0.6f;
-            spawnPos += new Vector3(offset.x, offset.y, 0);
-            Debug.Log("<color=yellow>【组装】</color> 出口被占用，已执行防卡死偏移。");
-        }
-
-        // --- 2. 实例化机甲 ---
-        GameObject go = Instantiate(MechBasePrefab, spawnPos, Quaternion.identity);
-        MechUnit2D unit = go.GetComponent<MechUnit2D>();
-
-        // 注入数据 (注意：此时 AssemblyWorkshopUI 已经执行过 TryConsumeFromWarehouse 了)
-        unit.InitUnitData(profile);
-
-        // --- 3. RTS 物理重塑 (对齐你的 RTS 2.1 契约) ---
-        var oldCol = go.GetComponent<BoxCollider2D>();
-        if (oldCol != null) oldCol.enabled = false;
-        var circle = go.AddComponent<CircleCollider2D>();
-        circle.radius = 0.35f;
-
-        // --- 4. 自动奔赴集合点 ---
-        ChimeraAIController ai = go.GetComponent<ChimeraAIController>();
-        if (ai != null)
-        {
-            // 延迟一帧下令，确保 AI 初始化完成
-            StartCoroutine(SendToRallyPoint(ai));
-        }
-
-        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
-    }
-
-    private System.Collections.IEnumerator SendToRallyPoint(ChimeraAIController ai)
-    {
-        yield return null;
-        ai.SetManualMovePoint(RallyWorldPos);
-        Debug.Log($"<color=cyan>【调度】</color> 机甲已出厂，正在前往集合点。");
-    }
-
 }

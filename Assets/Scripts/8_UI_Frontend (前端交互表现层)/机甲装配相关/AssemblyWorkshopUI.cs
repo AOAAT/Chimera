@@ -340,16 +340,29 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
-        // 👇【核心修改】：从池子中抓取一个不重复的名字
-        string mechName = PlayerInventoryManager.Instance.GetNextAvailableName();
+        // 🌟 核心修复：尝试从仓库扣除实物底盘
+        bool success = PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(selectedChassis.BaseData);
 
+        if (!success)
+        {
+            Debug.LogWarning("【车间】底盘库存不足，无法开始组装！");
+            return;
+        }
+
+        string mechName = PlayerInventoryManager.Instance.GetNextAvailableName();
         currentEditingProfile = new SavedUnitProfile(selectedChassis, mechName);
+
+        // 标记底盘已占用（此 ID 仅用于本次组装追踪）
         selectedChassis.EquippedUnitID = currentEditingProfile.UnitID;
+
         isCreatingNew = true;
-        RightInventoryPanel.SetActive(false);
+
+        // 关闭右侧面板
+        if (RightInventoryPanelUI.Instance != null)
+            RightInventoryPanelUI.Instance.gameObject.SetActive(false);
+
         RefreshWorkshopState();
     }
-
     private void OnSlotClicked(int slotIndex)
     {
         var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
@@ -492,11 +505,15 @@ public class AssemblyWorkshopUI : MonoBehaviour
             foreach (var compID in currentEditingProfile.EquippedComponentIDs)
             {
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null)
-                {
-                    PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentLevel, 1);
-                }
+                if (comp != null) PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentLevel, 1);
             }
+
+            // 🌟 2. 核心修复：归还底盘
+            if (currentEditingProfile.ChassisData != null)
+            {
+                PlayerInventoryManager.Instance.AddChassisToWarehouse(currentEditingProfile.ChassisData, 1);
+            }
+
 
             if (isCreatingNew)
             {

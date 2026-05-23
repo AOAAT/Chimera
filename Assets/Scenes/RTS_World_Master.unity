@@ -14382,10 +14382,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f2958d52686959468d9ff460f8a5944, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MaxSAN: 100
-  CurrentSAN: 100
   DaysSurvived: 1
-  SanityCollapseEvent: {fileID: 11400000, guid: 197ad286e5bb1264794ed7af3743c875, type: 2}
 --- !u!1 &1454804933
 GameObject:
   m_ObjectHideFlags: 0
@@ -17402,7 +17399,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72a563d630ab8fc48ae28d487f912a88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SanText: {fileID: 1557160593}
 --- !u!114 &1686067517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20840,6 +20836,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3786300004477735030, guid: 46c8e035289bafe458a194e5e6e32b1d, type: 3}
+      propertyPath: InteractionOffsets.Array.data[0].x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3786300004477735030, guid: 46c8e035289bafe458a194e5e6e32b1d, type: 3}
+      propertyPath: InteractionOffsets.Array.data[0].y
+      value: -1
+      objectReference: {fileID: 0}
     - target: {fileID: 4161211513177779529, guid: 46c8e035289bafe458a194e5e6e32b1d, type: 3}
       propertyPath: m_Name
       value: "\u57FA\u5730"
@@ -21073,6 +21077,14 @@ PrefabInstance:
     - target: {fileID: 2723151709592668460, guid: c95f963d33e973b48a80e2e3cd158288, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5002864139558026686, guid: c95f963d33e973b48a80e2e3cd158288, type: 3}
+      propertyPath: InteractionOffsets.Array.data[0].x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5002864139558026686, guid: c95f963d33e973b48a80e2e3cd158288, type: 3}
+      propertyPath: InteractionOffsets.Array.data[0].y
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 7623606687601960785, guid: c95f963d33e973b48a80e2e3cd158288, type: 3}
       propertyPath: m_Name

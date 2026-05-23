@@ -191,7 +191,21 @@ public class PlayerInventoryManager : MonoBehaviour
         else chassisWarehouse[so.ChassisID] = new ChassisStack(so, qty);
         OnInventoryChanged?.Invoke();
     }
+    public bool TryConsumeChassisFromWarehouse(ChassisDataSO so)
+    {
+        if (so == null) return false;
 
+        if (chassisWarehouse.ContainsKey(so.ChassisID) && chassisWarehouse[so.ChassisID].Quantity > 0)
+        {
+            chassisWarehouse[so.ChassisID].Quantity--;
+            OnInventoryChanged?.Invoke();
+            Debug.Log($"<color=red>【仓库】</color> 出库底盘: {so.ChassisName}，剩余: {chassisWarehouse[so.ChassisID].Quantity}");
+            return true;
+        }
+
+        Debug.LogWarning($"【仓库】底盘 {so.ChassisName} 库存不足！");
+        return false;
+    }
     public bool TryConsumeFromWarehouse(ComponentDataSO so, int level)
     {
         string key = $"{so.ComponentBaseID}_{level}";

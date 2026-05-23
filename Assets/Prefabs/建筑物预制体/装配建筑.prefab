@@ -49,21 +49,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BuildingName: "\u7EC4\u88C5\u5EFA\u7B51"
   BuildingIcon: {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}
+  FunctionUIPrefab: {fileID: 5563769118379185203, guid: 5904c3a47d88e9649a5247eb295312f6, type: 3}
   FootprintOffsets:
   - {x: 0, y: 0}
   - {x: 1, y: 0}
   - {x: 0, y: 1}
   - {x: 1, y: 1}
   PivotOffset: {x: 0, y: 0}
-  SpawnOffset: {x: 0, y: -1}
-  SelectionVisual: {fileID: 8501307324808017179}
+  InteractionOffsets:
+  - {x: 0, y: -1}
   GhostRenderer: {fileID: 2683496835021940365}
-  FunctionUIPrefab: {fileID: 5563769118379185203, guid: 5904c3a47d88e9649a5247eb295312f6, type: 3}
-  MechBasePrefab: {fileID: 2724532761662945261, guid: a723d5ae80659514499dca258d25699b, type: 3}
+  SelectionVisual: {fileID: 8501307324808017179}
   RallyWorldPos: {x: 0, y: 0, z: 0}
   DotSpacing: 0.5
   ScrollSpeed: 2
   DotSize: 0.12
+  LineColor: {r: 0, g: 1, b: 1, a: 0.8}
+  MechBasePrefab: {fileID: 2724532761662945261, guid: a723d5ae80659514499dca258d25699b, type: 3}
 --- !u!120 &7153287631870206420
 LineRenderer:
   serializedVersion: 2

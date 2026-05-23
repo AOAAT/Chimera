@@ -132,16 +132,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BuildingName: "\u57FA\u5730\u5EFA\u7B51"
   BuildingIcon: {fileID: 21300000, guid: c1001407cc5357e4781d0c3f06ced7a0, type: 3}
+  FunctionUIPrefab: {fileID: 5563769118379185203, guid: d7bd71cd7161098459841f493a8709f1, type: 3}
   FootprintOffsets:
   - {x: 0, y: 0}
   - {x: 1, y: 0}
   - {x: 0, y: 1}
   - {x: 1, y: 1}
   PivotOffset: {x: 0, y: 0}
-  SpawnOffset: {x: 0, y: -1}
-  SelectionVisual: {fileID: 4733392304424718938}
+  InteractionOffsets:
+  - {x: 0, y: -1}
   GhostRenderer: {fileID: 5414439664473833125}
-  FunctionUIPrefab: {fileID: 5563769118379185203, guid: d7bd71cd7161098459841f493a8709f1, type: 3}
+  SelectionVisual: {fileID: 4733392304424718938}
 --- !u!1 &4733392304424718938
 GameObject:
   m_ObjectHideFlags: 0
