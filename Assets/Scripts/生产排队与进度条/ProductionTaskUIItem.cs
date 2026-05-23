@@ -16,7 +16,7 @@ public class ProductionTaskUIItem : MonoBehaviour
 
     private ProductionTask bindedTask;
     private System.Action onCancel;
-
+    public ProductionTask BindedTask => bindedTask; // 🌟 暴露属性
     public void Initialize(ProductionTask task, System.Action cancelCallback)
     {
         bindedTask = task;

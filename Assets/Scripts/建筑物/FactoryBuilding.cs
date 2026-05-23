@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class FactoryBuilding : BuildingBase
 {
+    public bool SyncOrderFlag = false; // 用于通知 UI：顺序已变，不需要销毁重建，只需保持现状
+
     [Header("=== 生产任务队列 ===")]
     public List<ProductionTask> TaskQueue = new List<ProductionTask>();
     protected override void Awake()

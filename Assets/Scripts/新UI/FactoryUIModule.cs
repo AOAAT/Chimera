@@ -30,17 +30,19 @@ public class FactoryUIModule : MonoBehaviour
     {
         if (MainBuildingHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
         {
-            // 🌟 只有当队列数量发生变化时，才触发重绘，节省性能
+            // 如果正在同步顺序，或者数量没变，不执行物理刷新（防止 Destroy 掉正在拖拽的物体）
+            if (factory.SyncOrderFlag)
+            {
+                factory.SyncOrderFlag = false;
+                lastTaskCount = factory.TaskQueue.Count; // 更新计数器
+                return;
+            }
+
             if (factory.TaskQueue.Count != lastTaskCount)
             {
                 lastTaskCount = factory.TaskQueue.Count;
                 RefreshQueueUI(factory);
             }
-        }
-        else
-        {
-            // 如果没选中工厂，重置计数
-            lastTaskCount = -1;
         }
     }
 

@@ -33,43 +33,25 @@ public class BattleCommandManager : MonoBehaviour
     }
     private void Update()
     {
+        // 1. UI 拦截
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
-        // 🌟 核心加固：多重防护拦截
-        if (BuildingManager.Instance != null)
+        // 2. 🌟 建造锁拦截：如果 BuildingManager 正在忙，本脚本彻底进入静默
+        if (BuildingManager.Instance != null && (BuildingManager.Instance.IsPlacing || BuildingManager.Instance.IsSelectionLocked))
         {
-            bool isPlacing = BuildingManager.Instance.IsPlacing;
-            bool isLocked = BuildingManager.Instance.IsSelectionLocked;
-
-            if (isPlacing || isLocked)
-            {
-                // 1. 强制同步锚点
-                dragStartMousePos = Input.mousePosition;
-
-                // 2. 强制关闭视觉
-                if (SelectionBoxUI.gameObject.activeSelf)
-                {
-                    Debug.Log("<color=red>[Command-Guard]</color> 拦截到建造模式下的框选尝试，已关闭视觉");
-                    SelectionBoxUI.gameObject.SetActive(false);
-                }
-
-                // 3. 诊断 Log (如果此时还出现点击，查看是哪种状态)
-                if (Input.GetMouseButtonUp(0))
-                {
-                    Debug.Log($"<color=gray>[Command-Guard]</color> 拦截到 MouseUp。状态: Placing={isPlacing}, Locked={isLocked}");
-                }
-
-                return; // 彻底切断
-            }
+            ForceClearSelectionBox();
+            return;
         }
 
         HandleMarqueeSelection();
         HandleCommand();
-        UpdateTargetingLine();
     }
-    // ==========================================
-    // ⚔️ 指令控制中枢 (已修复重复定义与逻辑冲突)
-    // ==========================================
+
+    // 🌟 核心接口：供外部调用，强行让框选起点对齐当前鼠标
+    public void SyncDragStartToMouse()
+    {
+        dragStartMousePos = Input.mousePosition;
+    }
     private void HandleCommand()
     {
         // 1. 只有按下右键才执行
@@ -219,34 +201,19 @@ public class BattleCommandManager : MonoBehaviour
 
     private void UpdateSelectionBoxUI()
     {
-        if (BuildingManager.Instance != null && (BuildingManager.Instance.IsPlacing || BuildingManager.Instance.IsSelectionLocked))
-        {
-            SelectionBoxUI.gameObject.SetActive(false);
-            return;
-        }
-
-
         Vector2 currentMousePos = Input.mousePosition;
         float distance = Vector2.Distance(dragStartMousePos, currentMousePos);
 
-        // 只有拖拽距离超过 10 像素才显示
         if (distance > 10f)
         {
-            if (!SelectionBoxUI.gameObject.activeSelf)
-            {
-                // 🌟 这是最关键的触发点
-                Debug.Log($"<color=yellow>[Marquee-Trigger]</color> 开启框选框视觉。当前帧: {Time.frameCount}");
-                SelectionBoxUI.gameObject.SetActive(true);
-            }
+            if (!SelectionBoxUI.gameObject.activeSelf) SelectionBoxUI.gameObject.SetActive(true);
 
-            // --- 坐标转换计算 (保持不变) ---
+            // 映射 UI 坐标
             RectTransform parentRect = SelectionBoxUI.parent.GetComponent<RectTransform>();
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, dragStartMousePos, null, out Vector2 localStart);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, currentMousePos, null, out Vector2 localEnd);
-
             Vector2 min = Vector2.Min(localStart, localEnd);
             Vector2 max = Vector2.Max(localStart, localEnd);
-
             SelectionBoxUI.anchoredPosition = min;
             SelectionBoxUI.sizeDelta = max - min;
         }
@@ -291,9 +258,12 @@ public class BattleCommandManager : MonoBehaviour
 
     public void ForceClearSelectionBox()
     {
-        if (SelectionBoxUI != null)
+        if (SelectionBoxUI != null && SelectionBoxUI.gameObject.activeSelf)
         {
             SelectionBoxUI.gameObject.SetActive(false);
         }
+        // 只要被拦截，起点就必须跟着鼠标，防止残留位移
+        SyncDragStartToMouse();
     }
+
 }
