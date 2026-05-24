@@ -412,7 +412,7 @@ MonoBehaviour:
   GhostRenderer: {fileID: 5414439664473833125}
   SelectionVisual: {fileID: 4733392304424718938}
   ShowDebugGizmos: 1
-  RecruitmentInterval: 15
+  RecruitmentInterval: 0
   ProgressCanvasGroup: {fileID: 8920129418784634996}
   ProgressBarFill: {fileID: 1343282976709266727}
 --- !u!1 &4733392304424718938

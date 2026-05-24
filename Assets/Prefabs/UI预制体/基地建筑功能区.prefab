@@ -1519,6 +1519,7 @@ MonoBehaviour:
   AllBuildingBlueprints:
   - {fileID: 11400000, guid: 2ebe0e135dfbc7144bfb698c5eeff9de, type: 2}
   - {fileID: 11400000, guid: 9c2410bd8766326409af237431f4c78b, type: 2}
+  - {fileID: 11400000, guid: 0dd00468f88c67e4580c6f4dc99bd609, type: 2}
   GridRoot: {fileID: 1106497606468554073}
   BuildButtonPrefab: {fileID: 2978963705122339529, guid: 61813b141ef584c4fb69f340d488bfed, type: 3}
 --- !u!1 &5708823113402098591
