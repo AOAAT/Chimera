@@ -67,37 +67,39 @@ public class AssemblerBuilding : BuildingBase
     // ==========================================
     public void OpenWorkshop()
     {
-        // 呼叫工坊，传递自身作为生产源
         if (AssemblyWorkshopUI.Instance != null)
         {
-            AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(-1, this);
+            // 🌟 修复：删掉原来的 -1 参数，只传 this
+            AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(this);
         }
     }
-
     public void SpawnMech(SavedUnitProfile profile)
     {
         Vector3 bestSpawnPos = CalculateBestSpawnLocation();
-
         GameObject go = Instantiate(MechBasePrefab, bestSpawnPos, Quaternion.identity);
 
+        // 🌟 [核心修复]：先拿到脚本
         MechUnit2D unit = go.GetComponent<MechUnit2D>();
-        if (unit != null) unit.InitUnitData(profile);
+        if (unit == null) unit = go.AddComponent<MechUnit2D>();
 
-        // 🌟 核心修复：改写 Collider 初始化方式，避开 MissingComponentException
-        var oldCol = go.GetComponent<BoxCollider2D>();
-        if (oldCol != null) oldCol.enabled = false;
+        // 🌟 [核心修复]：强制初始化数据 (这会触发内部的 FullSetup)
+        unit.InitUnitData(profile);
+
+        // 🌟 [核心修复]：处理 RTS 圆形碰撞核
+        // 此时 FullSetup 已经跑完了，物理层级也定好了
+        var oldBox = go.GetComponent<BoxCollider2D>();
+        if (oldBox != null) oldBox.enabled = false; // 禁用推挤方盒
 
         CircleCollider2D circle = go.GetComponent<CircleCollider2D>();
-        if (circle == null)
-        {
-            circle = go.AddComponent<CircleCollider2D>();
-        }
+        if (circle == null) circle = go.AddComponent<CircleCollider2D>();
         circle.radius = 0.35f;
+        circle.isTrigger = false; // 确保它是实体碰撞，不是触发器
 
+        // 启动 AI
         ChimeraAIController ai = go.GetComponent<ChimeraAIController>();
         if (ai != null) StartCoroutine(DelayedCommand(ai));
 
-        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_PowerOn);
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Mech_PowerOn);
     }
 
     private Vector3 CalculateBestSpawnLocation()

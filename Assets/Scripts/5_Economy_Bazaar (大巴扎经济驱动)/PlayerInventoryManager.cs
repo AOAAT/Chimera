@@ -27,21 +27,21 @@ public class InstancedComponent
     public string InstanceID;
     public ComponentDataSO BaseData;
     public string EquippedUnitID;
-    public int CurrentLevel = 1;
+    public int CurrentMark = 1;
     public List<string> SocketedAccessoryIDs = new List<string>();
 
     public InstancedComponent(ComponentDataSO data, int level)
     {
         InstanceID = Guid.NewGuid().ToString();
         BaseData = data;
-        CurrentLevel = level;
+        CurrentMark = level;
         EquippedUnitID = string.Empty;
         SocketedAccessoryIDs = new List<string>();
     }
     public int GetMaxSockets()
     {
         if (BaseData == null) return 0;
-        var lvData = BaseData.GetModelData(this.CurrentLevel);
+        var lvData = BaseData.GetModelData(this.CurrentMark );
         return lvData != null ? lvData.MaxSocketCount : 1;
     }
     public bool HasEmptySocket() => SocketedAccessoryIDs.Count < GetMaxSockets();
@@ -118,10 +118,6 @@ public class PlayerInventoryManager : MonoBehaviour
     public static PlayerInventoryManager Instance;
     public event Action OnInventoryChanged;
 
-    [Header("=== 核心资产 ===")]
-    public int MaxUnitSlots = 8;
-    public SavedUnitProfile[] HangarUnits;
-
     [Header("=== 实物仓库 (堆叠字典) ===")]
     private Dictionary<string, ComponentStack> componentWarehouse = new Dictionary<string, ComponentStack>();
     private Dictionary<string, ChassisStack> chassisWarehouse = new Dictionary<string, ChassisStack>();
@@ -149,9 +145,6 @@ public class PlayerInventoryManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else { Destroy(gameObject); return; }
-
-        HangarUnits = new SavedUnitProfile[MaxUnitSlots];
-        InitNamePool();
     }
 
     private void Update()
@@ -221,25 +214,6 @@ public class PlayerInventoryManager : MonoBehaviour
     public List<ComponentStack> GetAvailableStacks() => componentWarehouse.Values.Where(s => s.Quantity > 0).OrderByDescending(s => s.Level).ToList();
     public List<ChassisStack> GetChassisStacks() => chassisWarehouse.Values.Where(s => s.Quantity > 0).ToList();
 
-    // ==========================================
-    // 🛠️ 辅助工具与兼容逻辑
-    // ==========================================
-
-    public string GetNextAvailableName()
-    {
-        if (runtimeAvailableNames == null || runtimeAvailableNames.Count == 0) InitNamePool();
-        int idx = UnityEngine.Random.Range(0, runtimeAvailableNames.Count);
-        string n = runtimeAvailableNames[idx];
-        runtimeAvailableNames.RemoveAt(idx);
-        return n;
-    }
-
-    public void ReturnNameToPool(string oldName)
-    {
-        if (DefaultNamePool.Contains(oldName) && !runtimeAvailableNames.Contains(oldName)) runtimeAvailableNames.Add(oldName);
-    }
-
-    private void InitNamePool() => runtimeAvailableNames = new List<string>(DefaultNamePool);
 
     public static float GetStatValue(List<StatEntry> stats, StatType targetStat)
     {
@@ -257,12 +231,12 @@ public class PlayerInventoryManager : MonoBehaviour
         float currentHP = unit.CurrentHP;
         if (componentToRemove != null)
         {
-            var lvData = componentToRemove.BaseData.GetModelData(componentToRemove.CurrentLevel);
+            var lvData = componentToRemove.BaseData.GetModelData(componentToRemove.CurrentMark);
             if (lvData != null) currentHP -= GetStatValue(lvData.Stats, StatType.AddedHP);
         }
         if (componentToEquip != null)
         {
-            var lvData = componentToEquip.BaseData.GetModelData(componentToEquip.CurrentLevel);
+            var lvData = componentToEquip.BaseData.GetModelData(componentToEquip.CurrentMark);
             if (lvData != null) currentHP += GetStatValue(lvData.Stats, StatType.AddedHP);
         }
         return currentHP > 0;

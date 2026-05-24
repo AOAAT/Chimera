@@ -3,7 +3,6 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Unity.VisualScripting.Member;
 
 public class AssemblyWorkshopUI : MonoBehaviour
 {
@@ -12,7 +11,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     [Header("=== 核心状态机数据 ===")]
     private SavedUnitProfile currentEditingProfile;
     private bool isCreatingNew = false;
-    private int targetHangarSlotIndex = -1;
+    private MechUnit2D targetWorldUnit; // 🌟 如果是改装，记录目标
 
     [Header("=== 快照备份系统 ===")]
     private List<int> snapshot_SlotIndices = new List<int>();
@@ -61,18 +60,16 @@ public class AssemblyWorkshopUI : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void OpenEmptyWorkshop(int slotIndex, AssemblerBuilding source = null)
+    public void OpenEmptyWorkshop(AssemblerBuilding source)
     {
-        // 🌟 核心：将传入的建筑来源记录下来
         currentCallSource = source;
+        targetWorldUnit = null;
+        isCreatingNew = true;
 
         MusicManager.Instance?.SetImmersionMode(true);
         gameObject.SetActive(true);
 
         currentEditingProfile = null;
-        isCreatingNew = true;
-        targetHangarSlotIndex = slotIndex;
-
         snapshot_SlotIndices.Clear();
         snapshot_EquippedComponentIDs.Clear();
         snapshot_DamageTaken = 0f;
@@ -80,30 +77,18 @@ public class AssemblyWorkshopUI : MonoBehaviour
         RefreshWorkshopState();
     }
 
-
-    public void OpenWorkshopWithUnit(int slotIndex, SavedUnitProfile unitProfile)
+    public void OpenWorkshopWithUnit(MechUnit2D worldUnit)
     {
-        MusicManager.Instance?.SetImmersionMode(true);
-        gameObject.SetActive(true);
-        currentEditingProfile = unitProfile;
+        targetWorldUnit = worldUnit;
+        currentEditingProfile = worldUnit.GetProfile();
         isCreatingNew = false;
-        targetHangarSlotIndex = slotIndex;
-        snapshot_SlotIndices = new List<int>(unitProfile.SlotIndices);
-        snapshot_EquippedComponentIDs = new List<string>(unitProfile.EquippedComponentIDs);
-        snapshot_HP = unitProfile.CurrentHP;
-        snapshot_AP = unitProfile.CurrentAP;
+        currentCallSource = null;
 
-        float initialMaxHP = PlayerInventoryManager.GetStatValue(unitProfile.ChassisData.BaseStats, StatType.AddedHP);
-        foreach (string compID in unitProfile.EquippedComponentIDs)
-        {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-            if (comp != null && comp.BaseData != null)
-            {
-                var lvData = comp.BaseData.GetModelData(comp.CurrentLevel);
-                if (lvData != null) initialMaxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
-            }
-        }
-        snapshot_DamageTaken = initialMaxHP - unitProfile.CurrentHP;
+        snapshot_SlotIndices = new List<int>(currentEditingProfile.SlotIndices);
+        snapshot_EquippedComponentIDs = new List<string>(currentEditingProfile.EquippedComponentIDs);
+        snapshot_HP = currentEditingProfile.CurrentHP;
+
+        gameObject.SetActive(true);
         RefreshWorkshopState();
     }
 
@@ -327,17 +312,17 @@ public class AssemblyWorkshopUI : MonoBehaviour
     }
     public void OnClickGhostChassis()
     {
-        // 🌟 核心修复：直接从字典中获取底盘堆栈
         RightInventoryPanelUI.Instance.OpenForChassisSelection(
             () => PlayerInventoryManager.Instance.GetChassisStacks(),
-            (selectedChassisStack) => {
-                // 将 Stack 转换回逻辑需要的 Instanced 对象（这里需要手动解包一次）
-                InstancedChassis tempChassis = new InstancedChassis(selectedChassisStack.BaseData);
-                OnChassisSelectedFromInventory(tempChassis);
+            (stack) => {
+                PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(stack.BaseData);
+                // 🌟 修复：生成名字，解决 mechName 报错
+                string newName = "奇美拉-" + Random.Range(100, 999);
+                currentEditingProfile = new SavedUnitProfile(new InstancedChassis(stack.BaseData), newName);
+                RefreshWorkshopState();
             }
         );
     }
-
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
         // 🌟 核心修复：尝试从仓库扣除实物底盘
@@ -348,8 +333,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             Debug.LogWarning("【车间】底盘库存不足，无法开始组装！");
             return;
         }
-
-        string mechName = PlayerInventoryManager.Instance.GetNextAvailableName();
+        string mechName = "奇美拉-" + UnityEngine.Random.Range(100, 999);
         currentEditingProfile = new SavedUnitProfile(selectedChassis, mechName);
 
         // 标记底盘已占用（此 ID 仅用于本次组装追踪）
@@ -407,7 +391,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         if (selectedComp != null)
         {
             // 尝试从仓库扣除实物
-            bool success = PlayerInventoryManager.Instance.TryConsumeFromWarehouse(selectedComp.BaseData, selectedComp.CurrentLevel);
+            bool success = PlayerInventoryManager.Instance.TryConsumeFromWarehouse(selectedComp.BaseData, selectedComp.CurrentMark);
 
             if (!success)
             {
@@ -418,7 +402,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             // 扣除成功，如果原本有旧零件，将旧零件还给仓库
             if (oldComp != null)
             {
-                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentLevel, 1);
+                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentMark, 1);
                 // 从当前机甲逻辑列表中移除旧数据
                 currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
                 currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
@@ -439,7 +423,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             // 玩家点击了“卸载”
             if (oldComp != null)
             {
-                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentLevel, 1);
+                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentMark, 1);
                 currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
                 currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
             }
@@ -467,86 +451,102 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void SaveAndExitWorkshop()
     {
-        if (currentEditingProfile == null) { CancelAndExitWorkshop(); return; }
-
-        // 验证合法性（必须有引擎和腿）
-        if (!ValidateUnitLegality(out string errorMsg)) { Debug.LogWarning(errorMsg); return; }
-
+        if (currentEditingProfile == null) return;
         currentEditingProfile.UnitName = UnitNameInput.text;
 
-        if (currentCallSource != null)
+        if (isCreatingNew && currentCallSource != null)
         {
-            // --- 🌟 路径 A：建筑产出模式 ---
-            // 告诉建筑：组装完成了，请在你的出口生出来
             currentCallSource.SpawnMech(currentEditingProfile);
-
-            // 逻辑闭环：既然实体已经出来了，就不再进机库列表了
-            ExitToHangarDirectly();
         }
-        else
+        else if (!isCreatingNew && targetWorldUnit != null)
         {
-            // --- 🌟 路径 B：调试/机库模式 ---
-            if (targetHangarSlotIndex >= 0)
-                PlayerInventoryManager.Instance.HangarUnits[targetHangarSlotIndex] = currentEditingProfile;
-
-            ExitToHangar();
+            targetWorldUnit.ReAssemble();
         }
+
+        ExitWorkshop();
     }
     private void ExitToHangarDirectly()
     {
         gameObject.SetActive(false);
         MusicManager.Instance?.SetImmersionMode(false);
     }
+    // ==========================================
+    // 🔙 核心逻辑：取消装配并回滚仓库
+    // ==========================================
     public void CancelAndExitWorkshop()
     {
         if (currentEditingProfile != null)
         {
-            // 1. 将当前机甲身上所有的零件实物还给仓库
+            // 1. 【回滚库存】：将当前“试装”在身上的所有零件还给仓库
             foreach (var compID in currentEditingProfile.EquippedComponentIDs)
             {
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null) PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentLevel, 1);
+                if (comp != null)
+                {
+                    PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentMark, 1);
+                }
             }
-
-            // 🌟 2. 核心修复：归还底盘
-            if (currentEditingProfile.ChassisData != null)
-            {
-                PlayerInventoryManager.Instance.AddChassisToWarehouse(currentEditingProfile.ChassisData, 1);
-            }
-
 
             if (isCreatingNew)
             {
-                // 如果是新建，直接名字还给池子，结束
-                PlayerInventoryManager.Instance.ReturnNameToPool(currentEditingProfile.UnitName);
+                // 2. 【新建模式】：归还底盘
+                if (currentEditingProfile.ChassisData != null)
+                {
+                    PlayerInventoryManager.Instance.AddChassisToWarehouse(currentEditingProfile.ChassisData, 1);
+                }
             }
             else
             {
-                // 如果是改装，则需要根据 snapshot 还原原始状态，并从仓库重新扣除原始零件
+                // 3. 【改装模式】：回滚至快照状态
+                // A. 还原档案数据
                 currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
                 currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
+                currentEditingProfile.CurrentHP = snapshot_HP;
+                currentEditingProfile.CurrentAP = snapshot_AP;
 
+                // B. 重新从仓库扣除原始零件（因为在改装过程中，原始零件已经被还回去了）
                 foreach (var originalCompID in snapshot_EquippedComponentIDs)
                 {
                     var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == originalCompID);
                     if (comp != null)
                     {
-                        PlayerInventoryManager.Instance.TryConsumeFromWarehouse(comp.BaseData, comp.CurrentLevel);
+                        PlayerInventoryManager.Instance.TryConsumeFromWarehouse(comp.BaseData, comp.CurrentMark);
                     }
                 }
             }
         }
-        ExitToHangar();
+
+        // 执行退出视觉逻辑
+        ExitWorkshopInternal();
     }
 
-    private void ExitToHangar()
+    private void ExitWorkshopInternal()
     {
+        // 1. 关闭详情页提示
         if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
+
+        // 2. 关闭车间界面
         gameObject.SetActive(false);
-        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.gameObject.SetActive(true);
-        HangarMenuUI.Instance.RefreshHangar();
+
+        // 3. 恢复沉浸式音效
         MusicManager.Instance?.SetImmersionMode(false);
+
+        // 4. 🌟 关键：通知底部 HUD 清空状态，返回战场
+        if (MainBuildingHUD.Instance != null)
+        {
+            MainBuildingHUD.Instance.Refresh(null);
+        }
+
+        Debug.Log("<color=orange>【车间】</color> 装配已取消，数据已回滚。");
     }
+    private void ExitWorkshop()
+    {
+        gameObject.SetActive(false);
+        MusicManager.Instance?.SetImmersionMode(false);
+        // 🌟 核心：通知 HUD 刷新，不再去 HangarMenuUI
+        if (MainBuildingHUD.Instance != null) MainBuildingHUD.Instance.Refresh(null);
+    }
+  
     private void OnDestroy()
     {
         if (Instance == this)

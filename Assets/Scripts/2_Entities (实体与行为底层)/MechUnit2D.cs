@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.EventSystems;
-using System.Linq;
 
+[RequireComponent(typeof(SortingGroup))]
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(BoxCollider2D))]
 public class MechUnit2D : MonoBehaviour
 {
     private SavedUnitProfile bindedData;
@@ -29,6 +29,11 @@ public class MechUnit2D : MonoBehaviour
 
     private void Awake()
     {
+        // 🌟 [重构 Awake]：采用“先拿后补”策略，彻底解决 MissingComponent 异常
+        SortingGroup sg = GetComponent<SortingGroup>();
+        if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
+        sg.sortingLayerName = SortingLayerName;
+
         if (VisualRoot == null)
         {
             Transform found = transform.Find("UnitVisualContainer_2D");
@@ -40,43 +45,33 @@ public class MechUnit2D : MonoBehaviour
                 VisualRoot = visualRootObj.transform;
             }
         }
-
-        // 基础排序组初始化
-        SortingGroup sg = GetComponent<SortingGroup>();
-        if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
-        sg.sortingLayerName = SortingLayerName;
     }
-    // --- MechUnit2D.cs 必须包含此 Update 方法 ---
+    public SavedUnitProfile GetProfile() => bindedData;
     private void Update()
     {
-        // 只有在战斗激活且机甲存活时才跳动
         if (CombatDirector.Instance == null || !CombatDirector.Instance.IsCombatActive) return;
 
         var receiver = GetComponent<DamageReceiver>();
         if (cachedCombatData == null || (receiver != null && receiver.CurrentHP <= 0)) return;
 
-        // 🌟【核心修复】：遍历映射表，确保每个零件的心跳都有明确的身份记录
         foreach (var kvp in cachedCombatData.ComponentToRuntimeMap)
         {
             ComponentDataSO compSO = kvp.Key;
             RuntimeWeapon runtimeProxy = kvp.Value;
 
-            // 如果这个零件根本没有配心跳积木，直接跳过，节省性能
             if (runtimeProxy.OnTickActions == null || runtimeProxy.OnTickActions.Count == 0) continue;
 
-            // 构造带有精准身份的上下文
             ECAContext tickContext = new ECAContext
             {
                 SourceEntity = this.transform,
                 ChassisData = this.cachedCombatData,
-                SourceComponentSO = compSO,      // 👈 关键身份：解决后续积木找代理时的 NullRef
-                SourceWeapon = runtimeProxy,     // 关键引用
+                SourceComponentSO = compSO,
+                SourceWeapon = runtimeProxy,
                 ImpactPoint = this.transform.position,
                 IsEnemyFire = receiver.isEnemy,
                 CustomStates = this.cachedCombatData.PersistentStates
             };
 
-            // 按优先级顺序执行该零件下的所有心跳动作
             foreach (var action in runtimeProxy.OnTickActions)
             {
                 if (action == null || tickContext.ExecutionAborted) break;
@@ -85,7 +80,7 @@ public class MechUnit2D : MonoBehaviour
         }
     }
 
-    // 辅助方法：确保从实例中抓取正确的等级数据（此处为示意，建议在 RuntimeData 中缓存 Level）
+  
     private int compInstance_Level_Placeholder(ComponentDataSO so) => 1;
     // ==========================================
     // 🚀 入口 A：玩家机甲初始化
@@ -123,45 +118,57 @@ public class MechUnit2D : MonoBehaviour
         FullSetup(eliteProfile, comps, true, enemySO);
     }
 
-    // ==========================================
-    // 🛠️ 核心驱动：加固后的全量装配流程
-    // ==========================================
-    // --- MechUnit2D.cs ---
+    public void ReAssemble()
+    {
+        InitUnitData(bindedData);
+        Debug.Log($"<color=cyan>【系统】</color> 机甲 {bindedData.UnitName} 已完成实时改装刷新。");
+    }
 
-    // ==========================================
-    // 🛠️ 核心驱动：加固后的全量装配流程 (Shadow Override Fix)
-    // ==========================================
+    public void RecycleToWarehouse()
+    {
+        if (bindedData == null) return;
+
+        Debug.Log($"<color=red>【回收协议】</color> 正在拆解机甲: {bindedData.UnitName}");
+
+        // 1. 归还底盘实物
+        PlayerInventoryManager.Instance.AddChassisToWarehouse(bindedData.ChassisData, 1);
+
+        // 2. 遍历并归还所有挂载的零件实物
+        foreach (var instanceID in bindedData.EquippedComponentIDs)
+        {
+            // 从全局实例库中找回这个零件的型号数据
+            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == instanceID);
+            if (compInstance != null)
+            {
+                PlayerInventoryManager.Instance.AddComponentToWarehouse(compInstance.BaseData, compInstance.CurrentMark, 1);
+            }
+        }
+
+        // 3. 视觉反馈与销毁
+        if (GlobalAudioManager.Instance != null) GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Detach);
+        // 这里未来可以产生一个烟雾特效
+        Destroy(gameObject);
+    }
+
     private void FullSetup(SavedUnitProfile data, InstancedComponent[] comps, bool isEnemy, EnemyDataSO enemySO = null)
     {
-        // 1. 暴力初始化核心组件（解决所有 MissingComponentException）
         rb = GetComponent<Rigidbody2D>();
         if (rb == null) rb = gameObject.AddComponent<Rigidbody2D>();
 
         physicsCol = GetComponent<BoxCollider2D>();
         if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
+        // 🌟 注入滑溜溜材质
         PhysicsMaterial2D slippery = Resources.Load<PhysicsMaterial2D>("Slippery_Material");
-        if (slippery != null)
-        {
-            rb.sharedMaterial = slippery;
-        }
-        else
-        {
-            Debug.LogError("<color=red>【物理报警】</color> 未能在 Resources 文件夹找到 Slippery_Material，请检查路径！");
-        }
-        SortingGroup sg = GetComponent<SortingGroup>();
-        if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
+        if (slippery != null) rb.sharedMaterial = slippery;
 
-        // 2. 基础属性与阵营层级
+        SortingGroup sg = GetComponent<SortingGroup>() ?? gameObject.AddComponent<SortingGroup>();
+
         this.bindedData = data;
         this.name = (isEnemy ? "[ELITE] " : "[UNIT] ") + data.UnitName;
 
-        // 强制同步清理视觉残骸
         if (VisualRoot == null) Awake();
-        List<GameObject> children = new List<GameObject>();
-        foreach (Transform child in VisualRoot) children.Add(child.gameObject);
-        children.ForEach(c => DestroyImmediate(c));
+        foreach (Transform child in VisualRoot) DestroyImmediate(child.gameObject);
 
-        transform.position = new Vector3(transform.position.x, transform.position.y, 0f);
         transform.localScale = Vector3.one * GlobalBattleScale;
         gameObject.layer = LayerMask.NameToLayer(isEnemy ? "Enemy_Body" : "Player_Body");
 
@@ -171,49 +178,27 @@ public class MechUnit2D : MonoBehaviour
         physicsCol.isTrigger = false;
         sg.sortingLayerName = SortingLayerName;
 
-        // 3. 构建底盘视觉实体
         GameObject chassisObj = new GameObject("Visual_ChassisBase");
         chassisObj.transform.SetParent(VisualRoot, false);
-
         SpriteRenderer chassisSR = chassisObj.AddComponent<SpriteRenderer>();
-        BoxCollider2D hitboxCol = chassisObj.AddComponent<BoxCollider2D>(); // 物理受击盒
-
         chassisSR.sprite = data.ChassisData.ChassisSprite;
         chassisSR.sortingLayerName = SortingLayerName;
-        chassisSR.sortingOrder = BaseSortingOrder;
 
+        BoxCollider2D hitboxCol = chassisObj.AddComponent<BoxCollider2D>();
         hitboxCol.isTrigger = true;
         Vector2 spriteSize = chassisSR.sprite != null ? chassisSR.sprite.bounds.size : Vector2.one;
-        hitboxCol.size = new Vector2(spriteSize.x * 0.9f, spriteSize.y * 0.9f);
+        hitboxCol.size = spriteSize * 0.9f;
 
-        // 4. 适配根节点物理碰撞板 (脚底板)
         physicsCol.size = new Vector2(spriteSize.x * 0.7f, spriteSize.y * 0.25f);
         physicsCol.offset = new Vector2(0f, -(spriteSize.y / 2f) + (physicsCol.size.y / 2f));
 
-        // 5. 阴影系统层级锁定
-        UnitFactionShadow shadowComp = GetComponent<UnitFactionShadow>() ?? gameObject.AddComponent<UnitFactionShadow>();
-        shadowComp.EnsureShadowObject();
-        shadowComp.GetShadowTransform().SetParent(chassisObj.transform, false);
-        shadowComp.GetShadowTransform().SetAsFirstSibling();
-
-        // --- 👇【关键修复节点 A】：准备捕获阴影复写零件 ---
-        ComponentDataSO shadowProvider = null;
-
-        // 6. 零件挂载循环
         for (int i = 0; i < comps.Length; i++)
         {
             if (comps[i] == null) continue;
             var comp = comps[i];
             var slotDef = data.ChassisData.Sockets[i];
 
-            // --- 👇【关键修复节点 B】：捕捉开启了复写的移动组件 ---
-            if (comp.BaseData.Type == ComponentType.Movement && comp.BaseData.OverrideShadow)
-            {
-                shadowProvider = comp.BaseData;
-            }
-
-            string typeTag = (comp.BaseData.Type == ComponentType.Movement) ? "_MovementType" : "";
-            GameObject slotObj = new GameObject($"Socket_{slotDef.SlotName}{typeTag}");
+            GameObject slotObj = new GameObject($"Socket_{slotDef.SlotName}");
             slotObj.transform.SetParent(chassisObj.transform, false);
             slotObj.transform.localPosition = slotDef.LocalPosition;
             slotObj.transform.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
@@ -232,48 +217,11 @@ public class MechUnit2D : MonoBehaviour
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
 
-        // 7. 逻辑初始化
-        DamageReceiver receiver = ActivateCombatBrainsSafe(data, comps, isEnemy, chassisObj.transform);
+        ActivateCombatBrainsSafe(data, comps, isEnemy, chassisObj.transform);
+        SetLayerRecursive(chassisObj, isEnemy ? LayerMask.NameToLayer("Enemy_Hitbox") : LayerMask.NameToLayer("Player_Body"));
 
-        // --- 👇【关键修复节点 C】：阴影权重管线 ---
-        // 优先级 1：精英怪/BOSS SO 直接定义的特殊阴影
-        if (isEnemy && enemySO != null && enemySO.OverrideShadow)
-        {
-            shadowComp.SetupManualShadow(true, enemySO.ShadowWidth, enemySO.ShadowHeight, enemySO.ShadowOffset);
-        }
-        // 优先级 2：检测到的移动组件（如：蜘蛛腿、重型履带）的阴影复写
-        else if (shadowProvider != null)
-        {
-            shadowComp.SetupManualShadow(
-                isEnemy,
-                shadowProvider.ShadowWidth,
-                shadowProvider.ShadowHeight,
-                shadowProvider.ShadowOffset
-            );
-            Debug.Log($"<color=#00FFFF>【视觉同步】</color> 已应用移动组件 [{shadowProvider.ComponentName}] 的专属阴影参数。");
-        }
-        // 优先级 3：基于底盘尺寸的默认算法（兜底）
-        else
-        {
-            shadowComp.SetupModularShadow(isEnemy, spriteSize.x, -(spriteSize.y / 2f));
-        }
-
-        // 8. 递归设置物理层级
-        SetLayerRecursive(chassisObj, isEnemy ? LayerMask.NameToLayer("Enemy_Hitbox") : LayerMask.NameToLayer("Player_Hitbox"));
-
-        // 9. 深度排序与动画
         DynamicDepthSorter sorter = GetComponent<DynamicDepthSorter>() ?? gameObject.AddComponent<DynamicDepthSorter>();
         sorter.YOffset = -(spriteSize.y / 2f);
-
-        ProceduralAnimator2D procAnim = GetComponent<ProceduralAnimator2D>() ?? gameObject.AddComponent<ProceduralAnimator2D>();
-        procAnim.SetTargetVisual(chassisObj.transform);
-        procAnim.RefreshBaseState();
-
-        // 10. 精英死亡订阅
-        if (isEnemy && receiver != null)
-        {
-            receiver.OnEntityDeath += HandleEliteDeath;
-        }
     }
     private void SetLayerRecursive(GameObject obj, int newLayer)
     {
@@ -345,6 +293,21 @@ public class MechUnit2D : MonoBehaviour
     private void HandlePlayerDeath()
     {
         Debug.Log($"<color=red>【战损警告】</color> 机甲 [{this.name}] 核心熔毁，逻辑离线。");
+        gameObject.layer = LayerMask.NameToLayer("Floor");
+        SetLayerRecursive(VisualRoot.gameObject, LayerMask.NameToLayer("Floor"));
+
+        // 2. 禁用所有受击框和推挤框
+        foreach (var col in GetComponentsInChildren<Collider2D>())
+        {
+            col.enabled = false;
+        }
+
+        // 3. 停止物理模拟
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.isKinematic = true;
+        }
 
         // 1. 关停 AI 指令
         var ai = GetComponent<ChimeraAIController>();

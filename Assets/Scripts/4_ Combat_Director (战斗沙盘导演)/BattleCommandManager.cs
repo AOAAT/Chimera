@@ -132,57 +132,40 @@ public class BattleCommandManager : MonoBehaviour
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // 1. 尝试探测居民 (优先最高)
-        Collider2D residentHit = Physics2D.OverlapCircle(mousePos, 0.2f, LayerMask.GetMask("Resident"));
-
-        // 2. 尝试探测机甲 (Player_Body 层)
+        // 1. 探测优先级 (注意 LayerMask 是否正确)
         Collider2D unitHit = Physics2D.OverlapCircle(mousePos, 0.3f, LayerMask.GetMask("Player_Body"));
-
-        // 3. 尝试探测建筑 (Building 层)
         Collider2D buildingHit = Physics2D.OverlapCircle(mousePos, 0.2f, LayerMask.GetMask("Building"));
 
         ClearAllSelectionVisuals();
         SelectedUnits.Clear();
-        SelectedResidents.Clear(); // 👈 清理居民列表
-        CurrentSelectedBuilding = null;
 
-        if (residentHit != null)
+        if (unitHit != null)
         {
-            var resident = residentHit.GetComponentInParent<ResidentEntity>();
-            if (resident != null)
+            // 🌟 [核心修复]：必须拿到 MechUnit2D 才能触发 HUD
+            var mech = unitHit.GetComponentInParent<MechUnit2D>();
+            if (mech != null)
             {
-                SelectedResidents.Add(resident);
-                resident.SetSelected(true);
-            }
-        }
-        // 逻辑：如果点中了单位，清除建筑选中；点中了建筑，清除单位选中
-        else if (unitHit != null)
-        {
-            var unit = unitHit.GetComponentInParent<ChimeraAIController>();
-            if (unit != null)
-            {
-                SelectedUnits.Add(unit);
-                ApplySelectionVisuals(unit);
+                // 让指挥官依然记录 AI 引用（为了下达移动指令）
+                var ai = mech.GetComponent<ChimeraAIController>();
+                if (ai != null) SelectedUnits.Add(ai);
+
+                // 给视觉反馈
+                ApplySelectionVisuals(ai);
+
+                // 🌟 [核心跳转]：通知 HUD 刷新，并传入真正的 MechUnit2D 对象
+                MainBuildingHUD.Instance.Refresh(mech);
             }
         }
         else if (buildingHit != null)
         {
-            BuildingBase building = buildingHit.GetComponentInParent<BuildingBase>();
-            if (building != null)
-            {
-                CurrentSelectedBuilding = building;
-                building.SetSelected(true);
-                MainBuildingHUD.Instance.Refresh(building);
-            }
+            var building = buildingHit.GetComponentInParent<BuildingBase>();
+            MainBuildingHUD.Instance.Refresh(building);
         }
         else
         {
-            CurrentSelectedBuilding = null;
-            // --- 🌟 核心联动：清空底部面板 ---
             MainBuildingHUD.Instance.Refresh(null);
         }
     }
-
     private void HandleMarqueeSelection()
     {
         if (Input.GetMouseButtonDown(0))

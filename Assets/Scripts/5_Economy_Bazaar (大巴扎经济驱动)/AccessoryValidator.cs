@@ -12,7 +12,7 @@ public static class AccessoryValidator
         // --- 0. 插槽余量检查 ---
         if (targetComp.SocketedAccessoryIDs.Count >= targetComp.GetMaxSockets())
         {
-            failReason = $"[Lv.{targetComp.CurrentLevel}] 硬件接口已满 ({targetComp.GetMaxSockets()}/{targetComp.GetMaxSockets()})";
+            failReason = $"[Lv.{targetComp.CurrentMark}] 硬件接口已满 ({targetComp.GetMaxSockets()}/{targetComp.GetMaxSockets()})";
             return false;
         }
         // --- 1. 大类校验 (Component Type) ---

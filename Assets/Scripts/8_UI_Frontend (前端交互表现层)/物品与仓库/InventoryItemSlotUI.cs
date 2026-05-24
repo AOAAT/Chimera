@@ -80,13 +80,13 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             ItemIcon.sprite = component.BaseData.ComponentIcon;
             ItemNameText.text = component.BaseData.ComponentName;
 
-            Color rarityColor = GetRarityColor(component.CurrentLevel);
+            Color rarityColor = GetRarityColor(component.CurrentMark);
             ItemNameText.color = rarityColor;
 
             if (ItemLevelText != null)
             {
                 ItemLevelText.gameObject.SetActive(true);
-                ItemLevelText.text = $"Lv.{component.CurrentLevel}";
+                ItemLevelText.text = $"Lv.{component.CurrentMark}";
                 ItemLevelText.color = rarityColor;
             }
         }

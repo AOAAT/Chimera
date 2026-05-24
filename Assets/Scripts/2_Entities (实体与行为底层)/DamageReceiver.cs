@@ -103,6 +103,11 @@ public class DamageReceiver : MonoBehaviour
         EntityHUD hud = GetComponentInChildren<EntityHUD>();
         if (hud != null) hud.gameObject.SetActive(false);
 
+        CurrentHP = 0;
+
+        // 通知所有子弹：这个目标已经不在扫描清单里了
+        this.enabled = false;
+
         OnEntityDeath?.Invoke();
     }
 

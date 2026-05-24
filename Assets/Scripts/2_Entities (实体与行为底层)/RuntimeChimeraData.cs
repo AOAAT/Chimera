@@ -140,7 +140,7 @@ public class RuntimeChimeraData
             var compSO = compInstance.BaseData;
             AllEquippedSOs.Add(compSO);
 
-            var levelData = compSO.GetModelData(compInstance.CurrentLevel);
+            var levelData = compSO.GetModelData(compInstance.CurrentMark);
             if (levelData == null) continue;
 
             // A. 创建逻辑代理
@@ -148,7 +148,7 @@ public class RuntimeChimeraData
             {
                 WeaponName = compSO.ComponentName,
                 SourceSO = compSO,
-                CurrentLevel = compInstance.CurrentLevel,
+                CurrentLevel = compInstance.CurrentMark,
                 DeliveryType = compSO.DeliveryType,
                 ProjectilePrefab = compSO.ProjectilePrefab
             };
@@ -225,7 +225,7 @@ public class RuntimeChimeraData
         foreach (var compInstance in components)
         {
             if (compInstance == null) continue;
-            var levelData = compInstance.BaseData.GetModelData(compInstance.CurrentLevel);
+            var levelData = compInstance.BaseData.GetModelData(compInstance.CurrentMark);
             if (levelData != null && levelData.OnAssembleActions != null)
             {
                 ECAContext compCtx = new ECAContext { ChassisData = this, SourceComponentSO = compInstance.BaseData, SourceEntity = entityTransform };

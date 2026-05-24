@@ -58,11 +58,18 @@ public class Projectile : MonoBehaviour
     private void Update()
     {
         if (hasHit) return;
-
+        if (target != null)
+        {
+            var targetReceiver = target.GetComponentInParent<DamageReceiver>();
+            if (targetReceiver != null && targetReceiver.CurrentHP <= 0)
+            {
+                target = null; // 目标死亡，失去信号
+            }
+        }
         lifeTimer -= Time.deltaTime;
         if (lifeTimer <= 0) { DespawnMe(); return; }
 
-        // 1. 处理追踪转向
+        // --- 3. 处理追踪转向 ---
         if (EnableHoming && target != null && target.gameObject.activeInHierarchy)
         {
             Vector3 targetCenter = target.position;
@@ -70,7 +77,19 @@ public class Projectile : MonoBehaviour
             if (col != null) targetCenter = col.bounds.center;
 
             Vector2 directionToTarget = (targetCenter - transform.position).normalized;
-            currentDirection = Vector3.RotateTowards(currentDirection, directionToTarget, TurnSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
+            float distToTarget = Vector2.Distance(transform.position, targetCenter);
+
+            // 🌟 [核心修复]：角速度补偿逻辑
+            // 如果距离小于 1.5 米，强行进入“必中模式”，瞬间转向目标
+            if (distToTarget < 1.5f)
+            {
+                currentDirection = directionToTarget;
+            }
+            else
+            {
+                // 正常的平滑转向
+                currentDirection = Vector3.RotateTowards(currentDirection, directionToTarget, TurnSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
+            }
 
             float angle = Mathf.Atan2(currentDirection.y, currentDirection.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
@@ -95,11 +114,17 @@ public class Projectile : MonoBehaviour
         Vector2 dir = (end - start).normalized;
         float dist = Vector3.Distance(start, end);
 
-        // 判定攻击层级
-        int layerMask = isEnemyFire ? LayerMask.GetMask("Player_Hitbox") : LayerMask.GetMask("Enemy_Hitbox");
-        if (hitAllies) layerMask = isEnemyFire ? LayerMask.GetMask("Enemy_Hitbox") : LayerMask.GetMask("Player_Hitbox");
+        // --- 🌟 [核心加固]：扩大扫描层级，确保覆盖 Body 和 Hitbox ---
+        int layerMask;
+        if (isEnemyFire)
+            layerMask = LayerMask.GetMask("Player_Hitbox", "Player_Body");
+        else
+            layerMask = LayerMask.GetMask("Enemy_Hitbox", "Enemy_Body");
 
-        // 使用 RaycastAll 扫描这段路径上所有的碰撞体
+        // 如果是奶弹模式，反转层级
+        if (hitAllies)
+            layerMask = isEnemyFire ? LayerMask.GetMask("Enemy_Hitbox", "Enemy_Body") : LayerMask.GetMask("Player_Hitbox", "Player_Body");
+
         int hits = Physics2D.RaycastNonAlloc(start, dir, hitResults, dist, layerMask);
 
         for (int i = 0; i < hits; i++)
@@ -109,21 +134,22 @@ public class Projectile : MonoBehaviour
 
             DamageReceiver receiver = hit.collider.GetComponentInParent<DamageReceiver>();
 
-            // 👇【核心修复点】：增加 shooter != null 的判定
-            if (receiver != null) 
+            // 🌟 [核心加固]：只有目标活着，才判定为“击中”
+            if (receiver != null && receiver.CurrentHP > 0)
             {
-                // 如果射手已经不在了，或者目标不是射手本人且不是射手的子对象
-                bool isSelf = (shooter != null) && (receiver.transform == shooter || receiver.transform.IsChildOf(shooter));
+                bool isHittingShooter = (shooter != null) && (receiver.transform == shooter || receiver.transform.IsChildOf(shooter));
 
-                if (!isSelf)
+                if (!isHittingShooter)
                 {
-                    this.target = receiver.transform;
                     transform.position = hit.point;
                     HitTarget(receiver.transform);
                     return;
                 }
             }
+            // 如果 receiver 死了，循环会继续，子弹会从“尸体”上穿过去
         }
+
+
     }
 
     // 原有的 OnTriggerEnter2D 作为第二重保险（处理静止物体重叠）
@@ -162,29 +188,31 @@ public class Projectile : MonoBehaviour
     }
     private void HitTarget(Transform actualHitTarget)
     {
+        // 1. 防重复进入
         if (hasHit) return;
-
-        // 🌟【核心修复】：如果撞到的是射手本人，或者是射手的受击盒（子物体），直接穿透，不判定为命中
-        if (actualHitTarget == shooter || (shooter != null && actualHitTarget.IsChildOf(shooter)))
-        {
-            return;
-        }
-
         hasHit = true;
 
-        // 调试日志：确认真正命中了有效目标
-        Debug.Log($"<color=cyan>【子弹-撞击】</color> 有效命中: {actualHitTarget.name} | 奶弹模式: {this.hitAllies}");
+        // 2. 物理熔断：停止移动，防止穿透感
+        speed = 0;
 
+        // 3. 逻辑分发
         if (weaponData != null && capturedContext != null)
         {
-            // 将控制权交还给所属零件的 OnHit 管线
+            // 将当前的命中位置同步到上下文
+            capturedContext.ImpactPoint = transform.position;
+
+            // 🌟 关键：调用武器的命中管线
             weaponData.TriggerHitPipeline(actualHitTarget, transform.position, capturedContext);
         }
         else
         {
-            Debug.LogWarning($"<color=orange>【子弹-警告】</color> 命中后无法分发管线，缺少上下文。");
+            // 兜底：如果没有复杂的 ECA 逻辑，直接通过 DamageReceiver 扣血
+            var dr = actualHitTarget.GetComponentInParent<DamageReceiver>();
+            if (dr != null) dr.TakeDamage(damage, "未知来源");
         }
 
+        // 4. 🌟 [核心加固]：强制消除
+        // 无论是从对象池回收还是直接销毁，确保本帧结束前它不再存在
         DespawnMe();
     }
     private void DespawnMe()

@@ -3,8 +3,6 @@ using UnityEngine;
 
 public class RTSTestBench : MonoBehaviour
 {
-    [Header("=== 友军配置 (按 S 键) ===")]
-    public GameObject MechBasePrefab;
 
     [Header("=== 敌军配置 (按 E 键) ===")]
     [Tooltip("在 Project 窗口找到你想测试的敌人图纸拖进来")]
@@ -13,11 +11,6 @@ public class RTSTestBench : MonoBehaviour
 
     private void Update()
     {
-        // --- S 键：生成玩家机甲 ---
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            SpawnPlayerAtMouse();
-        }
 
         // --- E 键：生成敌对单位 ---
         if (Input.GetKeyDown(KeyCode.E))
@@ -26,40 +19,6 @@ public class RTSTestBench : MonoBehaviour
         }
     }
 
-    private void SpawnPlayerAtMouse()
-    {
-        var hangar = PlayerInventoryManager.Instance.HangarUnits;
-        SavedUnitProfile profile = null;
-        foreach (var p in hangar) { if (p != null) { profile = p; break; } }
-
-        if (profile == null)
-        {
-            Debug.LogWarning("【测试台】机库里没有机甲！请先去车间拼一台。");
-            return;
-        }
-
-        Vector3 pos = GetMouseWorldPos();
-        GameObject go = Instantiate(MechBasePrefab, pos, Quaternion.identity);
-
-        // 1. 初始化数据
-        MechUnit2D unit = go.GetComponent<MechUnit2D>();
-        unit.InitUnitData(profile);
-
-        // 2. 物理重塑
-        SetupRTSPhysics(go, "Player_Body");
-
-        // 3. 户口登记 (极其关键：不登记怪就不会打你)
-        DamageReceiver dr = go.GetComponent<DamageReceiver>();
-        if (dr != null)
-        {
-            dr.isEnemy = false;
-            if (!CombatDirector.ActivePlayerUnits.Contains(dr))
-                CombatDirector.ActivePlayerUnits.Add(dr);
-        }
-        go.GetComponent<MechUnit2D>()?.ExecuteBattleStartProtocol();
-
-        Debug.Log($"<color=cyan>【测试】友军 {profile.UnitName} 已通电并进入临战状态。</color>");
-    }
 
     private void SpawnEnemyAtMouse()
     {

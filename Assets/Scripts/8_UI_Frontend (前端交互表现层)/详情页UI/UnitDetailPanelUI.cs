@@ -18,6 +18,9 @@ public class UnitDetailPanelUI : MonoBehaviour
     [Header("=== 机甲预览图 UI 绑定 ===")]
     public RectTransform UnitVisualContainer;
 
+    [Header("=== 操作权限控制 ===")]
+    public GameObject ModificationButtonsGroup; // 包含“改装”和“拆解”的父物体
+
     // 👇【核心修复】：锁死底层换算率，统一暴露 PreviewScale
     [Range(0.1f, 5f)]
     public float PreviewScale = 1.5f;
@@ -25,7 +28,7 @@ public class UnitDetailPanelUI : MonoBehaviour
 
     private SavedUnitProfile currentProfile;
     private int currentSlotIndex = -1;
-
+    private MechUnit2D bindedUnit; // 🌟 增加对物理机甲的引用
     private void Awake()
     {
         Instance = this;
@@ -33,50 +36,62 @@ public class UnitDetailPanelUI : MonoBehaviour
     }
 
     // --- 请替换 UnitDetailPanelUI.cs 中的 OpenDetail 方法 ---
-    public void OpenDetail(int slotIndex, SavedUnitProfile profile)
+    public void OpenDetail(MechUnit2D unit, bool isReadOnly = true)
     {
-        currentSlotIndex = slotIndex;
-        currentProfile = profile;
+        if (unit == null) return;
+
+        // 1. 存入物理引用，供后续“改装”按钮跳转使用
+        bindedUnit = unit;
+
+        // 2. 从物理对象中提取出它的配置档案
+        currentProfile = unit.GetProfile();
+
         gameObject.SetActive(true);
 
-        NameText.text = profile.UnitName;
-        APText.text = $"护甲: {profile.CurrentAP}";
+        // --- 以下显示逻辑全部改为使用提取出来的 currentProfile ---
+        NameText.text = currentProfile.UnitName;
+        APText.text = $"护甲: {currentProfile.CurrentAP}";
 
-        // 1. 抓取底盘基准值
-        float maxHP = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedHP);
-        float totalBlock = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedBlock);
-        float totalMass = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.AddedMass);
-        float totalEngine = PlayerInventoryManager.GetStatValue(profile.ChassisData.BaseStats, StatType.EnginePower);
+        // 3. 抓取底盘基准值
+        float maxHP = PlayerInventoryManager.GetStatValue(currentProfile.ChassisData.BaseStats, StatType.AddedHP);
+        float totalBlock = PlayerInventoryManager.GetStatValue(currentProfile.ChassisData.BaseStats, StatType.AddedBlock);
+        float totalMass = PlayerInventoryManager.GetStatValue(currentProfile.ChassisData.BaseStats, StatType.AddedMass);
+        float totalEngine = PlayerInventoryManager.GetStatValue(currentProfile.ChassisData.BaseStats, StatType.EnginePower);
 
-        // 2. 遍历组件叠加
-        foreach (string compID in profile.EquippedComponentIDs)
+        // 4. 遍历组件叠加
+        foreach (string compID in currentProfile.EquippedComponentIDs)
         {
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                var lvData = comp.BaseData.GetModelData(comp.CurrentLevel);
-                if (lvData != null)
+                // 注意：这里已经对齐了新语义 GetModelData
+                var modelData = comp.BaseData.GetModelData(comp.CurrentMark);
+                if (modelData != null)
                 {
-                    maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);
-                    totalBlock += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedBlock);
-                    totalMass += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedMass);
-                    totalEngine += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.EnginePower);
+                    maxHP += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.AddedHP);
+                    totalBlock += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.AddedBlock);
+                    totalMass += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.AddedMass);
+                    totalEngine += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.EnginePower);
                 }
             }
         }
 
-        // 3. 计算最终移速
+        // 5. 计算最终移速
         float speedMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.SpeedMultiplier : 1f;
         float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
 
-        // 4. 灌入数据
-        HPText.text = $"血量: {profile.CurrentHP} / {maxHP}";
+        // 6. 灌入数据
+        HPText.text = $"血量: {currentProfile.CurrentHP:F0} / {maxHP:F0}";
 
-        if (BlockText != null) BlockText.text = $"格挡: {totalBlock}";
-        if (MassText != null) MassText.text = $"质量: {totalMass}t";
+        if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
+        if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";
         if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
-
-        BuildUnitVisual(profile);
+        if (ModificationButtonsGroup != null)
+        {
+            ModificationButtonsGroup.SetActive(!isReadOnly);
+        }
+        // 7. 渲染视觉预览
+        BuildUnitVisual(currentProfile);
     }
     private void BuildUnitVisual(SavedUnitProfile profile)
     {
@@ -133,8 +148,9 @@ public class UnitDetailPanelUI : MonoBehaviour
     {
         if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
         gameObject.SetActive(false);
-        if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.gameObject.SetActive(false);
-        AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(currentSlotIndex, currentProfile);
+
+        // 🌟 修复：直接传入 bindedUnit 引用
+        AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(bindedUnit);
     }
 
     public void CloseDetail()
@@ -156,11 +172,6 @@ public class UnitDetailPanelUI : MonoBehaviour
 
         GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Detach);
 
-        // 3. 关闭当前面板并刷新机库
-        CloseDetail();
-        if (HangarMenuUI.Instance != null)
-        {
-            HangarMenuUI.Instance.RefreshHangar();
-        }
+
     }
 }

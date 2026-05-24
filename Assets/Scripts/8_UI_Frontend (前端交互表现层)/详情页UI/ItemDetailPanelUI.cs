@@ -135,7 +135,7 @@ public class ItemDetailPanelUI : MonoBehaviour
             case ComponentType.Factory: Panel_Support?.SetActive(true); FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText); break;
         }
 
-        RenderTags(instance.BaseData.MacroCategory, instance.BaseData.Type, instance.BaseData.BaseSubTags, instance.CurrentLevel);
+        RenderTags(instance.BaseData.MacroCategory, instance.BaseData.Type, instance.BaseData.BaseSubTags, instance.CurrentMark);
         RefreshSwitchers();
     }
 
@@ -334,9 +334,9 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillWeaponData(InstancedComponent instance)
     {
-        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
-        FillCommonData(Weapon_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
-        SetLevelBackground(Weapon_Common.BackgroundImage, Bg_Weapon, instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
+        FillCommonData(Weapon_Common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(Weapon_Common.BackgroundImage, Bg_Weapon, instance.CurrentMark);
 
         if (Weapon_DamageText) Weapon_DamageText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinDamage), StatType.MinDamage)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxDamage), StatType.MaxDamage)}";
         if (Weapon_RangeText) Weapon_RangeText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinRange), StatType.MinRange)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxRange), StatType.MaxRange)}";
@@ -347,9 +347,9 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillCoreData(InstancedComponent instance)
     {
-        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
-        FillCommonData(Core_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
-        SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
+        FillCommonData(Core_Common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentMark);
 
         if (Core_HPText) Core_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
         if (Core_APText) Core_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
@@ -358,9 +358,9 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillMovementData(InstancedComponent instance)
     {
-        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
-        FillCommonData(Movement_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
-        SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
+        FillCommonData(Movement_Common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentMark);
 
         if (Movement_SpeedText) Movement_SpeedText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.EnginePower), StatType.EnginePower)}";
         if (Movement_HPText) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
@@ -371,9 +371,9 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
     {
-        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
-        FillCommonData(common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
-        SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
+        FillCommonData(common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentMark);
 
         if (Support_HPText) Support_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
         if (Support_APText) Support_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
