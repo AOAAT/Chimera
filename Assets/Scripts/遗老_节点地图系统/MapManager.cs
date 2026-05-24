@@ -165,12 +165,6 @@ public class MapManager : MonoBehaviour
             mapGenerator.GeneratedMap[nextID].NodeState = MapNodeState.Selectable;
         }
 
-        Debug.Log($"【状态更新】已到达第 {CurrentLayer} 层。前方有 {newNode.NextNodeIDs.Count} 条路线可供选择！同层其他路线已截断！");
-        if (GlobalResourceManager.Instance != null)
-        {
-            GlobalResourceManager.Instance.AdvanceDay();
-        }
-
     }
     public void OnCombatVictory(MapNodeData nodeData)
     {

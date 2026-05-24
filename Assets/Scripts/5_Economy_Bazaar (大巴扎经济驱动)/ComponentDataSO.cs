@@ -1,6 +1,7 @@
 ﻿// --- 请替换 FILE ComponentDataSO.cs ---
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "NewComponent", menuName = "Chimera Protocol/1. 核心图纸库/机甲组件 (Component)")]
 public class ComponentDataSO : ScriptableObject
@@ -23,14 +24,13 @@ public class ComponentDataSO : ScriptableObject
     [Header("=== 标签驱动与产出控制 ===")]
     public MacroCategory MacroCategory = MacroCategory.Tech;
     public List<SubTag> BaseSubTags = new List<SubTag>();
-    [Range(1, 4)] public int MinDropLevel = 1;
-
 
     [Header("=== 工业生产数据 ===")]
     public float BaseProductionTime = 5f; // 默认生产零件需要 5秒
 
-    [Header("=== 等级矩阵 (Level Matrix 1~4) ===")]
-    public List<ComponentLevelData> LevelMatrix = new List<ComponentLevelData>();
+    [Header("=== 型号矩阵 (Model Registry) ===")]
+    [FormerlySerializedAs("LevelMatrix")]
+    public List<ComponentModelData> ModelRegistry = new List<ComponentModelData>();
 
     [Header("=== 武器独有投递方式 ===")]
     public WeaponDeliveryType DeliveryType = WeaponDeliveryType.Ranged;
@@ -74,10 +74,10 @@ public class ComponentDataSO : ScriptableObject
     public float SafeDodgeDistance = 8f;
 
 
-    public ComponentLevelData GetLevelData(int level)
+    public ComponentModelData GetModelData(int mark)
     {
-        var data = LevelMatrix.Find(x => x.Level == level);
-        if (data == null && LevelMatrix.Count > 0) return LevelMatrix[LevelMatrix.Count - 1];
+        var data = ModelRegistry.Find(x => x.Mark == mark);
+        if (data == null && ModelRegistry.Count > 0) return ModelRegistry[ModelRegistry.Count - 1];
         return data;
     }
 

@@ -334,7 +334,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillWeaponData(InstancedComponent instance)
     {
-        var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
         FillCommonData(Weapon_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Weapon_Common.BackgroundImage, Bg_Weapon, instance.CurrentLevel);
 
@@ -347,7 +347,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillCoreData(InstancedComponent instance)
     {
-        var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
         FillCommonData(Core_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentLevel);
 
@@ -358,7 +358,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillMovementData(InstancedComponent instance)
     {
-        var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
         FillCommonData(Movement_Common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentLevel);
 
@@ -371,7 +371,7 @@ public class ItemDetailPanelUI : MonoBehaviour
 
     private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
     {
-        var lvData = instance.BaseData.GetLevelData(instance.CurrentLevel);
+        var lvData = instance.BaseData.GetModelData(instance.CurrentLevel);
         FillCommonData(common, instance.BaseData.ComponentName, instance.CurrentLevel.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
         SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentLevel);
 

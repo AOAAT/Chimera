@@ -90,13 +90,26 @@ public class FactoryUIModule : MonoBehaviour
         slotObj.GetComponent<Button>().onClick.AddListener(() => {
             if (MainBuildingHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
             {
-                // 🌟 关键：从 SO 里读取 BaseProductionTime
-                float time = 10f; // 默认值
-                if (sourceSO is ComponentDataSO comp) time = comp.BaseProductionTime;
-                else if (sourceSO is ChassisDataSO chas) time = chas.BaseProductionTime;
+                // --- 👇【核心修复逻辑】：提取成本数据 ---
+                float time = 10f;
+                ResourceSet cost = new ResourceSet(0, 0, 0); // 默认 0 成本兜底
 
-                factory.AddToQueue(sourceSO, itemName, icon, time);
-                Debug.Log($"任务已加入: {itemName} | 耗时: {time}s");
+                if (sourceSO is ComponentDataSO comp)
+                {
+                    time = comp.BaseProductionTime;
+                    // 读取组件 Mk.1 型号的成本 (默认取第一项)
+                    var modelData = comp.GetModelData(1);
+                    if (modelData != null) cost = modelData.ProductionCost;
+                }
+                else if (sourceSO is ChassisDataSO chas)
+                {
+                    time = chas.BaseProductionTime;
+                    // 读取底盘图纸上配置的成本
+                    cost = chas.ProductionCost;
+                }
+
+                // --- 🌟 关键：现在传入 5 个参数，补全 cost ---
+                factory.AddToQueue(sourceSO, itemName, icon, time, cost);
             }
         });
 
@@ -123,9 +136,10 @@ public class FactoryUIModule : MonoBehaviour
 
     private void RefreshQueueUI(FactoryBuilding factory)
     {
-        // 暴力刷新：清空所有任务条并重新生成
+        // 1. 彻底清理旧格子
         foreach (Transform child in TaskQueueContainer) Destroy(child.gameObject);
 
+        // 2. 重新生成
         foreach (var task in factory.TaskQueue)
         {
             GameObject itemObj = Instantiate(TaskItemPrefab, TaskQueueContainer);
@@ -133,10 +147,15 @@ public class FactoryUIModule : MonoBehaviour
 
             if (itemScript != null)
             {
-                // 初始化条目，并传入“取消任务”后的回调（退钱、删数据、刷UI）
+                // --- 👇【关键修复点】：修改这里的回调逻辑 ---
                 itemScript.Initialize(task, () => {
-                    factory.TaskQueue.Remove(task);
-                    RefreshQueueUI(factory); // 递归刷新
+
+                    // 🌟 不要直接 Remove，而是调用 factory 封装好的 CancelTask 方法！
+                    // 这样工厂才会执行 GlobalResourceManager.Instance.Refund(task.PaidCost);
+                    factory.CancelTask(task);
+
+                    // 然后再刷新 UI 表现
+                    RefreshQueueUI(factory);
                 });
             }
         }

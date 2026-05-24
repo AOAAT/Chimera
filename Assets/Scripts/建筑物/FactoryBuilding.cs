@@ -62,8 +62,29 @@ public class FactoryBuilding : BuildingBase
     }
 
     // --- 给 UI 调用：添加新任务 ---
-    public void AddToQueue(Object so, string n, Sprite icon, float time)
+    public void AddToQueue(UnityEngine.Object so, string n, Sprite icon, float time, ResourceSet cost)
     {
-        TaskQueue.Add(new ProductionTask(so, n, icon, time));
+        // 1. 资源契约校验
+        if (GlobalResourceManager.Instance.TryConsume(cost))
+        {
+            TaskQueue.Add(new ProductionTask(so, n, icon, time, cost));
+            Debug.Log($"<color=cyan>【支付成功】</color> 消耗了 {cost.Scrap} 废料，开始生产 {n}");
+        }
+        else
+        {
+            Debug.LogWarning("【系统】 资源储备不足，无法开始生产任务。");
+            // 这里未来可以触发 UI 抖动提示
+        }
+    }
+
+    public void CancelTask(ProductionTask task)
+    {
+        if (TaskQueue.Contains(task))
+        {
+            // 2. 全额返还契约
+            GlobalResourceManager.Instance.Refund(task.PaidCost);
+            TaskQueue.Remove(task);
+            Debug.Log($"<color=orange>【任务撤回】</color> 已全额返还：{task.ItemName}");
+        }
     }
 }

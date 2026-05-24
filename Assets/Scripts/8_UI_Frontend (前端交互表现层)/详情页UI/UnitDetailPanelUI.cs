@@ -54,7 +54,7 @@ public class UnitDetailPanelUI : MonoBehaviour
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp != null && comp.BaseData != null)
             {
-                var lvData = comp.BaseData.GetLevelData(comp.CurrentLevel);
+                var lvData = comp.BaseData.GetModelData(comp.CurrentLevel);
                 if (lvData != null)
                 {
                     maxHP += PlayerInventoryManager.GetStatValue(lvData.Stats, StatType.AddedHP);

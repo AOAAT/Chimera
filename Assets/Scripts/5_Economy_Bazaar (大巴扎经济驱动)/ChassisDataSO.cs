@@ -16,6 +16,10 @@ public class ChassisDataSO : ScriptableObject
     [TextArea] public string Description = "底盘风味描述";
     [TextArea] public string SpecialMechanicDesc = "特殊机制";
 
+
+    [Header("=== 工业成本 ===")]
+    public ResourceSet ProductionCost;
+
     [Header("=== 标签 ===")]
     public MacroCategory MacroCategory = MacroCategory.Tech;
     public List<SubTag> SubTags = new List<SubTag>();
@@ -25,7 +29,6 @@ public class ChassisDataSO : ScriptableObject
 
     [Header("=== 底盘自身属性加成 ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
-
 
     [Header("=== 战斗逻辑心脏 (Logic Center) ===")]
     public Vector2 LogicCenterOffset = Vector2.zero;
@@ -39,6 +42,7 @@ public class ChassisDataSO : ScriptableObject
 
     [Tooltip("该底盘特有的开战协议")]
     public List<ECAAction> OnBattleStartActions = new List<ECAAction>();
+
 }
 
 [System.Serializable]

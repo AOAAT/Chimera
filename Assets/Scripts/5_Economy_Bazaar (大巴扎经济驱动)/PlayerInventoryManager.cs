@@ -41,7 +41,7 @@ public class InstancedComponent
     public int GetMaxSockets()
     {
         if (BaseData == null) return 0;
-        var lvData = BaseData.GetLevelData(this.CurrentLevel);
+        var lvData = BaseData.GetModelData(this.CurrentLevel);
         return lvData != null ? lvData.MaxSocketCount : 1;
     }
     public bool HasEmptySocket() => SocketedAccessoryIDs.Count < GetMaxSockets();
@@ -257,12 +257,12 @@ public class PlayerInventoryManager : MonoBehaviour
         float currentHP = unit.CurrentHP;
         if (componentToRemove != null)
         {
-            var lvData = componentToRemove.BaseData.GetLevelData(componentToRemove.CurrentLevel);
+            var lvData = componentToRemove.BaseData.GetModelData(componentToRemove.CurrentLevel);
             if (lvData != null) currentHP -= GetStatValue(lvData.Stats, StatType.AddedHP);
         }
         if (componentToEquip != null)
         {
-            var lvData = componentToEquip.BaseData.GetLevelData(componentToEquip.CurrentLevel);
+            var lvData = componentToEquip.BaseData.GetModelData(componentToEquip.CurrentLevel);
             if (lvData != null) currentHP += GetStatValue(lvData.Stats, StatType.AddedHP);
         }
         return currentHP > 0;

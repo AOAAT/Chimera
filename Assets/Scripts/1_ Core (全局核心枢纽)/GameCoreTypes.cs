@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Resources;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // ==========================================
 // 1. 核心属性枚举
@@ -98,24 +100,40 @@ public class StatEntry
     public BuffModifierType ModType = BuffModifierType.Additive;
 }
 
+
+// ==========================================
+// 1. 资源核算结构
+// ==========================================
+[Serializable]
+public struct ResourceSet
+{
+    public float Scrap;     // 废料
+    public float Biomass;   // 生物质
+    public float ManaStone; // 魔石
+
+    public ResourceSet(float s, float b, float m)
+    {
+        Scrap = s; Biomass = b; ManaStone = m;
+    }
+}
 // --- GameCoreTypes.cs ---
 
 [Serializable]
-public class ComponentLevelData
+public class ComponentModelData
 {
-    public int Level = 1;
+    [FormerlySerializedAs("Level")]
+    public int Mark = 1; // 语义：Mk.1, Mk.2...
+
+    public ResourceSet ProductionCost; // 生产此型号所需的资源
+
+    // --- 以下保持原 ECA 逻辑 ---
     public List<StatEntry> Stats = new List<StatEntry>();
     public int MaxSocketCount = 1;
-
-    // 原有的管线
     public List<ECAAction> OnFireActions = new List<ECAAction>();
     public List<ECAAction> OnHitActions = new List<ECAAction>();
     public List<ECAAction> OnAssembleActions = new List<ECAAction>();
     public List<ECAAction> OnBattleStartActions = new List<ECAAction>();
-
-    // --- 👇【核心新增】：正式开辟 OnTick 生命周期管线 ---
     public List<ECAAction> OnTickActions = new List<ECAAction>();
-
     public List<SubTag> BonusTags = new List<SubTag>();
     [TextArea] public string SpecialMechanicDesc = "...";
     public ActiveSkillConfig ActiveSkill = new ActiveSkillConfig();

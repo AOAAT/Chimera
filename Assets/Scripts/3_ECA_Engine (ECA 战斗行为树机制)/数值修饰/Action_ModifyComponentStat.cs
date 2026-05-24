@@ -109,7 +109,7 @@ public class Action_ModifyComponentStat : ECAAction
     private bool IsWeaponStat(StatType type) => type >= (StatType)10 && type <= (StatType)19;
     private float GetBaseStat(ComponentDataSO comp, StatType stat)
     {
-        var lvData = comp.GetLevelData(1);
+        var lvData = comp.GetModelData(1);
         if (lvData != null && lvData.Stats != null)
             foreach (var s in lvData.Stats) if (s.StatID == stat) return s.Value;
         return 0f;

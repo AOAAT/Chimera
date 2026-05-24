@@ -8,7 +8,7 @@ public class ComponentDataSOEditor : Editor
     // 基础引用
     SerializedProperty componentBaseID, componentName, description, componentIcon, type;
     SerializedProperty tacticalRoleDesc, animController, muzzleOffset;
-    SerializedProperty macroCategory, baseSubTags, minDropLevel, levelMatrix;
+    SerializedProperty macroCategory, baseSubTags, minDropLevel, modelRegistry;
     SerializedProperty baseProductionTime;
     // 武器专属
     SerializedProperty deliveryType, projectilePrefab, targetingOverride;
@@ -36,7 +36,9 @@ public class ComponentDataSOEditor : Editor
         macroCategory = serializedObject.FindProperty("MacroCategory");
         baseSubTags = serializedObject.FindProperty("BaseSubTags");
         minDropLevel = serializedObject.FindProperty("MinDropLevel");
-        levelMatrix = serializedObject.FindProperty("LevelMatrix");
+        modelRegistry = serializedObject.FindProperty("ModelRegistry");
+
+
 
         deliveryType = serializedObject.FindProperty("DeliveryType");
         projectilePrefab = serializedObject.FindProperty("ProjectilePrefab");
@@ -54,6 +56,7 @@ public class ComponentDataSOEditor : Editor
         targetingLogic = serializedObject.FindProperty("TargetingLogic");
         movementLogic = serializedObject.FindProperty("MovementLogic");
         safeDodgeDistance = serializedObject.FindProperty("SafeDodgeDistance");
+        // 建议顺便把 baseProductionTime 也检查下是否绑定正确
         baseProductionTime = serializedObject.FindProperty("BaseProductionTime");
     }
 
@@ -190,7 +193,7 @@ public class ComponentDataSOEditor : Editor
         EditorGUILayout.PropertyField(minDropLevel);
 
         // 展开列表，显示 Level 1 ~ 4 的详细积木
-        EditorGUILayout.PropertyField(levelMatrix, true);
+        EditorGUILayout.PropertyField(modelRegistry, true);
         EditorGUILayout.EndVertical();
     }
 }

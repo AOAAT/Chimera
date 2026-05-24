@@ -23,8 +23,13 @@ MonoBehaviour:
   MacroCategory: 0
   BaseSubTags: 0c00000010000000
   MinDropLevel: 1
-  LevelMatrix:
-  - Level: 1
+  BaseProductionTime: 5
+  ModelRegistry:
+  - Mark: 1
+    ProductionCost:
+      Scrap: 10
+      Biomass: 10
+      ManaStone: 10
     Stats:
     - StatID: 0
       Value: 8
@@ -49,7 +54,11 @@ MonoBehaviour:
       Cooldown: 6
       OnSkillCastActions:
       - {fileID: 11400000, guid: 57b2741638f76e54a8507f596b8cb853, type: 2}
-  - Level: 2
+  - Mark: 2
+    ProductionCost:
+      Scrap: 0
+      Biomass: 0
+      ManaStone: 0
     Stats:
     - StatID: 0
       Value: 50

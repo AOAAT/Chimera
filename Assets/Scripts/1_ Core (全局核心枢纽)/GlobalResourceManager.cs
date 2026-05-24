@@ -6,33 +6,54 @@ public class GlobalResourceManager : MonoBehaviour
     public static GlobalResourceManager Instance;
     public event Action OnResourceChanged;
 
-    [Header("=== 局内资源 (预留接口) ===")]
-    // 未来将在此处添加：锈蚀零件、搏动生物质、虚空原质
-    public int DaysSurvived = 1;
+    [Header("=== 基础储备 (一级资源) ===")]
+    public float CurrentScrap = 0;
+    public float CurrentBiomass = 0;
+    public float CurrentManaStone = 0;
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        Instance = this;
     }
 
-    public void AdvanceDay()
+    private void Update()
     {
-        DaysSurvived++;
+        // 🚀 R键：补给协议 (调试用)
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            AddResources(new ResourceSet(500, 200, 50));
+            Debug.Log("<color=green>【补给】</color> 基础储备已注入。");
+        }
+    }
+
+    public void AddResources(ResourceSet res)
+    {
+        CurrentScrap += res.Scrap;
+        CurrentBiomass += res.Biomass;
+        CurrentManaStone += res.ManaStone;
         OnResourceChanged?.Invoke();
     }
 
-    /// <summary>
-    /// 🌟 失败判定重构：未来可由“基地被毁”触发
-    /// </summary>
-    public void ExecuteGameOverProtocol()
+    public bool CanAfford(ResourceSet cost)
     {
-        Debug.Log("<color=red>【核心崩溃】</color> 基地失守。执行强制关机协议...");
+        return CurrentScrap >= cost.Scrap &&
+               CurrentBiomass >= cost.Biomass &&
+               CurrentManaStone >= cost.ManaStone;
+    }
 
-        if (CombatDirector.Instance != null)
-            CombatDirector.Instance.PerformFullCleanup();
+    public bool TryConsume(ResourceSet cost)
+    {
+        if (!CanAfford(cost)) return false;
 
-        // 直接返回主菜单
-        UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+        CurrentScrap -= cost.Scrap;
+        CurrentBiomass -= cost.Biomass;
+        CurrentManaStone -= cost.ManaStone;
+        OnResourceChanged?.Invoke();
+        return true;
+    }
+
+    public void Refund(ResourceSet cost)
+    {
+        AddResources(cost);
     }
 }
