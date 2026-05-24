@@ -22,8 +22,7 @@ public class MechUnit2D : MonoBehaviour
 
     private Rigidbody2D rb;
     private BoxCollider2D physicsCol; // 根节点物理推挤盒
-    private bool isDragging = false;
-    private Vector3 dragStartPos;
+
 
     private float eliteLingerTime = 2f;
     private float eliteFadeTime = 1.5f;
@@ -487,26 +486,7 @@ public class MechUnit2D : MonoBehaviour
             if (action != null) action.Execute(startContext);
         }
     }
-    private void OnMouseDown()
-    {
-        // 1. 如果是敌人，不能点
-        if (GetComponent<DamageReceiver>().isEnemy) return;
 
-        // 2. 👇【核心修改】：删掉对 IsDeploymentPhase 的检查
-        // 在 RTS 模式下，我们通过框选或左键点击来选中单位，
-        // 这里原来的拖拽部署逻辑暂时可以完全注释掉，或者改为选中逻辑。
-
-        /* 原有的拖拽逻辑现在干扰 RTS 操作，建议先屏蔽掉报错行，或者改为：*/
-        // if (CombatDirector.Instance != null && !CombatDirector.Instance.IsCombatActive) return; 
-
-        isDragging = true;
-        dragStartPos = transform.position;
-        TintMech(new Color(1f, 1f, 1f, 0.5f));
-        if (rb != null) rb.isKinematic = true;
-    }
-    private void OnMouseDrag() { if (!isDragging) return; Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition); transform.position = new Vector3(mousePos.x, mousePos.y, -0.01f); }
-    private void OnMouseUp() { if (!isDragging) return; isDragging = false; TintMech(Color.white); if (rb != null) rb.isKinematic = false; if (EventSystem.current.IsPointerOverGameObject()) { RecycleToHangar(); return; } int noDeployLayerMask = LayerMask.GetMask("NoDeploy"); Collider2D f = Physics2D.OverlapCircle(transform.position, 0.5f, noDeployLayerMask); bool v = Physics2D.OverlapPointAll(transform.position).Any(h => h.CompareTag("DeployZone")); if (f != null || !v) transform.position = dragStartPos; if (physicsCol != null) physicsCol.enabled = true; }
-    private void RecycleToHangar() { if (bindedData != null) bindedData.IsDeployed = false; if (HangarMenuUI.Instance != null) HangarMenuUI.Instance.RefreshHangar(); Destroy(gameObject); }
     private void TintMech(Color targetColor) { SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>(); foreach (var sr in srs) if (sr.gameObject.name != "Logic_Visual_Shadow") sr.color = targetColor; }
     public void SyncPostCombatState()
     {
