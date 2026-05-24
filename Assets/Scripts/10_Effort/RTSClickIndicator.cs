@@ -50,5 +50,29 @@ public class RTSClickIndicator : MonoBehaviour
                 }
             }
         }
+        if (BattleCommandManager.Instance != null)
+        {
+            var mgr = BattleCommandManager.Instance;
+
+            // 检查机甲是否到达
+            foreach (var unit in mgr.SelectedUnits)
+            {
+                if (unit != null && Vector2.Distance(unit.transform.position, transform.position) < ReachThreshold)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
+            }
+
+            // 检查居民是否到达 (新增)
+            foreach (var res in mgr.SelectedResidents)
+            {
+                if (res != null && Vector2.Distance(res.transform.position, transform.position) < ReachThreshold)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
+            }
+        }
     }
 }

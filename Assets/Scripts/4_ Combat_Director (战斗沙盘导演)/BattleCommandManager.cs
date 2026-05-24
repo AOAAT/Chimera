@@ -10,6 +10,10 @@ public class BattleCommandManager : MonoBehaviour
     public List<ChimeraAIController> SelectedUnits = new List<ChimeraAIController>();
     public BuildingBase CurrentSelectedBuilding;
 
+    [Header("=== 居民选中寄存器 ===")]
+    public List<ResidentEntity> SelectedResidents = new List<ResidentEntity>();
+
+
     [Header("=== 视觉组件引用 ===")]
     public RectTransform SelectionBoxUI;
     public GameObject ClickVFXPrefab;
@@ -54,47 +58,70 @@ public class BattleCommandManager : MonoBehaviour
     }
     private void HandleCommand()
     {
-        // 1. 只有按下右键才执行
+        // 1. 只有按下右键才执行逻辑
         if (!Input.GetMouseButtonDown(1)) return;
 
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        // --- 🌟 核心：清理上一个还存在的点击指示标 ---
+        if (currentActiveMarker != null) Destroy(currentActiveMarker);
+
+        // 记录本次点击是否下达了有效指令
+        bool anyCommandIssued = false;
 
         // 2. 优先级 A：如果当前选中了组装厂，右键点击执行“设置集合点”
         if (CurrentSelectedBuilding != null && CurrentSelectedBuilding is AssemblerBuilding assembler)
         {
             assembler.SetRallyPoint(mousePos);
-            return; // 指令已处理，直接返回
+            anyCommandIssued = true;
+            // 提示：集合点设置后不需要指示标一直存在，逻辑已由 AssemblerBuilding 的虚线接管
         }
-
-        // 3. 优先级 B：如果选中了机甲单位，右键点击执行“移动/攻击”指令
-        if (SelectedUnits.Count > 0)
+        else
         {
-            // 判定是否点击了敌人
-            RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
-
-            if (currentActiveMarker != null) Destroy(currentActiveMarker);
-
-            foreach (var unit in SelectedUnits)
+            // 3. 优先级 B：如果选中了居民，下达移动指令
+            if (SelectedResidents.Count > 0)
             {
-                if (unit == null) continue;
-
-                if (enemyHit.collider != null)
+                foreach (var res in SelectedResidents)
                 {
-                    // 集火攻击指令
-                    unit.SetManualTarget(enemyHit.collider.transform);
-                }
-                else
-                {
-                    // 地面移动指令
-                    unit.SetManualMovePoint(mousePos);
-
-                    // 只在第一个单位的位置生成点击特效
-                    if (unit == SelectedUnits[0] && ClickVFXPrefab != null)
+                    if (res != null)
                     {
-                        currentActiveMarker = Instantiate(ClickVFXPrefab, new Vector3(mousePos.x, mousePos.y, -0.5f), Quaternion.identity);
+                        res.SetDestination(mousePos);
+                        anyCommandIssued = true;
                     }
                 }
             }
+
+            // 4. 优先级 C：如果选中了机甲单位，下达移动或攻击指令
+            if (SelectedUnits.Count > 0)
+            {
+                // 判定是否点击了敌人
+                RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
+
+                foreach (var unit in SelectedUnits)
+                {
+                    if (unit == null) continue;
+
+                    if (enemyHit.collider != null)
+                    {
+                        // 集火攻击指令
+                        unit.SetManualTarget(enemyHit.collider.transform);
+                        anyCommandIssued = true;
+                    }
+                    else
+                    {
+                        // 地面移动指令
+                        unit.SetManualMovePoint(mousePos);
+                        anyCommandIssued = true;
+                    }
+                }
+            }
+        }
+
+        // --- 🌟 关键修复：只有在确实下达了指令时，才生成特效 ---
+        if (anyCommandIssued && ClickVFXPrefab != null)
+        {
+            // 将 currentActiveMarker 存入寄存器，以便下次点击时销毁
+            currentActiveMarker = Instantiate(ClickVFXPrefab, new Vector3(mousePos.x, mousePos.y, -0.5f), Quaternion.identity);
         }
     }
 
@@ -105,19 +132,32 @@ public class BattleCommandManager : MonoBehaviour
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // A. 尝试探测机甲 (Player_Body 层)
+        // 1. 尝试探测居民 (优先最高)
+        Collider2D residentHit = Physics2D.OverlapCircle(mousePos, 0.2f, LayerMask.GetMask("Resident"));
+
+        // 2. 尝试探测机甲 (Player_Body 层)
         Collider2D unitHit = Physics2D.OverlapCircle(mousePos, 0.3f, LayerMask.GetMask("Player_Body"));
 
-        // B. 尝试探测建筑 (Building 层)
+        // 3. 尝试探测建筑 (Building 层)
         Collider2D buildingHit = Physics2D.OverlapCircle(mousePos, 0.2f, LayerMask.GetMask("Building"));
 
         ClearAllSelectionVisuals();
         SelectedUnits.Clear();
+        SelectedResidents.Clear(); // 👈 清理居民列表
+        CurrentSelectedBuilding = null;
 
-        // 逻辑：如果点中了单位，清除建筑选中；点中了建筑，清除单位选中
-        if (unitHit != null)
+        if (residentHit != null)
         {
-            CurrentSelectedBuilding = null; // 清除建筑选中
+            var resident = residentHit.GetComponentInParent<ResidentEntity>();
+            if (resident != null)
+            {
+                SelectedResidents.Add(resident);
+                resident.SetSelected(true);
+            }
+        }
+        // 逻辑：如果点中了单位，清除建筑选中；点中了建筑，清除单位选中
+        else if (unitHit != null)
+        {
             var unit = unitHit.GetComponentInParent<ChimeraAIController>();
             if (unit != null)
             {
@@ -132,8 +172,6 @@ public class BattleCommandManager : MonoBehaviour
             {
                 CurrentSelectedBuilding = building;
                 building.SetSelected(true);
-
-                // --- 🌟 核心联动：刷新底部面板 ---
                 MainBuildingHUD.Instance.Refresh(building);
             }
         }
@@ -183,16 +221,31 @@ public class BattleCommandManager : MonoBehaviour
 
         ClearAllSelectionVisuals();
         SelectedUnits.Clear();
-        CurrentSelectedBuilding = null; // 框选操作强制取消建筑选中
+        SelectedResidents.Clear(); // 👈 清理
+        CurrentSelectedBuilding = null;
 
-        Collider2D[] hits = Physics2D.OverlapAreaAll(min, max, LayerMask.GetMask("Player_Body"));
-        foreach (var hit in hits)
+
+        // 1. 框选机甲
+        Collider2D[] unitHits = Physics2D.OverlapAreaAll(min, max, LayerMask.GetMask("Player_Body"));
+        foreach (var hit in unitHits)
         {
             var unit = hit.GetComponentInParent<ChimeraAIController>();
             if (unit != null && !SelectedUnits.Contains(unit))
             {
                 SelectedUnits.Add(unit);
                 ApplySelectionVisuals(unit);
+            }
+        }
+
+        // 2. 框选居民 (新增)
+        Collider2D[] residentHits = Physics2D.OverlapAreaAll(min, max, LayerMask.GetMask("Resident"));
+        foreach (var hit in residentHits)
+        {
+            var resident = hit.GetComponentInParent<ResidentEntity>();
+            if (resident != null && !SelectedResidents.Contains(resident))
+            {
+                SelectedResidents.Add(resident);
+                resident.SetSelected(true);
             }
         }
     }
@@ -221,13 +274,18 @@ public class BattleCommandManager : MonoBehaviour
 
     private void ClearAllSelectionVisuals()
     {
-        // 清理机甲视觉
+        // 1. 清理机甲视觉
         foreach (var m in FindObjectsOfType<ChimeraAIController>())
         {
             m.GetComponentInChildren<TacticalBracket>(true)?.Hide();
             m.GetComponent<WeaponRangeVisualizer>()?.SetVisible(false);
         }
-        // 清理建筑视觉
+        // 2. 清理居民视觉 (新增)
+        foreach (var r in FindObjectsOfType<ResidentEntity>())
+        {
+            r.SetSelected(false);
+        }
+        // 3. 清理建筑视觉
         foreach (var b in FindObjectsOfType<BuildingBase>())
         {
             b.SetSelected(false);

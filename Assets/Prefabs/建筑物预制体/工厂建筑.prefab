@@ -194,7 +194,7 @@ Transform:
   m_GameObject: {fileID: 7623606687601960785}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -227,3 +227,6 @@ MonoBehaviour:
   - {x: 0, y: -1}
   GhostRenderer: {fileID: 2635858155081759732}
   SelectionVisual: {fileID: 4493523628004636771}
+  ShowDebugGizmos: 1
+  SyncOrderFlag: 0
+  TaskQueue: []
