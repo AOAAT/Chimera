@@ -143,6 +143,7 @@ MonoBehaviour:
   - {x: 0, y: -1}
   GhostRenderer: {fileID: 5414439664473833125}
   SelectionVisual: {fileID: 4733392304424718938}
+  ShowDebugGizmos: 1
 --- !u!1 &4733392304424718938
 GameObject:
   m_ObjectHideFlags: 0

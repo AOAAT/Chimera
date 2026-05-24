@@ -129,4 +129,50 @@ public abstract class BuildingBase : MonoBehaviour
     }
 
     protected virtual void OnDeSelected() { }
+
+    [Header("=== 开发辅助 (仅编辑器可见) ===")]
+    public bool ShowDebugGizmos = true;
+
+    private void OnDrawGizmos()
+    {
+        if (!ShowDebugGizmos) return;
+
+        // 1. 获取网格规格，防止未运行报错，默认给 1.0
+        float cellSize = (RTSGridSystem.Instance != null) ? RTSGridSystem.Instance.CellSize : 1.0f;
+
+        // --- 绘图 A：绘制建筑占地体积 (蓝色) ---
+        Gizmos.color = new Color(0.2f, 0.5f, 1.0f, 0.4f); // 半透明蓝色
+        if (FootprintOffsets != null)
+        {
+            foreach (var offset in FootprintOffsets)
+            {
+                // 计算每个逻辑格中心的世界位置
+                Vector3 cellPos = transform.position + new Vector3(offset.x * cellSize, offset.y * cellSize, 0);
+                Gizmos.DrawCube(cellPos, new Vector3(cellSize * 0.95f, cellSize * 0.95f, 0.1f));
+
+                // 画个细边框
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireCube(cellPos, new Vector3(cellSize, cellSize, 0));
+                Gizmos.color = new Color(0.2f, 0.5f, 1.0f, 0.4f);
+            }
+        }
+
+        // --- 绘图 B：绘制交互格/门口 (黄色) ---
+        Gizmos.color = Color.yellow;
+        if (InteractionOffsets != null)
+        {
+            foreach (var offset in InteractionOffsets)
+            {
+                Vector3 interactPos = transform.position + new Vector3(offset.x * cellSize, offset.y * cellSize, 0);
+                // 画一个线框球代表交互范围
+                Gizmos.DrawWireSphere(interactPos, 0.4f);
+                // 画个菱形表示这是一个“门”
+                Gizmos.DrawIcon(interactPos, "d_FilterByLabel", true); // Unity 内置图标
+            }
+        }
+
+        // --- 绘图 C：绘制枢轴点/鼠标点 (红色) ---
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(transform.position, 0.15f);
+    }
 }
