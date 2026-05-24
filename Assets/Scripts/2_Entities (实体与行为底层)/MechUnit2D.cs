@@ -140,7 +140,15 @@ public class MechUnit2D : MonoBehaviour
 
         physicsCol = GetComponent<BoxCollider2D>();
         if (physicsCol == null) physicsCol = gameObject.AddComponent<BoxCollider2D>();
-
+        PhysicsMaterial2D slippery = Resources.Load<PhysicsMaterial2D>("Slippery_Material");
+        if (slippery != null)
+        {
+            rb.sharedMaterial = slippery;
+        }
+        else
+        {
+            Debug.LogError("<color=red>【物理报警】</color> 未能在 Resources 文件夹找到 Slippery_Material，请检查路径！");
+        }
         SortingGroup sg = GetComponent<SortingGroup>();
         if (sg == null) sg = gameObject.AddComponent<SortingGroup>();
 

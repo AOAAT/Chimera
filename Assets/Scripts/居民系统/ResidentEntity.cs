@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
 public class ResidentEntity : MonoBehaviour
@@ -9,11 +10,14 @@ public class ResidentEntity : MonoBehaviour
     [Header("=== 物理与移动参数 ===")]
     public float MoveSpeed = 3.5f;
     private Rigidbody2D rb;
-    private Vector2? targetPosition = null;
+
 
     [Header("=== UI 与选中反馈 ===")]
     public GameObject SelectionCircle; // 居民脚下的小光圈
 
+
+    private List<Vector3> currentPath = null;
+    private int pathIndex = 0;
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -22,13 +26,18 @@ public class ResidentEntity : MonoBehaviour
 
     private void SetupPhysics()
     {
-        // 1. 设置 RTS 物理规格
         gameObject.layer = LayerMask.NameToLayer("Resident");
+        rb = GetComponent<Rigidbody2D>();
+
+        // --- 👇 同步注入物理材质 ---
+        PhysicsMaterial2D slippery = Resources.Load<PhysicsMaterial2D>("Slippery_Material");
+        if (slippery != null) rb.sharedMaterial = slippery;
+        // ----------------------------
+
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
-        rb.drag = 8f; // 居民体量小，停步要快，防止滑行感
+        rb.drag = 8f;
 
-        // 2. 精细碰撞核：0.2m 半径
         CircleCollider2D col = GetComponent<CircleCollider2D>();
         col.radius = 0.2f;
         col.isTrigger = false;
@@ -41,16 +50,17 @@ public class ResidentEntity : MonoBehaviour
         SetSelected(false);
     }
 
-    public void SetDestination(Vector2 worldPos)
+    public void SetDestination(Vector2 worldPos) // 或者 SetManualMovePoint
     {
-        if (targetPosition != null)
-        {
-            // 未来可以触发一个“转身”或“加速”的微操
-        }
+        // 🌟 核心：在计算新路径前，立即切断当前所有物理惯性
+        if (rb != null) rb.velocity = Vector2.zero;
 
-        targetPosition = worldPos;
+        currentPath = GridPathfinder.FindPath(transform.position, worldPos);
+        pathIndex = 0;
+
+        // 如果路径只有1个点（就在脚下），直接清理掉，防止原地抽搐
+        if (currentPath != null && currentPath.Count <= 1) currentPath = null;
     }
-
     private void Update()
     {
         HandleMovement();
@@ -58,20 +68,34 @@ public class ResidentEntity : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (targetPosition == null) return;
-
-        float dist = Vector2.Distance(transform.position, targetPosition.Value);
-        if (dist < 0.1f)
+        if (currentPath == null || pathIndex >= currentPath.Count)
         {
             rb.velocity = Vector2.zero;
-            targetPosition = null;
             return;
         }
 
-        Vector2 dir = (targetPosition.Value - (Vector2)transform.position).normalized;
-        rb.velocity = dir * MoveSpeed;
-    }
+        Vector3 targetPos = currentPath[pathIndex];
+        float dist = Vector2.Distance(transform.position, targetPos);
 
+        if (dist < 0.2f)
+        {
+            pathIndex++;
+        }
+        else
+        {
+            Vector2 dir = (targetPos - transform.position).normalized;
+            rb.velocity = dir * MoveSpeed;
+
+            // 🌟 视觉平滑：根据移动方向水平翻转 Sprite
+            if (Mathf.Abs(dir.x) > 0.01f)
+            {
+                float targetScaleX = dir.x > 0 ? 1f : -1f;
+                Transform visual = transform.Find("Visual_Sprite");
+                if (visual != null)
+                    visual.localScale = new Vector3(targetScaleX, 1, 1);
+            }
+        }
+    }
     // --- 选中状态控制 ---
     public void SetSelected(bool isSelected)
     {

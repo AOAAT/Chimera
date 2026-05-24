@@ -55,17 +55,16 @@ public class HeadquartersBuilding : BuildingBase
 
     private void ExecuteSpawn()
     {
-        // 寻找第一个交互格作为出口
         Vector3 spawnPos = transform.position;
         if (InteractionOffsets != null && InteractionOffsets.Count > 0)
         {
             float cellSize = RTSGridSystem.Instance.CellSize;
+            // 🌟 修正：向交互格中心偏一点，确保不在建筑正中心
             spawnPos = transform.position + new Vector3(InteractionOffsets[0].x * cellSize, InteractionOffsets[0].y * cellSize, 0);
         }
 
+        // 呼叫管理器生人
         PopulationManager.Instance.SpawnResidentAt(spawnPos);
-
-        // 播放个轻微的音效
         if (GlobalAudioManager.Instance != null)
             GlobalAudioManager.Instance.PlayUISound(UISoundType.Loot_ItemEject);
     }

@@ -23,6 +23,9 @@ public class ChimeraAIController : MonoBehaviour
     private Vector2? manualMovePoint = null;
     private Transform manualAttackTarget = null;
 
+
+    private List<Vector3> currentPath = null;
+    private int pathIndex = 0;
     // 向武器模块暴露：当前是否正处于手控位移中
     public bool IsManuallyMoving => manualMovePoint.HasValue;
 
@@ -32,11 +35,19 @@ public class ChimeraAIController : MonoBehaviour
     // 🚀 RTS 核心指令接口 (上层指挥官通过这些接口下令)
     // ==========================================
 
-    public void SetManualMovePoint(Vector2 point)
+    // --- 请修改为以下内容 ---
+    public void SetManualMovePoint(Vector2 point) // 注意这里的参数名是 point
     {
-        manualAttackTarget = null; // 下达移动指令时，取消集火目标
-        manualMovePoint = point;
+        manualAttackTarget = null;
+        if (rb != null) rb.velocity = Vector2.zero; // 🌟 顺便修复抽搐问题
+
+        // 🌟 这里必须使用 point 而不是 worldPos
+        currentPath = GridPathfinder.FindPath(transform.position, point);
+        pathIndex = 0;
+
+        if (currentPath != null && currentPath.Count <= 1) currentPath = null;
     }
+
 
     public void SetManualTarget(Transform target)
     {
@@ -181,20 +192,23 @@ public class ChimeraAIController : MonoBehaviour
     private void HandleMovement()
     {
         // 优先级 1：RTS 手动指令位移
-        if (manualMovePoint.HasValue)
+        if (currentPath != null && pathIndex < currentPath.Count)
         {
-            float dist = Vector2.Distance(transform.position, manualMovePoint.Value);
-            if (dist < 0.15f) // 抵达判定精度
+            Vector3 targetPos = currentPath[pathIndex];
+            float dist = Vector2.Distance(transform.position, targetPos);
+
+            if (dist < 0.2f) // 抵达当前转折点
             {
-                manualMovePoint = null;
-                if (rb != null) rb.velocity = Vector2.zero;
+                pathIndex++;
             }
             else
             {
-                if (rb != null) rb.velocity = (manualMovePoint.Value - (Vector2)transform.position).normalized * CurrentSpeed;
+                Vector2 dir = (targetPos - transform.position).normalized;
+                rb.velocity = dir * CurrentSpeed;
             }
             return;
         }
+
 
         // 优先级 2：自动拉扯逻辑 (Kiting)
         if (currentTarget != null)
