@@ -131,6 +131,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b80e98f240f853429fde2803702dee6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  SupportsStaff: 0
   BuildingName: "\u7EC4\u88C5\u5EFA\u7B51"
   BuildingIcon: {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}
   FunctionUIPrefab: {fileID: 5563769118379185203, guid: 5904c3a47d88e9649a5247eb295312f6, type: 3}
@@ -144,6 +145,7 @@ MonoBehaviour:
   - {x: 0, y: -1}
   GhostRenderer: {fileID: 3155906441484232160}
   SelectionVisual: {fileID: 8501307324808017179}
+  MaxStaffCapacity: 4
   ShowDebugGizmos: 1
   RallyWorldPos: {x: 0, y: 0, z: 0}
   DotSpacing: 0.5

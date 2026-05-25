@@ -214,6 +214,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5d3df5cab802944eb312634cd9ef397, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  SupportsStaff: 1
   BuildingName: "\u751F\u4EA7\u5EFA\u7B51"
   BuildingIcon: {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
   FunctionUIPrefab: {fileID: 545981543430686054, guid: beb40bf8cff0917448cdba89e8f53876, type: 3}
@@ -227,6 +228,7 @@ MonoBehaviour:
   - {x: 0, y: -1}
   GhostRenderer: {fileID: 2635858155081759732}
   SelectionVisual: {fileID: 4493523628004636771}
+  MaxStaffCapacity: 4
   ShowDebugGizmos: 1
   SyncOrderFlag: 0
   TaskQueue: []

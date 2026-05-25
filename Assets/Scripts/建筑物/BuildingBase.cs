@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class BuildingBase : MonoBehaviour
+public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
 {
     // 🌟 全局建筑注册表，用于连通性他检
     public static List<BuildingBase> AllPlacedBuildings = new List<BuildingBase>();
+
+    [Header("=== 建筑功能契约 ===")]
+    public bool SupportsStaff = false; // 🌟 只有勾选了，HUD 才会显示“工作人员”按钮
 
     [Header("=== 基础信息 ===")]
     public string BuildingName = "新建筑";
@@ -24,11 +27,88 @@ public abstract class BuildingBase : MonoBehaviour
     public SpriteRenderer GhostRenderer;
     public GameObject SelectionVisual;
 
+    [Header("=== 岗位系统 ===")]
+    public int MaxStaffCapacity = 4;
+    protected List<ResidentData> currentStaff = new List<ResidentData>();
+    public string GetCarrierName() => BuildingName;
+
+    // 🌟 核心修改：显式告诉接口，你的 MaxStaffCapacity 就是返回这个字段的值
+    int IResidentCarrier.MaxStaffCapacity => MaxStaffCapacity;
+
+    public List<ResidentData> GetStaffList() => currentStaff;
+
     protected List<BoxCollider2D> subColliders = new List<BoxCollider2D>();
     protected List<SpriteRenderer> gridIndicators = new List<SpriteRenderer>();
     protected bool isPlaced = false;
     protected bool isSelected = false;
 
+
+    public virtual bool TryAddStaff(ResidentData data)
+    {
+        // 🔍 DEBUG 4: 检查准入条件
+        if (!SupportsStaff) { Debug.LogWarning($"[建筑] {BuildingName} 根本没开启 SupportsStaff 属性！"); return false; }
+
+        if (currentStaff.Count >= MaxStaffCapacity)
+        {
+            Debug.LogWarning($"[建筑] {BuildingName} 岗位已满 ({currentStaff.Count}/{MaxStaffCapacity})");
+            return false;
+        }
+
+        data.Status = ResidentStatus.Working;
+        currentStaff.Add(data);
+        Debug.Log($"<color=cyan>[建筑] {BuildingName} 成功登记员工: {data.ResidentName}。当前在职: {currentStaff.Count}</color>");
+        return true;
+    }
+
+    public virtual void RemoveStaff(ResidentData data)
+    {
+        if (currentStaff.Contains(data))
+        {
+            currentStaff.Remove(data);
+            StartCoroutine(EjectResidentRoutine(data));
+        }
+    }
+
+    // 🌟 核心：一个个走出来 (排队遣散)
+    private System.Collections.IEnumerator EjectResidentRoutine(ResidentData data)
+    {
+        Vector3 spawnPos = GetInteractionPoint();
+
+        // 1. 在门口生成实体
+        GameObject resObj = Instantiate(PopulationManager.Instance.ResidentPrefab, spawnPos, Quaternion.identity);
+        ResidentEntity entity = resObj.GetComponent<ResidentEntity>();
+
+        // 2. 注入灵魂
+        data.Status = ResidentStatus.Idle;
+        entity.Initialize(data, PopulationManager.Instance.IdentityLibrary.DefaultResidentHP);
+
+        // 3. 视觉渐现 (预留程序渐变)
+        // StartCoroutine(FadeIn(resObj));
+
+        // 4. 指令：向外走一步，防止堵门口
+        entity.SetDestination(spawnPos + (Vector3)Random.insideUnitCircle * 1.5f);
+
+        yield return new WaitForSeconds(0.5f); // 间隔半秒出下一个人
+    }
+    public void DismissAllStaff()
+    {
+        // 复制一份列表防止遍历时修改导致报错
+        var list = new List<ResidentData>(currentStaff);
+        foreach (var staff in list)
+        {
+            RemoveStaff(staff);
+        }
+    }
+
+    public Vector3 GetInteractionPoint()
+    {
+        if (InteractionOffsets.Count > 0)
+        {
+            float cellSize = RTSGridSystem.Instance.CellSize;
+            return transform.position + new Vector3(InteractionOffsets[0].x * cellSize, InteractionOffsets[0].y * cellSize, 0);
+        }
+        return transform.position;
+    }
     protected virtual void Awake()
     {
         GeneratePhysicalFootprint();

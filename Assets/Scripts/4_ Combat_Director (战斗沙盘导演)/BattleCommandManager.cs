@@ -65,65 +65,95 @@ public class BattleCommandManager : MonoBehaviour
 
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // --- 🌟 核心：清理上一个还存在的点击指示标 ---
+        // --- 核心视觉反馈：清理上一个点击指示标 ---
         if (currentActiveMarker != null) Destroy(currentActiveMarker);
 
-        // 记录本次点击是否下达了有效指令
         bool anyCommandIssued = false;
 
+        // ==========================================
+        // 🏗️ 探测目标类型：优先判断右键是否点中了建筑
+        // ==========================================
+        RaycastHit2D buildingHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Building"));
+        RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
+
+        // ==========================================
+        // 🛡️ 逻辑优先级 1：选中了【建筑】（设置集合点）
+        // ==========================================
         if (CurrentSelectedBuilding != null && CurrentSelectedBuilding is AssemblerBuilding assembler)
         {
-            assembler.SetRallyPoint(mousePos);
-            anyCommandIssued = true;
-            // 集合点不需要生成点击光圈，建筑内部会有虚线反馈
-            return;
+            // 如果点中的不是敌人，则视为设置集合点
+            if (enemyHit.collider == null)
+            {
+                assembler.SetRallyPoint(mousePos);
+                anyCommandIssued = true;
+                // 集合点已由虚线反馈，不需要光圈，直接返回
+                return;
+            }
         }
 
-        else
+        // ==========================================
+        // 👨‍🌾 逻辑优先级 2：选中了【居民】（移动或入驻）
+        // ==========================================
+        if (SelectedResidents.Count > 0)
         {
-            // 3. 优先级 B：如果选中了居民，下达移动指令
-            if (SelectedResidents.Count > 0)
+            // 🔍 DEBUG 1: 打印点击坐标和层级探测
+            Debug.Log($"[指挥官] 右键尝试下达指令。鼠标坐标: {mousePos}");
+
+            IResidentCarrier carrier = null;
+            if (buildingHit.collider != null)
             {
-                foreach (var res in SelectedResidents)
-                {
-                    if (res != null)
-                    {
-                        res.SetDestination(mousePos);
-                        anyCommandIssued = true;
-                    }
-                }
+                Debug.Log($"[指挥官] 命中物体: {buildingHit.collider.name}，层级: {LayerMask.LayerToName(buildingHit.collider.gameObject.layer)}");
+                carrier = buildingHit.collider.GetComponentInParent<IResidentCarrier>();
+
+                if (carrier == null) Debug.LogWarning("[指挥官] 命中物体不是有效的岗位载体 (未实现 IResidentCarrier)");
             }
 
-            // 4. 优先级 C：如果选中了机甲单位，下达移动或攻击指令
-            if (SelectedUnits.Count > 0)
+            foreach (var res in SelectedResidents)
             {
-                // 判定是否点击了敌人
-                RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
+                if (res == null) continue;
 
-                foreach (var unit in SelectedUnits)
+                if (carrier != null)
                 {
-                    if (unit == null) continue;
-
-                    if (enemyHit.collider != null)
-                    {
-                        // 集火攻击指令
-                        unit.SetManualTarget(enemyHit.collider.transform);
-                        anyCommandIssued = true;
-                    }
-                    else
-                    {
-                        // 地面移动指令
-                        unit.SetManualMovePoint(mousePos);
-                        anyCommandIssued = true;
-                    }
+                    Debug.Log($"[指挥官] 给居民 {res.MyData.ResidentName} 下达【入驻】指令，目标: {carrier.GetCarrierName()}");
+                    res.OrderGarrison(carrier);
                 }
+                else
+                {
+                    Debug.Log($"[指挥官] 给居民 {res.MyData.ResidentName} 下达【移动】指令");
+                    res.SetDestination(mousePos);
+                }
+                anyCommandIssued = true;
+            }
+        }
+        // ==========================================
+        // 🤖 逻辑优先级 3：选中了【机甲】（移动或攻击）
+        // ==========================================
+        if (SelectedUnits.Count > 0)
+        {
+            foreach (var unit in SelectedUnits)
+            {
+                if (unit == null) continue;
+
+                if (enemyHit.collider != null)
+                {
+                    // 攻击指令
+                    unit.SetManualTarget(enemyHit.collider.transform);
+                }
+                else
+                {
+                    // 移动指令
+                    unit.SetManualMovePoint(mousePos);
+                }
+                anyCommandIssued = true;
             }
         }
 
-        // --- 🌟 关键修复：只有在确实下达了指令时，才生成特效 ---
+        // ==========================================
+        // ✨ 视觉生成：指令下达成功的点击反馈
+        // ==========================================
         if (anyCommandIssued && ClickVFXPrefab != null)
         {
-            // 将 currentActiveMarker 存入寄存器，以便下次点击时销毁
+            // 如果是集火攻击（点了怪），可以生成红色的标记；若是移动（点了地），生成青色标记
             currentActiveMarker = Instantiate(ClickVFXPrefab, new Vector3(mousePos.x, mousePos.y, -0.5f), Quaternion.identity);
         }
     }
@@ -156,7 +186,7 @@ public class BattleCommandManager : MonoBehaviour
                 res.SetSelected(true);
 
                 // 🌟 [关键]：通知 HUD 刷新，并传入 ResidentEntity 实例
-                MainBuildingHUD.Instance.Refresh(res);
+                SelectionContextHUD.Instance.Refresh(res);
             }
         }
         else if (unitHit != null)
@@ -167,7 +197,7 @@ public class BattleCommandManager : MonoBehaviour
                 var ai = mech.GetComponent<ChimeraAIController>();
                 if (ai != null) SelectedUnits.Add(ai);
                 ApplySelectionVisuals(ai);
-                MainBuildingHUD.Instance.Refresh(mech);
+                SelectionContextHUD.Instance.Refresh(mech);
             }
         }
         else if (buildingHit != null)
@@ -179,12 +209,12 @@ public class BattleCommandManager : MonoBehaviour
                 CurrentSelectedBuilding = building;
 
                 building.SetSelected(true);
-                MainBuildingHUD.Instance.Refresh(building);
+                SelectionContextHUD.Instance.Refresh(building);
             }
         }
         else
         {
-            MainBuildingHUD.Instance.Refresh(null);
+            SelectionContextHUD.Instance.Refresh(null);
         }
     }
     private void HandleMarqueeSelection()
@@ -252,7 +282,7 @@ public class BattleCommandManager : MonoBehaviour
         }
 
         // 框选时，如果框住了东西，底部看板保持清空（除非你未来设计多选面板）
-        MainBuildingHUD.Instance.Refresh(null);
+        SelectionContextHUD.Instance.Refresh(null);
     }
     // --- 辅助视觉逻辑 ---
 

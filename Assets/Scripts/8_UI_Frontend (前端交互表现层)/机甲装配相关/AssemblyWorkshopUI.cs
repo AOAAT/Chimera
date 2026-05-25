@@ -532,9 +532,9 @@ public class AssemblyWorkshopUI : MonoBehaviour
         MusicManager.Instance?.SetImmersionMode(false);
 
         // 4. 🌟 关键：通知底部 HUD 清空状态，返回战场
-        if (MainBuildingHUD.Instance != null)
+        if (SelectionContextHUD.Instance != null)
         {
-            MainBuildingHUD.Instance.Refresh(null);
+            SelectionContextHUD.Instance.Refresh(null);
         }
 
         Debug.Log("<color=orange>【车间】</color> 装配已取消，数据已回滚。");
@@ -544,7 +544,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         gameObject.SetActive(false);
         MusicManager.Instance?.SetImmersionMode(false);
         // 🌟 核心：通知 HUD 刷新，不再去 HangarMenuUI
-        if (MainBuildingHUD.Instance != null) MainBuildingHUD.Instance.Refresh(null);
+        if (SelectionContextHUD.Instance != null) SelectionContextHUD.Instance.Refresh(null);
     }
   
     private void OnDestroy()

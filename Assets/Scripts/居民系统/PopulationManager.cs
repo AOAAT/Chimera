@@ -51,21 +51,32 @@ public class PopulationManager : MonoBehaviour
     {
         if (IsFull() || IdentityLibrary == null) return;
 
+        // 1. 数据生成
         ResidentData newData = IdentityLibrary.GenerateRandom();
         TotalResidents.Add(newData);
 
+        // 2. 实例化实体
         GameObject go = Instantiate(ResidentPrefab, spawnPos, Quaternion.identity);
         ResidentEntity entity = go.GetComponent<ResidentEntity>();
+
         if (entity != null)
         {
             entity.Initialize(newData, IdentityLibrary.DefaultResidentHP);
-            entity.SetDestination(spawnPos + Vector3.right); // 走出门口
+
+            // 🌟 [核心修复：散射逻辑]
+            // 计算一个随机的出门偏移（例如在 X:1~2, Y:-0.5~0.5 范围内）
+            // 这样小人们出来后会错落有致地排开，不会重叠。
+            float scatterX = UnityEngine.Random.Range(1.2f, 2.0f);
+            float scatterY = UnityEngine.Random.Range(-0.8f, 0.8f);
+            Vector3 scatterTarget = spawnPos + new Vector3(scatterX, scatterY, 0);
+
+            entity.SetDestination(scatterTarget);
         }
 
         OnPopulationChanged?.Invoke();
         Debug.Log($"<color=green>【社会系统】</color> 新成员 {newData.ResidentName} 已成功入住。");
     }
-
+   
     public void ExileResident(ResidentEntity entity)
     {
         if (entity == null) return;

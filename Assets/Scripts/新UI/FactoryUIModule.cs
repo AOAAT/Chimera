@@ -28,7 +28,7 @@ public class FactoryUIModule : MonoBehaviour
     // 2. 修改 Update 逻辑
     private void Update()
     {
-        if (MainBuildingHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
+        if (SelectionContextHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
         {
             // 如果正在同步顺序，或者数量没变，不执行物理刷新（防止 Destroy 掉正在拖拽的物体）
             if (factory.SyncOrderFlag)
@@ -88,7 +88,7 @@ public class FactoryUIModule : MonoBehaviour
         }
 
         slotObj.GetComponent<Button>().onClick.AddListener(() => {
-            if (MainBuildingHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
+            if (SelectionContextHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
             {
                 // --- 👇【核心修复逻辑】：提取成本数据 ---
                 float time = 10f;

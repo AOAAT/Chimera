@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ResidentStatus { Idle, Working, Piloting }
+
 [Serializable]
 public class ResidentData
 {
@@ -23,17 +25,21 @@ public class ResidentData
     public float FleshProficiency = 1.0f;
     public float ManaProficiency = 1.0f;
 
+
     public ResidentData(string name, bool isHero = false)
     {
         InstanceID = Guid.NewGuid().ToString();
         ResidentName = name;
         this.IsHero = isHero;
-    }
 
+    }
+    public ResidentStatus Status = ResidentStatus.Idle;
+    public string CurrentCarrierID; // 记录当前所在的建筑或机甲 InstanceID
     // 预留：经验增加接口
     public void AddExperience(float amount)
     {
         Experience += amount;
         // 这里未来编写升级逻辑
     }
+    public bool CanGoOffDuty() => Status == ResidentStatus.Working || Status == ResidentStatus.Piloting;
 }

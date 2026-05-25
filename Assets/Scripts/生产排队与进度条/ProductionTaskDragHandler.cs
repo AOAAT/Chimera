@@ -92,7 +92,7 @@ public class ProductionTaskDragHandler : MonoBehaviour, IBeginDragHandler, IDrag
 
     private void SyncDataOrder()
     {
-        FactoryBuilding factory = MainBuildingHUD.Instance.CurrentTargetBuilding as FactoryBuilding;
+        FactoryBuilding factory = SelectionContextHUD.Instance.CurrentTargetBuilding as FactoryBuilding;
         if (factory == null || containerRect == null) return;
 
         List<ProductionTask> newList = new List<ProductionTask>();

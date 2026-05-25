@@ -23,7 +23,7 @@ public class ResidentEntity : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         SetupPhysics();
     }
-
+    private IResidentCarrier targetCarrier; // 当前准备前往的建筑
     private void SetupPhysics()
     {
         gameObject.layer = LayerMask.NameToLayer("Resident");
@@ -58,6 +58,7 @@ public class ResidentEntity : MonoBehaviour
         }
 
         SetSelected(false);
+        transform.position += (Vector3)UnityEngine.Random.insideUnitCircle * 0.01f;
     }
 
     public void SetDestination(Vector2 worldPos) // 或者 SetManualMovePoint
@@ -71,9 +72,56 @@ public class ResidentEntity : MonoBehaviour
         // 如果路径只有1个点（就在脚下），直接清理掉，防止原地抽搐
         if (currentPath != null && currentPath.Count <= 1) currentPath = null;
     }
+
+    public void OrderGarrison(IResidentCarrier carrier)
+    {
+        targetCarrier = carrier;
+        Vector3 gatePos = carrier.GetInteractionPoint();
+
+        // 🔍 DEBUG 2: 确认门的位置
+        Debug.Log($"[实体] {MyData.ResidentName} 收到入驻请求。门口世界坐标: {gatePos}");
+
+        SetDestination(gatePos);
+    }
     private void Update()
     {
         HandleMovement();
+
+        if (targetCarrier != null)
+        {
+            float distToGate = Vector2.Distance(transform.position, targetCarrier.GetInteractionPoint());
+
+            // 🔍 DEBUG 3: 实时距离监控（如果一直不进门，看这里的数字）
+            // 我们改为每隔 0.5 秒打印一次，防止刷屏
+            if (Time.frameCount % 30 == 0)
+            {
+                // Debug.Log($"[实体] {MyData.ResidentName} 距离门口还剩: {distToGate:F2}米");
+            }
+
+            if (distToGate < 0.3f) // 🌟 建议从 0.2 调大到 0.3，增加容错
+            {
+                Debug.Log($"[实体] {MyData.ResidentName} 抵达门口，触发 ExecuteEnterGarrison");
+                ExecuteEnterGarrison();
+            }
+        }
+    }
+    private void ExecuteEnterGarrison()
+    {
+        bool success = targetCarrier.TryAddStaff(this.MyData);
+
+        if (success)
+        {
+            Debug.Log($"<color=green>[实体] {MyData.ResidentName} 入驻成功，执行自我销毁。</color>");
+            if (BattleCommandManager.Instance != null)
+                BattleCommandManager.Instance.SelectedResidents.Remove(this);
+
+            Destroy(gameObject);
+        }
+        else
+        {
+            Debug.LogError($"[实体] 入驻失败！{targetCarrier.GetCarrierName()} 可能反馈 TryAddStaff 为 false");
+            targetCarrier = null;
+        }
     }
 
     private void HandleMovement()
