@@ -37,6 +37,8 @@ public class BattleCommandManager : MonoBehaviour
     }
     private void Update()
     {
+
+        SelectedResidents.RemoveAll(res => res == null);
         // 1. UI 拦截
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
@@ -69,13 +71,14 @@ public class BattleCommandManager : MonoBehaviour
         // 记录本次点击是否下达了有效指令
         bool anyCommandIssued = false;
 
-        // 2. 优先级 A：如果当前选中了组装厂，右键点击执行“设置集合点”
         if (CurrentSelectedBuilding != null && CurrentSelectedBuilding is AssemblerBuilding assembler)
         {
             assembler.SetRallyPoint(mousePos);
             anyCommandIssued = true;
-            // 提示：集合点设置后不需要指示标一直存在，逻辑已由 AssemblerBuilding 的虚线接管
+            // 集合点不需要生成点击光圈，建筑内部会有虚线反馈
+            return;
         }
+
         else
         {
             // 3. 优先级 B：如果选中了居民，下达移动指令
@@ -132,34 +135,52 @@ public class BattleCommandManager : MonoBehaviour
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // 1. 探测优先级 (注意 LayerMask 是否正确)
+        // 探测层级
+        Collider2D residentHit = Physics2D.OverlapCircle(mousePos, 0.2f, LayerMask.GetMask("Resident"));
         Collider2D unitHit = Physics2D.OverlapCircle(mousePos, 0.3f, LayerMask.GetMask("Player_Body"));
         Collider2D buildingHit = Physics2D.OverlapCircle(mousePos, 0.2f, LayerMask.GetMask("Building"));
 
         ClearAllSelectionVisuals();
         SelectedUnits.Clear();
+        SelectedResidents.Clear();
 
-        if (unitHit != null)
+        // 🌟 [关键点]：首先清空当前选中的建筑引用
+        CurrentSelectedBuilding = null;
+
+        if (residentHit != null)
         {
-            // 🌟 [核心修复]：必须拿到 MechUnit2D 才能触发 HUD
+            var res = residentHit.GetComponentInParent<ResidentEntity>();
+            if (res != null)
+            {
+                SelectedResidents.Add(res);
+                res.SetSelected(true);
+
+                // 🌟 [关键]：通知 HUD 刷新，并传入 ResidentEntity 实例
+                MainBuildingHUD.Instance.Refresh(res);
+            }
+        }
+        else if (unitHit != null)
+        {
             var mech = unitHit.GetComponentInParent<MechUnit2D>();
             if (mech != null)
             {
-                // 让指挥官依然记录 AI 引用（为了下达移动指令）
                 var ai = mech.GetComponent<ChimeraAIController>();
                 if (ai != null) SelectedUnits.Add(ai);
-
-                // 给视觉反馈
                 ApplySelectionVisuals(ai);
-
-                // 🌟 [核心跳转]：通知 HUD 刷新，并传入真正的 MechUnit2D 对象
                 MainBuildingHUD.Instance.Refresh(mech);
             }
         }
         else if (buildingHit != null)
         {
             var building = buildingHit.GetComponentInParent<BuildingBase>();
-            MainBuildingHUD.Instance.Refresh(building);
+            if (building != null)
+            {
+                // 🌟 [修复点 1]：必须赋值给指挥官的寄存器，右键逻辑才能生效！
+                CurrentSelectedBuilding = building;
+
+                building.SetSelected(true);
+                MainBuildingHUD.Instance.Refresh(building);
+            }
         }
         else
         {
@@ -204,35 +225,35 @@ public class BattleCommandManager : MonoBehaviour
 
         ClearAllSelectionVisuals();
         SelectedUnits.Clear();
-        SelectedResidents.Clear(); // 👈 清理
-        CurrentSelectedBuilding = null;
+        SelectedResidents.Clear();
 
-
-        // 1. 框选机甲
+        // 1. 捞取机甲
         Collider2D[] unitHits = Physics2D.OverlapAreaAll(min, max, LayerMask.GetMask("Player_Body"));
         foreach (var hit in unitHits)
         {
-            var unit = hit.GetComponentInParent<ChimeraAIController>();
-            if (unit != null && !SelectedUnits.Contains(unit))
+            var ai = hit.GetComponentInParent<ChimeraAIController>();
+            if (ai != null && !SelectedUnits.Contains(ai))
             {
-                SelectedUnits.Add(unit);
-                ApplySelectionVisuals(unit);
+                SelectedUnits.Add(ai);
+                ApplySelectionVisuals(ai);
             }
         }
 
-        // 2. 框选居民 (新增)
-        Collider2D[] residentHits = Physics2D.OverlapAreaAll(min, max, LayerMask.GetMask("Resident"));
-        foreach (var hit in residentHits)
+        // 2. 捞取居民
+        Collider2D[] resHits = Physics2D.OverlapAreaAll(min, max, LayerMask.GetMask("Resident"));
+        foreach (var hit in resHits)
         {
-            var resident = hit.GetComponentInParent<ResidentEntity>();
-            if (resident != null && !SelectedResidents.Contains(resident))
+            var res = hit.GetComponentInParent<ResidentEntity>();
+            if (res != null && !SelectedResidents.Contains(res))
             {
-                SelectedResidents.Add(resident);
-                resident.SetSelected(true);
+                SelectedResidents.Add(res);
+                res.SetSelected(true);
             }
         }
-    }
 
+        // 框选时，如果框住了东西，底部看板保持清空（除非你未来设计多选面板）
+        MainBuildingHUD.Instance.Refresh(null);
+    }
     // --- 辅助视觉逻辑 ---
 
     private void UpdateSelectionBoxUI()

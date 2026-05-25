@@ -58,11 +58,47 @@ public class PopulationManager : MonoBehaviour
         ResidentEntity entity = go.GetComponent<ResidentEntity>();
         if (entity != null)
         {
-            entity.Initialize(newData);
+            entity.Initialize(newData, IdentityLibrary.DefaultResidentHP);
             entity.SetDestination(spawnPos + Vector3.right); // 走出门口
         }
 
         OnPopulationChanged?.Invoke();
         Debug.Log($"<color=green>【社会系统】</color> 新成员 {newData.ResidentName} 已成功入住。");
+    }
+
+    public void ExileResident(ResidentEntity entity)
+    {
+        if (entity == null) return;
+
+        // 1. 从逻辑列表中移除数据
+        if (TotalResidents.Contains(entity.MyData))
+        {
+            TotalResidents.Remove(entity.MyData);
+        }
+
+        // 2. 物理销毁
+        Destroy(entity.gameObject);
+
+        // 3. 触发人口变动事件 (通知顶部 HUD 刷新)
+        OnPopulationChanged?.Invoke();
+
+        Debug.Log($"<color=red>【社会放逐】</color> 居民 {entity.MyData.ResidentName} 已被移出基地。");
+    }
+
+    public void NotifyResidentDeath(ResidentEntity entity)
+    {
+        if (entity == null || entity.MyData == null) return;
+
+        // 1. 从总人口名单中移除其“灵魂数据”
+        if (TotalResidents.Contains(entity.MyData))
+        {
+            TotalResidents.Remove(entity.MyData);
+            Debug.Log($"<color=red>【人口减损】</color> 居民 {entity.MyData.ResidentName} 已阵亡，释放 1 名人口空间。");
+        }
+
+        // 2. 触发事件，让顶部的 [人口: 4/5] UI 实时刷新
+        OnPopulationChanged?.Invoke();
+
+        // 💡 提示：这里不需要手动 Destroy，逻辑交由 Entity 自己处理
     }
 }

@@ -115,17 +115,18 @@ public class Projectile : MonoBehaviour
         float dist = Vector3.Distance(start, end);
 
         // --- 🌟 [核心加固]：扩大扫描层级，确保覆盖 Body 和 Hitbox ---
-        int layerMask;
+        int targetLayer;
         if (isEnemyFire)
-            layerMask = LayerMask.GetMask("Player_Hitbox", "Player_Body");
+            // 敌方子弹扫描：玩家机甲 + 玩家居民
+            targetLayer = LayerMask.GetMask("Player_Hitbox", "Player_Body", "Resident");
         else
-            layerMask = LayerMask.GetMask("Enemy_Hitbox", "Enemy_Body");
-
+            // 玩家子弹扫描：敌人机甲 + 敌人受击盒
+            targetLayer = LayerMask.GetMask("Enemy_Hitbox", "Enemy_Body");
         // 如果是奶弹模式，反转层级
         if (hitAllies)
-            layerMask = isEnemyFire ? LayerMask.GetMask("Enemy_Hitbox", "Enemy_Body") : LayerMask.GetMask("Player_Hitbox", "Player_Body");
+            targetLayer = isEnemyFire ? LayerMask.GetMask("Enemy_Hitbox", "Enemy_Body") : LayerMask.GetMask("Player_Hitbox", "Player_Body");
 
-        int hits = Physics2D.RaycastNonAlloc(start, dir, hitResults, dist, layerMask);
+        int hits = Physics2D.RaycastNonAlloc(start, dir, hitResults, dist, targetLayer);
 
         for (int i = 0; i < hits; i++)
         {

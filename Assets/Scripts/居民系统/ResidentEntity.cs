@@ -43,10 +43,20 @@ public class ResidentEntity : MonoBehaviour
         col.isTrigger = false;
     }
 
-    public void Initialize(ResidentData data)
+    public void Initialize(ResidentData data, float maxHP)
     {
         MyData = data;
         gameObject.name = $"Resident_{data.ResidentName}";
+
+        // 🌟 [核心修复]：初始化受击躯壳
+        var dr = GetComponent<DamageReceiver>();
+        if (dr != null)
+        {
+            // 居民通常没有护甲 (AP = 0)
+            dr.Initialize(maxHP, 0);
+            dr.isEnemy = false; // 居民永远属于玩家阵营
+        }
+
         SetSelected(false);
     }
 
@@ -100,5 +110,42 @@ public class ResidentEntity : MonoBehaviour
     public void SetSelected(bool isSelected)
     {
         if (SelectionCircle != null) SelectionCircle.SetActive(isSelected);
+    }
+
+    public DamageReceiver GetReceiver() => GetComponent<DamageReceiver>();
+
+    private void OnEnable()
+    {
+        // 🌟 订阅死亡事件
+        var dr = GetComponent<DamageReceiver>();
+        if (dr != null) dr.OnEntityDeath += HandleDeath;
+    }
+
+    private void OnDisable()
+    {
+        // 取消订阅，防止内存泄漏
+        var dr = GetComponent<DamageReceiver>();
+        if (dr != null) dr.OnEntityDeath -= HandleDeath;
+    }
+
+    private void HandleDeath()
+    {
+        // 1. 通知人口账本减员 (释放空间)
+        if (PopulationManager.Instance != null)
+        {
+            PopulationManager.Instance.NotifyResidentDeath(this);
+        }
+
+        // 2. 从指挥官的选中列表中剔除自己
+        if (BattleCommandManager.Instance != null)
+        {
+            BattleCommandManager.Instance.SelectedResidents.Remove(this);
+        }
+
+        // 3. 视觉表现：这里未来可以播一个倒地动画或爆炸特效
+        Debug.Log($"<color=gray>【系统】</color> 居民实体 {gameObject.name} 已从物理世界移除。");
+
+        // 4. 彻底销毁物体
+        Destroy(gameObject);
     }
 }

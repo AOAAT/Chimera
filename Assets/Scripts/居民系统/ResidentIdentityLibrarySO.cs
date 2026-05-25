@@ -4,6 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ResidentIdentityLibrary", menuName = "Chimera Protocol/居民系统/身份配置库")]
 public class ResidentIdentityLibrarySO : ScriptableObject
 {
+    [Header("=== 全局属性配置 ===")]
+    public float DefaultResidentHP = 20f;
+
     [Header("=== 随机姓名池 ===")]
     public List<string> NamePool = new List<string> { "凯恩", "艾莉丝", "莫顿", "维嘉", "希尔" };
 
