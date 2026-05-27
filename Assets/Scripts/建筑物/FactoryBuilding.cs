@@ -24,28 +24,41 @@ public class FactoryBuilding : BuildingBase
 
     private void UpdateProduction(float deltaTime)
     {
-        ProductionTask activeTask = null;
+        // 1. 计算当前可用的并行产线总数
+        // 0~1人 = 1条线, 2~3人 = 2条线, 4人 = 3条线...
+        int totalSlots = 1 + (currentStaff.Count / 2);
 
-        // 🌟 使用标准的 for 循环，防止遍历时因取消任务导致报错
+        // 2. 追踪本帧已占用的产线数
+        int slotsInUse = 0;
+
+        // 3. 遍历任务队列（使用 for 循环以便处理完成后的移除操作）
         for (int i = 0; i < TaskQueue.Count; i++)
         {
-            if (!TaskQueue[i].IsPaused)
-            {
-                activeTask = TaskQueue[i];
-                break;
-            }
-        }
+            // 如果所有产线都已占满，停止遍历后续任务
+            if (slotsInUse >= totalSlots) break;
 
-        if (activeTask != null)
-        {
-            activeTask.CurrentProgress += deltaTime;
+            ProductionTask task = TaskQueue[i];
 
-            if (activeTask.CurrentProgress >= activeTask.TotalTime)
+            // 跳过被玩家手动暂停的任务，且不占用产线名额
+            if (task.IsPaused) continue;
+
+            // --- 执行生产步进 ---
+            task.CurrentProgress += deltaTime;
+            slotsInUse++; // 占用一个产线名额
+
+            // 检查任务是否完成
+            if (task.CurrentProgress >= task.TotalTime)
             {
-                FinishTask(activeTask);
+                FinishTask(task);
+
+                // 🌟 重要：因为 FinishTask 会从 TaskQueue 中 Remove 掉任务，
+                // 我们需要将索引回退，并减少已用名额，让下一个任务在同一帧补位
+                i--;
+                slotsInUse--;
             }
         }
     }
+
 
     private void FinishTask(ProductionTask task)
     {
