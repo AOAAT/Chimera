@@ -60,100 +60,68 @@ public class BattleCommandManager : MonoBehaviour
     }
     private void HandleCommand()
     {
-        // 1. 只有按下右键才执行逻辑
         if (!Input.GetMouseButtonDown(1)) return;
 
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-        // --- 核心视觉反馈：清理上一个点击指示标 ---
         if (currentActiveMarker != null) Destroy(currentActiveMarker);
+
+        // 探测所有潜在目标
+        RaycastHit2D buildingHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Building"));
+        RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
+        RaycastHit2D mechHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Player_Body"));
 
         bool anyCommandIssued = false;
 
         // ==========================================
-        // 🏗️ 探测目标类型：优先判断右键是否点中了建筑
-        // ==========================================
-        RaycastHit2D buildingHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Building"));
-        RaycastHit2D enemyHit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, LayerMask.GetMask("Enemy_Hitbox"));
-
-        // ==========================================
-        // 🛡️ 逻辑优先级 1：选中了【建筑】（设置集合点）
-        // ==========================================
-        if (CurrentSelectedBuilding != null && CurrentSelectedBuilding is AssemblerBuilding assembler)
-        {
-            // 如果点中的不是敌人，则视为设置集合点
-            if (enemyHit.collider == null)
-            {
-                assembler.SetRallyPoint(mousePos);
-                anyCommandIssued = true;
-                // 集合点已由虚线反馈，不需要光圈，直接返回
-                return;
-            }
-        }
-
-        // ==========================================
-        // 👨‍🌾 逻辑优先级 2：选中了【居民】（移动或入驻）
+        // 优先级 1：【居民指令】 (如果选中了居民)
         // ==========================================
         if (SelectedResidents.Count > 0)
         {
-            // 🔍 DEBUG 1: 打印点击坐标和层级探测
-            Debug.Log($"[指挥官] 右键尝试下达指令。鼠标坐标: {mousePos}");
-
             IResidentCarrier carrier = null;
-            if (buildingHit.collider != null)
-            {
-                Debug.Log($"[指挥官] 命中物体: {buildingHit.collider.name}，层级: {LayerMask.LayerToName(buildingHit.collider.gameObject.layer)}");
-                carrier = buildingHit.collider.GetComponentInParent<IResidentCarrier>();
-
-                if (carrier == null) Debug.LogWarning("[指挥官] 命中物体不是有效的岗位载体 (未实现 IResidentCarrier)");
-            }
+            // 尝试从建筑或机甲获取载体接口
+            if (buildingHit.collider != null) carrier = buildingHit.collider.GetComponentInParent<IResidentCarrier>();
+            if (carrier == null && mechHit.collider != null) carrier = mechHit.collider.GetComponentInParent<IResidentCarrier>();
 
             foreach (var res in SelectedResidents)
             {
                 if (res == null) continue;
-
-                if (carrier != null)
-                {
-                    Debug.Log($"[指挥官] 给居民 {res.MyData.ResidentName} 下达【入驻】指令，目标: {carrier.GetCarrierName()}");
-                    res.OrderGarrison(carrier);
-                }
-                else
-                {
-                    Debug.Log($"[指挥官] 给居民 {res.MyData.ResidentName} 下达【移动】指令");
-                    res.SetDestination(mousePos);
-                }
-                anyCommandIssued = true;
+                if (carrier != null) res.OrderGarrison(carrier);
+                else res.SetDestination(mousePos);
             }
+            anyCommandIssued = true;
         }
         // ==========================================
-        // 🤖 逻辑优先级 3：选中了【机甲】（移动或攻击）
+        // 优先级 2：【机甲指令】 (如果选中了机甲)
         // ==========================================
-        if (SelectedUnits.Count > 0)
+        else if (SelectedUnits.Count > 0)
         {
             foreach (var unit in SelectedUnits)
             {
                 if (unit == null) continue;
-
-                if (enemyHit.collider != null)
-                {
-                    // 攻击指令
-                    unit.SetManualTarget(enemyHit.collider.transform);
-                }
-                else
-                {
-                    // 移动指令
-                    unit.SetManualMovePoint(mousePos);
-                }
+                if (enemyHit.collider != null) unit.SetManualTarget(enemyHit.collider.transform);
+                else unit.SetManualMovePoint(mousePos);
+            }
+            anyCommandIssued = true;
+        }
+        // ==========================================
+        // 优先级 3：【建筑集合点】 (仅当没选单位，且选了组装厂)
+        // ==========================================
+        else if (CurrentSelectedBuilding != null && CurrentSelectedBuilding is AssemblerBuilding assembler)
+        {
+            // 只有点击的是空地或建筑（不是敌人的时候），设置集合点
+            if (enemyHit.collider == null)
+            {
+                assembler.SetRallyPoint(mousePos);
                 anyCommandIssued = true;
+                Debug.Log($"<color=cyan>[建筑]</color> {assembler.BuildingName} 集合点已更新至: {mousePos}");
+                // 集合点不需要光圈特效，直接返回
+                return;
             }
         }
 
-        // ==========================================
-        // ✨ 视觉生成：指令下达成功的点击反馈
-        // ==========================================
+        // 执行视觉反馈
         if (anyCommandIssued && ClickVFXPrefab != null)
         {
-            // 如果是集火攻击（点了怪），可以生成红色的标记；若是移动（点了地），生成青色标记
             currentActiveMarker = Instantiate(ClickVFXPrefab, new Vector3(mousePos.x, mousePos.y, -0.5f), Quaternion.identity);
         }
     }

@@ -147,6 +147,7 @@ MonoBehaviour:
   SelectionVisual: {fileID: 8501307324808017179}
   MaxStaffCapacity: 4
   ShowDebugGizmos: 1
+  CoverageRadius: 5
   RallyWorldPos: {x: 0, y: 0, z: 0}
   DotSpacing: 0.5
   ScrollSpeed: 2

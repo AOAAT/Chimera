@@ -89,29 +89,36 @@ public class ResidentEntity : MonoBehaviour
 
         if (targetCarrier != null)
         {
-            float distToGate = Vector2.Distance(transform.position, targetCarrier.GetInteractionPoint());
+            // 1. 获取目标交互点（建筑的门口或机甲的中心）
+            Vector3 targetPos = targetCarrier.GetInteractionPoint();
+            float distToTarget = Vector2.Distance(transform.position, targetPos);
 
-            // 🔍 DEBUG 3: 实时距离监控（如果一直不进门，看这里的数字）
-            // 我们改为每隔 0.5 秒打印一次，防止刷屏
-            if (Time.frameCount % 30 == 0)
+            // 2. 🌟 核心改进：根据载体类型设置动态判定半径
+            // 如果载体是机甲，半径给 0.8m；如果是建筑（有门），给 0.4m 即可。
+            float triggerRadius = (targetCarrier is MechUnit2D) ? 0.85f : 0.4f;
+
+            // 3. 动态追逐（如果是移动中的机甲，每 10 帧更新一次路径）
+            if (targetCarrier is MonoBehaviour mb && Time.frameCount % 10 == 0)
             {
-                // Debug.Log($"[实体] {MyData.ResidentName} 距离门口还剩: {distToGate:F2}米");
+                SetDestination(mb.transform.position);
             }
 
-            if (distToGate < 0.3f) // 🌟 建议从 0.2 调大到 0.3，增加容错
+            // 4. 判定入场
+            if (distToTarget < triggerRadius)
             {
-                Debug.Log($"[实体] {MyData.ResidentName} 抵达门口，触发 ExecuteEnterGarrison");
+                Debug.Log($"<color=yellow>[入驻成功]</color> {MyData.ResidentName} 已成功接触到 {targetCarrier.GetCarrierName()}，判定半径: {triggerRadius}");
                 ExecuteEnterGarrison();
             }
         }
     }
+
     private void ExecuteEnterGarrison()
     {
         bool success = targetCarrier.TryAddStaff(this.MyData);
 
         if (success)
         {
-            Debug.Log($"<color=green>[实体] {MyData.ResidentName} 入驻成功，执行自我销毁。</color>");
+            Debug.Log($"<color=green>[成功]</color> {MyData.ResidentName} 已登记并消失。");
             if (BattleCommandManager.Instance != null)
                 BattleCommandManager.Instance.SelectedResidents.Remove(this);
 
@@ -119,7 +126,8 @@ public class ResidentEntity : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"[实体] 入驻失败！{targetCarrier.GetCarrierName()} 可能反馈 TryAddStaff 为 false");
+            // 诊断：为什么 TryAddStaff 拒绝了入驻？
+            Debug.LogError($"<color=red>[失败]</color> {targetCarrier.GetCarrierName()} 拒绝了 {MyData.ResidentName} 的入驻请求。");
             targetCarrier = null;
         }
     }

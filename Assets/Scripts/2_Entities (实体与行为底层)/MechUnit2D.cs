@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 [RequireComponent(typeof(SortingGroup))]
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(BoxCollider2D))]
-public class MechUnit2D : MonoBehaviour
+public class MechUnit2D : MonoBehaviour, IResidentCarrier
 {
     private SavedUnitProfile bindedData;
     private RuntimeChimeraData cachedCombatData;
@@ -26,6 +27,18 @@ public class MechUnit2D : MonoBehaviour
 
     private float eliteLingerTime = 2f;
     private float eliteFadeTime = 1.5f;
+
+
+    [Header("=== 驾驶系统 ===")]
+    private List<ResidentData> driverList = new List<ResidentData>();
+    public int MaxStaffCapacity => 1; // 机甲目前只允许 1 人驾驶
+
+    public bool IsFullyOperational { get; private set; } // 是否满员觉醒
+    public string GetCarrierName() => bindedData != null ? bindedData.UnitName : "未知机甲";
+
+    public List<ResidentData> GetStaffList() => driverList;
+
+    public Vector3 GetInteractionPoint() => transform.position; // 居民直接走向机甲中心
 
     private void Awake()
     {
@@ -468,6 +481,62 @@ public class MechUnit2D : MonoBehaviour
             bindedData.CurrentAP = cachedCombatData.MaxAP;
 
             Debug.Log($"<color=green>【自动修护】</color> 机甲 [{bindedData.UnitName}] 已完成战后整备，耐久度已恢复至 100%。");
+        }
+    }
+
+
+    private void RefreshOperationalStatus()
+    {
+        int required = bindedData != null ? bindedData.ChassisData.RequiredPilotCount : 1;
+        IsFullyOperational = (driverList.Count >= required);
+
+        // 🌟 诊断日志 A：状态同步
+        Debug.Log($"<color=white>[觉醒检查]</color> {GetCarrierName()} | 机师: {driverList.Count}/{required} | 觉醒状态: {IsFullyOperational}");
+
+        var ai = GetComponent<ChimeraAIController>();
+        if (ai != null)
+        {
+            // 确保将限制模式同步给 AI
+            ai.SetRestrictedMode(!IsFullyOperational);
+        }
+    }
+
+    public bool TryAddStaff(ResidentData data)
+    {
+        int required = bindedData != null ? bindedData.ChassisData.RequiredPilotCount : 1;
+        if (driverList.Count >= required) return false;
+
+        data.Status = ResidentStatus.Piloting;
+        driverList.Add(data);
+
+        RefreshOperationalStatus(); // 刷新
+        if (SelectionContextHUD.Instance != null) SelectionContextHUD.Instance.Refresh(this);
+        return true;
+    }
+
+    public void RemoveStaff(ResidentData data)
+    {
+        if (driverList.Contains(data))
+        {
+            driverList.Remove(data);
+
+            // 物理弹出逻辑
+            Vector3 exitPos = transform.position + (Vector3)Random.insideUnitCircle * 0.5f;
+            GameObject resObj = Instantiate(PopulationManager.Instance.ResidentPrefab, exitPos, Quaternion.identity);
+            ResidentEntity entity = resObj.GetComponent<ResidentEntity>();
+
+            data.Status = ResidentStatus.Idle; // 🌟 状态恢复赋闲
+            entity.Initialize(data, PopulationManager.Instance.IdentityLibrary.DefaultResidentHP);
+
+            // 让居民离开机甲后稍微走开一点
+            entity.SetDestination(exitPos + (Vector3)Random.insideUnitCircle * 1.5f);
+
+            Debug.Log($"<color=orange>【离机】</color> 机师 {data.ResidentName} 已离开机甲。");
+
+            // 刷新 HUD
+            SelectionContextHUD.Instance.Refresh(this);
+            RefreshOperationalStatus(); // 刷新
+            if (SelectionContextHUD.Instance != null) SelectionContextHUD.Instance.Refresh(this);
         }
     }
 

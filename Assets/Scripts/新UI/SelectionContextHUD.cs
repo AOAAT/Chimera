@@ -51,6 +51,8 @@ public class SelectionContextHUD : MonoBehaviour
     public Button MechDetailButton;
     public Button MechRefitButton;
     public Button MechRecycleButton;
+    public GameObject LeaveMechButton; // 在 Inspector 中拖入该按钮
+
     public float InteractionRadius = 5.0f;   // 维修/改装所需的物理距离
 
     // 内部私有状态
@@ -76,30 +78,43 @@ public class SelectionContextHUD : MonoBehaviour
         HideAllRoots();
         ClearLogicReferences();
 
+        // 默认隐藏“离开机甲”按钮（防止在看建筑时还留着这个按钮）
+        if (LeaveMechButton != null) LeaveMechButton.SetActive(false);
+
         // 隐藏详情面板 (UnitDetailPanelUI)，防止残留
         if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
 
         if (target == null) return;
-
+        if (CoverageVisualizer.Instance != null) CoverageVisualizer.Instance.SetVisible(false);
         // 2. 根据类型进行多态分流
         if (target is BuildingBase building)
         {
+            if (building is ICoverageProvider)
+                CoverageVisualizer.Instance.SetVisible(true);
             CurrentTargetBuilding = building;
             BuildingRoot.SetActive(true);
-            currentSubMode = HUDSubMode.Production; // 每次点击建筑默认回生产页面
+            currentSubMode = HUDSubMode.Production;
             InitBuildingPanel(building);
         }
-        else if (target is MechUnit2D mech)
+        else if (target is MechUnit2D mech) // <--- mech 在这里定义
         {
+            if (!mech.IsFullyOperational)
+                CoverageVisualizer.Instance.SetVisible(true);
             CurrentTargetMech = mech;
             MechRoot.SetActive(true);
             InitMechPanel(mech);
+
+            // ✅ 修复：挪到这个括号里面，mech 就有效了
+            if (LeaveMechButton != null)
+            {
+                bool hasDriver = mech.GetStaffList().Count > 0;
+                LeaveMechButton.SetActive(hasDriver);
+            }
         }
         else if (target is ResidentEntity resident)
         {
             CurrentTargetResident = resident;
             ResidentRoot.SetActive(true);
-            // 直接点选世界实体，显示实时血量，状态默认为赋闲
             FillResidentDetail(resident.MyData, resident.GetComponent<DamageReceiver>());
         }
     }
@@ -124,30 +139,37 @@ public class SelectionContextHUD : MonoBehaviour
     // ==========================================
     private void InitBuildingPanel(BuildingBase building)
     {
-        // 设置名称与图标
         if (BuildingNameDisplay) BuildingNameDisplay.text = building.BuildingName;
         if (BuildingIconImage) BuildingIconImage.sprite = building.BuildingIcon;
 
-        // 🌟 核心：物理清空舞台，并根据预制体生成对应的功能模块（如货架）
+        // 🌟 核心修复：清理并生成功能 UI
         foreach (Transform child in FunctionStage) Destroy(child.gameObject);
+
         if (building.FunctionUIPrefab != null)
         {
+            Debug.Log($"[HUD] 正在为 {building.BuildingName} 加载功能组件: {building.FunctionUIPrefab.name}");
             GameObject module = Instantiate(building.FunctionUIPrefab, FunctionStage);
 
-            // 执行业务逻辑握手
-            var assemblerUI = module.GetComponent<AssemblerUIModule>();
-            if (assemblerUI != null && building is AssemblerBuilding ab) assemblerUI.Initialize(ab);
+            // 🌟 关键：强制让生成的 UI 填满容器
+            RectTransform rt = module.GetComponent<RectTransform>();
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = Vector2.zero; // Stretch 模式
 
-            var factoryUI = module.GetComponent<FactoryUIModule>();
-            if (factoryUI != null) factoryUI.Initialize();
+            // 执行特定的初始化
+            var assemblerUI = module.GetComponent<AssemblerUIModule>();
+            if (assemblerUI != null && building is AssemblerBuilding ab)
+            {
+                assemblerUI.Initialize(ab);
+            }
+        }
+        else
+        {
+            Debug.LogError($"[HUD] 警告：建筑 {building.BuildingName} 的 FunctionUIPrefab 槽位是空的！请在 Inspector 中拖入对应 UI 模块。");
         }
 
-        // 岗位系统权限：只有 SupportsStaff 为 true 的建筑才显示工作人员按钮
         StaffToggleButton.gameObject.SetActive(building.SupportsStaff);
-
         RefreshBuildingSubVisibility();
     }
-
     public void OnClickStaffToggle()
     {
         // 模式切换：Production <-> StaffList
@@ -244,7 +266,18 @@ public class SelectionContextHUD : MonoBehaviour
             OnClickStaffToggle(); // 回到生产列表页
         }
     }
-
+    public void OnClickLeaveMech()
+    {
+        if (CurrentTargetMech != null)
+        {
+            var staffList = CurrentTargetMech.GetStaffList();
+            if (staffList.Count > 0)
+            {
+                // 弹出第一个（也是唯一一个）机师
+                CurrentTargetMech.RemoveStaff(staffList[0]);
+            }
+        }
+    }
     public void OnClickDismissAll()
     {
         if (CurrentTargetBuilding != null)

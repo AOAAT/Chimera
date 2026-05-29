@@ -27,6 +27,11 @@ public class ChassisDataSO : ScriptableObject
     [Header("=== 工业生产数据 ===")]
     public float BaseProductionTime = 10f; // 默认生产底盘需要 10 秒
 
+    // --- 修改 ChassisDataSO.cs ---
+    [Header("=== 驾驶员配置 ===")]
+    [Tooltip("驱动此机甲达到‘觉醒态’所需的最小居民数量")]
+    public int RequiredPilotCount = 1; // 默认为1
+
     [Header("=== 底盘自身属性加成 ===")]
     public List<StatEntry> BaseStats = new List<StatEntry>();
 

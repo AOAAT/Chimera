@@ -34,19 +34,40 @@ public class ChimeraAIController : MonoBehaviour
     // ==========================================
     // 🚀 RTS 核心指令接口 (上层指挥官通过这些接口下令)
     // ==========================================
+    private bool isInRestrictedMode = false; // 是否处于受限模式（未满员）
 
-    // --- 请修改为以下内容 ---
-    public void SetManualMovePoint(Vector2 point) // 注意这里的参数名是 point
+    public void SetRestrictedMode(bool restricted)
     {
-        manualAttackTarget = null;
-        if (rb != null) rb.velocity = Vector2.zero; // 🌟 顺便修复抽搐问题
+        isInRestrictedMode = restricted;
+        Debug.Log($"<color=yellow>[AI模式切换]</color> {gameObject.name} 受限模式: {restricted}");
+        if (restricted) SetManualTarget(null);
+    }
 
-        // 🌟 这里必须使用 point 而不是 worldPos
+    // 🌟 拦截移动指令
+    public void SetManualMovePoint(Vector2 point)
+    {
+
+        if (isInRestrictedMode)
+        {
+            bool inCoverage = ZoneCoverageManager.Instance != null && ZoneCoverageManager.Instance.IsPointInCoverage(point);
+
+            Debug.Log($"<color=orange>[移动审计]</color> 目标点: {point} | 是否在覆盖内: {inCoverage}");
+
+            if (!inCoverage)
+            {
+                Debug.LogWarning($"<color=red>[拦截]</color> 指令拒绝！{gameObject.name} 动力受限，无法前往覆盖区外。");
+                return;
+            }
+        }
+
+
+        manualAttackTarget = null;
+        if (rb != null) rb.velocity = Vector2.zero;
+
         currentPath = GridPathfinder.FindPath(transform.position, point);
         pathIndex = 0;
-
-        if (currentPath != null && currentPath.Count <= 1) currentPath = null;
     }
+    // --- 请修改为以下内容 ---
 
 
     public void SetManualTarget(Transform target)
@@ -169,7 +190,19 @@ public class ChimeraAIController : MonoBehaviour
             if (dashTimer <= 0) { isDashing = false; if (rb) rb.drag = 5f; }
             return;
         }
-
+        if (isInRestrictedMode)
+        {
+            // 每一秒检查一次当前位置是否离谱地跑到了外面（例如被撞飞、或者路径切角导致）
+            if (Time.frameCount % 60 == 0)
+            {
+                if (ZoneCoverageManager.Instance != null && !ZoneCoverageManager.Instance.IsPointInCoverage(transform.position))
+                {
+                    Debug.LogError($"<color=red>[安全熔断]</color> {gameObject.name} 已经在覆盖区外！强制急停。");
+                    currentPath = null; // 停止当前寻路
+                    if (rb) rb.velocity = Vector2.zero;
+                }
+            }
+        }
         // --- 目标有效性审计 ---
         if (manualAttackTarget != null && !IsTargetValid(manualAttackTarget))
         {
@@ -318,6 +351,11 @@ public class ChimeraAIController : MonoBehaviour
 
     private void FindTargetAuto()
     {
+        if (isInRestrictedMode)
+        {
+            currentTarget = null;
+            return;
+        }
         bool iAmEnemy = myReceiver != null && myReceiver.isEnemy;
         var targetList = iAmEnemy ? CombatDirector.ActivePlayerUnits : CombatDirector.ActiveEnemies;
         if (targetList == null || targetList.Count == 0) { currentTarget = null; return; }

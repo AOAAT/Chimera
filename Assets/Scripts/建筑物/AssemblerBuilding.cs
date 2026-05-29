@@ -2,8 +2,12 @@
 using UnityEngine;
 using System.Linq;
 
-public class AssemblerBuilding : BuildingBase
+public class AssemblerBuilding : BuildingBase, ICoverageProvider
 {
+    [Header("=== 带宽配置 ===")]
+    public float CoverageRadius = 12.0f; // 该厂提供的覆盖半径
+    public Vector3 GetPosition() => transform.position;
+    public float GetRadius() => CoverageRadius;
     [Header("=== 集合点配置 ===")]
     public Vector3 RallyWorldPos;
 
@@ -60,6 +64,8 @@ public class AssemblerBuilding : BuildingBase
         {
             RallyWorldPos = transform.position;
         }
+        if (ZoneCoverageManager.Instance != null)
+            ZoneCoverageManager.Instance.RegisterProvider(this);
     }
 
     // ==========================================
@@ -195,10 +201,18 @@ public class AssemblerBuilding : BuildingBase
 
     public void SetRallyPoint(Vector3 rawPos)
     {
+        Vector3 snappedPos = rawPos;
         if (RTSGridSystem.Instance != null)
-            RallyWorldPos = RTSGridSystem.Instance.GetSnappedWorldPos(rawPos);
-        else
-            RallyWorldPos = rawPos;
+            snappedPos = RTSGridSystem.Instance.GetSnappedWorldPos(rawPos);
+
+        // 🌟 检查这个点是否在任何一个覆盖区内
+        if (ZoneCoverageManager.Instance != null && !ZoneCoverageManager.Instance.IsPointInCoverage(snappedPos))
+        {
+            Debug.LogWarning("无法将集合点设在带宽覆盖范围外！");
+            return;
+        }
+
+        RallyWorldPos = snappedPos;
     }
 
     public override void SetSelected(bool state)
@@ -210,5 +224,11 @@ public class AssemblerBuilding : BuildingBase
     protected override void OnDeSelected()
     {
         if (dotContainer != null) dotContainer.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (ZoneCoverageManager.Instance != null)
+            ZoneCoverageManager.Instance.UnregisterProvider(this);
     }
 }

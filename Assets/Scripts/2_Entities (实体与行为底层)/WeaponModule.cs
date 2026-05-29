@@ -52,11 +52,16 @@ public class WeaponModule : MonoBehaviour
 
     private void Update()
     {
-
         if (weaponData == null || actualHinge == null) return;
 
-        // --- 💀 核心移除：删掉了对 IsCombatActive 的检查 ---
-        // 只要有能源且没死，武器就应该工作
+        // 🌟 核心拦截：检查机甲宿主是否处于“觉醒态”
+        MechUnit2D parentMech = mechRoot.GetComponent<MechUnit2D>();
+        if (parentMech != null && !parentMech.IsFullyOperational)
+        {
+            lockedTarget = null;
+            if (myAnimator != null) myAnimator.enabled = false;
+            return; // 直接跳过本帧所有火控逻辑
+        }
 
         if (mechReceiver != null && mechReceiver.CurrentHP <= 0)
         {

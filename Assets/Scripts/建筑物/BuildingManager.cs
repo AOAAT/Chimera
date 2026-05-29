@@ -35,6 +35,7 @@ public class BuildingManager : MonoBehaviour
         ghostInstance.InitGhostMode();
 
         isPlacing = true;
+        if (CoverageVisualizer.Instance != null) CoverageVisualizer.Instance.SetVisible(true);
         Debug.Log("<color=#FF00FF>【系统】</color> 建造模式已锁定，选中系统已挂起。");
     }
 
@@ -88,6 +89,7 @@ public class BuildingManager : MonoBehaviour
         ghostInstance = null;
         currentPendingData = null;
         GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Attach);
+        if (CoverageVisualizer.Instance != null) CoverageVisualizer.Instance.SetVisible(false);
         Debug.Log("<color=cyan>【系统】</color> 放置成功，等待鼠标抬起解锁。");
     }
 
@@ -107,6 +109,7 @@ public class BuildingManager : MonoBehaviour
         isSelectionLocked = false;
         ghostInstance = null;
         if (BattleCommandManager.Instance != null) BattleCommandManager.Instance.ForceClearSelectionBox();
+        if (CoverageVisualizer.Instance != null) CoverageVisualizer.Instance.SetVisible(false);
     }
 
     private bool CheckPlacementValidity()
