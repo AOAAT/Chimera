@@ -18,10 +18,15 @@ MonoBehaviour:
   DetailBackgroundSprite: {fileID: 0}
   Description: "\u8FD9\u4E2A\u5E9E\u7136\u5927\u7269\u4EE3\u8868\u4E86\u6700\u5F3A\u608D\u7684\u5355\u5175\u4F5C\u6218\u80FD\u529B\u3002\u4EE3\u4EF7\u662F\u6781\u81F4\u7684\u7535\u91CF\u635F\u8017\u3002"
   SpecialMechanicDesc: 
+  ProductionCost:
+    Scrap: 0
+    Biomass: 0
+    ManaStone: 0
   MacroCategory: 0
   SubTags: 0500000004000000
+  BaseProductionTime: 10
   BaseStats:
-  - StatID: 4
+  - StatID: 0
     Value: 18
     ModType: 0
   - StatID: 0
@@ -36,8 +41,6 @@ MonoBehaviour:
   - StatID: 2
     Value: 10
     ModType: 0
-  BasePrice: 150
-  ScrapValue: 50
   LogicCenterOffset: {x: 0, y: 0}
   Sockets:
   - SlotName: "\u5934\u90E81"

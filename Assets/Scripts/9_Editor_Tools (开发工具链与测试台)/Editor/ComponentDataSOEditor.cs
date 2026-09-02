@@ -8,7 +8,7 @@ public class ComponentDataSOEditor : Editor
     // 基础引用
     SerializedProperty componentBaseID, componentName, description, componentIcon, type;
     SerializedProperty tacticalRoleDesc, animController, muzzleOffset;
-    SerializedProperty macroCategory, baseSubTags, minDropLevel, modelRegistry;
+    SerializedProperty macroCategory, baseSubTags, modelRegistry;
     SerializedProperty baseProductionTime;
     // 武器专属
     SerializedProperty deliveryType, projectilePrefab, targetingOverride;
@@ -35,7 +35,6 @@ public class ComponentDataSOEditor : Editor
 
         macroCategory = serializedObject.FindProperty("MacroCategory");
         baseSubTags = serializedObject.FindProperty("BaseSubTags");
-        minDropLevel = serializedObject.FindProperty("MinDropLevel");
         modelRegistry = serializedObject.FindProperty("ModelRegistry");
 
 
@@ -190,7 +189,6 @@ public class ComponentDataSOEditor : Editor
         EditorGUILayout.LabelField("📊 数值矩阵 (Level Matrix)", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(macroCategory);
         EditorGUILayout.PropertyField(baseSubTags);
-        EditorGUILayout.PropertyField(minDropLevel);
 
         // 展开列表，显示 Level 1 ~ 4 的详细积木
         EditorGUILayout.PropertyField(modelRegistry, true);
