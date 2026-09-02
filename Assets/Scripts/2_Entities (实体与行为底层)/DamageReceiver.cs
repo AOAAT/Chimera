@@ -1,12 +1,31 @@
 ﻿// --- START OF FILE DamageReceiver.cs ---
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class DamageReceiver : MonoBehaviour
 {
-    public bool isEnemy;
+    [FormerlySerializedAs("isEnemy")]
+    [SerializeField] private bool enemyFaction;
+
+    // 保留原有调用名称，但每次阵营变化都会同步全局单位登记表。
+    public bool isEnemy
+    {
+        get => enemyFaction;
+        set
+        {
+            if (enemyFaction != value)
+            {
+                UnregisterUnit();
+                enemyFaction = value;
+            }
+
+            if (isActiveAndEnabled) RegisterUnit();
+        }
+    }
     public float MaxHP { get; private set; }
     public float MaxAP { get; private set; }
+    public float BaseBlock { get; private set; }
 
     public event System.Action OnEntityDeath;
     [Header("实时状态")]
@@ -16,9 +35,10 @@ public class DamageReceiver : MonoBehaviour
     // 👇 UI 监听事件
     public event Action OnStatsChanged;
 
-    public void Initialize(float maxHP, float maxAP, SpriteRenderer sr = null)
+    public void Initialize(float maxHP, float maxAP, SpriteRenderer sr = null, float baseBlock = 0f)
     {
         MaxHP = maxHP; MaxAP = maxAP;
+        BaseBlock = Mathf.Max(0f, baseBlock);
         CurrentHP = maxHP; CurrentAP = maxAP;
         OnStatsChanged?.Invoke();
     }
@@ -28,14 +48,8 @@ public class DamageReceiver : MonoBehaviour
     {
         if (CurrentHP <= 0) return;
 
-        float myBlock = 0f;
-        // 获取基础格挡 (来自底盘/零件/怪物图纸)
-        if (!isEnemy) { /* 玩家逻辑：获取底盘基础格挡 */ }
-        else
-        {
-            var brain = GetComponent<EnemyBrain>();
-            if (brain != null && brain.MyData != null) myBlock = brain.MyData.GetStat(StatType.Block);
-        }
+        // 基础格挡在单位初始化时由机甲装配数据或敌人图纸明确注入。
+        float myBlock = BaseBlock;
 
         // --- 👇【关键修复】：格挡值现在也享受百分比加成了！ ---
         BuffManager myBuffs = GetComponent<BuffManager>();
@@ -76,8 +90,17 @@ public class DamageReceiver : MonoBehaviour
 
     private void RegisterUnit()
     {
-        if (isEnemy) { if (!CombatDirector.ActiveEnemies.Contains(this)) CombatDirector.ActiveEnemies.Add(this); }
-        else { if (!CombatDirector.ActivePlayerUnits.Contains(this)) CombatDirector.ActivePlayerUnits.Add(this); }
+        // 先从错误阵营移除，再登记到当前阵营；执行多次也不会产生重复项。
+        if (enemyFaction)
+        {
+            CombatDirector.ActivePlayerUnits.Remove(this);
+            if (!CombatDirector.ActiveEnemies.Contains(this)) CombatDirector.ActiveEnemies.Add(this);
+        }
+        else
+        {
+            CombatDirector.ActiveEnemies.Remove(this);
+            if (!CombatDirector.ActivePlayerUnits.Contains(this)) CombatDirector.ActivePlayerUnits.Add(this);
+        }
     }
 
     private void OnDestroy()
@@ -113,7 +136,8 @@ public class DamageReceiver : MonoBehaviour
 
     private void UnregisterUnit()
     {
-        if (isEnemy) CombatDirector.ActiveEnemies.Remove(this);
-        else CombatDirector.ActivePlayerUnits.Remove(this);
+        // 同时清理两张表，能够修复旧版本已经留下的错误登记。
+        CombatDirector.ActiveEnemies.Remove(this);
+        CombatDirector.ActivePlayerUnits.Remove(this);
     }
 }

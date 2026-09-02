@@ -250,7 +250,10 @@ public class MechUnit2D : MonoBehaviour
 
         DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
         receiver.isEnemy = isEnemy;
-        receiver.Initialize(cachedCombatData.MaxHP, cachedCombatData.MaxAP);
+        receiver.Initialize(
+            cachedCombatData.MaxHP,
+            cachedCombatData.MaxAP,
+            baseBlock: cachedCombatData.GetGlobalStat(StatType.AddedBlock));
         receiver.CurrentHP = (!isEnemy && data.CurrentHP > 0) ? Mathf.Min(data.CurrentHP, cachedCombatData.MaxHP) : cachedCombatData.MaxHP;
 
         // 大脑初始化

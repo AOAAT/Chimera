@@ -18,7 +18,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private List<string> snapshot_EquippedComponentIDs = new List<string>();
     private float snapshot_HP;
     private float snapshot_AP;
-    private float snapshot_DamageTaken = 0f;
+    private float previewMaxHP;
+    private float previewMaxAP;
 
     [Header("=== 左右分层 UI 面板 ===")]
     public GameObject LeftStatsPanel;
@@ -36,6 +37,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
     public TMP_Text BlockText;
     public TMP_Text MassText;
     public TMP_Text SpeedText;
+    [Tooltip("用于显示无法保存的具体原因；未绑定时仍会在 Console 输出警告。")]
+    public TMP_Text ValidationMessageText;
 
     public TMP_InputField UnitNameInput;
 
@@ -72,7 +75,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
         currentEditingProfile = null;
         snapshot_SlotIndices.Clear();
         snapshot_EquippedComponentIDs.Clear();
-        snapshot_DamageTaken = 0f;
+        previewMaxHP = 0f;
+        previewMaxAP = 0f;
 
         RefreshWorkshopState();
     }
@@ -87,6 +91,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         snapshot_SlotIndices = new List<int>(currentEditingProfile.SlotIndices);
         snapshot_EquippedComponentIDs = new List<string>(currentEditingProfile.EquippedComponentIDs);
         snapshot_HP = currentEditingProfile.CurrentHP;
+        snapshot_AP = currentEditingProfile.CurrentAP;
 
         gameObject.SetActive(true);
         RefreshWorkshopState();
@@ -95,6 +100,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     // --- AssemblyWorkshopUI.cs ---
     private void RefreshWorkshopState()
     {
+        ClearValidationMessage();
         if (RightInventoryPanel != null) RightInventoryPanel.SetActive(false);
 
         // 1. 如果还没选底盘，显示占位符并清空数值
@@ -145,6 +151,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
             // C. 提取解算后的“真理数值”
             float maxHP = calcData.MaxHP;
             float maxAP = calcData.MaxAP;
+            previewMaxHP = maxHP;
+            previewMaxAP = maxAP;
             float totalBlock = calcData.GetGlobalStat(StatType.AddedBlock);
             float totalMass = calcData.TotalMass;
             float totalEngine = calcData.TotalEnginePower;
@@ -157,21 +165,18 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 currentEditingProfile.CurrentHP = maxHP;
                 currentEditingProfile.CurrentAP = maxAP;
             }
-            else
-            {
-                // 如果是改装旧机甲，保持之前的战损（通过 snapshot_DamageTaken 计算）
-                // 如果加成后的上限变低了，强制收缩当前血量
-                currentEditingProfile.CurrentHP = Mathf.Min(maxHP - snapshot_DamageTaken, maxHP);
-                currentEditingProfile.CurrentAP = maxAP;
-            }
+            // 改装旧机甲时这里只做满状态预览，不提前改写正式战损。
+            // 维修会在合法配置成功保存时才正式生效；取消则保持入场前数值。
 
             // 3. 计算最终物理表现 (移速)
             float speedMult = CombatSandbox.GetSpeed(1f);
             float finalSpeed = GameFormulas.CalcMoveSpeed(totalEngine, totalMass, speedMult);
 
             // 4. 刷新 UI 文字显示
-            HPText.text = $"血量: {currentEditingProfile.CurrentHP:F0} / {maxHP:F0}";
-            APText.text = $"护甲: {currentEditingProfile.CurrentAP:F0} / {maxAP:F0}";
+            float displayedHP = isCreatingNew ? currentEditingProfile.CurrentHP : maxHP;
+            float displayedAP = isCreatingNew ? currentEditingProfile.CurrentAP : maxAP;
+            HPText.text = $"血量: {displayedHP:F0} / {maxHP:F0}";
+            APText.text = $"护甲: {displayedAP:F0} / {maxAP:F0}";
 
             if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
             if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";
@@ -449,9 +454,38 @@ public class AssemblyWorkshopUI : MonoBehaviour
         return true;
     }
 
+    private void ShowValidationMessage(string message)
+    {
+        if (ValidationMessageText != null)
+        {
+            ValidationMessageText.text = message;
+            ValidationMessageText.gameObject.SetActive(true);
+        }
+
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Generic_Warning);
+        Debug.LogWarning($"【装配校验】{message}");
+    }
+
+    private void ClearValidationMessage()
+    {
+        if (ValidationMessageText == null) return;
+        ValidationMessageText.text = string.Empty;
+        ValidationMessageText.gameObject.SetActive(false);
+    }
+
     public void SaveAndExitWorkshop()
     {
         if (currentEditingProfile == null) return;
+
+        if (!ValidateUnitLegality(out string errorMessage))
+        {
+            ShowValidationMessage(errorMessage);
+            return;
+        }
+
+        // 车间兼具维修功能：只有合法配置成功保存时，才恢复至新上限。
+        currentEditingProfile.CurrentHP = previewMaxHP;
+        currentEditingProfile.CurrentAP = previewMaxAP;
         currentEditingProfile.UnitName = UnitNameInput.text;
 
         if (isCreatingNew && currentCallSource != null)

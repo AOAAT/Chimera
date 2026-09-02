@@ -39,7 +39,10 @@ public class EnemyBrain : MonoBehaviour
         myReceiver = GetComponent<DamageReceiver>();
         rb = GetComponent<Rigidbody2D>();
         myHUD = GetComponentInChildren<EntityHUD>();
-        myReceiver.Initialize(Mathf.Max(MyData.GetStat(StatType.HP), 1f), MyData.GetStat(StatType.AP));
+        myReceiver.Initialize(
+            Mathf.Max(MyData.GetStat(StatType.HP), 1f),
+            MyData.GetStat(StatType.AP),
+            baseBlock: MyData.GetStat(StatType.Block));
         myReceiver.isEnemy = true;
         lastFrameHP = myReceiver.CurrentHP;
         SetupVisuals(); SetupPhysics(); InitializeSkills();

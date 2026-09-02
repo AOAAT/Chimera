@@ -35,29 +35,41 @@ public class ChimeraAIController : MonoBehaviour
     // 🚀 RTS 核心指令接口 (上层指挥官通过这些接口下令)
     // ==========================================
 
-    // --- 请修改为以下内容 ---
-    public void SetManualMovePoint(Vector2 point) // 注意这里的参数名是 point
+    public void SetManualMovePoint(Vector2 point)
     {
+        // 新的移动命令会取消此前的攻击和移动命令。
         manualAttackTarget = null;
-        if (rb != null) rb.velocity = Vector2.zero; // 🌟 顺便修复抽搐问题
+        ClearMoveCommand();
 
-        // 🌟 这里必须使用 point 而不是 worldPos
         currentPath = GridPathfinder.FindPath(transform.position, point);
         pathIndex = 0;
 
-        if (currentPath != null && currentPath.Count <= 1) currentPath = null;
+        // 只有获得了有效路径，才进入“手动移动中”状态。
+        // WeaponModule 会根据这个状态禁止普通机甲在移动途中开火。
+        if (currentPath != null && currentPath.Count > 1)
+        {
+            manualMovePoint = point;
+        }
+        else
+        {
+            currentPath = null;
+            manualMovePoint = null;
+        }
     }
 
 
     public void SetManualTarget(Transform target)
     {
-        manualMovePoint = null; // 下达集火指令时，取消移动点
+        ClearMoveCommand(); // 下达集火指令时，完整取消此前的移动路径
         manualAttackTarget = target;
     }
 
     public void ClearMoveCommand()
     {
         manualMovePoint = null;
+        currentPath = null;
+        pathIndex = 0;
+        if (rb != null) rb.velocity = Vector2.zero;
     }
 
     public bool HasManualTarget() => manualAttackTarget != null;
@@ -200,6 +212,11 @@ public class ChimeraAIController : MonoBehaviour
             if (dist < 0.2f) // 抵达当前转折点
             {
                 pathIndex++;
+                if (pathIndex >= currentPath.Count)
+                {
+                    // 到达最终目的地后退出手动移动状态，允许武器恢复开火。
+                    ClearMoveCommand();
+                }
             }
             else
             {

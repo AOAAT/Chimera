@@ -126,7 +126,11 @@ public class EnemyTestBench : MonoBehaviour
         receiver.isEnemy = true;
 
         float maxHp = TargetEnemyData.GetStat(StatType.HP);
-        receiver.Initialize(maxHp > 0 ? maxHp : 1f, TargetEnemyData.GetStat(StatType.AP), myRenderer);
+        receiver.Initialize(
+            maxHp > 0 ? maxHp : 1f,
+            TargetEnemyData.GetStat(StatType.AP),
+            myRenderer,
+            TargetEnemyData.GetStat(StatType.Block));
 
         BuffManager buffMgr = GetComponent<BuffManager>();
         if (buffMgr == null) buffMgr = gameObject.AddComponent<BuffManager>();

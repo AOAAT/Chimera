@@ -52,7 +52,10 @@ public class AssemblyStatMonitor : MonoBehaviour
             CalculateTotalLoad(); // 先算一次数据
 
             DamageReceiver receiver = GetComponent<DamageReceiver>() ?? gameObject.AddComponent<DamageReceiver>();
-            receiver.Initialize(Final_MaxHP > 0 ? Final_MaxHP : 100f, Final_MaxAP);
+            receiver.Initialize(
+                Final_MaxHP > 0 ? Final_MaxHP : 100f,
+                Final_MaxAP,
+                baseBlock: runtimeData.GetGlobalStat(StatType.AddedBlock));
 
             // 2. 初始化 AI
             ChimeraAIController ai = GetComponent<ChimeraAIController>() ?? gameObject.AddComponent<ChimeraAIController>();
