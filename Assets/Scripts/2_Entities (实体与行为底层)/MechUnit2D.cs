@@ -89,11 +89,13 @@ public class MechUnit2D : MonoBehaviour
     {
         int totalSockets = data.ChassisData.Sockets.Count;
         InstancedComponent[] tempInstances = new InstancedComponent[totalSockets];
-        for (int i = 0; i < data.SlotIndices.Count; i++)
+        foreach (EquippedSlotRecord equippedSlot in data.EquippedSlots)
         {
-            int slotIdx = data.SlotIndices[i];
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == data.EquippedComponentIDs[i]);
-            if (compInstance != null && slotIdx < totalSockets) tempInstances[slotIdx] = compInstance;
+            if (equippedSlot == null) continue;
+
+            int slotIdx = equippedSlot.SlotIndex;
+            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == equippedSlot.ComponentInstanceID);
+            if (compInstance != null && slotIdx >= 0 && slotIdx < totalSockets) tempInstances[slotIdx] = compInstance;
         }
         FullSetup(data, tempInstances, false);
     }
@@ -110,8 +112,7 @@ public class MechUnit2D : MonoBehaviour
         {
             if (i >= totalSockets || enemySO.Components[i] == null) continue;
             comps[i] = new InstancedComponent(enemySO.Components[i], enemySO.EliteComponentLevel);
-            eliteProfile.SlotIndices.Add(i);
-            eliteProfile.EquippedComponentIDs.Add("ELITE_TEMP_" + i);
+            eliteProfile.SetEquippedComponent(i, "ELITE_TEMP_" + i);
         }
         this.eliteLingerTime = enemySO.CorpseLingerTime; // 👈 注入停留时长
         this.eliteFadeTime = enemySO.FadeDuration;       // 👈 注入渐变时长
@@ -134,10 +135,12 @@ public class MechUnit2D : MonoBehaviour
         PlayerInventoryManager.Instance.AddChassisToWarehouse(bindedData.ChassisData, 1);
 
         // 2. 遍历并归还所有挂载的零件实物
-        foreach (var instanceID in bindedData.EquippedComponentIDs)
+        foreach (EquippedSlotRecord equippedSlot in bindedData.EquippedSlots)
         {
+            if (equippedSlot == null) continue;
+
             // 从全局实例库中找回这个零件的型号数据
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == instanceID);
+            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == equippedSlot.ComponentInstanceID);
             if (compInstance != null)
             {
                 PlayerInventoryManager.Instance.AddComponentToWarehouse(compInstance.BaseData, compInstance.CurrentMark, 1);

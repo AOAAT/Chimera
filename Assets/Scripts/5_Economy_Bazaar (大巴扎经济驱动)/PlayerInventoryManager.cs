@@ -64,6 +64,26 @@ public class InstancedAccessory
 }
 
 [Serializable]
+public class EquippedSlotRecord
+{
+    public int SlotIndex;
+    public string ComponentInstanceID;
+
+    public EquippedSlotRecord() { }
+
+    public EquippedSlotRecord(int slotIndex, string componentInstanceID)
+    {
+        SlotIndex = slotIndex;
+        ComponentInstanceID = componentInstanceID;
+    }
+
+    public EquippedSlotRecord Clone()
+    {
+        return new EquippedSlotRecord(SlotIndex, ComponentInstanceID);
+    }
+}
+
+[Serializable]
 public class SavedUnitProfile
 {
     public string UnitID;
@@ -72,8 +92,7 @@ public class SavedUnitProfile
     public float CurrentHP;
     public float CurrentAP;
     public bool IsDeployed = false;
-    public List<int> SlotIndices = new List<int>();
-    public List<string> EquippedComponentIDs = new List<string>();
+    public List<EquippedSlotRecord> EquippedSlots = new List<EquippedSlotRecord>();
     public string ChassisInstanceID;
 
     public SavedUnitProfile(InstancedChassis chassisInstance, string name = "未命名机甲")
@@ -84,6 +103,42 @@ public class SavedUnitProfile
         ChassisInstanceID = chassisInstance.InstanceID;
         CurrentHP = PlayerInventoryManager.GetStatValue(ChassisData.BaseStats, StatType.AddedHP);
         CurrentAP = PlayerInventoryManager.GetStatValue(ChassisData.BaseStats, StatType.AddedAP);
+    }
+
+    public EquippedSlotRecord GetEquippedSlot(int slotIndex)
+    {
+        if (EquippedSlots == null) EquippedSlots = new List<EquippedSlotRecord>();
+        return EquippedSlots.Find(record => record != null && record.SlotIndex == slotIndex);
+    }
+
+    public void SetEquippedComponent(int slotIndex, string componentInstanceID)
+    {
+        EquippedSlotRecord existing = GetEquippedSlot(slotIndex);
+        if (existing != null)
+        {
+            existing.ComponentInstanceID = componentInstanceID;
+            return;
+        }
+
+        EquippedSlots.Add(new EquippedSlotRecord(slotIndex, componentInstanceID));
+    }
+
+    public bool RemoveEquippedComponent(int slotIndex)
+    {
+        EquippedSlotRecord existing = GetEquippedSlot(slotIndex);
+        return existing != null && EquippedSlots.Remove(existing);
+    }
+
+    public List<EquippedSlotRecord> CloneEquippedSlots()
+    {
+        List<EquippedSlotRecord> copy = new List<EquippedSlotRecord>();
+        if (EquippedSlots == null) return copy;
+
+        foreach (EquippedSlotRecord record in EquippedSlots)
+        {
+            if (record != null) copy.Add(record.Clone());
+        }
+        return copy;
     }
 }
 

@@ -325,11 +325,15 @@ public class SelectionContextHUD : MonoBehaviour
         chassisImg.raycastTarget = false;
 
         // 3. 循环挂载零件
-        for (int i = 0; i < profile.SlotIndices.Count; i++)
+        foreach (EquippedSlotRecord equippedSlot in profile.EquippedSlots)
         {
-            int slotIdx = profile.SlotIndices[i];
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == profile.EquippedComponentIDs[i]);
+            if (equippedSlot == null) continue;
+
+            int slotIdx = equippedSlot.SlotIndex;
+            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == equippedSlot.ComponentInstanceID);
             if (comp == null) continue;
+
+            if (slotIdx < 0 || slotIdx >= profile.ChassisData.Sockets.Count) continue;
 
             var slotDef = profile.ChassisData.Sockets[slotIdx];
 

@@ -14,8 +14,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private MechUnit2D targetWorldUnit; // 🌟 如果是改装，记录目标
 
     [Header("=== 快照备份系统 ===")]
-    private List<int> snapshot_SlotIndices = new List<int>();
-    private List<string> snapshot_EquippedComponentIDs = new List<string>();
+    private List<EquippedSlotRecord> snapshot_EquippedSlots = new List<EquippedSlotRecord>();
     private float snapshot_HP;
     private float snapshot_AP;
     private float previewMaxHP;
@@ -73,8 +72,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         gameObject.SetActive(true);
 
         currentEditingProfile = null;
-        snapshot_SlotIndices.Clear();
-        snapshot_EquippedComponentIDs.Clear();
+        snapshot_EquippedSlots.Clear();
         previewMaxHP = 0f;
         previewMaxAP = 0f;
 
@@ -88,8 +86,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         isCreatingNew = false;
         currentCallSource = null;
 
-        snapshot_SlotIndices = new List<int>(currentEditingProfile.SlotIndices);
-        snapshot_EquippedComponentIDs = new List<string>(currentEditingProfile.EquippedComponentIDs);
+        snapshot_EquippedSlots = currentEditingProfile.CloneEquippedSlots();
         snapshot_HP = currentEditingProfile.CurrentHP;
         snapshot_AP = currentEditingProfile.CurrentAP;
 
@@ -130,15 +127,17 @@ public class AssemblyWorkshopUI : MonoBehaviour
             int totalSockets = currentEditingProfile.ChassisData.Sockets.Count;
             InstancedComponent[] tempComps = new InstancedComponent[totalSockets];
 
-            for (int i = 0; i < currentEditingProfile.SlotIndices.Count; i++)
+            foreach (EquippedSlotRecord equippedSlot in currentEditingProfile.EquippedSlots)
             {
-                int slotIdx = currentEditingProfile.SlotIndices[i];
-                string instanceID = currentEditingProfile.EquippedComponentIDs[i];
+                if (equippedSlot == null) continue;
+
+                int slotIdx = equippedSlot.SlotIndex;
+                string instanceID = equippedSlot.ComponentInstanceID;
 
                 // 去库存里抓取这个实时的零件实例
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == instanceID);
 
-                if (slotIdx < totalSockets)
+                if (slotIdx >= 0 && slotIdx < totalSockets)
                 {
                     tempComps[slotIdx] = comp;
                 }
@@ -240,10 +239,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
             slotRects.Add(slotIdx, slotRect);
 
             // 检查并渲染已装组件
-            int equippedIdx = currentEditingProfile.SlotIndices.IndexOf(slotIdx);
-            if (equippedIdx != -1)
+            EquippedSlotRecord equippedSlot = currentEditingProfile.GetEquippedSlot(slotIdx);
+            if (equippedSlot != null)
             {
-                string compID = currentEditingProfile.EquippedComponentIDs[equippedIdx];
+                string compID = equippedSlot.ComponentInstanceID;
                 var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
                 if (comp != null)
                 {
@@ -355,8 +354,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private void OnSlotClicked(int slotIndex)
     {
         var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
-        int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
-        bool hasEquippedComp = (existingIdx != -1);
+        EquippedSlotRecord existingSlot = currentEditingProfile.GetEquippedSlot(slotIndex);
+        bool hasEquippedComp = existingSlot != null;
 
         // 🌟 核心修复：从堆栈中筛选出符合该插槽类型的零件
         RightInventoryPanelUI.Instance.OpenForComponentSelection(
@@ -382,11 +381,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private void OnComponentSelectedFromInventory(int slotIndex, InstancedComponent selectedComp)
     {
         // 1. 获取该插槽当前已装备的旧零件信息
-        int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
+        EquippedSlotRecord existingSlot = currentEditingProfile.GetEquippedSlot(slotIndex);
         InstancedComponent oldComp = null;
-        if (existingIdx != -1)
+        if (existingSlot != null)
         {
-            string oldID = currentEditingProfile.EquippedComponentIDs[existingIdx];
+            string oldID = existingSlot.ComponentInstanceID;
             // 注意：这里需要根据旧 ID 找到之前的零件配置
             // 由于我们改了堆叠系统，这里我们通过 Snapshot 记录的数据来找
             oldComp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == oldID);
@@ -408,15 +407,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
             if (oldComp != null)
             {
                 PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentMark, 1);
-                // 从当前机甲逻辑列表中移除旧数据
-                currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
-                currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
             }
 
             // 将新零件装上机甲 (这里我们生成一个临时的 InstanceID 作为标识)
             selectedComp.InstanceID = System.Guid.NewGuid().ToString();
-            currentEditingProfile.SlotIndices.Add(slotIndex);
-            currentEditingProfile.EquippedComponentIDs.Add(selectedComp.InstanceID);
+            currentEditingProfile.SetEquippedComponent(slotIndex, selectedComp.InstanceID);
 
             // 为了详情页能搜到，同步存入临时列表（仅限本次车间会话）
             PlayerInventoryManager.Instance.ComponentInventory.Add(selectedComp);
@@ -429,9 +424,10 @@ public class AssemblyWorkshopUI : MonoBehaviour
             if (oldComp != null)
             {
                 PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentMark, 1);
-                currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
-                currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
             }
+
+            // 即使旧实例已经损坏或丢失，也要清掉无效的槽位记录，避免形成幽灵装备。
+            currentEditingProfile.RemoveEquippedComponent(slotIndex);
         }
 
         RefreshWorkshopState();
@@ -440,9 +436,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private bool ValidateUnitLegality(out string errorMessage)
     {
         errorMessage = ""; int coreCount = 0, mobilityCount = 0;
-        foreach (string compID in currentEditingProfile.EquippedComponentIDs)
+        foreach (EquippedSlotRecord equippedSlot in currentEditingProfile.EquippedSlots)
         {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+            if (equippedSlot == null) continue;
+
+            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == equippedSlot.ComponentInstanceID);
             if (comp != null)
             {
                 if (comp.BaseData.Type == ComponentType.Core) coreCount++;
@@ -512,9 +510,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
         if (currentEditingProfile != null)
         {
             // 1. 【回滚库存】：将当前“试装”在身上的所有零件还给仓库
-            foreach (var compID in currentEditingProfile.EquippedComponentIDs)
+            foreach (EquippedSlotRecord equippedSlot in currentEditingProfile.EquippedSlots)
             {
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                if (equippedSlot == null) continue;
+
+                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == equippedSlot.ComponentInstanceID);
                 if (comp != null)
                 {
                     PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentMark, 1);
@@ -533,15 +533,19 @@ public class AssemblyWorkshopUI : MonoBehaviour
             {
                 // 3. 【改装模式】：回滚至快照状态
                 // A. 还原档案数据
-                currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
-                currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
+                currentEditingProfile.EquippedSlots = snapshot_EquippedSlots
+                    .Where(record => record != null)
+                    .Select(record => record.Clone())
+                    .ToList();
                 currentEditingProfile.CurrentHP = snapshot_HP;
                 currentEditingProfile.CurrentAP = snapshot_AP;
 
                 // B. 重新从仓库扣除原始零件（因为在改装过程中，原始零件已经被还回去了）
-                foreach (var originalCompID in snapshot_EquippedComponentIDs)
+                foreach (EquippedSlotRecord originalSlot in snapshot_EquippedSlots)
                 {
-                    var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == originalCompID);
+                    if (originalSlot == null) continue;
+
+                    var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == originalSlot.ComponentInstanceID);
                     if (comp != null)
                     {
                         PlayerInventoryManager.Instance.TryConsumeFromWarehouse(comp.BaseData, comp.CurrentMark);

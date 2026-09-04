@@ -59,9 +59,11 @@ public class UnitDetailPanelUI : MonoBehaviour
         float totalEngine = PlayerInventoryManager.GetStatValue(currentProfile.ChassisData.BaseStats, StatType.EnginePower);
 
         // 4. 遍历组件叠加
-        foreach (string compID in currentProfile.EquippedComponentIDs)
+        foreach (EquippedSlotRecord equippedSlot in currentProfile.EquippedSlots)
         {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+            if (equippedSlot == null) continue;
+
+            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == equippedSlot.ComponentInstanceID);
             if (comp != null && comp.BaseData != null)
             {
                 // 注意：这里已经对齐了新语义 GetModelData
@@ -106,13 +108,17 @@ public class UnitDetailPanelUI : MonoBehaviour
         chassisImg.sprite = profile.ChassisData.ChassisSprite;
         chassisImg.SetNativeSize();
 
-        for (int i = 0; i < profile.SlotIndices.Count; i++)
+        foreach (EquippedSlotRecord equippedSlot in profile.EquippedSlots)
         {
-            int slotIdx = profile.SlotIndices[i];
-            string compID = profile.EquippedComponentIDs[i];
+            if (equippedSlot == null) continue;
+
+            int slotIdx = equippedSlot.SlotIndex;
+            string compID = equippedSlot.ComponentInstanceID;
 
             var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
             if (comp == null || comp.BaseData == null) continue;
+
+            if (slotIdx < 0 || slotIdx >= profile.ChassisData.Sockets.Count) continue;
 
             var slotDef = profile.ChassisData.Sockets[slotIdx];
 
