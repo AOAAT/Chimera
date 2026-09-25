@@ -87,7 +87,7 @@ public class BuildingManager : MonoBehaviour
 
         ghostInstance = null;
         currentPendingData = null;
-        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Attach);
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Mech_Attach);
         Debug.Log("<color=cyan>【系统】</color> 放置成功，等待鼠标抬起解锁。");
     }
 
@@ -118,9 +118,9 @@ public class BuildingManager : MonoBehaviour
         foreach (Vector2Int offset in ghostInstance.FootprintOffsets)
         {
             Vector3 worldPos = ghostInstance.transform.position + new Vector3(offset.x * sys.CellSize, offset.y * sys.CellSize, 0);
-            Vector2Int gridIdx = sys.WorldToGrid(worldPos);
+            if (!sys.TryWorldToGrid(worldPos, out Vector2Int gridIdx)) return false;
             GridCell cell = sys.GetCell(gridIdx.x, gridIdx.y);
-            if (cell == null || cell.IsOccupied) return false;
+            if (cell == null || !cell.IsWalkable || cell.IsOccupied) return false;
             ghostFootprint.Add(gridIdx);
         }
 
@@ -128,15 +128,16 @@ public class BuildingManager : MonoBehaviour
         HashSet<Vector2Int> liveArea = ConnectivityManager.GetAccessibleArea(ghostFootprint);
         bool selfCanExit = ghostInstance.InteractionOffsets.Any(offset => {
             Vector3 pos = ghostInstance.transform.position + new Vector3(offset.x * sys.CellSize, offset.y * sys.CellSize, 0);
-            return liveArea.Contains(sys.WorldToGrid(pos));
+            return sys.TryWorldToGrid(pos, out Vector2Int index) && liveArea.Contains(index);
         });
         if (!selfCanExit) return false;
 
         foreach (var b in BuildingBase.AllPlacedBuildings)
         {
+            if (b == null) continue;
             bool bStillHasPath = b.InteractionOffsets.Any(offset => {
                 Vector3 pos = b.transform.position + new Vector3(offset.x * sys.CellSize, offset.y * sys.CellSize, 0);
-                return liveArea.Contains(sys.WorldToGrid(pos));
+                return sys.TryWorldToGrid(pos, out Vector2Int index) && liveArea.Contains(index);
             });
             if (!bStillHasPath) return false;
         }

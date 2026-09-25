@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5de0082cbbcff748bcf5d9f0bdf11fd, type: 3}
   m_Name: ShootPlaySound
   m_EditorClassIdentifier: 
-  ClipToPlay: {fileID: 8300000, guid: 6a307e6a5d6d54f49aa4e51443d49005, type: 3}
-  CriticalClipOverride: {fileID: 8300000, guid: 1d036e3e21d3c2a40a21259f34823419, type: 3}
+  ClipsToPlay: []
+  CriticalClipsOverride: []
   Volume: 1
   PitchJitter: 0.1

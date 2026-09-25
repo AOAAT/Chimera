@@ -499,11 +499,6 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
         ExitWorkshop();
     }
-    private void ExitToHangarDirectly()
-    {
-        gameObject.SetActive(false);
-        MusicManager.Instance?.SetImmersionMode(false);
-    }
     // ==========================================
     // 🔙 核心逻辑：取消装配并回滚仓库
     // ==========================================
@@ -577,7 +572,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     {
         gameObject.SetActive(false);
         MusicManager.Instance?.SetImmersionMode(false);
-        // 🌟 核心：通知 HUD 刷新，不再去 HangarMenuUI
+        // 通知场景 HUD 刷新。
         if (SelectionContextHUD.Instance != null) SelectionContextHUD.Instance.Refresh(null);
     }
   

@@ -63,9 +63,6 @@ public enum SubTag
     Order,//秩序
 }
 
-// 👇【核心修复】：补全丢失的枚举
-public enum SalvageDropType { SingleDrop, DraftThree }
-
 // ==========================================
 // 3. 投递模式 (改回原名，但加入 Special)
 // ==========================================

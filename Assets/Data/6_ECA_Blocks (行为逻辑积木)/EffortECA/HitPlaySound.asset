@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5de0082cbbcff748bcf5d9f0bdf11fd, type: 3}
   m_Name: HitPlaySound
   m_EditorClassIdentifier: 
-  ClipToPlay: {fileID: 8300000, guid: 254bffbb70889a444974bbabd1fdcf07, type: 3}
-  CriticalClipOverride: {fileID: 0}
+  ClipsToPlay: []
+  CriticalClipsOverride: []
   Volume: 1
   PitchJitter: 0.1

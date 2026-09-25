@@ -1,51 +1,60 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class RTSCameraMover : MonoBehaviour
 {
-    [Header("=== 移动灵敏度 ===")]
     public float KeyboardSpeed = 30f;
-    public float DragSensitivity = 2.5f;
-
-    [Header("=== 边界限制 (格) ===")]
-    public float MinX = -5f;
-    public float MaxX = 105f;
-
+    public float DragSensitivity = 1f;
+    public bool ClampToGrid = true;
     private Vector3 lastMousePos;
-    private float currentX;
+    private Camera viewCamera;
 
-    private void Start()
-    {
-        currentX = transform.position.x;
-        // 强制初始位置，确保 Z 轴在 -10
-        transform.position = new Vector3(currentX, 0, -10f);
-    }
+    // 移动相机父容器；震屏只修改子相机的局部偏移。
+    private void Awake() => viewCamera = GetComponentInChildren<Camera>();
 
     private void LateUpdate()
     {
-        float moveInput = 0;
-
-        // 1. 键盘 A/D
-        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) moveInput -= KeyboardSpeed;
-        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) moveInput += KeyboardSpeed;
-
-        // 2. 鼠标中键拖拽 (Middle Mouse = 2)
-        if (Input.GetMouseButtonDown(2))
+        if (Time.timeScale == 0f) return;
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
         {
+            var selected = EventSystem.current.currentSelectedGameObject;
+            var tmpInput = selected.GetComponent<TMPro.TMP_InputField>();
+            var inputField = selected.GetComponent<UnityEngine.UI.InputField>();
+            if ((tmpInput != null && tmpInput.isFocused) ||
+                (inputField != null && inputField.isFocused)) return;
+        }
+        Vector3 input = Vector3.zero;
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) input.x--;
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) input.x++;
+        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) input.y--;
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) input.y++;
+        Pan(input.normalized * KeyboardSpeed * Time.unscaledDeltaTime);
+        if (Input.GetMouseButtonDown(2)) lastMousePos = Input.mousePosition;
+        if (Input.GetMouseButton(2) && viewCamera != null)
+        {
+            PanScreenDelta(lastMousePos - Input.mousePosition);
             lastMousePos = Input.mousePosition;
         }
+    }
 
-        if (Input.GetMouseButton(2))
+    public void PanScreenDelta(Vector2 screenDelta)
+    {
+        if (viewCamera == null) return;
+        Vector3 delta = viewCamera.ScreenToWorldPoint(screenDelta) - viewCamera.ScreenToWorldPoint(Vector3.zero);
+        Pan(new Vector2(delta.x, delta.y) * DragSensitivity);
+    }
+
+    public void Pan(Vector2 worldDelta)
+    {
+        if (viewCamera == null) return;
+        Vector3 currentPosition = viewCamera.transform.position;
+        Vector3 position = currentPosition + new Vector3(worldDelta.x, worldDelta.y, 0);
+        if (ClampToGrid && RTSGridSystem.Instance != null)
         {
-            Vector3 delta = lastMousePos - Input.mousePosition;
-            moveInput += delta.x * DragSensitivity; // 将鼠标位移转化为移动增量
-            lastMousePos = Input.mousePosition;
+            Bounds bounds = RTSGridSystem.Instance.WorldBounds;
+            position.x = Mathf.Clamp(position.x, bounds.min.x, bounds.max.x);
+            position.y = Mathf.Clamp(position.y, bounds.min.y, bounds.max.y);
         }
-
-        // 3. 应用位移与边界锁定
-        currentX += moveInput * Time.unscaledDeltaTime;
-        currentX = Mathf.Clamp(currentX, MinX, MaxX);
-
-        // 4. 最终坐标锁定
-        transform.position = new Vector3(currentX, 0, -10f);
+        transform.position += position - currentPosition;
     }
 }

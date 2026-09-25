@@ -1,0 +1,100 @@
+{
+  "unity_version": "2022.3.62f3c1",
+  "validation_project": "C:\\Users\\20723\\AppData\\Local\\Temp\\chimera-validation-xj6qhncd\\Project",
+  "unity_batch_log": "C:\\Users\\20723\\AppData\\Local\\Temp\\chimera-validation-xj6qhncd\\unity-validation-final.log",
+  "unity_batch_marker": "CLEANUP_VALIDATION_COMPLETE errors=0",
+  "compiled": [
+    "Unity Editor batch import and compilation",
+    "Assembly-CSharp (editor defines)",
+    "Assembly-CSharp-Editor",
+    "Assembly-CSharp (standalone defines)"
+  ],
+  "smoke_checks": [
+    "Main menu button loads base",
+    "Four preplaced buildings registered exactly once",
+    "Building grid occupancy",
+    "Base managers initialized",
+    "Headquarters construction UI",
+    "Resident recruitment",
+    "Pause and resume",
+    "Return to main menu clears buildings",
+    "Re-enter base",
+    "Grid coordinate round trip: 3x11, 11x3, 7x7",
+    "Out-of-bounds rejection",
+    "Access remains possible when right boundary is blocked"
+  ],
+  "limitations": [
+    "Headless execution; visual rendering and audio were not manually reviewed",
+    "No standalone player executable build was produced",
+    "Existing third-party TMP sample reference issues were left unchanged"
+  ],
+  "static_audit": {
+    "scanned_text_files": 561,
+    "known_guids": 11592,
+    "deleted_guids_checked": 129,
+    "errors": [],
+    "third_party_sample_findings": [
+      "Unresolved GUID 088d960ecbf7a1d4a8f94993c066a0ff: Assets/TextMesh Pro/Examples & Extras/Scenes/04 - Word Wrapping.unity",
+      "Unresolved GUID 0b4bdfba56924184bbe7c948f934fb70: Assets/TextMesh Pro/Examples & Extras/Scenes/17 - Old Computer Terminal.unity",
+      "Unresolved GUID 2bf015e748557a84c8fa6bfc44e4d685: Assets/TextMesh Pro/Examples & Extras/Scenes/02 - Multi-line TextMesh Pro.unity",
+      "Unresolved GUID 316f956b856b45c448987b5018ec3ef4: Assets/TextMesh Pro/Examples & Extras/Prefabs/Text Popup.prefab",
+      "Unresolved GUID 316f956b856b45c448987b5018ec3ef4: Assets/TextMesh Pro/Examples & Extras/Scenes/18 - ScrollRect & Masking & Layout.unity",
+      "Unresolved GUID 500878462c972a14d87cb770d2b59923: Assets/TextMesh Pro/Examples & Extras/Scenes/12a - Text Interactions.unity",
+      "Unresolved GUID 56510bd4b3627c840a063bd270324c89: Assets/TextMesh Pro/Examples & Extras/Scenes/03 - Line Justification.unity",
+      "Unresolved GUID 5cb611ed8508d904ebba194afcee9c98: Assets/TextMesh Pro/Examples & Extras/Scenes/01-  Single Line TextMesh Pro.unity",
+      "Unresolved GUID 6a9165d4abc743c469f4e1f2ee39605c: Assets/TextMesh Pro/Examples & Extras/Scenes/05 - Style Tags.unity",
+      "Unresolved GUID 6a9165d4abc743c469f4e1f2ee39605c: Assets/TextMesh Pro/Examples & Extras/Scenes/06 - Extra Rich Text Examples.unity",
+      "Unresolved GUID 6a9165d4abc743c469f4e1f2ee39605c: Assets/TextMesh Pro/Examples & Extras/Scenes/08 - Improved Text Alignment.unity",
+      "Unresolved GUID 6a9165d4abc743c469f4e1f2ee39605c: Assets/TextMesh Pro/Examples & Extras/Scenes/09 - Margin Tag Example.unity",
+      "Unresolved GUID 6b9a46634d3f3f0498640b1a019d5853: Assets/TextMesh Pro/Examples & Extras/Scenes/14 - Multi Font & Sprites.unity",
+      "Unresolved GUID 8b8c8a10edf94ddc8cc4cc4fcd5696a9: Assets/TextMesh Pro/Examples & Extras/Materials/Ground - Logo Scene.mat",
+      "Unresolved GUID 8b8c8a10edf94ddc8cc4cc4fcd5696a9: Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Bangers SDF Logo.mat",
+      "Unresolved GUID 92bb8874fcf329247bea65570fd7532a: Assets/TextMesh Pro/Examples & Extras/Scenes/24 - Surface Shader Example.unity",
+      "Unresolved GUID 955cc2a4737565a4293837beb489fb59: Assets/TextMesh Pro/Examples & Extras/Scenes/07 - Superscript & Subscript Example.unity",
+      "Unresolved GUID a9df86876be30af4e9b5f5975d8ee7d8: Assets/TextMesh Pro/Examples & Extras/Scenes/15 - Inline Graphics & Sprites.unity",
+      "Unresolved GUID c45cd05946364f32aba704f0853a975b: Assets/TextMesh Pro/Examples & Extras/Materials/Ground - Surface Shader Scene.mat",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Prefabs/Text Popup.prefab",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/05 - Style Tags.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/06 - Extra Rich Text Examples.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/08 - Improved Text Alignment.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/09 - Margin Tag Example.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/10 - Bullets & Numbered List Example.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/11 - The Style Tag.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/12 - Link Example.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/13 - Soft Hyphenation.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/15 - Inline Graphics & Sprites.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/16 - Linked text overflow mode example.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/17 - Old Computer Terminal.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/18 - ScrollRect & Masking & Layout.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/19 - Masking Texture & Soft Mask.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/20 - Input Field with Scrollbar.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/22 - Basic Scripting Example.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/23 - Animating Vertex Attributes.unity",
+      "Unresolved GUID f5f67c52d1564df4a8936ccd202a3bd8: Assets/TextMesh Pro/Examples & Extras/Scenes/25 - Sunny Days Example.unity",
+      "Unresolved GUID f70555f144d8491a825f0804e09c671c: Assets/TextMesh Pro/Examples & Extras/Scenes/26 - Dropdown Placeholder Example.unity",
+      "Unresolved GUID f8caea216d5e7af42872b30cd96a235f: Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Bangers SDF Logo.mat"
+    ],
+    "build_scenes": [
+      "Assets/Scenes/Scene_MainMenu.unity",
+      "Assets/Scenes/RTS_World_Master.unity"
+    ]
+  },
+  "camera_and_test_spawner_regression": {
+    "unity_batch_log": "C:\\Users\\20723\\AppData\\Local\\Temp\\chimera-validation-xj6qhncd\\camera-spawner-validation.log",
+    "markers": [
+      "CAMERA_AND_TEST_ENEMY_VALIDATED",
+      "CLEANUP_VALIDATION_COMPLETE errors=0"
+    ],
+    "checks": [
+      "Repeated camera movement persists across screen-effect updates",
+      "Mouse screen delta pans camera",
+      "Shake reset preserves camera root position",
+      "Grid bounds constrain camera",
+      "Test enemy spawns and remains initialized after three seconds"
+    ],
+    "static_audit_errors": [],
+    "limitations": [
+      "Headless method-level checks; physical keyboard and mouse events were not simulated"
+    ]
+  }
+}

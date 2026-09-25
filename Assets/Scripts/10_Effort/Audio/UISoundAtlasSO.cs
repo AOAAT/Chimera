@@ -21,8 +21,7 @@ public enum UISoundType
     Combat_Victory,     // 战斗胜利（激昂、正向）
     Combat_Failure,     // 任务失败（沉重、负面）
     UI_UpgradeSuccess,  // 零件强化成功（火花四溅、突破感）
-    UI_RareItemGet,     // 获得传说/史诗零件（金光闪闪的感觉）
-    Map_NodeSelect      // 地图节点选择（雷达扫描感）
+    UI_RareItemGet      // 获得传说/史诗零件（金光闪闪的感觉）
 }
 
 [CreateAssetMenu(fileName = "UISoundAtlas", menuName = "Chimera Protocol/Audio/UI Sound Atlas")]

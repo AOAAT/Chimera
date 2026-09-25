@@ -41,6 +41,16 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     protected List<SpriteRenderer> gridIndicators = new List<SpriteRenderer>();
     protected bool isPlaced = false;
     protected bool isSelected = false;
+    private bool isGhost;
+
+    protected virtual void Start()
+    {
+        // 预放建筑与玩家建造建筑使用同一注册流程。所有 Awake 已在 Start 前完成。
+        if (isGhost || AllPlacedBuildings.Contains(this)) return;
+        if (RTSGridSystem.Instance != null)
+            transform.position = RTSGridSystem.Instance.GetSnappedWorldPos(transform.position);
+        OnPlaced();
+    }
 
 
     public virtual bool TryAddStaff(ResidentData data)
@@ -114,9 +124,22 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
         GeneratePhysicalFootprint();
     }
 
-    private void OnDestroy()
+    protected virtual void OnDestroy()
     {
         AllPlacedBuildings.Remove(this);
+        var grid = RTSGridSystem.Instance;
+        if (grid == null) return;
+        foreach (Vector2Int offset in FootprintOffsets)
+        {
+            Vector3 position = transform.position + new Vector3(offset.x * grid.CellSize, offset.y * grid.CellSize, 0);
+            if (!grid.TryWorldToGrid(position, out Vector2Int index)) continue;
+            GridCell cell = grid.GetCell(index.x, index.y);
+            if (cell != null && cell.Occupant == gameObject)
+            {
+                cell.IsOccupied = false;
+                cell.Occupant = null;
+            }
+        }
     }
 
     // --- 物理与吸附 ---
@@ -153,6 +176,7 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     // --- 幽灵模式控制 ---
     public void InitGhostMode()
     {
+        isGhost = true;
         isPlaced = false;
         foreach (var col in subColliders) col.enabled = false;
 
@@ -188,6 +212,8 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
 
     public virtual void OnPlaced()
     {
+        if (AllPlacedBuildings.Contains(this)) return;
+        isGhost = false;
         isPlaced = true;
         AllPlacedBuildings.Add(this);
         if (RTSGridSystem.Instance == null) return;
@@ -195,7 +221,7 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
         foreach (Vector2Int offset in FootprintOffsets)
         {
             Vector3 worldPos = transform.position + new Vector3(offset.x * RTSGridSystem.Instance.CellSize, offset.y * RTSGridSystem.Instance.CellSize, 0);
-            Vector2Int gridIdx = RTSGridSystem.Instance.WorldToGrid(worldPos);
+            if (!RTSGridSystem.Instance.TryWorldToGrid(worldPos, out Vector2Int gridIdx)) continue;
             GridCell cell = RTSGridSystem.Instance.GetCell(gridIdx.x, gridIdx.y);
             if (cell != null) { cell.IsOccupied = true; cell.Occupant = this.gameObject; }
         }

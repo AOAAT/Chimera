@@ -19,8 +19,9 @@ public class HousingBuilding : BuildingBase
         Debug.Log($"<color=cyan>【城市规划】</color> {BuildingName} 已竣工，基地人口配额增加 {CapacityProvided}。");
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         // 如果建筑被摧毁（未来可能有战斗损毁或拆除），需要扣除上限
         if (PopulationManager.Instance != null)
         {

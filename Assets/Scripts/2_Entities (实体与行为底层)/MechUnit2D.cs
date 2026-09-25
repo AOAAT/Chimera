@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Rendering;
 
 [RequireComponent(typeof(SortingGroup))]
@@ -454,25 +454,6 @@ public class MechUnit2D : MonoBehaviour
     }
 
     private void TintMech(Color targetColor) { SpriteRenderer[] srs = GetComponentsInChildren<SpriteRenderer>(); foreach (var sr in srs) if (sr.gameObject.name != "Logic_Visual_Shadow") sr.color = targetColor; }
-    public void SyncPostCombatState()
-    {
-        if (bindedData == null) return;
-        DamageReceiver r = GetComponent<DamageReceiver>();
-
-        if (r != null)
-        {
-            // --- 方案 A：记忆性系统 (已注释，保留备用) ---
-            // bindedData.CurrentHP = Mathf.Max(0, r.CurrentHP);
-            // bindedData.CurrentAP = r.MaxAP;
-
-            // --- 方案 B：V1.0 满血复活协议 ---
-            // 直接从缓存的战斗数据中读取最大值，让机甲离场即满血
-            bindedData.CurrentHP = cachedCombatData.MaxHP;
-            bindedData.CurrentAP = cachedCombatData.MaxAP;
-
-            Debug.Log($"<color=green>【自动修护】</color> 机甲 [{bindedData.UnitName}] 已完成战后整备，耐久度已恢复至 100%。");
-        }
-    }
 
 }
 

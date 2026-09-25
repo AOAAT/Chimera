@@ -140,6 +140,8 @@ public class SelectionContextHUD : MonoBehaviour
 
             var factoryUI = module.GetComponent<FactoryUIModule>();
             if (factoryUI != null) factoryUI.Initialize();
+            var constructionUI = module.GetComponent<ConstructionUIModule>();
+            if (constructionUI != null) constructionUI.Initialize();
         }
 
         // 岗位系统权限：只有 SupportsStaff 为 true 的建筑才显示工作人员按钮

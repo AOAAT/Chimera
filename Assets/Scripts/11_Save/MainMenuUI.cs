@@ -6,7 +6,6 @@ public class MainMenuUI : MonoBehaviour
 {
     [Header("=== 按钮引用 ===")]
     public Button NewGameButton;
-    public Button LoadGameButton; // 暂时预留
     public Button QuitButton;
 
     private void Start()
@@ -22,12 +21,10 @@ public class MainMenuUI : MonoBehaviour
         if (QuitButton != null) QuitButton.onClick.AddListener(QuitGame);
     }
 
-    // --- 找到 MainMenuUI.cs 的 StartNewGame 方法 ---
     private void StartNewGame()
     {
-        // 之前这里是加载地图场景，现在改为加载你的 RTS 开发测试场景
         Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene("RTS_World_Master"); // 填入你的 RTS 场景名
+        SceneManager.LoadScene("RTS_World_Master");
     }
 
     public void QuitGame()

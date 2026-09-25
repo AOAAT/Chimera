@@ -8,11 +8,8 @@ public class MusicManager : MonoBehaviour
 
     [Header("=== 基础音乐库 ===")]
     public AudioClip BGM_MainMenu;     // 👈 统一命名规范
-    public AudioClip BGM_Map;
+    public AudioClip BGM_Base;
     public AudioClip BGM_Combat;
-    public AudioClip BGM_Shop;
-    public AudioClip BGM_Event_Default;
-    public AudioClip BGM_Loot;
 
     [Header("=== 播放参数 ===")]
     public float FadeDuration = 1.5f;
@@ -54,6 +51,23 @@ public class MusicManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (Instance != this) return;
+        SetImmersionMode(false);
+        SwitchState(scene.name == "Scene_MainMenu" ? MusicState.MainMenu : MusicState.Base);
+    }
+
     private AudioSource CreateChannel(string name, out AudioLowPassFilter filter)
     {
         GameObject go = new GameObject(name);
@@ -85,12 +99,6 @@ public class MusicManager : MonoBehaviour
     public void SwitchState(MusicState newState)
     {
         AudioClip target = GetDefaultClip(newState);
-        ExecuteTransition(target);
-    }
-
-    public void PlayEventMusic(AudioClip overrideClip)
-    {
-        AudioClip target = (overrideClip != null) ? overrideClip : BGM_Event_Default;
         ExecuteTransition(target);
     }
 
@@ -169,11 +177,8 @@ public class MusicManager : MonoBehaviour
         switch (state)
         {
             case MusicState.MainMenu: return BGM_MainMenu; // 👈 增加这一行
-            case MusicState.Map: return BGM_Map;
+            case MusicState.Base: return BGM_Base;
             case MusicState.Combat: return BGM_Combat;
-            case MusicState.Shop: return BGM_Shop;
-            case MusicState.Event: return BGM_Event_Default;
-            case MusicState.Loot: return BGM_Loot;
             default: return null;
         }
     }

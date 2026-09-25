@@ -52,10 +52,6 @@ public class GlobalWarehouseUI : MonoBehaviour
         gameObject.SetActive(true);
         MusicManager.Instance?.SetImmersionMode(true);
 
-        // --- 👇【核心新增】：隐藏主界面进入按钮 ---
-        if (CombatDirector.Instance != null)
-            CombatDirector.Instance.SetNavigationVisibility(false);
-
         RefreshWarehouse();
     }
 
@@ -65,12 +61,6 @@ public class GlobalWarehouseUI : MonoBehaviour
 
         // 👇【只恢复音质】
         MusicManager.Instance?.SetImmersionMode(false);
-
-        // --- ❌ 删除这一行 ---
-        // MusicManager.Instance?.SwitchState(MusicState.Map); 
-
-        if (CombatDirector.Instance != null)
-            CombatDirector.Instance.SetNavigationVisibility(true);
 
         ItemDetailPanelUI.Instance?.HidePanel();
     }

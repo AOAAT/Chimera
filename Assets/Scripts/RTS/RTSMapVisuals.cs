@@ -10,26 +10,24 @@ public class RTSMapVisuals : MonoBehaviour
 
     private void Start()
     {
-        Invoke(nameof(DrawTiles), 0.1f);
+        DrawTiles();
     }
 
     private void DrawTiles()
     {
         var sys = RTSGridSystem.Instance;
+        if (sys == null) return;
         GameObject root = new GameObject("Visual_Grid_Tiles");
         root.transform.SetParent(this.transform);
 
         for (int x = 0; x < sys.MapWidth; x++)
         {
-            float progress = (float)x / sys.MapWidth;
-            Color currentTileColor = (progress < 0.5f)
-                ? Color.Lerp(ColorTech, ColorWasteland, progress * 2f)
-                : Color.Lerp(ColorWasteland, ColorFlesh, (progress - 0.5f) * 2f);
-
             for (int y = 0; y < sys.MapHeight; y++)
             {
                 GridCell cell = sys.GetCell(x, y);
                 if (cell == null) continue;
+                Color currentTileColor = cell.Flavor == TileFlavor.TechBase ? ColorTech
+                    : cell.Flavor == TileFlavor.FleshNest ? ColorFlesh : ColorWasteland;
 
                 GameObject tileObj = new GameObject($"Tile_{x}_{y}");
                 tileObj.transform.SetParent(root.transform);
