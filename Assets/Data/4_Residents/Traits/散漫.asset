@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d15e187cdf5148c2b6eeb23fc54f910e, type: 3}
+  m_Name: "\u6563\u6F2B"
+  m_EditorClassIdentifier: 
+  TraitID: TRAIT_DISTRACTED
+  DisplayName: "\u6563\u6F2B"
+  Description: "\u5BB9\u6613\u5728\u5DE5\u4F5C\u4E2D\u5206\u5FC3\uFF0C\u751F\u4EA7\u529B\u964D\u4F4E 15%\u3002"
+  ProductivityMultiplier: 0.85
+  FlatProductivityBonus: 0

@@ -56,4 +56,13 @@ public class GlobalResourceManager : MonoBehaviour
     {
         AddResources(cost);
     }
+
+    public void RestoreResources(ResourceSaveData data)
+    {
+        if (data == null) return;
+        CurrentScrap = data.Scrap;
+        CurrentBiomass = data.Biomass;
+        CurrentManaStone = data.ManaStone;
+        OnResourceChanged?.Invoke();
+    }
 }

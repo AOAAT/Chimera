@@ -255,6 +255,7 @@ public class MechUnit2D : MonoBehaviour
             cachedCombatData.MaxAP,
             baseBlock: cachedCombatData.GetGlobalStat(StatType.AddedBlock));
         receiver.CurrentHP = (!isEnemy && data.CurrentHP > 0) ? Mathf.Min(data.CurrentHP, cachedCombatData.MaxHP) : cachedCombatData.MaxHP;
+        receiver.CurrentAP = (!isEnemy && data.CurrentAP >= 0) ? Mathf.Min(data.CurrentAP, cachedCombatData.MaxAP) : cachedCombatData.MaxAP;
 
         // 大脑初始化
         var ai = GetComponent<ChimeraAIController>() ?? gameObject.AddComponent<ChimeraAIController>();

@@ -47,6 +47,11 @@ public class PopulationManager : MonoBehaviour
         return TotalResidents.Count >= GetCurrentMaxCapacity();
     }
 
+    public void NotifyResidentStateChanged()
+    {
+        OnPopulationChanged?.Invoke();
+    }
+
     public void SpawnResidentAt(Vector3 spawnPos)
     {
         if (IsFull() || IdentityLibrary == null) return;
@@ -75,6 +80,23 @@ public class PopulationManager : MonoBehaviour
 
         OnPopulationChanged?.Invoke();
         Debug.Log($"<color=green>【社会系统】</color> 新成员 {newData.ResidentName} 已成功入住。");
+    }
+
+    public ResidentEntity SpawnExistingResidentAt(ResidentData data, Vector3 spawnPos)
+    {
+        if (data == null || ResidentPrefab == null) return null;
+        GameObject go = Instantiate(ResidentPrefab, spawnPos, Quaternion.identity);
+        ResidentEntity entity = go.GetComponent<ResidentEntity>();
+        if (entity != null)
+            entity.Initialize(data, IdentityLibrary != null ? IdentityLibrary.DefaultResidentHP : 100f);
+        return entity;
+    }
+
+    public void ReplaceResidents(List<ResidentData> residents)
+    {
+        TotalResidents = residents ?? new List<ResidentData>();
+        RefreshMaxCapacity();
+        OnPopulationChanged?.Invoke();
     }
    
     public void ExileResident(ResidentEntity entity)

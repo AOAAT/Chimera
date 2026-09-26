@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +6,9 @@ using System.Linq;
 public class BuildingManager : MonoBehaviour
 {
     public static BuildingManager Instance;
+
+    [Header("=== 存档所需建筑图纸库 ===")]
+    public List<BuildingDataSO> BuildingDatabase = new List<BuildingDataSO>();
 
     public bool IsPlacing => isPlacing;
     public bool IsSelectionLocked => isSelectionLocked;
@@ -32,6 +35,7 @@ public class BuildingManager : MonoBehaviour
         currentPendingData = data;
         GameObject go = Instantiate(data.Prefab);
         ghostInstance = go.GetComponent<BuildingBase>();
+        ghostInstance.InitializePersistence(data.BuildingID);
         ghostInstance.InitGhostMode();
 
         isPlacing = true;
@@ -62,11 +66,15 @@ public class BuildingManager : MonoBehaviour
         bool isValid = CheckPlacementValidity();
         ghostInstance.UpdateGhostVisual(isValid);
 
+        // UI clicks must not also place a building in the world.
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+
         // 3. 建造交互
         if (Input.GetMouseButtonDown(0))
         {
             if (isValid) ConfirmPlacement();
-            else Debug.LogWarning("<color=red>【拦截】</color> 此处无法建造");
+            else UIFeedback.Show("此处无法建造：请检查地图边界、占地和建筑通路。");
         }
         else if (Input.GetMouseButtonDown(1))
         {

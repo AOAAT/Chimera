@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4506f46345773994085c4cb0476ec69a, type: 3}
   m_Name: "\u5DE5\u5382\u5EFA\u7B51"
   m_EditorClassIdentifier: 
+  BuildingID: BLD_FACTORY
   BuildingName: "\u5DE5\u5382"
   Category: 2
   Icon: {fileID: 21300000, guid: dfb7b89746799c945b667ea82ce56f57, type: 3}

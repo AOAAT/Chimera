@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a094a36bf5981ce4fbf2a8a9adb19db1, type: 3}
   m_Name: Global_Identity_Library
   m_EditorClassIdentifier: 
+  DefaultResidentHP: 20
   NamePool:
   - "\u51EF\u6069"
   - "\u827E\u8389\u4E1D"
@@ -19,3 +20,9 @@ MonoBehaviour:
   - "\u7EF4\u5609"
   - "\u5E0C\u5C14"
   HeroPresets: []
+  TraitPool:
+  - {fileID: 11400000, guid: 017466337b87482ebfd19259d83dcb87, type: 2}
+  - {fileID: 11400000, guid: 4e988f643cfd4d58be4ff7ae64a0f2d1, type: 2}
+  - {fileID: 11400000, guid: 2e9720e97db7442c98912dbf7ab15282, type: 2}
+  MinRandomTraits: 1
+  MaxRandomTraits: 1

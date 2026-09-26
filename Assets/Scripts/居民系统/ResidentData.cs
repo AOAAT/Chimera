@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum ResidentStatus { Idle, Working, Piloting }
+public enum ResidentStatus { Idle, Working, Piloting, TravelingToWork }
 
 [Serializable]
 public class ResidentData
@@ -25,6 +25,11 @@ public class ResidentData
     public float FleshProficiency = 1.0f;
     public float ManaProficiency = 1.0f;
 
+    [Header("=== 性格倾向 (0-1) ===")]
+    [Range(0f, 1f)] public float Discipline = 0.5f;
+    [Range(0f, 1f)] public float Sociability = 0.5f;
+    [Range(0f, 1f)] public float Courage = 0.5f;
+
 
     public ResidentData(string name, bool isHero = false)
     {
@@ -35,6 +40,7 @@ public class ResidentData
     }
     public ResidentStatus Status = ResidentStatus.Idle;
     public string CurrentCarrierID; // 记录当前所在的建筑或机甲 InstanceID
+    public float CurrentHP;
     // 预留：经验增加接口
     public void AddExperience(float amount)
     {

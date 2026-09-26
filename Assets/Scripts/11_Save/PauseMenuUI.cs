@@ -1,7 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+// Process Escape before the default EventSystem cancellation pass.
+[DefaultExecutionOrder(-50)]
 public class PauseMenuUI : MonoBehaviour
 {
     public static PauseMenuUI Instance;
@@ -39,13 +41,44 @@ public class PauseMenuUI : MonoBehaviour
         // 键盘 Esc 逻辑保持不变
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            TogglePause();
+            HandleBack();
         }
     }
 
     // ==========================================
     // 🚀 核心接口：一键切换暂停状态
     // ==========================================
+    public void HandleBack()
+    {
+        if (isPaused) { ResumeGame(); return; }
+        var selected = UnityEngine.EventSystems.EventSystem.current != null
+            ? UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject : null;
+        if (selected != null)
+        {
+            var textInput = selected.GetComponent<TMPro.TMP_InputField>();
+            if (textInput != null && textInput.isFocused)
+            {
+                textInput.DeactivateInputField();
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+                return;
+            }
+        }
+        foreach (var dropdown in FindObjectsOfType<TMPro.TMP_Dropdown>())
+        {
+            if (!dropdown.IsExpanded) continue;
+            dropdown.Hide();
+            return;
+        }
+        if (UIBackHandler.TryCloseTop()) return;
+        if (BuildingManager.Instance != null && BuildingManager.Instance.IsPlacing)
+        {
+            BuildingManager.Instance.CancelPlacement();
+            UIFeedback.Show("已取消建造。");
+            return;
+        }
+        PauseGame();
+    }
+
     public void TogglePause()
     {
         if (isPaused) ResumeGame();

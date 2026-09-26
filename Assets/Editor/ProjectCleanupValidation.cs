@@ -21,6 +21,7 @@ public static class ProjectCleanupValidation
     {
         try
         {
+            Require(LayerMask.NameToLayer("Building") >= 0 && LayerMask.NameToLayer("Enemy_Body") >= 0, "Validation copy is missing project layer settings");
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
             Require(scenes.SequenceEqual(new[] { "Assets/Scenes/Scene_MainMenu.unity", "Assets/Scenes/RTS_World_Master.unity" }), "Unexpected build scene order");
             foreach (string path in AssetDatabase.GetAllAssetPaths())
@@ -144,6 +145,7 @@ public static class ProjectCleanupValidation
                     "Test enemy did not initialize successfully");
                 UnityEngine.Object.Destroy(spawnedTestEnemy.gameObject);
                 Debug.Log("CAMERA_AND_TEST_ENEMY_VALIDATED");
+                CheckUIInteractions();
                 PauseMenuUI.Instance.PauseGame();
                 Require(Time.timeScale == 0f, "Pause failed");
                 PauseMenuUI.Instance.ResumeGame();
@@ -173,6 +175,39 @@ public static class ProjectCleanupValidation
     private static void Require(bool condition, string message)
     {
         if (!condition) throw new InvalidOperationException(message);
+    }
+
+    private static void CheckUIInteractions()
+    {
+        var hud = SelectionContextHUD.Instance;
+        int residents = PopulationManager.Instance.TotalResidents.Count;
+        var logButton = hud.ResidentRoot.GetComponentsInChildren<Button>(true).Single(b => b.name == "日志按钮");
+        Require(logButton.onClick.GetPersistentMethodName(0) == "OnClickResidentLog", "Resident log still invokes exile");
+        logButton.onClick.Invoke();
+        Require(UIFeedback.CurrentMessage.Contains("尚未实现") && PopulationManager.Instance.TotalResidents.Count == residents, "Resident log did not safely show feedback");
+        hud.BuildingUpgradeButton.onClick.Invoke();
+        Require(UIFeedback.CurrentMessage.Contains("建筑升级"), "Upgrade feedback missing");
+        hud.BuildingDismantleButton.onClick.Invoke();
+        Require(UIFeedback.CurrentMessage.Contains("建筑拆除"), "Dismantle feedback missing");
+        var factory = UnityEngine.Object.FindObjectOfType<FactoryBuilding>();
+        int tasks = factory.TaskQueue.Count;
+        var resources = GlobalResourceManager.Instance;
+        float scrap = resources.CurrentScrap;
+        factory.AddToQueue(null, "Validation", null, 10, new ResourceSet(scrap + 100, 0, 0));
+        Require(factory.TaskQueue.Count == tasks && resources.CurrentScrap == scrap && UIFeedback.CurrentMessage.Contains("废料 100"), "Insufficient funds must provide feedback without mutation");
+        GlobalWarehouseUI.Instance.OpenWarehouse();
+        AssemblyWorkshopUI.Instance.OpenEmptyWorkshop(UnityEngine.Object.FindObjectOfType<AssemblerBuilding>());
+        PauseMenuUI.Instance.HandleBack();
+        Require(!AssemblyWorkshopUI.Instance.gameObject.activeSelf && GlobalWarehouseUI.Instance.gameObject.activeSelf && Time.timeScale == 1, "Back did not close only the latest window");
+        PauseMenuUI.Instance.HandleBack();
+        Require(!GlobalWarehouseUI.Instance.gameObject.activeSelf && Time.timeScale == 1, "Back failed to close warehouse");
+        PauseMenuUI.Instance.HandleBack();
+        Require(Time.timeScale == 0, "Back should pause after windows close");
+        UIFeedback.Show("暂停时的提示");
+        Require(UIFeedback.CurrentMessage == "暂停时的提示", "Feedback unavailable while paused");
+        PauseMenuUI.Instance.HandleBack();
+        Require(Time.timeScale == 1, "Back should resume paused game");
+        Debug.Log("UI_INTERACTIONS_VALIDATED");
     }
 
     private static void CheckGridShapes()

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -116,11 +116,16 @@ public class FactoryUIModule : MonoBehaviour
         // 3. 详情页重定向
         var trigger = slotObj.GetComponent<UnityEngine.EventSystems.EventTrigger>() ?? slotObj.AddComponent<UnityEngine.EventSystems.EventTrigger>();
 
+        ResourceSet previewCost = new ResourceSet();
+        if (sourceSO is ComponentDataSO component) previewCost = component.GetModelData(1)?.ProductionCost ?? new ResourceSet();
+        else if (sourceSO is ChassisDataSO chassis) previewCost = chassis.ProductionCost;
+
         // 鼠标进入
         var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
         enter.callback.AddListener((e) => {
             ItemDetailPanelUI.Instance.SetFixedAnchor(DetailAnchor);
             onHover.Invoke();
+            UIFeedback.Show($"{itemName} · 生产时间 {prodTime:0.#} 秒\n成本：{UIFeedback.Cost(previewCost)}");
         });
         trigger.triggers.Add(enter);
 

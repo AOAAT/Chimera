@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -60,6 +60,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private void Awake()
     {
         if (Instance == null) Instance = this;
+        UIBackHandler.Attach(gameObject, CancelAndExitWorkshop);
         gameObject.SetActive(false);
     }
 
@@ -463,6 +464,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         }
 
         GlobalAudioManager.Instance?.PlayUISound(UISoundType.Generic_Warning);
+        UIFeedback.Show(message);
         Debug.LogWarning($"【装配校验】{message}");
     }
 

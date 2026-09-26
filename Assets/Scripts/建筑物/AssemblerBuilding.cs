@@ -76,7 +76,12 @@ public class AssemblerBuilding : BuildingBase
     public void SpawnMech(SavedUnitProfile profile)
     {
         Vector3 bestSpawnPos = CalculateBestSpawnLocation();
-        GameObject go = Instantiate(MechBasePrefab, bestSpawnPos, Quaternion.identity);
+        SpawnMechAt(profile, bestSpawnPos, true);
+    }
+
+    public MechUnit2D SpawnMechAt(SavedUnitProfile profile, Vector3 spawnPosition, bool issueRallyCommand)
+    {
+        GameObject go = Instantiate(MechBasePrefab, spawnPosition, Quaternion.identity);
 
         // 🌟 [核心修复]：先拿到脚本
         MechUnit2D unit = go.GetComponent<MechUnit2D>();
@@ -97,9 +102,10 @@ public class AssemblerBuilding : BuildingBase
 
         // 启动 AI
         ChimeraAIController ai = go.GetComponent<ChimeraAIController>();
-        if (ai != null) StartCoroutine(DelayedCommand(ai));
+        if (ai != null && issueRallyCommand) StartCoroutine(DelayedCommand(ai));
 
         GlobalAudioManager.Instance?.PlayUISound(UISoundType.Mech_PowerOn);
+        return unit;
     }
 
     private Vector3 CalculateBestSpawnLocation()

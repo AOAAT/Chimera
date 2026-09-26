@@ -120,6 +120,7 @@ public class BattleCommandManager : MonoBehaviour
                 else
                 {
                     Debug.Log($"[指挥官] 给居民 {res.MyData.ResidentName} 下达【移动】指令");
+                    res.CancelGarrisonOrder();
                     res.SetDestination(mousePos);
                 }
                 anyCommandIssued = true;

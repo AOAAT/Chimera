@@ -1,4 +1,4 @@
-﻿// --- START OF FILE UnitDetailPanelUI.cs ---
+// --- START OF FILE UnitDetailPanelUI.cs ---
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -27,11 +27,11 @@ public class UnitDetailPanelUI : MonoBehaviour
     private const float WorldToUIMultiplier = 100f; // 锁死
 
     private SavedUnitProfile currentProfile;
-    private int currentSlotIndex = -1;
     private MechUnit2D bindedUnit; // 🌟 增加对物理机甲的引用
     private void Awake()
     {
         Instance = this;
+        UIBackHandler.Attach(gameObject, CloseDetail);
         gameObject.SetActive(false);
     }
 
@@ -161,17 +161,6 @@ public class UnitDetailPanelUI : MonoBehaviour
 
     public void OnClickDismantle()
     {
-        if (currentSlotIndex < 0 || currentProfile == null) return;
-
-        // 1. 调用底层的原子化拆解
-      
-
-        // 2. 视觉反馈：震一下并关闭详情页
-        if (ScreenEffectManager.Instance != null)
-            ScreenEffectManager.Instance.TriggerShake(0.15f, 0.15f);
-
-        GlobalAudioManager.Instance.PlayUISound(UISoundType.Mech_Detach);
-
-
+        UIFeedback.Show("机甲拆解功能尚未实现。");
     }
 }

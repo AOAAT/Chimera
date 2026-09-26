@@ -12,6 +12,9 @@ public class ProductionTask
     public float CurrentProgress = 0f; // 当前已完成秒数 (0 到 TotalTime)
     public bool IsPaused = false;      // 是否被玩家点暂停了
     public ResourceSet PaidCost; // 关键：记录此任务支付时的确切金额
+    [System.NonSerialized] public bool IsActivelyProducing;
+    [System.NonSerialized] public int ActiveLineIndex = -1;
+    [System.NonSerialized] public float EffectiveSpeed = 1f;
     public float NormalizedProgress => Mathf.Clamp01(CurrentProgress / TotalTime);
     public float RemainingTime => Mathf.Max(0, TotalTime - CurrentProgress);
 
@@ -23,5 +26,15 @@ public class ProductionTask
         Icon = icon;
         TotalTime = time;
         PaidCost = cost; // 存入成本
+    }
+
+    public static ProductionTask Restore(UnityEngine.Object so, string name, Sprite icon, float time,
+        ResourceSet cost, string taskID, float progress, bool paused)
+    {
+        ProductionTask task = new ProductionTask(so, name, icon, time, cost);
+        task.TaskID = taskID;
+        task.CurrentProgress = Mathf.Clamp(progress, 0f, time);
+        task.IsPaused = paused;
+        return task;
     }
 }

@@ -31,7 +31,13 @@ public class ProductionTaskUIItem : MonoBehaviour
         if (bindedTask == null) return;
 
         if (ProgressSlider != null) ProgressSlider.value = bindedTask.NormalizedProgress;
-        if (TimeText != null) TimeText.text = $"{bindedTask.RemainingTime:F1}s";
+        if (TimeText != null)
+        {
+            if (bindedTask.IsPaused) TimeText.text = "已暂停";
+            else if (bindedTask.IsActivelyProducing)
+                TimeText.text = $"生产线 {bindedTask.ActiveLineIndex + 1} · {bindedTask.RemainingTime / Mathf.Max(0.01f, bindedTask.EffectiveSpeed):F1}s";
+            else TimeText.text = $"排队 · {bindedTask.RemainingTime:F1}s";
+        }
 
         // 🌟 视觉同步
         if (PauseOverlay != null) PauseOverlay.SetActive(bindedTask.IsPaused);

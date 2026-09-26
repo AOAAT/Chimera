@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
 {
@@ -10,6 +13,10 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     public bool SupportsStaff = false; // 🌟 只有勾选了，HUD 才会显示“工作人员”按钮
 
     [Header("=== 基础信息 ===")]
+    [Tooltip("运行时建筑实例的稳定标识。由图纸 ID 与网格位置生成。")]
+    [SerializeField] private string persistentID;
+    [Tooltip("生成该建筑的图纸稳定 ID；场景预放建筑允许留空并使用脚本类型。")]
+    [SerializeField] private string definitionID;
     public string BuildingName = "新建筑";
     public Sprite BuildingIcon;
     public GameObject FunctionUIPrefab; // 对应底部舞台的模块
@@ -30,12 +37,15 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     [Header("=== 岗位系统 ===")]
     public int MaxStaffCapacity = 4;
     protected List<ResidentData> currentStaff = new List<ResidentData>();
+    public event Action<BuildingBase> OnStaffChanged;
     public string GetCarrierName() => BuildingName;
 
     // 🌟 核心修改：显式告诉接口，你的 MaxStaffCapacity 就是返回这个字段的值
     int IResidentCarrier.MaxStaffCapacity => MaxStaffCapacity;
 
     public List<ResidentData> GetStaffList() => currentStaff;
+    public string PersistentID => EnsurePersistentID();
+    public string DefinitionID => definitionID;
 
     protected List<BoxCollider2D> subColliders = new List<BoxCollider2D>();
     protected List<SpriteRenderer> gridIndicators = new List<SpriteRenderer>();
@@ -52,6 +62,30 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
         OnPlaced();
     }
 
+    public int GetReservedStaffCount()
+    {
+        if (PopulationManager.Instance == null) return 0;
+        int count = 0;
+        foreach (ResidentData resident in PopulationManager.Instance.TotalResidents)
+        {
+            if (resident == null || resident.Status != ResidentStatus.TravelingToWork) continue;
+            if (resident.CurrentCarrierID == PersistentID) count++;
+        }
+        return count;
+    }
+
+    public bool CanAcceptStaffOrder(ResidentData resident)
+    {
+        if (!SupportsStaff || resident == null || currentStaff.Contains(resident)) return false;
+        if (resident.Status != ResidentStatus.Idle) return false;
+        return currentStaff.Count + GetReservedStaffCount() < MaxStaffCapacity;
+    }
+
+    public void NotifyStaffReservationChanged()
+    {
+        OnStaffChanged?.Invoke(this);
+    }
+
 
     public virtual bool TryAddStaff(ResidentData data)
     {
@@ -64,8 +98,12 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
             return false;
         }
 
+        if (data == null || currentStaff.Contains(data)) return false;
         data.Status = ResidentStatus.Working;
+        data.CurrentCarrierID = PersistentID;
         currentStaff.Add(data);
+        OnStaffChanged?.Invoke(this);
+        if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
         Debug.Log($"<color=cyan>[建筑] {BuildingName} 成功登记员工: {data.ResidentName}。当前在职: {currentStaff.Count}</color>");
         return true;
     }
@@ -75,6 +113,10 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
         if (currentStaff.Contains(data))
         {
             currentStaff.Remove(data);
+            data.Status = ResidentStatus.Idle;
+            data.CurrentCarrierID = string.Empty;
+            OnStaffChanged?.Invoke(this);
+            if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
             StartCoroutine(EjectResidentRoutine(data));
         }
     }
@@ -82,32 +124,42 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     // 🌟 核心：一个个走出来 (排队遣散)
     private System.Collections.IEnumerator EjectResidentRoutine(ResidentData data)
     {
-        Vector3 spawnPos = GetInteractionPoint();
-
-        // 1. 在门口生成实体
-        GameObject resObj = Instantiate(PopulationManager.Instance.ResidentPrefab, spawnPos, Quaternion.identity);
-        ResidentEntity entity = resObj.GetComponent<ResidentEntity>();
-
-        // 2. 注入灵魂
-        data.Status = ResidentStatus.Idle;
-        entity.Initialize(data, PopulationManager.Instance.IdentityLibrary.DefaultResidentHP);
-
-        // 3. 视觉渐现 (预留程序渐变)
-        // StartCoroutine(FadeIn(resObj));
-
-        // 4. 指令：向外走一步，防止堵门口
-        entity.SetDestination(spawnPos + (Vector3)Random.insideUnitCircle * 1.5f);
-
-        yield return new WaitForSeconds(0.5f); // 间隔半秒出下一个人
+        EjectResident(data);
+        yield return null;
     }
     public void DismissAllStaff()
     {
-        // 复制一份列表防止遍历时修改导致报错
         var list = new List<ResidentData>(currentStaff);
-        foreach (var staff in list)
+        if (list.Count == 0) return;
+        currentStaff.Clear();
+        foreach (ResidentData staff in list)
         {
-            RemoveStaff(staff);
+            staff.Status = ResidentStatus.Idle;
+            staff.CurrentCarrierID = string.Empty;
         }
+        OnStaffChanged?.Invoke(this);
+        if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
+        StartCoroutine(EjectResidentsSequentially(list));
+    }
+
+    private System.Collections.IEnumerator EjectResidentsSequentially(List<ResidentData> residents)
+    {
+        foreach (ResidentData resident in residents)
+        {
+            EjectResident(resident);
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    private void EjectResident(ResidentData data)
+    {
+        if (data == null || PopulationManager.Instance == null) return;
+        Vector3 spawnPos = GetInteractionPoint();
+        ResidentEntity entity = PopulationManager.Instance.SpawnExistingResidentAt(data, spawnPos);
+        data.Status = ResidentStatus.Idle;
+        data.CurrentCarrierID = string.Empty;
+        if (entity != null)
+            entity.SetDestination(spawnPos + (Vector3)UnityEngine.Random.insideUnitCircle * 1.5f);
     }
 
     public Vector3 GetInteractionPoint()
@@ -210,11 +262,55 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
         OnPlaced();
     }
 
+    public void InitializePersistence(string sourceDefinitionID)
+    {
+        if (!string.IsNullOrWhiteSpace(sourceDefinitionID)) definitionID = sourceDefinitionID;
+        persistentID = string.Empty;
+    }
+
+    public void RestorePersistence(string savedInstanceID, string savedDefinitionID, Vector3 savedPosition)
+    {
+        transform.position = savedPosition;
+        definitionID = savedDefinitionID;
+        persistentID = savedInstanceID;
+        OnPlaced();
+    }
+
+    public void RestoreStaff(IEnumerable<ResidentData> residents)
+    {
+        currentStaff.Clear();
+        if (residents == null) return;
+        foreach (ResidentData resident in residents)
+        {
+            if (resident == null || currentStaff.Count >= MaxStaffCapacity) continue;
+            resident.Status = ResidentStatus.Working;
+            resident.CurrentCarrierID = PersistentID;
+            currentStaff.Add(resident);
+        }
+        OnStaffChanged?.Invoke(this);
+    }
+
+    private string EnsurePersistentID()
+    {
+        if (!string.IsNullOrWhiteSpace(persistentID)) return persistentID;
+        string source = string.IsNullOrWhiteSpace(definitionID) ? GetType().Name : definitionID;
+        Vector3 position = transform.position;
+        persistentID = string.Format(
+            CultureInfo.InvariantCulture,
+            "{0}:{1}:{2:0.###}:{3:0.###}",
+            SceneManager.GetActiveScene().name,
+            source,
+            position.x,
+            position.y);
+        return persistentID;
+    }
+
     public virtual void OnPlaced()
     {
         if (AllPlacedBuildings.Contains(this)) return;
         isGhost = false;
         isPlaced = true;
+        EnsurePersistentID();
         AllPlacedBuildings.Add(this);
         if (RTSGridSystem.Instance == null) return;
 

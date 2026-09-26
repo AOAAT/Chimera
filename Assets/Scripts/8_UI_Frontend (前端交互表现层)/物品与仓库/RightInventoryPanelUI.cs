@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -24,7 +24,7 @@ public class RightInventoryPanelUI : MonoBehaviour
     private bool currentAllowUnequip;
     private Action<ComponentStack> onComponentSelectedCallback;
 
-    private void Awake() { Instance = this; }
+    private void Awake() { Instance = this; UIBackHandler.Attach(gameObject, () => { ItemDetailPanelUI.Instance?.HidePanel(); gameObject.SetActive(false); }); }
 
     private void Start()
     {

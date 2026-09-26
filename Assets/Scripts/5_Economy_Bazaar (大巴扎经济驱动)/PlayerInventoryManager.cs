@@ -129,6 +129,7 @@ public class PlayerInventoryManager : MonoBehaviour
     [Header("=== 游戏全局图纸库 ===")]
     public List<ChassisDataSO> AllChassisDatabase = new List<ChassisDataSO>();
     public List<ComponentDataSO> AllComponentDatabase = new List<ComponentDataSO>();
+    public List<AccessoryDataSO> AllAccessoryDatabase = new List<AccessoryDataSO>();
 
     [Header("=== 测试作弊专用 ===")]
     public List<ChassisDataSO> DebugChassisBundle = new List<ChassisDataSO>();
@@ -225,6 +226,125 @@ public class PlayerInventoryManager : MonoBehaviour
     public InstancedAccessory GetAccessoryInstance(string id) => AccessoryInventory.Find(a => a.InstanceID == id);
     public void AddAccessoryToInventory(AccessoryDataSO so) { AccessoryInventory.Add(new InstancedAccessory(so)); OnInventoryChanged?.Invoke(); }
     public void ForceTriggerInventoryEvent() => OnInventoryChanged?.Invoke();
+
+    public InventorySaveData CaptureSaveData()
+    {
+        InventorySaveData save = new InventorySaveData();
+        foreach (ComponentStack stack in componentWarehouse.Values)
+        {
+            if (stack?.BaseData == null) continue;
+            save.ComponentWarehouse.Add(new ComponentStackSaveData
+            {
+                DefinitionID = stack.BaseData.ComponentBaseID,
+                Level = stack.Level,
+                Quantity = stack.Quantity
+            });
+        }
+        foreach (ChassisStack stack in chassisWarehouse.Values)
+        {
+            if (stack?.BaseData == null) continue;
+            save.ChassisWarehouse.Add(new ChassisStackSaveData
+            {
+                DefinitionID = stack.BaseData.ChassisID,
+                Quantity = stack.Quantity
+            });
+        }
+        foreach (InstancedComponent item in ComponentInventory)
+        {
+            if (item?.BaseData == null) continue;
+            save.Components.Add(new InstancedComponentSaveData
+            {
+                InstanceID = item.InstanceID,
+                DefinitionID = item.BaseData.ComponentBaseID,
+                EquippedUnitID = item.EquippedUnitID,
+                CurrentMark = item.CurrentMark,
+                SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>())
+            });
+        }
+        foreach (InstancedChassis item in ChassisInventory)
+        {
+            if (item?.BaseData == null) continue;
+            save.Chassis.Add(new InstancedChassisSaveData
+            {
+                InstanceID = item.InstanceID,
+                DefinitionID = item.BaseData.ChassisID,
+                EquippedUnitID = item.EquippedUnitID
+            });
+        }
+        foreach (InstancedAccessory item in AccessoryInventory)
+        {
+            if (item?.BaseData == null) continue;
+            save.Accessories.Add(new InstancedAccessorySaveData
+            {
+                InstanceID = item.InstanceID,
+                DefinitionID = item.BaseData.AccessoryID,
+                ParentComponentID = item.ParentComponentID
+            });
+        }
+        return save;
+    }
+
+    public void RestoreSaveData(InventorySaveData save, SaveDefinitionResolver definitions)
+    {
+        componentWarehouse.Clear();
+        chassisWarehouse.Clear();
+        ComponentInventory.Clear();
+        ChassisInventory.Clear();
+        AccessoryInventory.Clear();
+        if (save == null)
+        {
+            OnInventoryChanged?.Invoke();
+            return;
+        }
+
+        foreach (ComponentStackSaveData item in save.ComponentWarehouse)
+        {
+            ComponentDataSO definition = definitions.ResolveComponent(item.DefinitionID);
+            if (definition != null && item.Quantity > 0)
+                componentWarehouse[$"{definition.ComponentBaseID}_{item.Level}"] = new ComponentStack(definition, item.Level, item.Quantity);
+        }
+        foreach (ChassisStackSaveData item in save.ChassisWarehouse)
+        {
+            ChassisDataSO definition = definitions.ResolveChassis(item.DefinitionID);
+            if (definition != null && item.Quantity > 0)
+                chassisWarehouse[definition.ChassisID] = new ChassisStack(definition, item.Quantity);
+        }
+        foreach (InstancedComponentSaveData item in save.Components)
+        {
+            ComponentDataSO definition = definitions.ResolveComponent(item.DefinitionID);
+            if (definition == null) continue;
+            InstancedComponent restored = new InstancedComponent(definition, item.CurrentMark)
+            {
+                InstanceID = item.InstanceID,
+                EquippedUnitID = item.EquippedUnitID,
+                SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>())
+            };
+            ComponentInventory.Add(restored);
+        }
+        foreach (InstancedChassisSaveData item in save.Chassis)
+        {
+            ChassisDataSO definition = definitions.ResolveChassis(item.DefinitionID);
+            if (definition == null) continue;
+            InstancedChassis restored = new InstancedChassis(definition)
+            {
+                InstanceID = item.InstanceID,
+                EquippedUnitID = item.EquippedUnitID
+            };
+            ChassisInventory.Add(restored);
+        }
+        foreach (InstancedAccessorySaveData item in save.Accessories)
+        {
+            AccessoryDataSO definition = definitions.ResolveAccessory(item.DefinitionID);
+            if (definition == null) continue;
+            InstancedAccessory restored = new InstancedAccessory(definition)
+            {
+                InstanceID = item.InstanceID,
+                ParentComponentID = item.ParentComponentID
+            };
+            AccessoryInventory.Add(restored);
+        }
+        OnInventoryChanged?.Invoke();
+    }
 
     public bool ValidateHPBeforeUnequip(SavedUnitProfile unit, InstancedComponent componentToRemove, InstancedComponent componentToEquip = null)
     {

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class FactoryBuilding : BuildingBase
@@ -7,6 +7,37 @@ public class FactoryBuilding : BuildingBase
 
     [Header("=== 生产任务队列 ===")]
     public List<ProductionTask> TaskQueue = new List<ProductionTask>();
+
+    [Header("=== 居民生产力 ===")]
+    [Min(0f)] public float SpeedBonusPerProductivity = 0.15f;
+    [Min(0.1f)] public float ProductivityPerAdditionalLine = 2f;
+    [Min(1)] public int MaxProductionLines = 3;
+    public ResidentWorkDomain WorkDomain = ResidentWorkDomain.Tech;
+
+    public float TotalStaffProductivity
+    {
+        get
+        {
+            float total = 0f;
+            ResidentIdentityLibrarySO library = PopulationManager.Instance != null
+                ? PopulationManager.Instance.IdentityLibrary : null;
+            foreach (ResidentData resident in currentStaff)
+                total += ResidentWorkCalculator.CalculateContribution(resident, WorkDomain, library);
+            return total;
+        }
+    }
+
+    public float ProductionSpeedMultiplier => 1f + TotalStaffProductivity * SpeedBonusPerProductivity;
+    public int ActiveProductionLineCount => Mathf.Clamp(
+        1 + Mathf.FloorToInt(TotalStaffProductivity / Mathf.Max(0.1f, ProductivityPerAdditionalLine)),
+        1, Mathf.Max(1, MaxProductionLines));
+
+    public float GetResidentContribution(ResidentData resident)
+    {
+        ResidentIdentityLibrarySO library = PopulationManager.Instance != null
+            ? PopulationManager.Instance.IdentityLibrary : null;
+        return ResidentWorkCalculator.CalculateContribution(resident, WorkDomain, library);
+    }
     protected override void Awake()
     {
         base.Awake();
@@ -24,27 +55,36 @@ public class FactoryBuilding : BuildingBase
 
     private void UpdateProduction(float deltaTime)
     {
-        ProductionTask activeTask = null;
-
-        // 🌟 使用标准的 for 循环，防止遍历时因取消任务导致报错
-        for (int i = 0; i < TaskQueue.Count; i++)
+        float speed = ProductionSpeedMultiplier;
+        foreach (ProductionTask task in TaskQueue)
         {
-            if (!TaskQueue[i].IsPaused)
+            task.IsActivelyProducing = false;
+            task.ActiveLineIndex = -1;
+            task.EffectiveSpeed = speed;
+        }
+
+        List<ProductionTask> activeTasks = new List<ProductionTask>();
+        int availableLines = ActiveProductionLineCount;
+        for (int i = 0; i < TaskQueue.Count && activeTasks.Count < availableLines; i++)
+        {
+            ProductionTask task = TaskQueue[i];
+            if (!task.IsPaused)
             {
-                activeTask = TaskQueue[i];
-                break;
+                task.IsActivelyProducing = true;
+                task.ActiveLineIndex = activeTasks.Count;
+                activeTasks.Add(task);
             }
         }
 
-        if (activeTask != null)
+        foreach (ProductionTask task in activeTasks)
         {
-            activeTask.CurrentProgress += deltaTime;
-
-            if (activeTask.CurrentProgress >= activeTask.TotalTime)
-            {
-                FinishTask(activeTask);
-            }
+            task.EffectiveSpeed = speed;
+            task.CurrentProgress += deltaTime * speed;
         }
+
+        for (int i = activeTasks.Count - 1; i >= 0; i--)
+            if (activeTasks[i].CurrentProgress >= activeTasks[i].TotalTime)
+                FinishTask(activeTasks[i]);
     }
 
     private void FinishTask(ProductionTask task)
@@ -58,7 +98,7 @@ public class FactoryBuilding : BuildingBase
         // 2. 从队列移除
         TaskQueue.Remove(task);
         Debug.Log($"<color=green>【生产完成】</color> {task.ItemName} 已产出并出库。");
-        GlobalAudioManager.Instance.PlayUISound(UISoundType.Loot_ItemEject);
+        GlobalAudioManager.Instance?.PlayUISound(UISoundType.Loot_ItemEject);
     }
 
     // --- 给 UI 调用：添加新任务 ---
@@ -73,7 +113,7 @@ public class FactoryBuilding : BuildingBase
         else
         {
             Debug.LogWarning("【系统】 资源储备不足，无法开始生产任务。");
-            // 这里未来可以触发 UI 抖动提示
+            UIFeedback.Show(UIFeedback.Shortage(cost));
         }
     }
 
@@ -85,6 +125,65 @@ public class FactoryBuilding : BuildingBase
             GlobalResourceManager.Instance.Refund(task.PaidCost);
             TaskQueue.Remove(task);
             Debug.Log($"<color=orange>【任务撤回】</color> 已全额返还：{task.ItemName}");
+        }
+    }
+
+    public List<ProductionTaskSaveData> CaptureProductionQueue()
+    {
+        List<ProductionTaskSaveData> result = new List<ProductionTaskSaveData>();
+        foreach (ProductionTask task in TaskQueue)
+        {
+            string type = null;
+            string definitionID = null;
+            if (task.SourceSO is ChassisDataSO chassis)
+            {
+                type = "Chassis";
+                definitionID = chassis.ChassisID;
+            }
+            else if (task.SourceSO is ComponentDataSO component)
+            {
+                type = "Component";
+                definitionID = component.ComponentBaseID;
+            }
+            if (definitionID == null) continue;
+            result.Add(new ProductionTaskSaveData
+            {
+                TaskID = task.TaskID,
+                DefinitionType = type,
+                DefinitionID = definitionID,
+                ItemName = task.ItemName,
+                TotalTime = task.TotalTime,
+                CurrentProgress = task.CurrentProgress,
+                IsPaused = task.IsPaused,
+                PaidCost = task.PaidCost
+            });
+        }
+        return result;
+    }
+
+    public void RestoreProductionQueue(List<ProductionTaskSaveData> savedQueue, SaveDefinitionResolver definitions)
+    {
+        TaskQueue.Clear();
+        if (savedQueue == null) return;
+        foreach (ProductionTaskSaveData saved in savedQueue)
+        {
+            UnityEngine.Object definition;
+            Sprite icon;
+            if (saved.DefinitionType == "Chassis")
+            {
+                ChassisDataSO chassis = definitions.ResolveChassis(saved.DefinitionID);
+                definition = chassis;
+                icon = chassis != null ? chassis.ChassisSprite : null;
+            }
+            else
+            {
+                ComponentDataSO component = definitions.ResolveComponent(saved.DefinitionID);
+                definition = component;
+                icon = component != null ? component.ComponentIcon : null;
+            }
+            if (definition == null) continue;
+            TaskQueue.Add(ProductionTask.Restore(definition, saved.ItemName, icon, saved.TotalTime,
+                saved.PaidCost, saved.TaskID, saved.CurrentProgress, saved.IsPaused));
         }
     }
 }

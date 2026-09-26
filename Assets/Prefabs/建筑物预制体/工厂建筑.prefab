@@ -232,3 +232,7 @@ MonoBehaviour:
   ShowDebugGizmos: 1
   SyncOrderFlag: 0
   TaskQueue: []
+  SpeedBonusPerProductivity: 0.15
+  ProductivityPerAdditionalLine: 2
+  MaxProductionLines: 3
+  WorkDomain: 1

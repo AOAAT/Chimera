@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -25,6 +25,7 @@ public class GlobalWarehouseUI : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        UIBackHandler.Attach(gameObject, CloseWarehouse);
         gameObject.SetActive(false);
     }
 
@@ -93,9 +94,9 @@ public class GlobalWarehouseUI : MonoBehaviour
             availableTags.Add(t);
         }
         TagDropdown.AddOptions(tagNames);
-        SetDropdownColor(MainCategoryDropdown, Color.black);
-        SetDropdownColor(TypeDropdown, Color.black);
-        SetDropdownColor(TagDropdown, Color.black);
+        SetDropdownColor(MainCategoryDropdown, ChimeraUITheme.PrimaryText);
+        SetDropdownColor(TypeDropdown, ChimeraUITheme.PrimaryText);
+        SetDropdownColor(TagDropdown, ChimeraUITheme.PrimaryText);
         // 初始化时手动触发一次状态刷新
         OnFilterChanged();
     }
@@ -127,7 +128,7 @@ public class GlobalWarehouseUI : MonoBehaviour
                 // 可用时：纯黑色 (Alpha 1.0)
                 // 禁用时：半透明黑 (Alpha 0.3) 
                 TypeDropdown.captionText.color = TypeDropdown.interactable ?
-                    Color.black : new Color(0, 0, 0, 0.3f);
+                    ChimeraUITheme.PrimaryText : new Color32(126, 145, 160, 140);
             }
         }
 

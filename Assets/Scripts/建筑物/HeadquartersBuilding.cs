@@ -6,6 +6,7 @@ public class HeadquartersBuilding : BuildingBase
     [Header("=== 招募设置 ===")]
     public float RecruitmentInterval = 20f; // 招募一名新人所需时间
     private float recruitTimer;
+    public float RecruitTimer => recruitTimer;
 
     [Header("=== UI 引用 ===")]
     public CanvasGroup ProgressCanvasGroup;
@@ -73,5 +74,10 @@ public class HeadquartersBuilding : BuildingBase
     {
         if (ProgressCanvasGroup == null) return;
         ProgressCanvasGroup.alpha = Mathf.Lerp(ProgressCanvasGroup.alpha, isActive ? 1f : 0f, Time.deltaTime * 5f);
+    }
+
+    public void RestoreRecruitTimer(float value)
+    {
+        recruitTimer = Mathf.Clamp(value, 0f, RecruitmentInterval);
     }
 }

@@ -55,6 +55,8 @@ public class ResidentEntity : MonoBehaviour
             // 居民通常没有护甲 (AP = 0)
             dr.Initialize(maxHP, 0);
             dr.isEnemy = false; // 居民永远属于玩家阵营
+            if (data.CurrentHP > 0f) dr.CurrentHP = Mathf.Min(data.CurrentHP, dr.MaxHP);
+            else data.CurrentHP = dr.CurrentHP;
         }
 
         SetSelected(false);
@@ -75,13 +77,37 @@ public class ResidentEntity : MonoBehaviour
 
     public void OrderGarrison(IResidentCarrier carrier)
     {
+        if (carrier == null || MyData == null) return;
+        if (carrier is BuildingBase building && !building.CanAcceptStaffOrder(MyData))
+        {
+            UIFeedback.Show($"{building.BuildingName} 的岗位已满，或居民当前无法派遣。");
+            return;
+        }
         targetCarrier = carrier;
+        MyData.Status = ResidentStatus.TravelingToWork;
+        MyData.CurrentCarrierID = carrier is BuildingBase targetBuilding ? targetBuilding.PersistentID : string.Empty;
+        if (carrier is BuildingBase reservedBuilding)
+            reservedBuilding.NotifyStaffReservationChanged();
+        if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
         Vector3 gatePos = carrier.GetInteractionPoint();
 
         // 🔍 DEBUG 2: 确认门的位置
         Debug.Log($"[实体] {MyData.ResidentName} 收到入驻请求。门口世界坐标: {gatePos}");
 
         SetDestination(gatePos);
+    }
+
+    public void CancelGarrisonOrder()
+    {
+        BuildingBase reservedBuilding = targetCarrier as BuildingBase;
+        targetCarrier = null;
+        if (MyData != null && MyData.Status == ResidentStatus.TravelingToWork)
+        {
+            MyData.Status = ResidentStatus.Idle;
+            MyData.CurrentCarrierID = string.Empty;
+            if (reservedBuilding != null) reservedBuilding.NotifyStaffReservationChanged();
+            if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
+        }
     }
     private void Update()
     {
@@ -120,7 +146,12 @@ public class ResidentEntity : MonoBehaviour
         else
         {
             Debug.LogError($"[实体] 入驻失败！{targetCarrier.GetCarrierName()} 可能反馈 TryAddStaff 为 false");
+            BuildingBase reservedBuilding = targetCarrier as BuildingBase;
             targetCarrier = null;
+            MyData.Status = ResidentStatus.Idle;
+            MyData.CurrentCarrierID = string.Empty;
+            if (reservedBuilding != null) reservedBuilding.NotifyStaffReservationChanged();
+            if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
         }
     }
 
@@ -174,6 +205,13 @@ public class ResidentEntity : MonoBehaviour
         // 取消订阅，防止内存泄漏
         var dr = GetComponent<DamageReceiver>();
         if (dr != null) dr.OnEntityDeath -= HandleDeath;
+    }
+
+    public void SyncRuntimeStateToData()
+    {
+        if (MyData == null) return;
+        DamageReceiver dr = GetComponent<DamageReceiver>();
+        if (dr != null) MyData.CurrentHP = dr.CurrentHP;
     }
 
     private void HandleDeath()
