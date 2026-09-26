@@ -19,7 +19,9 @@ public class ComponentFabricator : MonoBehaviour
 
         if (processTime <= 0)
         {
-            PlayerInventoryManager.Instance.AddComponentToWarehouse(targetSO, targetLevel, 1);
+            InstancedComponent product = ComponentQualityGenerator.Create(targetSO, targetLevel,
+                System.Guid.NewGuid().GetHashCode(), 0f, null, string.Empty);
+            PlayerInventoryManager.Instance.AddComponentInstance(product);
         }
         else
         {

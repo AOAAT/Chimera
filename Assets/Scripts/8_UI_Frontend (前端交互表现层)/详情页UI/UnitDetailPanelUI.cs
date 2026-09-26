@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class UnitDetailPanelUI : MonoBehaviour
 {
@@ -61,18 +62,15 @@ public class UnitDetailPanelUI : MonoBehaviour
         // 4. 遍历组件叠加
         foreach (string compID in currentProfile.EquippedComponentIDs)
         {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+            var comp = PlayerInventoryManager.Instance.GetComponentInstance(compID);
             if (comp != null && comp.BaseData != null)
             {
                 // 注意：这里已经对齐了新语义 GetModelData
-                var modelData = comp.BaseData.GetModelData(comp.CurrentMark);
-                if (modelData != null)
-                {
-                    maxHP += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.AddedHP);
-                    totalBlock += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.AddedBlock);
-                    totalMass += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.AddedMass);
-                    totalEngine += PlayerInventoryManager.GetStatValue(modelData.Stats, StatType.EnginePower);
-                }
+                List<StatEntry> resolvedStats = ComponentStatResolver.Resolve(comp);
+                maxHP += PlayerInventoryManager.GetStatValue(resolvedStats, StatType.AddedHP);
+                totalBlock += PlayerInventoryManager.GetStatValue(resolvedStats, StatType.AddedBlock);
+                totalMass += PlayerInventoryManager.GetStatValue(resolvedStats, StatType.AddedMass);
+                totalEngine += PlayerInventoryManager.GetStatValue(resolvedStats, StatType.EnginePower);
             }
         }
 
@@ -111,7 +109,7 @@ public class UnitDetailPanelUI : MonoBehaviour
             int slotIdx = profile.SlotIndices[i];
             string compID = profile.EquippedComponentIDs[i];
 
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+            var comp = PlayerInventoryManager.Instance.GetComponentInstance(compID);
             if (comp == null || comp.BaseData == null) continue;
 
             var slotDef = profile.ChassisData.Sockets[slotIdx];

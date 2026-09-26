@@ -28,6 +28,8 @@ public static class ChimeraUITheme
     public static void ApplyPanel(GameObject root, bool addRootSurface = true, bool styleNamedSurfaces = true)
     {
         if (root == null) return;
+        // 仓库自行维护布局和配色；周期主题扫描不能改写下拉菜单、遮罩与品质色。
+        if (root.GetComponentInParent<GlobalWarehouseUI>(true) != null) return;
 
         if (addRootSurface)
         {
@@ -57,6 +59,9 @@ public static class ChimeraUITheme
     public static void StyleButton(Button button)
     {
         if (button == null) return;
+        // TMP 下拉菜单的全屏点击拦截层必须透明，不能当普通按钮填色。
+        if (button.name == "Blocker") return;
+        if (button.GetComponentInParent<GlobalWarehouseUI>(true) != null) return;
         Image image = button.targetGraphic as Image;
         if (image == null) image = button.GetComponent<Image>();
 
@@ -146,6 +151,7 @@ public static class ChimeraUITheme
     private static void StyleText(TMP_Text text)
     {
         if (text == null || text.GetComponentInParent<Button>() != null) return;
+        if (text.GetComponentInParent<InventoryItemSlotUI>(true) != null) return;
         string key = text.name.ToLowerInvariant();
         if (ContainsAny(key, "name", "title", "header", "标题", "名称"))
         {

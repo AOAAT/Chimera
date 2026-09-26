@@ -94,6 +94,12 @@ public class AssemblyWorkshopUI : MonoBehaviour
         snapshot_HP = currentEditingProfile.CurrentHP;
         snapshot_AP = currentEditingProfile.CurrentAP;
 
+        foreach (string componentID in snapshot_EquippedComponentIDs)
+        {
+            InstancedComponent component = PlayerInventoryManager.Instance.GetComponentInstance(componentID);
+            if (component != null) component.EquippedUnitID = currentEditingProfile.UnitID;
+        }
+
         gameObject.SetActive(true);
         RefreshWorkshopState();
     }
@@ -137,7 +143,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 string instanceID = currentEditingProfile.EquippedComponentIDs[i];
 
                 // 去库存里抓取这个实时的零件实例
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == instanceID);
+                var comp = PlayerInventoryManager.Instance.GetComponentInstance(instanceID);
 
                 if (slotIdx < totalSockets)
                 {
@@ -245,7 +251,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             if (equippedIdx != -1)
             {
                 string compID = currentEditingProfile.EquippedComponentIDs[equippedIdx];
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+                var comp = PlayerInventoryManager.Instance.GetComponentInstance(compID);
                 if (comp != null)
                 {
                     slotVisual.color = new Color(1f, 1f, 1f, 0f); // 隐藏圆点
@@ -366,16 +372,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
                   .ToList(),
             hasEquippedComp,
             (selectedStack) => {
-                // 如果选了东西，转回旧逻辑需要的实例（OnComponentSelectedFromInventory 内部会处理消耗逻辑）
-                if (selectedStack != null)
-                {
-                    InstancedComponent tempComp = new InstancedComponent(selectedStack.BaseData, selectedStack.Level);
-                    OnComponentSelectedFromInventory(slotIndex, tempComp);
-                }
-                else
-                {
-                    OnComponentSelectedFromInventory(slotIndex, null); // 触发卸载
-                }
+                OnComponentSelectedFromInventory(slotIndex,
+                    selectedStack != null ? selectedStack.Representative : null);
             }
         );
     }
@@ -390,46 +388,36 @@ public class AssemblyWorkshopUI : MonoBehaviour
             string oldID = currentEditingProfile.EquippedComponentIDs[existingIdx];
             // 注意：这里需要根据旧 ID 找到之前的零件配置
             // 由于我们改了堆叠系统，这里我们通过 Snapshot 记录的数据来找
-            oldComp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == oldID);
+            oldComp = PlayerInventoryManager.Instance.GetComponentInstance(oldID);
         }
 
         // 2. 逻辑分支：安装新零件 OR 纯卸载
         if (selectedComp != null)
         {
-            // 尝试从仓库扣除实物
-            bool success = PlayerInventoryManager.Instance.TryConsumeFromWarehouse(selectedComp.BaseData, selectedComp.CurrentMark);
-
-            if (!success)
+            if (!PlayerInventoryManager.Instance.TryEquipComponent(selectedComp, currentEditingProfile.UnitID))
             {
-                Debug.LogWarning("【车间】库存不足，无法安装！");
+                Debug.LogWarning("【车间】该组件已被其他机甲占用，无法安装。");
                 return;
             }
 
-            // 扣除成功，如果原本有旧零件，将旧零件还给仓库
-            if (oldComp != null)
+            if (existingIdx != -1)
             {
-                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentMark, 1);
-                // 从当前机甲逻辑列表中移除旧数据
+                if (oldComp != null) PlayerInventoryManager.Instance.ReleaseComponent(oldComp);
                 currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
                 currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
             }
 
-            // 将新零件装上机甲 (这里我们生成一个临时的 InstanceID 作为标识)
-            selectedComp.InstanceID = System.Guid.NewGuid().ToString();
             currentEditingProfile.SlotIndices.Add(slotIndex);
             currentEditingProfile.EquippedComponentIDs.Add(selectedComp.InstanceID);
-
-            // 为了详情页能搜到，同步存入临时列表（仅限本次车间会话）
-            PlayerInventoryManager.Instance.ComponentInventory.Add(selectedComp);
 
             OnComponentEquipped(slotIndex);
         }
         else
         {
             // 玩家点击了“卸载”
-            if (oldComp != null)
+            if (existingIdx != -1)
             {
-                PlayerInventoryManager.Instance.AddComponentToWarehouse(oldComp.BaseData, oldComp.CurrentMark, 1);
+                if (oldComp != null) PlayerInventoryManager.Instance.ReleaseComponent(oldComp);
                 currentEditingProfile.SlotIndices.RemoveAt(existingIdx);
                 currentEditingProfile.EquippedComponentIDs.RemoveAt(existingIdx);
             }
@@ -443,7 +431,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         errorMessage = ""; int coreCount = 0, mobilityCount = 0;
         foreach (string compID in currentEditingProfile.EquippedComponentIDs)
         {
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
+            var comp = PlayerInventoryManager.Instance.GetComponentInstance(compID);
             if (comp != null)
             {
                 if (comp.BaseData.Type == ComponentType.Core) coreCount++;
@@ -508,14 +496,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
     {
         if (currentEditingProfile != null)
         {
-            // 1. 【回滚库存】：将当前“试装”在身上的所有零件还给仓库
+            // 释放本次预览中的占用状态；实例本身始终留在永久仓库中。
             foreach (var compID in currentEditingProfile.EquippedComponentIDs)
             {
-                var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == compID);
-                if (comp != null)
-                {
-                    PlayerInventoryManager.Instance.AddComponentToWarehouse(comp.BaseData, comp.CurrentMark, 1);
-                }
+                var comp = PlayerInventoryManager.Instance.GetComponentInstance(compID);
+                if (comp != null) PlayerInventoryManager.Instance.ReleaseComponent(comp);
             }
 
             if (isCreatingNew)
@@ -528,22 +513,17 @@ public class AssemblyWorkshopUI : MonoBehaviour
             }
             else
             {
-                // 3. 【改装模式】：回滚至快照状态
-                // A. 还原档案数据
                 currentEditingProfile.SlotIndices = new List<int>(snapshot_SlotIndices);
                 currentEditingProfile.EquippedComponentIDs = new List<string>(snapshot_EquippedComponentIDs);
                 currentEditingProfile.CurrentHP = snapshot_HP;
                 currentEditingProfile.CurrentAP = snapshot_AP;
 
-                // B. 重新从仓库扣除原始零件（因为在改装过程中，原始零件已经被还回去了）
                 foreach (var originalCompID in snapshot_EquippedComponentIDs)
                 {
-                    var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == originalCompID);
-                    if (comp != null)
-                    {
-                        PlayerInventoryManager.Instance.TryConsumeFromWarehouse(comp.BaseData, comp.CurrentMark);
-                    }
+                    var comp = PlayerInventoryManager.Instance.GetComponentInstance(originalCompID);
+                    if (comp != null) comp.EquippedUnitID = currentEditingProfile.UnitID;
                 }
+                PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
             }
         }
 

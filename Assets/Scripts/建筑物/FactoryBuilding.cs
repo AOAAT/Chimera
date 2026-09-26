@@ -31,6 +31,28 @@ public class FactoryBuilding : BuildingBase
     public int ActiveProductionLineCount => Mathf.Clamp(
         1 + Mathf.FloorToInt(TotalStaffProductivity / Mathf.Max(0.1f, ProductivityPerAdditionalLine)),
         1, Mathf.Max(1, MaxProductionLines));
+    public bool HasMaximumProductionLines => ActiveProductionLineCount >= Mathf.Max(1, MaxProductionLines);
+    public float NextProductionLineThreshold => HasMaximumProductionLines
+        ? TotalStaffProductivity
+        : ActiveProductionLineCount * Mathf.Max(0.1f, ProductivityPerAdditionalLine);
+    public float ProductivityUntilNextLine => HasMaximumProductionLines
+        ? 0f
+        : Mathf.Max(0f, NextProductionLineThreshold - TotalStaffProductivity);
+    public float NextProductionLineProgress
+    {
+        get
+        {
+            if (HasMaximumProductionLines) return 1f;
+            float step = Mathf.Max(0.1f, ProductivityPerAdditionalLine);
+            float previousThreshold = (ActiveProductionLineCount - 1) * step;
+            return Mathf.InverseLerp(previousThreshold, previousThreshold + step, TotalStaffProductivity);
+        }
+    }
+
+    public float GetEffectiveProductionTime(float baseTime)
+    {
+        return Mathf.Max(0f, baseTime) / Mathf.Max(0.01f, ProductionSpeedMultiplier);
+    }
 
     public float GetResidentContribution(ResidentData resident)
     {
@@ -55,6 +77,7 @@ public class FactoryBuilding : BuildingBase
 
     private void UpdateProduction(float deltaTime)
     {
+        if (deltaTime <= 0f) return;
         float speed = ProductionSpeedMultiplier;
         foreach (ProductionTask task in TaskQueue)
         {
@@ -78,6 +101,7 @@ public class FactoryBuilding : BuildingBase
 
         foreach (ProductionTask task in activeTasks)
         {
+            EnsureCraftSnapshot(task);
             task.EffectiveSpeed = speed;
             task.CurrentProgress += deltaTime * speed;
         }
@@ -93,12 +117,32 @@ public class FactoryBuilding : BuildingBase
         if (task.SourceSO is ChassisDataSO chassis)
             PlayerInventoryManager.Instance.AddChassisToWarehouse(chassis, 1);
         else if (task.SourceSO is ComponentDataSO component)
-            PlayerInventoryManager.Instance.AddComponentToWarehouse(component, 1, 1);
+        {
+            EnsureCraftSnapshot(task);
+            InstancedComponent product = ComponentQualityGenerator.Create(component, 1, task.CraftSeed,
+                task.Craftsmanship, task.CraftedByResidentIDs, task.CraftedAtBuildingID);
+            PlayerInventoryManager.Instance.AddComponentInstance(product);
+            string affixes = product.Affixes.Count > 0
+                ? $" · {string.Join("、", product.Affixes.ConvertAll(affix => affix.DisplayName))}"
+                : string.Empty;
+            UIFeedback.Show($"{ComponentQualityUtility.GetName(product.Quality)} {component.ComponentName} 已入库{affixes}");
+        }
 
         // 2. 从队列移除
         TaskQueue.Remove(task);
         Debug.Log($"<color=green>【生产完成】</color> {task.ItemName} 已产出并出库。");
         GlobalAudioManager.Instance?.PlayUISound(UISoundType.Loot_ItemEject);
+    }
+
+    private void EnsureCraftSnapshot(ProductionTask task)
+    {
+        if (task == null || task.HasCraftSnapshot) return;
+        task.HasCraftSnapshot = true;
+        task.CraftSeed = System.Guid.NewGuid().GetHashCode();
+        task.Craftsmanship = TotalStaffProductivity;
+        task.CraftedAtBuildingID = PersistentID;
+        task.CraftedByResidentIDs = currentStaff.FindAll(resident => resident != null)
+            .ConvertAll(resident => resident.InstanceID);
     }
 
     // --- 给 UI 调用：添加新任务 ---
@@ -155,7 +199,12 @@ public class FactoryBuilding : BuildingBase
                 TotalTime = task.TotalTime,
                 CurrentProgress = task.CurrentProgress,
                 IsPaused = task.IsPaused,
-                PaidCost = task.PaidCost
+                PaidCost = task.PaidCost,
+                HasCraftSnapshot = task.HasCraftSnapshot,
+                CraftSeed = task.CraftSeed,
+                Craftsmanship = task.Craftsmanship,
+                CraftedAtBuildingID = task.CraftedAtBuildingID,
+                CraftedByResidentIDs = new List<string>(task.CraftedByResidentIDs ?? new List<string>())
             });
         }
         return result;
@@ -183,7 +232,9 @@ public class FactoryBuilding : BuildingBase
             }
             if (definition == null) continue;
             TaskQueue.Add(ProductionTask.Restore(definition, saved.ItemName, icon, saved.TotalTime,
-                saved.PaidCost, saved.TaskID, saved.CurrentProgress, saved.IsPaused));
+                saved.PaidCost, saved.TaskID, saved.CurrentProgress, saved.IsPaused,
+                saved.HasCraftSnapshot, saved.CraftSeed, saved.Craftsmanship,
+                saved.CraftedAtBuildingID, saved.CraftedByResidentIDs));
         }
     }
 }

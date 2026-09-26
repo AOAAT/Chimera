@@ -169,7 +169,7 @@ public class RuntimeChimeraData
             if (compSO.Type == ComponentType.Weapon)
             {
                 EquippedWeapons.Add(runtimeProxy);
-                ProcessStats(levelData.Stats, true, runtimeProxy);
+                ProcessStats(ComponentStatResolver.Resolve(compInstance), true, runtimeProxy);
             }
             else
             {
@@ -180,7 +180,7 @@ public class RuntimeChimeraData
                     SafeDodgeDistance = compSO.SafeDodgeDistance;
                     CoreActiveSkill = levelData.ActiveSkill;
                 }
-                ProcessStats(levelData.Stats, false, null);
+                ProcessStats(ComponentStatResolver.Resolve(compInstance), false, null);
             }
 
             // 收集全局效果

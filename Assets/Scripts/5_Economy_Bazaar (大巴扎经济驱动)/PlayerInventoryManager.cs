@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 // ==========================================
-// 1. 实物档案与堆叠结构
+// 1. 实物档案与仓库视图
 // ==========================================
 [Serializable]
 public class InstancedChassis
@@ -29,6 +29,15 @@ public class InstancedComponent
     public string EquippedUnitID;
     public int CurrentMark = 1;
     public List<string> SocketedAccessoryIDs = new List<string>();
+    public ComponentQuality Quality = ComponentQuality.Standard;
+    public float QualityScore;
+    public List<StatEntry> RolledStats = new List<StatEntry>();
+    public List<ComponentAffixInstance> Affixes = new List<ComponentAffixInstance>();
+    public bool IsLocked;
+    public int CraftSeed;
+    public float Craftsmanship;
+    public string CraftedAtBuildingID;
+    public List<string> CraftedByResidentIDs = new List<string>();
 
     public InstancedComponent(ComponentDataSO data, int level)
     {
@@ -37,6 +46,10 @@ public class InstancedComponent
         CurrentMark = level;
         EquippedUnitID = string.Empty;
         SocketedAccessoryIDs = new List<string>();
+        RolledStats = new List<StatEntry>();
+        Affixes = new List<ComponentAffixInstance>();
+        CraftedAtBuildingID = string.Empty;
+        CraftedByResidentIDs = new List<string>();
     }
     public int GetMaxSockets()
     {
@@ -92,10 +105,18 @@ public class ComponentStack
 {
     public ComponentDataSO BaseData;
     public int Level;
-    public int Quantity;
-    public ComponentStack(ComponentDataSO data, int level, int qty)
+    public ComponentQuality Quality;
+    public List<InstancedComponent> Instances = new List<InstancedComponent>();
+    public int Quantity => Instances != null ? Instances.Count : 0;
+    public InstancedComponent Representative => Quantity > 0 ? Instances[0] : null;
+
+    public ComponentStack(ComponentDataSO data, int level, ComponentQuality quality,
+        IEnumerable<InstancedComponent> instances)
     {
-        BaseData = data; Level = level; Quantity = qty;
+        BaseData = data;
+        Level = level;
+        Quality = quality;
+        Instances = instances != null ? new List<InstancedComponent>(instances) : new List<InstancedComponent>();
     }
 }
 
@@ -118,11 +139,10 @@ public class PlayerInventoryManager : MonoBehaviour
     public static PlayerInventoryManager Instance;
     public event Action OnInventoryChanged;
 
-    [Header("=== 实物仓库 (堆叠字典) ===")]
-    private Dictionary<string, ComponentStack> componentWarehouse = new Dictionary<string, ComponentStack>();
+    [Header("=== 实物仓库 ===")]
     private Dictionary<string, ChassisStack> chassisWarehouse = new Dictionary<string, ChassisStack>();
 
-    [Header("=== 临时实例缓存 (车间解算用) ===")]
+    [Header("=== 永久实例仓库 ===")]
     public List<InstancedComponent> ComponentInventory = new List<InstancedComponent>();
     public List<InstancedChassis> ChassisInventory = new List<InstancedChassis>();
 
@@ -146,6 +166,8 @@ public class PlayerInventoryManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else { Destroy(gameObject); return; }
+
+        NormalizeLegacyComponents();
     }
 
     private void Update()
@@ -160,23 +182,56 @@ public class PlayerInventoryManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Y))
         {
             foreach (var so in DebugComponentBundle) if (so != null) AddComponentToWarehouse(so, 1, 1);
-            Debug.Log("<color=orange>【Debug】</color> 零件已入库并堆叠。");
+            Debug.Log("<color=orange>【Debug】</color> 已生成带独立品质的测试组件。");
         }
 #endif
     }
 
     // ==========================================
-    // 🚀 核心：入库与出库 (堆叠逻辑)
+    // 🚀 核心：组件保持永久实例；堆叠只在查询时生成展示视图
     // ==========================================
 
     public void AddComponentToWarehouse(ComponentDataSO so, int level = 1, int qty = 1)
     {
-        if (so == null) return;
-        string key = $"{so.ComponentBaseID}_{level}";
-        if (componentWarehouse.ContainsKey(key)) componentWarehouse[key].Quantity += qty;
-        else componentWarehouse[key] = new ComponentStack(so, level, qty);
+        if (so == null || qty <= 0) return;
+        for (int i = 0; i < qty; i++)
+        {
+            InstancedComponent component = new InstancedComponent(so, level);
+            ComponentQualityGenerator.EnsureGenerated(component);
+            ComponentInventory.Add(component);
+        }
         OnInventoryChanged?.Invoke();
     }
+
+    public void AddComponentInstance(InstancedComponent component)
+    {
+        if (component?.BaseData == null) return;
+        if (string.IsNullOrWhiteSpace(component.InstanceID)) component.InstanceID = Guid.NewGuid().ToString();
+        if (ComponentInventory.Any(item => item != null && item.InstanceID == component.InstanceID)) return;
+        ComponentQualityGenerator.EnsureGenerated(component);
+        component.EquippedUnitID = string.Empty;
+        ComponentInventory.Add(component);
+        OnInventoryChanged?.Invoke();
+    }
+
+    public bool TryEquipComponent(InstancedComponent component, string unitID)
+    {
+        if (component == null || string.IsNullOrWhiteSpace(unitID) || component.IsEquipped) return false;
+        if (!ComponentInventory.Contains(component)) ComponentInventory.Add(component);
+        component.EquippedUnitID = unitID;
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public void ReleaseComponent(InstancedComponent component)
+    {
+        if (component == null) return;
+        component.EquippedUnitID = string.Empty;
+        OnInventoryChanged?.Invoke();
+    }
+
+    public InstancedComponent GetComponentInstance(string instanceID) =>
+        ComponentInventory.Find(item => item != null && item.InstanceID == instanceID);
 
     public void AddChassisToWarehouse(ChassisDataSO so, int qty = 1)
     {
@@ -200,19 +255,25 @@ public class PlayerInventoryManager : MonoBehaviour
         Debug.LogWarning($"【仓库】底盘 {so.ChassisName} 库存不足！");
         return false;
     }
-    public bool TryConsumeFromWarehouse(ComponentDataSO so, int level)
+    public List<InstancedComponent> GetAvailableComponents()
     {
-        string key = $"{so.ComponentBaseID}_{level}";
-        if (componentWarehouse.ContainsKey(key) && componentWarehouse[key].Quantity > 0)
-        {
-            componentWarehouse[key].Quantity--;
-            OnInventoryChanged?.Invoke();
-            return true;
-        }
-        return false;
+        NormalizeLegacyComponents();
+        return ComponentInventory
+            .Where(component => component != null && component.BaseData != null && !component.IsEquipped)
+            .OrderByDescending(component => component.Quality)
+            .ThenByDescending(component => component.CurrentMark)
+            .ThenBy(component => component.BaseData.ComponentName)
+            .ToList();
     }
 
-    public List<ComponentStack> GetAvailableStacks() => componentWarehouse.Values.Where(s => s.Quantity > 0).OrderByDescending(s => s.Level).ToList();
+    // 保留旧返回类型以兼容现有 UI，但每个视图只代表一个永久组件实例。
+    public List<ComponentStack> GetAvailableStacks() => GetAvailableComponents()
+        .Select(component => new ComponentStack(component.BaseData, component.CurrentMark,
+            component.Quality, new[] { component }))
+        .OrderByDescending(stack => stack.Quality)
+        .ThenByDescending(stack => stack.Level)
+        .ThenBy(stack => stack.BaseData.ComponentName)
+        .ToList();
     public List<ChassisStack> GetChassisStacks() => chassisWarehouse.Values.Where(s => s.Quantity > 0).ToList();
 
 
@@ -230,16 +291,6 @@ public class PlayerInventoryManager : MonoBehaviour
     public InventorySaveData CaptureSaveData()
     {
         InventorySaveData save = new InventorySaveData();
-        foreach (ComponentStack stack in componentWarehouse.Values)
-        {
-            if (stack?.BaseData == null) continue;
-            save.ComponentWarehouse.Add(new ComponentStackSaveData
-            {
-                DefinitionID = stack.BaseData.ComponentBaseID,
-                Level = stack.Level,
-                Quantity = stack.Quantity
-            });
-        }
         foreach (ChassisStack stack in chassisWarehouse.Values)
         {
             if (stack?.BaseData == null) continue;
@@ -258,7 +309,16 @@ public class PlayerInventoryManager : MonoBehaviour
                 DefinitionID = item.BaseData.ComponentBaseID,
                 EquippedUnitID = item.EquippedUnitID,
                 CurrentMark = item.CurrentMark,
-                SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>())
+                SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>()),
+                Quality = item.Quality,
+                QualityScore = item.QualityScore,
+                RolledStats = CloneStats(item.RolledStats),
+                Affixes = CloneAffixes(item.Affixes),
+                IsLocked = item.IsLocked,
+                CraftSeed = item.CraftSeed,
+                Craftsmanship = item.Craftsmanship,
+                CraftedAtBuildingID = item.CraftedAtBuildingID,
+                CraftedByResidentIDs = new List<string>(item.CraftedByResidentIDs ?? new List<string>())
             });
         }
         foreach (InstancedChassis item in ChassisInventory)
@@ -286,7 +346,6 @@ public class PlayerInventoryManager : MonoBehaviour
 
     public void RestoreSaveData(InventorySaveData save, SaveDefinitionResolver definitions)
     {
-        componentWarehouse.Clear();
         chassisWarehouse.Clear();
         ComponentInventory.Clear();
         ChassisInventory.Clear();
@@ -300,8 +359,9 @@ public class PlayerInventoryManager : MonoBehaviour
         foreach (ComponentStackSaveData item in save.ComponentWarehouse)
         {
             ComponentDataSO definition = definitions.ResolveComponent(item.DefinitionID);
-            if (definition != null && item.Quantity > 0)
-                componentWarehouse[$"{definition.ComponentBaseID}_{item.Level}"] = new ComponentStack(definition, item.Level, item.Quantity);
+            if (definition == null || item.Quantity <= 0) continue;
+            for (int i = 0; i < item.Quantity; i++)
+                ComponentInventory.Add(new InstancedComponent(definition, item.Level));
         }
         foreach (ChassisStackSaveData item in save.ChassisWarehouse)
         {
@@ -317,9 +377,20 @@ public class PlayerInventoryManager : MonoBehaviour
             {
                 InstanceID = item.InstanceID,
                 EquippedUnitID = item.EquippedUnitID,
-                SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>())
+                SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>()),
+                Quality = item.Quality,
+                QualityScore = item.QualityScore,
+                RolledStats = CloneStats(item.RolledStats),
+                Affixes = CloneAffixes(item.Affixes),
+                IsLocked = item.IsLocked,
+                CraftSeed = item.CraftSeed,
+                Craftsmanship = item.Craftsmanship,
+                CraftedAtBuildingID = item.CraftedAtBuildingID ?? string.Empty,
+                CraftedByResidentIDs = new List<string>(item.CraftedByResidentIDs ?? new List<string>())
             };
-            ComponentInventory.Add(restored);
+            ComponentQualityGenerator.EnsureGenerated(restored);
+            if (!ComponentInventory.Any(existing => existing.InstanceID == restored.InstanceID))
+                ComponentInventory.Add(restored);
         }
         foreach (InstancedChassisSaveData item in save.Chassis)
         {
@@ -343,6 +414,7 @@ public class PlayerInventoryManager : MonoBehaviour
             };
             AccessoryInventory.Add(restored);
         }
+        NormalizeLegacyComponents();
         OnInventoryChanged?.Invoke();
     }
 
@@ -351,14 +423,42 @@ public class PlayerInventoryManager : MonoBehaviour
         float currentHP = unit.CurrentHP;
         if (componentToRemove != null)
         {
-            var lvData = componentToRemove.BaseData.GetModelData(componentToRemove.CurrentMark);
-            if (lvData != null) currentHP -= GetStatValue(lvData.Stats, StatType.AddedHP);
+            currentHP -= ComponentStatResolver.GetValue(componentToRemove, StatType.AddedHP);
         }
         if (componentToEquip != null)
         {
-            var lvData = componentToEquip.BaseData.GetModelData(componentToEquip.CurrentMark);
-            if (lvData != null) currentHP += GetStatValue(lvData.Stats, StatType.AddedHP);
+            currentHP += ComponentStatResolver.GetValue(componentToEquip, StatType.AddedHP);
         }
         return currentHP > 0;
+    }
+
+    private void NormalizeLegacyComponents()
+    {
+        ComponentInventory = ComponentInventory ?? new List<InstancedComponent>();
+        foreach (InstancedComponent component in ComponentInventory)
+            ComponentQualityGenerator.EnsureGenerated(component);
+    }
+
+    private static List<StatEntry> CloneStats(IEnumerable<StatEntry> source)
+    {
+        if (source == null) return new List<StatEntry>();
+        return source.Where(item => item != null).Select(item => new StatEntry
+        {
+            StatID = item.StatID,
+            Value = item.Value,
+            ModType = item.ModType
+        }).ToList();
+    }
+
+    private static List<ComponentAffixInstance> CloneAffixes(IEnumerable<ComponentAffixInstance> source)
+    {
+        if (source == null) return new List<ComponentAffixInstance>();
+        return source.Where(item => item != null).Select(item => new ComponentAffixInstance
+        {
+            AffixID = item.AffixID,
+            DisplayName = item.DisplayName,
+            Description = item.Description,
+            Modifiers = CloneStats(item.Modifiers)
+        }).ToList();
     }
 }

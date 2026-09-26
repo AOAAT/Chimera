@@ -1,0 +1,23 @@
+PASS Blocked smoothing terminates and preserves endpoint
+PASS Path goes around occupied cells
+PASS 100 unreachable paths all return failure
+PASS Blocked exact gate rejected
+PASS 100 blocked paths within 3 seconds: 5ms
+PASS Multi-resident commands respect capacity including reservations
+PASS Excess resident remains idle
+PASS Cancel releases reservation
+PASS Freed position can be reassigned
+PASS Three arrivals become staff exactly once
+PASS Unreachable gate does not reserve a position
+PASS 50 components retain unique identities
+PASS Component views contain one instance each
+PASS Warehouse paginates large inventory at 40 cards
+PASS Warehouse uses independent overlay canvas
+PASS Three chassis shown as three cards
+PASS Dropdown opening keeps warehouse visible
+PASS Dropdown creates click blocker
+PASS Theme preserves transparent dropdown blocker
+PASS Theme preserves blockers outside warehouse too
+PASS Selected component details show identity
+PASS Repeated close/open preserves visibility
+PASS UI operations do not change component identity

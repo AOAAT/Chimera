@@ -24,6 +24,15 @@ public class ProductionTaskUIItem : MonoBehaviour
 
         if (NameText != null) NameText.text = task.ItemName;
         if (ItemIcon != null) ItemIcon.sprite = task.Icon;
+        if (TimeText != null)
+        {
+            TimeText.enableAutoSizing = true;
+            TimeText.fontSizeMin = 10f;
+            TimeText.fontSizeMax = 14f;
+            TimeText.enableWordWrapping = false;
+            TimeText.overflowMode = TextOverflowModes.Ellipsis;
+            TimeText.rectTransform.sizeDelta = new Vector2(160f, TimeText.rectTransform.sizeDelta.y);
+        }
     }
 
     private void Update()
@@ -33,9 +42,11 @@ public class ProductionTaskUIItem : MonoBehaviour
         if (ProgressSlider != null) ProgressSlider.value = bindedTask.NormalizedProgress;
         if (TimeText != null)
         {
-            if (bindedTask.IsPaused) TimeText.text = "已暂停";
+            if (bindedTask.IsPaused) TimeText.text = $"暂停 · {bindedTask.NormalizedProgress:P0}";
             else if (bindedTask.IsActivelyProducing)
-                TimeText.text = $"生产线 {bindedTask.ActiveLineIndex + 1} · {bindedTask.RemainingTime / Mathf.Max(0.01f, bindedTask.EffectiveSpeed):F1}s";
+                TimeText.text = $"{bindedTask.ActiveLineIndex + 1}线 · " +
+                    $"{bindedTask.RemainingTime / Mathf.Max(0.01f, bindedTask.EffectiveSpeed):F1}s · " +
+                    $"×{bindedTask.EffectiveSpeed:0.00}";
             else TimeText.text = $"排队 · {bindedTask.RemainingTime:F1}s";
         }
 

@@ -33,6 +33,42 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     public GameObject QuantityBadge; // UI上的数字底框
     public TMP_Text QuantityText;    // 数量文字，如 x5
 
+    private void Awake()
+    {
+        if (ItemIcon != null)
+        {
+            Fit(ItemIcon.rectTransform, new Vector2(.18f, .4f), new Vector2(.82f, .94f));
+            ItemIcon.preserveAspect = true;
+            ItemIcon.raycastTarget = false;
+        }
+        if (ItemNameText != null)
+        {
+            Fit(ItemNameText.rectTransform, new Vector2(.06f, .2f), new Vector2(.94f, .4f));
+            StyleLabel(ItemNameText, 17f, 22f);
+        }
+        if (ItemLevelText != null)
+        {
+            Fit(ItemLevelText.rectTransform, new Vector2(.04f, .02f), new Vector2(.96f, .2f));
+            StyleLabel(ItemLevelText, 14f, 17f);
+        }
+    }
+
+    private static void Fit(RectTransform rect, Vector2 min, Vector2 max)
+    {
+        rect.anchorMin = min; rect.anchorMax = max;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
+    private static void StyleLabel(TMP_Text text, float min, float max)
+    {
+        text.enableAutoSizing = true;
+        text.fontSizeMin = min; text.fontSizeMax = max;
+        text.alignment = TextAlignmentOptions.Center;
+        text.enableWordWrapping = true;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+        text.raycastTarget = false;
+    }
+
     public void SetHighlight(bool isOn)
     {
         if (HighlightFrame != null) HighlightFrame.SetActive(isOn);
@@ -80,14 +116,15 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
             ItemIcon.sprite = component.BaseData.ComponentIcon;
             ItemNameText.text = component.BaseData.ComponentName;
 
-            Color rarityColor = GetRarityColor(component.CurrentMark);
-            ItemNameText.color = rarityColor;
+            Color qualityColor = ComponentQualityUtility.GetColor(component.Quality);
+            ItemNameText.color = qualityColor;
 
             if (ItemLevelText != null)
             {
                 ItemLevelText.gameObject.SetActive(true);
-                ItemLevelText.text = $"Lv.{component.CurrentMark}";
-                ItemLevelText.color = rarityColor;
+                ItemLevelText.text = $"Mk.{component.CurrentMark} · " +
+                    ComponentQualityUtility.GetSummary(component.Quality, component.QualityScore);
+                ItemLevelText.color = qualityColor;
             }
         }
 
@@ -115,32 +152,33 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         };
     }
 
-    // --- 3. 核心：零件堆叠显示 (用于仓库/选配面板) ---
+    // --- 3. 永久组件实例卡片（保留 ComponentStack 参数以兼容现有面板） ---
     public void SetupComponentStack(ComponentStack stack, Action<ComponentStack> onSelected)
     {
-        // 为了兼容详情页，创建一个临时实例
-        cachedComponent = new InstancedComponent(stack.BaseData, stack.Level);
+        cachedComponent = stack.Representative;
         cachedChassis = null;
         isUnequipSlot = false;
 
         ItemIcon.sprite = stack.BaseData.ComponentIcon;
         ItemNameText.text = stack.BaseData.ComponentName;
 
-        Color rarityColor = GetRarityColor(stack.Level);
-        ItemNameText.color = rarityColor;
+        Color qualityColor = ComponentQualityUtility.GetColor(stack.Quality);
+        ItemNameText.color = qualityColor;
 
         if (ItemLevelText != null)
         {
             ItemLevelText.gameObject.SetActive(true);
-            ItemLevelText.text = $"Lv.{stack.Level}";
-            ItemLevelText.color = rarityColor;
+            float qualityScore = stack.Representative != null ? stack.Representative.QualityScore : 0f;
+            ItemLevelText.text = $"Mk.{stack.Level} · " +
+                ComponentQualityUtility.GetSummary(stack.Quality, qualityScore);
+            ItemLevelText.color = qualityColor;
         }
 
-        // 数量堆叠逻辑
+        // 组件按永久实例逐件显示，不再出现数量堆叠。
         if (QuantityBadge != null && QuantityText != null)
         {
-            QuantityBadge.SetActive(stack.Quantity > 1);
-            QuantityText.text = $"x{stack.Quantity}";
+            QuantityBadge.SetActive(false);
+            QuantityText.text = string.Empty;
         }
 
         if (EquippedOverlay != null) EquippedOverlay.SetActive(false);

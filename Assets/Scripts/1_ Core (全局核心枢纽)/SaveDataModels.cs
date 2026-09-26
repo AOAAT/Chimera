@@ -4,7 +4,7 @@ using System.Collections.Generic;
 [Serializable]
 public class GameSaveData
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
 
     public int Version = CurrentVersion;
     public string SavedAtUtc;
@@ -70,6 +70,11 @@ public class ProductionTaskSaveData
     public float CurrentProgress;
     public bool IsPaused;
     public ResourceSet PaidCost;
+    public bool HasCraftSnapshot;
+    public int CraftSeed;
+    public float Craftsmanship;
+    public string CraftedAtBuildingID;
+    public List<string> CraftedByResidentIDs = new List<string>();
 }
 
 [Serializable]
@@ -105,6 +110,15 @@ public class InstancedComponentSaveData
     public string EquippedUnitID;
     public int CurrentMark;
     public List<string> SocketedAccessoryIDs = new List<string>();
+    public ComponentQuality Quality = ComponentQuality.Standard;
+    public float QualityScore;
+    public List<StatEntry> RolledStats = new List<StatEntry>();
+    public List<ComponentAffixInstance> Affixes = new List<ComponentAffixInstance>();
+    public bool IsLocked;
+    public int CraftSeed;
+    public float Craftsmanship;
+    public string CraftedAtBuildingID;
+    public List<string> CraftedByResidentIDs = new List<string>();
 }
 
 [Serializable]

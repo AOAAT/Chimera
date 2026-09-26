@@ -1,40 +1,59 @@
-﻿using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine;
 
 [System.Serializable]
 public class ProductionTask
 {
     public string TaskID;
-    public Object SourceSO;      // 记录是哪个底盘或组件
-    public string ItemName;      // 冗余记录名字
-    public Sprite Icon;          // 冗余记录图标
+    public Object SourceSO;
+    public string ItemName;
+    public Sprite Icon;
 
-    public float TotalTime;      // 总需时间
-    public float CurrentProgress = 0f; // 当前已完成秒数 (0 到 TotalTime)
-    public bool IsPaused = false;      // 是否被玩家点暂停了
-    public ResourceSet PaidCost; // 关键：记录此任务支付时的确切金额
+    public float TotalTime;
+    public float CurrentProgress;
+    public bool IsPaused;
+    public ResourceSet PaidCost;
+
+    public bool HasCraftSnapshot;
+    public int CraftSeed;
+    public float Craftsmanship;
+    public string CraftedAtBuildingID;
+    public List<string> CraftedByResidentIDs = new List<string>();
+
     [System.NonSerialized] public bool IsActivelyProducing;
     [System.NonSerialized] public int ActiveLineIndex = -1;
     [System.NonSerialized] public float EffectiveSpeed = 1f;
-    public float NormalizedProgress => Mathf.Clamp01(CurrentProgress / TotalTime);
-    public float RemainingTime => Mathf.Max(0, TotalTime - CurrentProgress);
 
-    public ProductionTask(UnityEngine.Object so, string name, Sprite icon, float time, ResourceSet cost)
+    public float NormalizedProgress => TotalTime <= 0f ? 1f : Mathf.Clamp01(CurrentProgress / TotalTime);
+    public float RemainingTime => Mathf.Max(0f, TotalTime - CurrentProgress);
+
+    public ProductionTask(Object source, string name, Sprite icon, float time, ResourceSet cost)
     {
         TaskID = System.Guid.NewGuid().ToString();
-        SourceSO = so;
+        SourceSO = source;
         ItemName = name;
         Icon = icon;
         TotalTime = time;
-        PaidCost = cost; // 存入成本
+        PaidCost = cost;
     }
 
-    public static ProductionTask Restore(UnityEngine.Object so, string name, Sprite icon, float time,
-        ResourceSet cost, string taskID, float progress, bool paused)
+    public static ProductionTask Restore(Object source, string name, Sprite icon, float time,
+        ResourceSet cost, string taskID, float progress, bool paused, bool hasCraftSnapshot = false,
+        int craftSeed = 0, float craftsmanship = 0f, string craftedAtBuildingID = null,
+        List<string> craftedByResidentIDs = null)
     {
-        ProductionTask task = new ProductionTask(so, name, icon, time, cost);
-        task.TaskID = taskID;
-        task.CurrentProgress = Mathf.Clamp(progress, 0f, time);
-        task.IsPaused = paused;
+        ProductionTask task = new ProductionTask(source, name, icon, time, cost)
+        {
+            TaskID = taskID,
+            CurrentProgress = Mathf.Clamp(progress, 0f, time),
+            IsPaused = paused,
+            HasCraftSnapshot = hasCraftSnapshot,
+            CraftSeed = craftSeed,
+            Craftsmanship = craftsmanship,
+            CraftedAtBuildingID = craftedAtBuildingID ?? string.Empty,
+            CraftedByResidentIDs = craftedByResidentIDs != null
+                ? new List<string>(craftedByResidentIDs) : new List<string>()
+        };
         return task;
     }
 }

@@ -230,7 +230,7 @@ public class SelectionContextHUD : MonoBehaviour
             if (assemblerUI != null && building is AssemblerBuilding ab) assemblerUI.Initialize(ab);
 
             var factoryUI = module.GetComponent<FactoryUIModule>();
-            if (factoryUI != null) factoryUI.Initialize();
+            if (factoryUI != null && building is FactoryBuilding factory) factoryUI.Initialize(factory);
             var constructionUI = module.GetComponent<ConstructionUIModule>();
             if (constructionUI != null) constructionUI.Initialize();
         }
@@ -659,18 +659,7 @@ public class SelectionContextHUD : MonoBehaviour
     private void RefreshBuildingSummary()
     {
         if (BuildingNameDisplay == null || CurrentTargetBuilding == null) return;
-        if (!CurrentTargetBuilding.SupportsStaff)
-        {
-            BuildingNameDisplay.text = CurrentTargetBuilding.BuildingName;
-            return;
-        }
-
-        int count = CurrentTargetBuilding.GetStaffList().Count;
-        if (CurrentTargetBuilding is FactoryBuilding factory)
-            BuildingNameDisplay.text = $"{factory.BuildingName} · 产能 {factory.TotalStaffProductivity:0.00} · " +
-                $"{factory.ActiveProductionLineCount}线 · {factory.ProductionSpeedMultiplier:0.00}x";
-        else
-            BuildingNameDisplay.text = $"{CurrentTargetBuilding.BuildingName} · 员工 {count}/{CurrentTargetBuilding.MaxStaffCapacity}";
+        BuildingNameDisplay.text = CurrentTargetBuilding.BuildingName;
     }
 
     private float GetDisplayedContribution(ResidentData data)
@@ -759,7 +748,7 @@ public class SelectionContextHUD : MonoBehaviour
         for (int i = 0; i < profile.SlotIndices.Count; i++)
         {
             int slotIdx = profile.SlotIndices[i];
-            var comp = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == profile.EquippedComponentIDs[i]);
+            var comp = PlayerInventoryManager.Instance.GetComponentInstance(profile.EquippedComponentIDs[i]);
             if (comp == null) continue;
 
             var slotDef = profile.ChassisData.Sockets[slotIdx];

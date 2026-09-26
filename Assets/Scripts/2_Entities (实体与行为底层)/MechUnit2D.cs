@@ -92,8 +92,12 @@ public class MechUnit2D : MonoBehaviour
         for (int i = 0; i < data.SlotIndices.Count; i++)
         {
             int slotIdx = data.SlotIndices[i];
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == data.EquippedComponentIDs[i]);
-            if (compInstance != null && slotIdx < totalSockets) tempInstances[slotIdx] = compInstance;
+            var compInstance = PlayerInventoryManager.Instance.GetComponentInstance(data.EquippedComponentIDs[i]);
+            if (compInstance != null && slotIdx < totalSockets)
+            {
+                compInstance.EquippedUnitID = data.UnitID;
+                tempInstances[slotIdx] = compInstance;
+            }
         }
         FullSetup(data, tempInstances, false);
     }
@@ -137,10 +141,10 @@ public class MechUnit2D : MonoBehaviour
         foreach (var instanceID in bindedData.EquippedComponentIDs)
         {
             // 从全局实例库中找回这个零件的型号数据
-            var compInstance = PlayerInventoryManager.Instance.ComponentInventory.Find(c => c.InstanceID == instanceID);
+            var compInstance = PlayerInventoryManager.Instance.GetComponentInstance(instanceID);
             if (compInstance != null)
             {
-                PlayerInventoryManager.Instance.AddComponentToWarehouse(compInstance.BaseData, compInstance.CurrentMark, 1);
+                PlayerInventoryManager.Instance.ReleaseComponent(compInstance);
             }
         }
 

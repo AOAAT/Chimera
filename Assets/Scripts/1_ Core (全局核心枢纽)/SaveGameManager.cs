@@ -376,6 +376,7 @@ public sealed class SaveGameManager : MonoBehaviour
         save.Buildings = save.Buildings ?? new List<BuildingSaveData>();
         save.Inventory = save.Inventory ?? new InventorySaveData();
         save.DeployedMechs = save.DeployedMechs ?? new List<MechSaveData>();
+        MigrateToCurrentVersion(save);
         save.Inventory.ComponentWarehouse = save.Inventory.ComponentWarehouse ?? new List<ComponentStackSaveData>();
         save.Inventory.ChassisWarehouse = save.Inventory.ChassisWarehouse ?? new List<ChassisStackSaveData>();
         save.Inventory.Components = save.Inventory.Components ?? new List<InstancedComponentSaveData>();
@@ -387,13 +388,23 @@ public sealed class SaveGameManager : MonoBehaviour
         {
             building.StaffResidentIDs = building.StaffResidentIDs ?? new List<string>();
             building.ProductionQueue = building.ProductionQueue ?? new List<ProductionTaskSaveData>();
+            foreach (ProductionTaskSaveData task in building.ProductionQueue)
+                task.CraftedByResidentIDs = task.CraftedByResidentIDs ?? new List<string>();
+        }
+        foreach (InstancedComponentSaveData component in save.Inventory.Components)
+        {
+            component.SocketedAccessoryIDs = component.SocketedAccessoryIDs ?? new List<string>();
+            component.RolledStats = component.RolledStats ?? new List<StatEntry>();
+            component.Affixes = component.Affixes ?? new List<ComponentAffixInstance>();
+            component.CraftedByResidentIDs = component.CraftedByResidentIDs ?? new List<string>();
+            foreach (ComponentAffixInstance affix in component.Affixes)
+                if (affix != null) affix.Modifiers = affix.Modifiers ?? new List<StatEntry>();
         }
         foreach (MechSaveData mech in save.DeployedMechs)
         {
             mech.SlotIndices = mech.SlotIndices ?? new List<int>();
             mech.EquippedComponentIDs = mech.EquippedComponentIDs ?? new List<string>();
         }
-        MigrateToCurrentVersion(save);
     }
 
     private static void MigrateToCurrentVersion(GameSaveData save)
@@ -410,6 +421,33 @@ public sealed class SaveGameManager : MonoBehaviour
                         resident.Courage = 0.5f;
                     }
                     save.Version = 2;
+                    break;
+                case 2:
+                    save.Inventory = save.Inventory ?? new InventorySaveData();
+                    save.Inventory.Components = save.Inventory.Components ?? new List<InstancedComponentSaveData>();
+                    save.Inventory.ComponentWarehouse = save.Inventory.ComponentWarehouse ?? new List<ComponentStackSaveData>();
+                    foreach (InstancedComponentSaveData component in save.Inventory.Components)
+                    {
+                        component.Quality = ComponentQuality.Standard;
+                        component.RolledStats = component.RolledStats ?? new List<StatEntry>();
+                        component.Affixes = component.Affixes ?? new List<ComponentAffixInstance>();
+                        component.CraftedByResidentIDs = component.CraftedByResidentIDs ?? new List<string>();
+                    }
+                    foreach (ComponentStackSaveData stack in save.Inventory.ComponentWarehouse)
+                    {
+                        for (int i = 0; i < stack.Quantity; i++)
+                        {
+                            save.Inventory.Components.Add(new InstancedComponentSaveData
+                            {
+                                InstanceID = Guid.NewGuid().ToString(),
+                                DefinitionID = stack.DefinitionID,
+                                CurrentMark = stack.Level,
+                                Quality = ComponentQuality.Standard
+                            });
+                        }
+                    }
+                    save.Inventory.ComponentWarehouse.Clear();
+                    save.Version = 3;
                     break;
                 default:
                     throw new InvalidDataException($"缺少从版本 {save.Version} 开始的存档迁移规则。");

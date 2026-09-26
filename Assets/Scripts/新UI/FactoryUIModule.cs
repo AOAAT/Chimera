@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using TMPro;
 
 public class FactoryUIModule : MonoBehaviour
 {
@@ -18,17 +19,53 @@ public class FactoryUIModule : MonoBehaviour
 
     // 内部缓存，用于减少不必要的 UI 刷新
     private int lastTaskCount = -1;
+    private FactoryBuilding boundFactory;
+    private TMP_Text productivityText;
+    private Image nextLineProgressFill;
+    private GameObject productivityCard;
 
     public void Initialize()
     {
+        Initialize(SelectionContextHUD.Instance != null
+            ? SelectionContextHUD.Instance.CurrentTargetBuilding as FactoryBuilding
+            : null);
+    }
+
+    public void Initialize(FactoryBuilding factory)
+    {
+        BindFactory(factory);
+        EnsureProductivityCard();
+        RefreshProductivityCard();
         // 初始默认显示底盘分类
         ShowChassisShelf();
+    }
+
+    private void OnDestroy()
+    {
+        if (boundFactory != null) boundFactory.OnStaffChanged -= HandleStaffChanged;
+    }
+
+    private void BindFactory(FactoryBuilding factory)
+    {
+        if (boundFactory == factory) return;
+        if (boundFactory != null) boundFactory.OnStaffChanged -= HandleStaffChanged;
+        boundFactory = factory;
+        if (boundFactory != null) boundFactory.OnStaffChanged += HandleStaffChanged;
+    }
+
+    private void HandleStaffChanged(BuildingBase building)
+    {
+        RefreshProductivityCard();
     }
 
     // 2. 修改 Update 逻辑
     private void Update()
     {
-        if (SelectionContextHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
+        if (boundFactory == null && SelectionContextHUD.Instance != null)
+            BindFactory(SelectionContextHUD.Instance.CurrentTargetBuilding as FactoryBuilding);
+
+        FactoryBuilding factory = boundFactory;
+        if (factory != null)
         {
             // 如果正在同步顺序，或者数量没变，不执行物理刷新（防止 Destroy 掉正在拖拽的物体）
             if (factory.SyncOrderFlag)
@@ -44,6 +81,100 @@ public class FactoryUIModule : MonoBehaviour
                 RefreshQueueUI(factory);
             }
         }
+    }
+
+    private void EnsureProductivityCard()
+    {
+        if (productivityCard != null) return;
+
+        productivityCard = new GameObject("产能概览", typeof(RectTransform), typeof(Image));
+        productivityCard.transform.SetParent(transform, false);
+        RectTransform cardRect = productivityCard.GetComponent<RectTransform>();
+        cardRect.anchorMin = new Vector2(0.5f, 0.5f);
+        cardRect.anchorMax = new Vector2(0.5f, 0.5f);
+        cardRect.pivot = new Vector2(0.5f, 0.5f);
+        cardRect.anchoredPosition = new Vector2(-246f, 5f);
+        cardRect.sizeDelta = new Vector2(160f, 64f);
+
+        Image cardImage = productivityCard.GetComponent<Image>();
+        cardImage.sprite = Resources.Load<Sprite>("UI/ChimeraRounded");
+        cardImage.type = cardImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+        cardImage.color = new Color(0.08f, 0.12f, 0.16f, 0.94f);
+
+        GameObject textObject = new GameObject("产能文字", typeof(RectTransform), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(productivityCard.transform, false);
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(8f, 13f);
+        textRect.offsetMax = new Vector2(-8f, -5f);
+        productivityText = textObject.GetComponent<TextMeshProUGUI>();
+        productivityText.alignment = TextAlignmentOptions.Center;
+        productivityText.fontSize = 12f;
+        productivityText.fontStyle = FontStyles.Bold;
+        productivityText.color = Color.white;
+        productivityText.lineSpacing = -5f;
+        productivityText.raycastTarget = false;
+        if (TaskItemPrefab != null)
+        {
+            TMP_Text sourceText = TaskItemPrefab.GetComponentInChildren<TMP_Text>(true);
+            if (sourceText != null) productivityText.font = sourceText.font;
+        }
+
+        GameObject progressBackground = new GameObject("下一生产线进度", typeof(RectTransform), typeof(Image));
+        progressBackground.transform.SetParent(productivityCard.transform, false);
+        RectTransform backgroundRect = progressBackground.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0f, 0f);
+        backgroundRect.anchorMax = new Vector2(1f, 0f);
+        backgroundRect.pivot = new Vector2(0.5f, 0f);
+        backgroundRect.anchoredPosition = new Vector2(0f, 5f);
+        backgroundRect.sizeDelta = new Vector2(-12f, 5f);
+        Image backgroundImage = progressBackground.GetComponent<Image>();
+        backgroundImage.sprite = cardImage.sprite;
+        backgroundImage.type = cardImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+        backgroundImage.color = new Color(1f, 1f, 1f, 0.12f);
+        backgroundImage.raycastTarget = false;
+
+        GameObject progressFill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+        progressFill.transform.SetParent(progressBackground.transform, false);
+        RectTransform fillRect = progressFill.GetComponent<RectTransform>();
+        fillRect.anchorMin = Vector2.zero;
+        fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+        nextLineProgressFill = progressFill.GetComponent<Image>();
+        nextLineProgressFill.sprite = cardImage.sprite;
+        nextLineProgressFill.type = Image.Type.Filled;
+        nextLineProgressFill.fillMethod = Image.FillMethod.Horizontal;
+        nextLineProgressFill.color = ChimeraUITheme.Accent;
+        nextLineProgressFill.raycastTarget = false;
+
+        UIHoverHint.Set(productivityCard, "居民生产力会同时提高生产速度；达到阈值后会开启额外的并行生产线。");
+        productivityCard.transform.SetAsLastSibling();
+    }
+
+    private void RefreshProductivityCard()
+    {
+        if (boundFactory == null || productivityText == null) return;
+
+        int staffCount = boundFactory.GetStaffList().Count;
+        float productivity = boundFactory.TotalStaffProductivity;
+        int lines = boundFactory.ActiveProductionLineCount;
+        string nextLine = boundFactory.HasMaximumProductionLines
+            ? "生产线已满"
+            : $"距下条线 {boundFactory.ProductivityUntilNextLine:0.00}";
+        productivityText.text = $"员工 {staffCount}/{boundFactory.MaxStaffCapacity} · 产能 {productivity:0.00}\n" +
+            $"并行 {lines}/{boundFactory.MaxProductionLines} · 速度 {boundFactory.ProductionSpeedMultiplier:0.00}x\n" +
+            nextLine;
+
+        if (nextLineProgressFill != null)
+            nextLineProgressFill.fillAmount = boundFactory.NextProductionLineProgress;
+
+        string detail = boundFactory.HasMaximumProductionLines
+            ? "并行生产线已经达到当前上限。"
+            : $"距离下一条生产线还需要 {boundFactory.ProductivityUntilNextLine:0.00} 生产力。";
+        UIHoverHint.Set(productivityCard,
+            $"每 1 点生产力提高 {boundFactory.SpeedBonusPerProductivity:P0} 生产速度。{detail}");
     }
 
     // ==========================================
@@ -125,7 +256,10 @@ public class FactoryUIModule : MonoBehaviour
         enter.callback.AddListener((e) => {
             ItemDetailPanelUI.Instance.SetFixedAnchor(DetailAnchor);
             onHover.Invoke();
-            UIFeedback.Show($"{itemName} · 生产时间 {prodTime:0.#} 秒\n成本：{UIFeedback.Cost(previewCost)}");
+            string duration = boundFactory != null
+                ? $"基础 {prodTime:0.#} 秒 · 当前 {boundFactory.GetEffectiveProductionTime(prodTime):0.#} 秒"
+                : $"{prodTime:0.#} 秒";
+            UIFeedback.Show($"{itemName} · 生产时间 {duration}\n成本：{UIFeedback.Cost(previewCost)}");
         });
         trigger.triggers.Add(enter);
 

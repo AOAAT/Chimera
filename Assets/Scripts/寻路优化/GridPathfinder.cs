@@ -12,26 +12,38 @@ public static class GridPathfinder
         public Node(Vector2Int pos) => GridPos = pos;
     }
 
-    public static List<Vector3> FindPath(Vector3 startWorld, Vector3 endWorld)
+    public static List<Vector3> FindPath(Vector3 startWorld, Vector3 endWorld, bool allowNearbyTarget = true)
     {
         var sys = RTSGridSystem.Instance;
+        if (sys == null || sys.CellSize <= 0f) return null;
+        if (!allowNearbyTarget && !sys.TryWorldToGrid(endWorld, out _)) return null;
         Vector2Int startGrid = sys.WorldToGrid(startWorld);
         Vector2Int endGrid = sys.WorldToGrid(endWorld);
 
-        if (sys.GetCell(endGrid.x, endGrid.y).IsOccupied)
+        if (!IsWalkable(endGrid))
+        {
+            if (!allowNearbyTarget) return null;
             endGrid = FindNearestWalkableCell(endGrid);
+            if (!IsWalkable(endGrid)) return null;
+        }
 
         List<Node> openList = new List<Node>();
+        Dictionary<Vector2Int, Node> openNodes = new Dictionary<Vector2Int, Node>();
         HashSet<Vector2Int> closedList = new HashSet<Vector2Int>();
-        openList.Add(new Node(startGrid));
+        Node startNode = new Node(startGrid);
+        openList.Add(startNode);
+        openNodes.Add(startGrid, startNode);
 
-        while (openList.Count > 0)
+        // 单次请求有明确上限，批量移动不会无界占用主线程。
+        int remaining = 8192;
+        while (openList.Count > 0 && remaining-- > 0)
         {
             Node curr = openList[0];
             for (int i = 1; i < openList.Count; i++)
                 if (openList[i].F < curr.F) curr = openList[i];
 
             openList.Remove(curr);
+            openNodes.Remove(curr.GridPos);
             closedList.Add(curr.GridPos);
 
             if (curr.GridPos == endGrid)
@@ -60,15 +72,19 @@ public static class GridPathfinder
                 // 🌟 加固 2：起点豁免逻辑
                 // 如果这个格子就是起点，即便它被建筑占用了（单位刚好卡在里面），也允许通行，否则寻路会直接失败
                 bool isStartNode = (neighborPos == startGrid);
-                if (!isStartNode && sys.GetCell(neighborPos.x, neighborPos.y).IsOccupied) continue;
+                if (!isStartNode && !IsWalkable(neighborPos)) continue;
+                if (curr.GridPos.x != neighborPos.x && curr.GridPos.y != neighborPos.y &&
+                    (!IsWalkable(new Vector2Int(curr.GridPos.x, neighborPos.y)) ||
+                     !IsWalkable(new Vector2Int(neighborPos.x, curr.GridPos.y)))) continue;
                 float moveCost = (curr.GridPos.x != neighborPos.x && curr.GridPos.y != neighborPos.y) ? 1.4f : 1f;
                 float newG = curr.G + moveCost;
-                Node neighborNode = openList.Find(n => n.GridPos == neighborPos);
+                openNodes.TryGetValue(neighborPos, out Node neighborNode);
 
                 if (neighborNode == null)
                 {
                     neighborNode = new Node(neighborPos) { G = newG, H = Vector2Int.Distance(neighborPos, endGrid), Parent = curr };
                     openList.Add(neighborNode);
+                    openNodes.Add(neighborPos, neighborNode);
                 }
                 else if (newG < neighborNode.G)
                 {
@@ -93,16 +109,19 @@ public static class GridPathfinder
         int current = 0;
         while (current < rawPath.Count - 1)
         {
+            // 即使直线检测全部失败，也至少沿原始 A* 路径前进一格。
+            int next = current + 1;
             // 从远端向近端扫描，寻找最远的可见点
-            for (int i = rawPath.Count - 1; i > current; i--)
+            for (int i = Mathf.Min(rawPath.Count - 1, current + 32); i > current + 1; i--)
             {
                 if (IsLineClear(rawPath[current], rawPath[i]))
                 {
-                    simplified.Add(rawPath[i]);
-                    current = i; // 跳过中间所有点
+                    next = i;
                     break;
                 }
             }
+            simplified.Add(rawPath[next]);
+            current = next;
         }
         return simplified;
     }
@@ -118,18 +137,30 @@ public static class GridPathfinder
         float step = sys.CellSize * 0.4f; // 步长稍微缩小，提高精度
 
         // 🌟 从起始点偏移一点点距离开始扫描，防止“自己撞到自己脚下的建筑”
-        for (float d = step; d < dist; d += step)
+        int samples = Mathf.CeilToInt(dist / Mathf.Max(0.001f, step));
+        Vector2Int previous = sys.WorldToGrid(start);
+        for (int sample = 1; sample <= samples; sample++)
         {
-            Vector3 checkPoint = start + dir * d;
+            Vector3 checkPoint = start + dir * Mathf.Min(sample * step, dist);
             Vector2Int gridIdx = sys.WorldToGrid(checkPoint);
 
             // 只有当检测点离开起点格子后，才执行阻挡判定
             if (gridIdx != sys.WorldToGrid(start))
             {
-                if (sys.GetCell(gridIdx.x, gridIdx.y).IsOccupied) return false;
+                if (!IsWalkable(gridIdx)) return false;
+                if (previous.x != gridIdx.x && previous.y != gridIdx.y &&
+                    (!IsWalkable(new Vector2Int(previous.x, gridIdx.y)) ||
+                     !IsWalkable(new Vector2Int(gridIdx.x, previous.y)))) return false;
             }
+            previous = gridIdx;
         }
         return true;
+    }
+
+    private static bool IsWalkable(Vector2Int cell)
+    {
+        GridCell value = RTSGridSystem.Instance.GetCell(cell.x, cell.y);
+        return value != null && value.IsWalkable && !value.IsOccupied;
     }
 
 
@@ -164,7 +195,7 @@ public static class GridPathfinder
                 for (int y = -r; y <= r; y++)
                 {
                     Vector2Int next = target + new Vector2Int(x, y);
-                    if (RTSGridSystem.Instance.GetCell(next.x, next.y) != null && !RTSGridSystem.Instance.GetCell(next.x, next.y).IsOccupied)
+                    if (IsWalkable(next))
                         return next;
                 }
             }

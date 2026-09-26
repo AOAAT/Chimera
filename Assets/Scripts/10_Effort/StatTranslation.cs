@@ -17,6 +17,10 @@ public static class StatTranslation
         { StatType.ProjectileSpeed, "子弹速度" },
         { StatType.MultiShotCount, "攻击目标数" },
         { StatType.ExplosionRadius, "冲击范围" },
+        { StatType.MinDamage, "最低伤害" },
+        { StatType.MaxDamage, "最高伤害" },
+        { StatType.MinRange, "最小射程" },
+        { StatType.MaxRange, "最大射程" },
 
         // --- 🌟【新增】专门给合并行准备的占位符（不对应真实 StatType） ---
         // 我们用一些特殊的逻辑 ID 来标记它们

@@ -108,7 +108,7 @@ public class BattleCommandManager : MonoBehaviour
                 if (carrier == null) Debug.LogWarning("[指挥官] 命中物体不是有效的岗位载体 (未实现 IResidentCarrier)");
             }
 
-            foreach (var res in SelectedResidents)
+            foreach (var res in SelectedResidents.ToArray())
             {
                 if (res == null) continue;
 

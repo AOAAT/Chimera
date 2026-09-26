@@ -16,7 +16,7 @@ public class RightInventoryPanelUI : MonoBehaviour
     private enum PanelMode { None, Chassis, Component }
     private PanelMode currentMode = PanelMode.None;
 
-    // 🌟 核心修复：更新 Func 签名以匹配新的堆叠结构
+    // 底盘仍使用数量堆叠；组件列表中的每张卡对应一个永久实例。
     private Func<List<ChassisStack>> getChassisFunc;
     private Action<ChassisStack> onChassisSelectedCallback;
 
@@ -39,7 +39,11 @@ public class RightInventoryPanelUI : MonoBehaviour
 
     private void ClearShelf()
     {
-        foreach (Transform child in ContentRoot) Destroy(child.gameObject);
+        foreach (Transform child in ContentRoot)
+        {
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
     }
 
     // ==========================================
@@ -80,12 +84,15 @@ public class RightInventoryPanelUI : MonoBehaviour
 
             foreach (var stack in list)
             {
+                for (int i = 0; i < stack.Quantity; i++)
+                {
                 var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                // 🌟 使用专门的堆叠设置方法
-                slotObj.SetupChassisStack(stack, (selected) => {
+                // 底盘数量账本保持兼容，选配界面逐件展示。
+                slotObj.SetupChassisStack(new ChassisStack(stack.BaseData, 1), (selected) => {
                     gameObject.SetActive(false);
                     onChassisSelectedCallback?.Invoke(selected);
                 });
+                }
             }
         }
         else if (currentMode == PanelMode.Component && getComponentsFunc != null)
@@ -106,7 +113,7 @@ public class RightInventoryPanelUI : MonoBehaviour
             foreach (var stack in list)
             {
                 var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
-                // 🌟 使用专门的堆叠设置方法
+                // 每张卡对应一个永久组件实例。
                 slotObj.SetupComponentStack(stack, (selected) => {
                     gameObject.SetActive(false);
                     onComponentSelectedCallback?.Invoke(selected);

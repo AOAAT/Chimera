@@ -135,7 +135,8 @@ public class ItemDetailPanelUI : MonoBehaviour
             case ComponentType.Factory: Panel_Support?.SetActive(true); FillSupportData(instance, Support_Common, Bg_Support, Support_PowerCostText); break;
         }
 
-        RenderTags(instance.BaseData.MacroCategory, instance.BaseData.Type, instance.BaseData.BaseSubTags, instance.CurrentMark);
+        RenderTags(instance.BaseData.MacroCategory, instance.BaseData.Type,
+            instance.BaseData.BaseSubTags, instance.CurrentMark, instance.Quality);
         RefreshSwitchers();
     }
 
@@ -322,7 +323,7 @@ public class ItemDetailPanelUI : MonoBehaviour
         if (ui.TacticalRoleText) ui.TacticalRoleText.text = role;
         if (ui.SpecialMechanicText) ui.SpecialMechanicText.text = mech;
         if (ui.IconImage) { ui.IconImage.sprite = ic; ui.IconImage.SetNativeSize(); }
-        if (ui.LevelText) ui.LevelText.text = string.IsNullOrEmpty(lv) ? "" : $"Lv.{lv}";
+        if (ui.LevelText) ui.LevelText.text = lv ?? string.Empty;
     }
 
     private string FormatStat(float value, StatType statType)
@@ -335,57 +336,112 @@ public class ItemDetailPanelUI : MonoBehaviour
     private void FillWeaponData(InstancedComponent instance)
     {
         var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
-        FillCommonData(Weapon_Common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        List<StatEntry> stats = ComponentStatResolver.Resolve(instance);
+        FillCommonData(Weapon_Common, instance.BaseData.ComponentName, GetComponentLevelText(instance), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, BuildComponentMechanicText(instance, lvData.SpecialMechanicDesc));
         SetLevelBackground(Weapon_Common.BackgroundImage, Bg_Weapon, instance.CurrentMark);
 
-        if (Weapon_DamageText) Weapon_DamageText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinDamage), StatType.MinDamage)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxDamage), StatType.MaxDamage)}";
-        if (Weapon_RangeText) Weapon_RangeText.text = $"{FormatStat(GetStat(lvData.Stats, StatType.MinRange), StatType.MinRange)} ~ {FormatStat(GetStat(lvData.Stats, StatType.MaxRange), StatType.MaxRange)}";
-        if (Weapon_AttackSpeedText) Weapon_AttackSpeedText.text = FormatStat(GetStat(lvData.Stats, StatType.AttackSpeed), StatType.AttackSpeed);
-        if (Weapon_CritText) Weapon_CritText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.CriticalChance), StatType.CriticalChance)}";
+        if (Weapon_DamageText) Weapon_DamageText.text = $"{FormatStat(GetStat(stats, StatType.MinDamage), StatType.MinDamage)} ~ {FormatStat(GetStat(stats, StatType.MaxDamage), StatType.MaxDamage)}";
+        if (Weapon_RangeText) Weapon_RangeText.text = $"{FormatStat(GetStat(stats, StatType.MinRange), StatType.MinRange)} ~ {FormatStat(GetStat(stats, StatType.MaxRange), StatType.MaxRange)}";
+        if (Weapon_AttackSpeedText) Weapon_AttackSpeedText.text = FormatStat(GetStat(stats, StatType.AttackSpeed), StatType.AttackSpeed);
+        if (Weapon_CritText) Weapon_CritText.text = $"+{FormatStat(GetStat(stats, StatType.CriticalChance), StatType.CriticalChance)}";
         
     }
 
     private void FillCoreData(InstancedComponent instance)
     {
         var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
-        FillCommonData(Core_Common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        List<StatEntry> stats = ComponentStatResolver.Resolve(instance);
+        FillCommonData(Core_Common, instance.BaseData.ComponentName, GetComponentLevelText(instance), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, BuildComponentMechanicText(instance, lvData.SpecialMechanicDesc));
         SetLevelBackground(Core_Common.BackgroundImage, Bg_Core, instance.CurrentMark);
 
-        if (Core_HPText) Core_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
-        if (Core_APText) Core_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
+        if (Core_HPText) Core_HPText.text = $"+{FormatStat(GetStat(stats, StatType.AddedHP), StatType.AddedHP)}";
+        if (Core_APText) Core_APText.text = $"+{FormatStat(GetStat(stats, StatType.AddedAP), StatType.AddedAP)}";
         
     }
 
     private void FillMovementData(InstancedComponent instance)
     {
         var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
-        FillCommonData(Movement_Common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        List<StatEntry> stats = ComponentStatResolver.Resolve(instance);
+        FillCommonData(Movement_Common, instance.BaseData.ComponentName, GetComponentLevelText(instance), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, BuildComponentMechanicText(instance, lvData.SpecialMechanicDesc));
         SetLevelBackground(Movement_Common.BackgroundImage, Bg_Movement, instance.CurrentMark);
 
-        if (Movement_SpeedText) Movement_SpeedText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.EnginePower), StatType.EnginePower)}";
-        if (Movement_HPText) Movement_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
-        if (Movement_APText) Movement_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
-        if (Movement_MassText) Movement_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass)}t";
+        if (Movement_SpeedText) Movement_SpeedText.text = $"+{FormatStat(GetStat(stats, StatType.EnginePower), StatType.EnginePower)}";
+        if (Movement_HPText) Movement_HPText.text = $"+{FormatStat(GetStat(stats, StatType.AddedHP), StatType.AddedHP)}";
+        if (Movement_APText) Movement_APText.text = $"+{FormatStat(GetStat(stats, StatType.AddedAP), StatType.AddedAP)}";
+        if (Movement_MassText) Movement_MassText.text = $"+{FormatStat(GetStat(stats, StatType.AddedMass), StatType.AddedMass)}t";
         
     }
 
     private void FillSupportData(InstancedComponent instance, CommonUIElements common, Sprite[] bgArray, TMP_Text powerText)
     {
         var lvData = instance.BaseData.GetModelData(instance.CurrentMark);
-        FillCommonData(common, instance.BaseData.ComponentName, instance.CurrentMark.ToString(), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, lvData.SpecialMechanicDesc);
+        List<StatEntry> stats = ComponentStatResolver.Resolve(instance);
+        FillCommonData(common, instance.BaseData.ComponentName, GetComponentLevelText(instance), instance.BaseData.ComponentIcon, instance.BaseData.Description, instance.BaseData.TacticalRoleDesc, BuildComponentMechanicText(instance, lvData.SpecialMechanicDesc));
         SetLevelBackground(common.BackgroundImage, bgArray, instance.CurrentMark);
 
-        if (Support_HPText) Support_HPText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedHP), StatType.AddedHP)}";
-        if (Support_APText) Support_APText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedAP), StatType.AddedAP)}";
-        if (Support_BlockText) Support_BlockText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedBlock), StatType.AddedBlock)}";
-        if (Support_MassText) Support_MassText.text = $"+{FormatStat(GetStat(lvData.Stats, StatType.AddedMass), StatType.AddedMass)}t";
+        if (Support_HPText) Support_HPText.text = $"+{FormatStat(GetStat(stats, StatType.AddedHP), StatType.AddedHP)}";
+        if (Support_APText) Support_APText.text = $"+{FormatStat(GetStat(stats, StatType.AddedAP), StatType.AddedAP)}";
+        if (Support_BlockText) Support_BlockText.text = $"+{FormatStat(GetStat(stats, StatType.AddedBlock), StatType.AddedBlock)}";
+        if (Support_MassText) Support_MassText.text = $"+{FormatStat(GetStat(stats, StatType.AddedMass), StatType.AddedMass)}t";
         
     }
 
     private float GetStat(List<StatEntry> stats, StatType type) { var e = stats.Find(x => x.StatID == type); return e != null ? e.Value : 0f; }
     private void SetLevelBackground(Image img, Sprite[] bgs, int lv) { if (img && bgs.Length >= 4) img.sprite = bgs[Mathf.Clamp(lv - 1, 0, 3)]; }
 
-    private void RenderTags(MacroCategory macro, ComponentType? type, List<SubTag> subs, int lv)
+    private string GetComponentLevelText(InstancedComponent instance)
+    {
+        string hex = ColorUtility.ToHtmlStringRGB(ComponentQualityUtility.GetColor(instance.Quality));
+        return $"Mk.{instance.CurrentMark} · <color=#{hex}>{ComponentQualityUtility.GetName(instance.Quality)}</color>";
+    }
+
+    private string BuildComponentMechanicText(InstancedComponent instance, string baseText)
+    {
+        List<string> lines = new List<string>();
+        if (!string.IsNullOrWhiteSpace(baseText) && baseText != "...") lines.Add(baseText);
+        lines.Add($"品质修正：{instance.QualityScore:+0.0%;-0.0%;0.0%}");
+        if (instance.Affixes != null)
+        {
+            foreach (ComponentAffixInstance affix in instance.Affixes)
+            {
+                if (affix == null) continue;
+                List<string> modifiers = new List<string>();
+                if (affix.Modifiers != null)
+                {
+                    foreach (StatEntry modifier in affix.Modifiers)
+                    {
+                        if (modifier == null) continue;
+                        string value = modifier.ModType == BuffModifierType.Multiplier
+                            ? $"{(modifier.Value - 1f):+0%;-0%;0%}"
+                            : modifier.StatID == StatType.CriticalChance
+                                ? $"{modifier.Value:+0%;-0%;0%}"
+                                : $"{modifier.Value:+0.##;-0.##;0}";
+                        modifiers.Add($"{StatTranslation.Get(modifier.StatID)} {value}");
+                    }
+                }
+                string modifierText = modifiers.Count > 0 ? $"（{string.Join("，", modifiers)}）" : string.Empty;
+                lines.Add($"<b>{affix.DisplayName}</b>：{affix.Description}{modifierText}");
+            }
+        }
+
+        if (instance.CraftedByResidentIDs != null && instance.CraftedByResidentIDs.Count > 0 &&
+            PopulationManager.Instance != null)
+        {
+            List<string> names = new List<string>();
+            foreach (string residentID in instance.CraftedByResidentIDs)
+            {
+                ResidentData resident = PopulationManager.Instance.TotalResidents.Find(item =>
+                    item != null && item.InstanceID == residentID);
+                if (resident != null) names.Add(resident.ResidentName);
+            }
+            if (names.Count > 0) lines.Add($"制造者：{string.Join("、", names)}");
+        }
+        return lines.Count > 0 ? string.Join("\n", lines) : "标准制造组件";
+    }
+
+    private void RenderTags(MacroCategory macro, ComponentType? type, List<SubTag> subs, int lv,
+        ComponentQuality? quality = null)
     {
         if (!TagsContainer || !TagPrefab) return;
         if (activeTagRoutine != null) StopCoroutine(activeTagRoutine);
@@ -396,7 +452,10 @@ public class ItemDetailPanelUI : MonoBehaviour
         tagsToCreate.Add((macro == MacroCategory.Tech ? "科技" : (macro == MacroCategory.Flesh ? "血肉" : "魔法"), macroColor));
 
         if (type.HasValue) tagsToCreate.Add((TranslateComponentType(type.Value), new Color(0.9f, 0.9f, 0.9f)));
-        if (lv > 0) tagsToCreate.Add((lv == 4 ? "传说" : (lv == 3 ? "史诗" : (lv == 2 ? "稀有" : "普通")), lv == 4 ? new Color(1f, 0.8f, 0.4f) : new Color(0.85f, 0.85f, 0.85f)));
+        if (lv > 0) tagsToCreate.Add(($"Mk.{lv}", new Color(0.75f, 0.8f, 0.84f)));
+        if (quality.HasValue)
+            tagsToCreate.Add((ComponentQualityUtility.GetName(quality.Value),
+                ComponentQualityUtility.GetColor(quality.Value)));
         if (subs != null) foreach (var sub in subs) tagsToCreate.Add((TranslateSubTag(sub), new Color(0.8f, 0.8f, 0.8f)));
 
         activeTagRoutine = StartCoroutine(StaggeredTagRoutine(tagsToCreate));

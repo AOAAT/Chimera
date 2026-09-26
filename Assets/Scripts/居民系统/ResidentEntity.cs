@@ -24,6 +24,9 @@ public class ResidentEntity : MonoBehaviour
         SetupPhysics();
     }
     private IResidentCarrier targetCarrier; // 当前准备前往的建筑
+    private Vector3 workGate;
+    private Vector3 lastWorkPosition;
+    private float workStallTime;
     private void SetupPhysics()
     {
         gameObject.layer = LayerMask.NameToLayer("Resident");
@@ -83,24 +86,37 @@ public class ResidentEntity : MonoBehaviour
             UIFeedback.Show($"{building.BuildingName} 的岗位已满，或居民当前无法派遣。");
             return;
         }
+        Vector3 gatePos = carrier.GetInteractionPoint();
+        List<Vector3> route = GridPathfinder.FindPath(transform.position, gatePos, false);
+        if (route == null)
+        {
+            UIFeedback.Show($"{carrier.GetCarrierName()} 的入口无法到达，请清理通道。");
+            return;
+        }
         targetCarrier = carrier;
+        workGate = gatePos;
+        lastWorkPosition = transform.position;
+        workStallTime = 0f;
+        currentPath = route;
+        pathIndex = 0;
+        if (rb != null) rb.velocity = Vector2.zero;
         MyData.Status = ResidentStatus.TravelingToWork;
         MyData.CurrentCarrierID = carrier is BuildingBase targetBuilding ? targetBuilding.PersistentID : string.Empty;
         if (carrier is BuildingBase reservedBuilding)
             reservedBuilding.NotifyStaffReservationChanged();
         if (PopulationManager.Instance != null) PopulationManager.Instance.NotifyResidentStateChanged();
-        Vector3 gatePos = carrier.GetInteractionPoint();
 
         // 🔍 DEBUG 2: 确认门的位置
         Debug.Log($"[实体] {MyData.ResidentName} 收到入驻请求。门口世界坐标: {gatePos}");
 
-        SetDestination(gatePos);
     }
 
     public void CancelGarrisonOrder()
     {
         BuildingBase reservedBuilding = targetCarrier as BuildingBase;
         targetCarrier = null;
+        currentPath = null;
+        if (rb != null) rb.velocity = Vector2.zero;
         if (MyData != null && MyData.Status == ResidentStatus.TravelingToWork)
         {
             MyData.Status = ResidentStatus.Idle;
@@ -115,7 +131,24 @@ public class ResidentEntity : MonoBehaviour
 
         if (targetCarrier != null)
         {
-            float distToGate = Vector2.Distance(transform.position, targetCarrier.GetInteractionPoint());
+            if (targetCarrier is UnityEngine.Object target && target == null)
+            {
+                CancelGarrisonOrder();
+                return;
+            }
+            float distToGate = Vector2.Distance(transform.position, workGate);
+            if (Vector2.Distance(transform.position, lastWorkPosition) > 0.1f)
+            {
+                lastWorkPosition = transform.position;
+                workStallTime = 0f;
+            }
+            else workStallTime += Time.deltaTime;
+            if (workStallTime > 8f)
+            {
+                CancelGarrisonOrder();
+                UIFeedback.Show("居民前往岗位的通道受阻，已取消派遣并释放岗位。");
+                return;
+            }
 
             // 🔍 DEBUG 3: 实时距离监控（如果一直不进门，看这里的数字）
             // 我们改为每隔 0.5 秒打印一次，防止刷屏
