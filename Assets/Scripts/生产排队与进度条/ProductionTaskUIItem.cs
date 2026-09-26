@@ -47,7 +47,7 @@ public class ProductionTaskUIItem : MonoBehaviour
                 TimeText.text = $"{bindedTask.ActiveLineIndex + 1}线 · " +
                     $"{bindedTask.RemainingTime / Mathf.Max(0.01f, bindedTask.EffectiveSpeed):F1}s · " +
                     $"×{bindedTask.EffectiveSpeed:0.00}";
-            else TimeText.text = $"排队 · {bindedTask.RemainingTime:F1}s";
+            else TimeText.text = bindedTask.LogisticsStatus ?? $"排队 · {bindedTask.RemainingTime:F1}s";
         }
 
         // 🌟 视觉同步

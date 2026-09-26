@@ -112,7 +112,8 @@ public sealed class SaveGameManager : MonoBehaviour
                 Biomass = GlobalResourceManager.Instance.CurrentBiomass,
                 ManaStone = GlobalResourceManager.Instance.CurrentManaStone
             },
-            Inventory = PlayerInventoryManager.Instance.CaptureSaveData()
+            Inventory = PlayerInventoryManager.Instance.CaptureSaveData(),
+            Logistics = LogisticsManager.Instance != null && LogisticsManager.Instance.Ready ? LogisticsManager.Instance.Capture() : null
         };
 
         Dictionary<string, ResidentEntity> residentEntities = FindObjectsOfType<ResidentEntity>()
@@ -215,6 +216,7 @@ public sealed class SaveGameManager : MonoBehaviour
             PlayerInventoryManager.Instance == null || BuildingManager.Instance == null)
             throw new InvalidOperationException("目标场景缺少恢复存档所需的核心管理器。");
 
+        LogisticsManager.EnsureInstance();
         SaveDefinitionResolver definitions = new SaveDefinitionResolver(
             PlayerInventoryManager.Instance, BuildingManager.Instance);
         GlobalResourceManager.Instance.RestoreResources(save.Resources);
@@ -236,6 +238,8 @@ public sealed class SaveGameManager : MonoBehaviour
         {
             BuildingBase building = null;
             existing.TryGetValue(item.InstanceID, out building);
+            if (building == null && item.RuntimeType == nameof(WarehouseBuilding))
+                building = WarehouseBuilding.Create(item.WorldPosition.ToVector3());
             if (building == null && !string.IsNullOrWhiteSpace(item.DefinitionID))
             {
                 BuildingDataSO definition = definitions.ResolveBuilding(item.DefinitionID);
@@ -296,6 +300,7 @@ public sealed class SaveGameManager : MonoBehaviour
             if (target != null)
                 entity.OrderGarrison(target);
         }
+        LogisticsManager.Instance.Restore(save.Logistics);
         PopulationManager.Instance.RefreshMaxCapacity();
 
         AssemblerBuilding mechSpawner = FindObjectOfType<AssemblerBuilding>();
@@ -340,7 +345,9 @@ public sealed class SaveGameManager : MonoBehaviour
             Courage = resident.Courage,
             Status = resident.Status,
             CurrentCarrierID = resident.CurrentCarrierID,
-            CurrentHP = resident.CurrentHP
+            CurrentHP = resident.CurrentHP,
+            HaulingEnabled = resident.HaulingEnabled,
+            CarryCapacity = resident.CarryCapacity
         };
     }
 
@@ -360,7 +367,9 @@ public sealed class SaveGameManager : MonoBehaviour
             Courage = item.Courage,
             Status = item.Status,
             CurrentCarrierID = item.CurrentCarrierID,
-            CurrentHP = item.CurrentHP
+            CurrentHP = item.CurrentHP,
+            HaulingEnabled = item.HaulingEnabled,
+            CarryCapacity = item.CarryCapacity > 0 ? item.CarryCapacity : 20
         };
     }
 
@@ -448,6 +457,10 @@ public sealed class SaveGameManager : MonoBehaviour
                     }
                     save.Inventory.ComponentWarehouse.Clear();
                     save.Version = 3;
+                    break;
+                case 3:
+                    save.Logistics = null;
+                    save.Version = 4;
                     break;
                 default:
                     throw new InvalidDataException($"缺少从版本 {save.Version} 开始的存档迁移规则。");

@@ -15,7 +15,7 @@ MonoBehaviour:
   BuildingID: BLD_ASSEMBLER
   BuildingName: "\u88C5\u914D"
   Category: 0
-  Icon: {fileID: 21300000, guid: d2b6bf16d2912244c9422738ac1ca810, type: 3}
+  Icon: {fileID: -8802153277179421361, guid: 7e6b70a1b57597b46bfc557daa61df7d, type: 3}
   Prefab: {fileID: 5745916997280971037, guid: 647d34725b2b00e4ca9e4a233c8d56ca, type: 3}
   BuildTime: 0
   GoldCost: 0

@@ -1,0 +1,39 @@
+PASS scene automatically provides an initial physical warehouse
+PASS same-cell exact path retains interaction destination
+PASS warehouse entrance reaches actual scene factory entrance
+PASS placing a production order does not consume materials
+PASS multiple workers share unique, bounded material reservations
+PASS reserved source stock never exceeds actual stock
+PASS v4 snapshot includes in-transit jobs
+PASS JSON restore preserves warehouse/backpack/material totals
+PASS restored picked jobs refer to real backpack cargo
+PASS residents physically move along paths without teleporting
+PASS in-transit save/restore exercised before delivery
+PASS production consumes exactly one recipe (50 scrap, 10 biomass)
+PASS finished quality component has exactly one physical location
+PASS delivered component retains quality and becomes available to assembly
+PASS an idle order requests materials without a worker
+PASS cancel before pickup releases reservations without refund duplication
+PASS cancel after pickup keeps cargo in backpack without duplicating it
+PASS resident removal preserves a recoverable cargo container
+PASS assembly cannot take a component waiting at factory output
+PASS full output buffer blocks starting another product
+PASS full warehouses do not accept output reservations
+PASS output hauling resumes when storage capacity is available
+PASS incoming jobs reserve destination capacity
+PASS warehouse component can be equipped
+PASS equipping removes physical warehouse location
+PASS unequipping returns the same permanent instance once
+PASS repeated release does not duplicate component
+PASS chassis consumption cannot reuse a stale warehouse selection
+PASS version 3 saves migrate to physical-storage initialization
+PASS legacy paid order receives material exactly once
+PASS unreachable pickup releases worker and applies retry cooldown
+PASS backpack capacity and work permissions participate in full game snapshots
+PASS dashboard screenshot contains visible panel content
+PASS generated logistics dashboard rendered to 1920x1080 screenshot
+PASS full scene reload reinitializes logistics manager
+PASS full save/load preserves all resource locations and total
+PASS full save/load preserves component identity and physical location
+PASS full save/load restores resident hauling permissions and capacity
+PASS runtime-created warehouse reconstructed on scene reload

@@ -15,6 +15,7 @@ public class PopulationManager : MonoBehaviour
     public int BaseMaxPopulation = 5;
     public List<ResidentData> TotalResidents = new List<ResidentData>();
     private int currentTotalMax;
+    private bool capacityInitialized;
 
     private void Awake()
     {
@@ -32,13 +33,16 @@ public class PopulationManager : MonoBehaviour
         {
             if (building is HousingBuilding housing) bonus += housing.CapacityProvided;
         }
-        currentTotalMax = BaseMaxPopulation + bonus;
-        OnPopulationChanged?.Invoke();
+        int next = Mathf.Max(0, BaseMaxPopulation + bonus);
+        bool changed = !capacityInitialized || currentTotalMax != next;
+        currentTotalMax = next;
+        capacityInitialized = true;
+        if (changed) OnPopulationChanged?.Invoke();
     }
 
     public int GetCurrentMaxCapacity()
     {
-        if (currentTotalMax == 0) RefreshMaxCapacity();
+        if (!capacityInitialized) RefreshMaxCapacity();
         return currentTotalMax;
     }
 

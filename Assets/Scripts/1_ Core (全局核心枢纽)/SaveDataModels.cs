@@ -4,12 +4,13 @@ using System.Collections.Generic;
 [Serializable]
 public class GameSaveData
 {
-    public const int CurrentVersion = 3;
+    public const int CurrentVersion = 4;
 
     public int Version = CurrentVersion;
     public string SavedAtUtc;
     public string SceneName;
     public ResourceSaveData Resources = new ResourceSaveData();
+    public LogisticsSaveData Logistics;
     public List<ResidentSaveData> Residents = new List<ResidentSaveData>();
     public List<BuildingSaveData> Buildings = new List<BuildingSaveData>();
     public InventorySaveData Inventory = new InventorySaveData();
@@ -42,6 +43,8 @@ public class ResidentSaveData
     public ResidentStatus Status;
     public string CurrentCarrierID;
     public float CurrentHP;
+    public bool HaulingEnabled;
+    public float CarryCapacity = 20;
     public bool HasWorldPosition;
     public SerializableVector3 WorldPosition;
 }
@@ -70,6 +73,8 @@ public class ProductionTaskSaveData
     public float CurrentProgress;
     public bool IsPaused;
     public ResourceSet PaidCost;
+    public bool UsesLogistics;
+    public bool MaterialsConsumed;
     public bool HasCraftSnapshot;
     public int CraftSeed;
     public float Craftsmanship;

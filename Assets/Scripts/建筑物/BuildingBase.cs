@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
@@ -19,6 +19,8 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     [SerializeField] private string definitionID;
     public string BuildingName = "新建筑";
     public Sprite BuildingIcon;
+    [Tooltip("使用统一建筑图集；关闭后保留原有美术。") ]
+    public bool UseUnifiedBuildingArt = true;
     public GameObject FunctionUIPrefab; // 对应底部舞台的模块
 
     [Header("=== 空间足迹 (Footprint) ===")]
@@ -174,10 +176,12 @@ public abstract class BuildingBase : MonoBehaviour, IResidentCarrier
     protected virtual void Awake()
     {
         GeneratePhysicalFootprint();
+        BuildingVisualTheme.Apply(this);
     }
 
     protected virtual void OnDestroy()
     {
+        if (AllPlacedBuildings.Contains(this)) LogisticsManager.Instance?.ReleaseBuilding(this);
         AllPlacedBuildings.Remove(this);
         var grid = RTSGridSystem.Instance;
         if (grid == null) return;

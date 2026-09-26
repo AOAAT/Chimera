@@ -20,6 +20,16 @@ public class BuildingManager : MonoBehaviour
 
     private void Awake() => Instance = this;
 
+    public void StartWarehousePlacement()
+    {
+        if (isPlacing) CancelPlacement();
+        ghostInstance = WarehouseBuilding.Create(Vector3.zero);
+        ghostInstance.InitGhostMode();
+        currentPendingData = null;
+        isPlacing = true;
+        UIFeedback.Show("选择综合仓库位置，右键取消。当前原型阶段暂不收取建造费用。");
+    }
+
     public void StartPlacement(BuildingDataSO data)
     {
         if (isPlacing) CancelPlacement();

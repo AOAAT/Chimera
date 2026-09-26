@@ -38,7 +38,9 @@ public class ConstructionUIModule : MonoBehaviour
             if (iconTransform != null)
             {
                 Image iconImage = iconTransform.GetComponent<Image>();
-                iconImage.sprite = data.Icon;
+                Sprite unified = data.Prefab != null ? BuildingVisualTheme.GetIcon(data.Prefab.GetComponent<BuildingBase>()) : null;
+                iconImage.sprite = data.Icon != null ? data.Icon : unified;
+                iconImage.preserveAspect = true;
 
                 // 💡 建议：将这个 iconImage 的 Raycast Target 勾选去掉
                 // 这样点击事件才会穿透到下方的 Button 组件上

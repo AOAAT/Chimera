@@ -1,0 +1,41 @@
+PASS roster initially displays each resident once
+PASS 100 repeated population notifications reuse existing row objects
+PASS unchanged rows preserve scroll position
+PASS unchanged logistics totals do not broadcast resource events
+PASS unchanged population capacity does not broadcast roster events
+PASS periodic global theme preserves roster backdrop across multiple cycles
+PASS roster stays stable during live logistics and theme updates
+PASS recruitment adds one row without recreating existing residents
+PASS removal deletes only the departing resident row
+PASS retained row updates resident data in place
+PASS working filter handles an empty result without stale rows
+PASS filter restores resident rows
+PASS atlas imports with point filtering and readable pixels
+PASS atlas padding and unused cell are transparent
+PASS 基地建筑 actual scene building replaces placeholder renderer
+PASS 组装建筑 actual scene building replaces placeholder renderer
+PASS 铁皮屋 actual scene building replaces placeholder renderer
+PASS 生产建筑 actual scene building replaces placeholder renderer
+PASS 初始补给仓库 actual scene building replaces placeholder renderer
+PASS cancelled overlapping warehouse ghost does not release live warehouse storage
+PASS 基地 uses same art for map and detail icon
+PASS 基地 preserves footprint, entrance and persistent ID
+PASS 基地 art fits within footprint
+PASS 基地 placement ghost uses new art and validity tint
+PASS 工厂 uses same art for map and detail icon
+PASS 工厂 preserves footprint, entrance and persistent ID
+PASS 工厂 art fits within footprint
+PASS 工厂 placement ghost uses new art and validity tint
+PASS 装配站 uses same art for map and detail icon
+PASS 装配站 preserves footprint, entrance and persistent ID
+PASS 装配站 art fits within footprint
+PASS 装配站 placement ghost uses new art and validity tint
+PASS 住宅 uses same art for map and detail icon
+PASS 住宅 preserves footprint, entrance and persistent ID
+PASS 住宅 art fits within footprint
+PASS 住宅 placement ghost uses new art and validity tint
+PASS 仓库 uses same art for map and detail icon
+PASS 仓库 preserves footprint, entrance and persistent ID
+PASS 仓库 art fits within footprint
+PASS 仓库 placement ghost uses new art and validity tint
+PASS five-building gallery rendered in Unity

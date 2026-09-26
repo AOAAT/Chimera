@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -23,6 +23,7 @@ public class FactoryUIModule : MonoBehaviour
     private TMP_Text productivityText;
     private Image nextLineProgressFill;
     private GameObject productivityCard;
+    private float nextSummaryRefresh;
 
     public void Initialize()
     {
@@ -64,6 +65,11 @@ public class FactoryUIModule : MonoBehaviour
         if (boundFactory == null && SelectionContextHUD.Instance != null)
             BindFactory(SelectionContextHUD.Instance.CurrentTargetBuilding as FactoryBuilding);
 
+        if (Time.unscaledTime >= nextSummaryRefresh)
+        {
+            nextSummaryRefresh = Time.unscaledTime + .5f;
+            RefreshProductivityCard();
+        }
         FactoryBuilding factory = boundFactory;
         if (factory != null)
         {
@@ -94,7 +100,7 @@ public class FactoryUIModule : MonoBehaviour
         cardRect.anchorMax = new Vector2(0.5f, 0.5f);
         cardRect.pivot = new Vector2(0.5f, 0.5f);
         cardRect.anchoredPosition = new Vector2(-246f, 5f);
-        cardRect.sizeDelta = new Vector2(160f, 64f);
+        cardRect.sizeDelta = new Vector2(160f, 80f);
 
         Image cardImage = productivityCard.GetComponent<Image>();
         cardImage.sprite = Resources.Load<Sprite>("UI/ChimeraRounded");
@@ -166,6 +172,13 @@ public class FactoryUIModule : MonoBehaviour
         productivityText.text = $"员工 {staffCount}/{boundFactory.MaxStaffCapacity} · 产能 {productivity:0.00}\n" +
             $"并行 {lines}/{boundFactory.MaxProductionLines} · 速度 {boundFactory.ProductionSpeedMultiplier:0.00}x\n" +
             nextLine;
+        var logistics = LogisticsManager.Instance;
+        if (logistics != null && logistics.Ready)
+        {
+            float input = logistics.Data.Storages.Where(s => s.OwnerID == boundFactory.PersistentID && s.Kind == StorageKind.OrderInput).Sum(s => s.Used);
+            var output = logistics.Get(LogisticsManager.OutputID(boundFactory));
+            productivityText.text += $"\n原料 {input:0.#} · 出货 {output?.Used ?? 0:0}/{boundFactory.OutputCapacity}";
+        }
 
         if (nextLineProgressFill != null)
             nextLineProgressFill.fillAmount = boundFactory.NextProductionLineProgress;
@@ -290,7 +303,7 @@ public class FactoryUIModule : MonoBehaviour
                 itemScript.Initialize(task, () => {
 
                     // 🌟 不要直接 Remove，而是调用 factory 封装好的 CancelTask 方法！
-                    // 这样工厂才会执行 GlobalResourceManager.Instance.Refund(task.PaidCost);
+                    // 由工厂取消材料预留，并把已领取材料交给物流退库。
                     factory.CancelTask(task);
 
                     // 然后再刷新 UI 表现

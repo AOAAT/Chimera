@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Chimera 的统一运行时 UI 主题。旧界面只保留结构和业务绑定，视觉由这里集中管理。
+/// Chimera 的统一 UI 样式工具。编辑器显式应用后保存，运行时仅供动态内容创建使用。
 /// </summary>
 public static class ChimeraUITheme
 {
@@ -27,7 +27,8 @@ public static class ChimeraUITheme
 
     public static void ApplyPanel(GameObject root, bool addRootSurface = true, bool styleNamedSurfaces = true)
     {
-        if (root == null) return;
+        if (root == null || root.GetComponentInParent<LogisticsPanelUI>(true) != null ||
+            root.GetComponentInParent<ResidentRosterPanelUI>(true) != null) return;
         // 仓库自行维护布局和配色；周期主题扫描不能改写下拉菜单、遮罩与品质色。
         if (root.GetComponentInParent<GlobalWarehouseUI>(true) != null) return;
 
@@ -58,7 +59,8 @@ public static class ChimeraUITheme
 
     public static void StyleButton(Button button)
     {
-        if (button == null) return;
+        if (button == null || button.GetComponentInParent<LogisticsPanelUI>(true) != null ||
+            button.GetComponentInParent<ResidentRosterPanelUI>(true) != null) return;
         // TMP 下拉菜单的全屏点击拦截层必须透明，不能当普通按钮填色。
         if (button.name == "Blocker") return;
         if (button.GetComponentInParent<GlobalWarehouseUI>(true) != null) return;

@@ -41,6 +41,8 @@ public class ResidentData
     public ResidentStatus Status = ResidentStatus.Idle;
     public string CurrentCarrierID; // 记录当前所在的建筑或机甲 InstanceID
     public float CurrentHP;
+    public bool HaulingEnabled;
+    public float CarryCapacity = 20f;
     // 预留：经验增加接口
     public void AddExperience(float amount)
     {

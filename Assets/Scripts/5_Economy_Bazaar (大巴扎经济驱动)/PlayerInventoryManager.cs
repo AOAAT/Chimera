@@ -199,11 +199,13 @@ public class PlayerInventoryManager : MonoBehaviour
             InstancedComponent component = new InstancedComponent(so, level);
             ComponentQualityGenerator.EnsureGenerated(component);
             ComponentInventory.Add(component);
+            if (LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+                LogisticsManager.Instance.Deposit("component:" + component.InstanceID, 1);
         }
         OnInventoryChanged?.Invoke();
     }
 
-    public void AddComponentInstance(InstancedComponent component)
+    public void AddComponentInstance(InstancedComponent component, bool deposit = true)
     {
         if (component?.BaseData == null) return;
         if (string.IsNullOrWhiteSpace(component.InstanceID)) component.InstanceID = Guid.NewGuid().ToString();
@@ -211,12 +213,16 @@ public class PlayerInventoryManager : MonoBehaviour
         ComponentQualityGenerator.EnsureGenerated(component);
         component.EquippedUnitID = string.Empty;
         ComponentInventory.Add(component);
+        if (deposit && LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+            LogisticsManager.Instance.Deposit("component:" + component.InstanceID, 1);
         OnInventoryChanged?.Invoke();
     }
 
     public bool TryEquipComponent(InstancedComponent component, string unitID)
     {
         if (component == null || string.IsNullOrWhiteSpace(unitID) || component.IsEquipped) return false;
+        if (LogisticsManager.Instance != null && LogisticsManager.Instance.Ready &&
+            !LogisticsManager.Instance.ConsumeItem("component:" + component.InstanceID)) return false;
         if (!ComponentInventory.Contains(component)) ComponentInventory.Add(component);
         component.EquippedUnitID = unitID;
         OnInventoryChanged?.Invoke();
@@ -226,7 +232,10 @@ public class PlayerInventoryManager : MonoBehaviour
     public void ReleaseComponent(InstancedComponent component)
     {
         if (component == null) return;
+        bool wasEquipped = component.IsEquipped;
         component.EquippedUnitID = string.Empty;
+        if (wasEquipped && LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+            LogisticsManager.Instance.Deposit("component:" + component.InstanceID, 1);
         OnInventoryChanged?.Invoke();
     }
 
@@ -235,7 +244,12 @@ public class PlayerInventoryManager : MonoBehaviour
 
     public void AddChassisToWarehouse(ChassisDataSO so, int qty = 1)
     {
-        if (so == null) return;
+        if (so == null || qty <= 0) return;
+        if (LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+        {
+            LogisticsManager.Instance.Deposit("chassis:" + so.ChassisID, qty);
+            OnInventoryChanged?.Invoke(); return;
+        }
         if (chassisWarehouse.ContainsKey(so.ChassisID)) chassisWarehouse[so.ChassisID].Quantity += qty;
         else chassisWarehouse[so.ChassisID] = new ChassisStack(so, qty);
         OnInventoryChanged?.Invoke();
@@ -243,6 +257,12 @@ public class PlayerInventoryManager : MonoBehaviour
     public bool TryConsumeChassisFromWarehouse(ChassisDataSO so)
     {
         if (so == null) return false;
+        if (LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+        {
+            bool consumed = LogisticsManager.Instance.ConsumeItem("chassis:" + so.ChassisID);
+            if (consumed) OnInventoryChanged?.Invoke();
+            return consumed;
+        }
 
         if (chassisWarehouse.ContainsKey(so.ChassisID) && chassisWarehouse[so.ChassisID].Quantity > 0)
         {
@@ -255,11 +275,13 @@ public class PlayerInventoryManager : MonoBehaviour
         Debug.LogWarning($"【仓库】底盘 {so.ChassisName} 库存不足！");
         return false;
     }
-    public List<InstancedComponent> GetAvailableComponents()
+    public List<InstancedComponent> GetAvailableComponents(bool includeInTransit = false)
     {
         NormalizeLegacyComponents();
         return ComponentInventory
             .Where(component => component != null && component.BaseData != null && !component.IsEquipped)
+            .Where(component => includeInTransit || LogisticsManager.Instance == null || !LogisticsManager.Instance.Ready ||
+                LogisticsManager.Instance.ItemAvailable("component:" + component.InstanceID))
             .OrderByDescending(component => component.Quality)
             .ThenByDescending(component => component.CurrentMark)
             .ThenBy(component => component.BaseData.ComponentName)
@@ -274,7 +296,15 @@ public class PlayerInventoryManager : MonoBehaviour
         .ThenByDescending(stack => stack.Level)
         .ThenBy(stack => stack.BaseData.ComponentName)
         .ToList();
-    public List<ChassisStack> GetChassisStacks() => chassisWarehouse.Values.Where(s => s.Quantity > 0).ToList();
+    public List<ChassisStack> GetChassisStacks()
+    {
+        var logistics = LogisticsManager.Instance;
+        if (logistics == null || !logistics.Ready) return chassisWarehouse.Values.Where(s => s.Quantity > 0).ToList();
+        return AllChassisDatabase.Concat(DebugChassisBundle).Concat(chassisWarehouse.Values.Select(x => x.BaseData))
+            .Where(x => x != null).GroupBy(x => x.ChassisID).Select(x => x.First())
+            .Select(x => new ChassisStack(x, (int)logistics.Warehouses.Sum(s => logistics.Available(s, "chassis:" + x.ChassisID))))
+            .Where(x => x.Quantity > 0).ToList();
+    }
 
 
     public static float GetStatValue(List<StatEntry> stats, StatType targetStat)
@@ -291,7 +321,7 @@ public class PlayerInventoryManager : MonoBehaviour
     public InventorySaveData CaptureSaveData()
     {
         InventorySaveData save = new InventorySaveData();
-        foreach (ChassisStack stack in chassisWarehouse.Values)
+        foreach (ChassisStack stack in GetChassisStacks())
         {
             if (stack?.BaseData == null) continue;
             save.ChassisWarehouse.Add(new ChassisStackSaveData

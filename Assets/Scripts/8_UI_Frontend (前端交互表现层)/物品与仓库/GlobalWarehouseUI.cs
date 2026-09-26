@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>仓库窗口在运行时生成，场景只保留打开入口。</summary>
+/// <summary>仓库结构可在编辑器生成并保存，运行时仅绑定交互与库存数据。</summary>
 public class GlobalWarehouseUI : MonoBehaviour
 {
     public static GlobalWarehouseUI Instance;
@@ -19,13 +19,15 @@ public class GlobalWarehouseUI : MonoBehaviour
 
     private readonly List<ComponentType> types = new List<ComponentType>();
     private readonly List<SubTag> tags = new List<SubTag>();
-    private TMP_FontAsset font;
-    private TMP_Text summary, detailTitle, detailMeta, detailBody, pageText;
-    private Image detailIcon;
-    private ScrollRect itemScroll;
+    [SerializeField] private TMP_FontAsset font;
+    [SerializeField] private TMP_Text summary, detailTitle, detailMeta, detailBody, pageText;
+    [SerializeField] private Image detailIcon;
+    [SerializeField] private ScrollRect itemScroll;
     private readonly List<Action> visibleItems = new List<Action>();
     private PlayerInventoryManager inventory;
-    private bool built, dirty;
+    [SerializeField] private bool built;
+    [SerializeField] private Button closeButton, logisticsButton, previousButton, nextButton;
+    private bool dirty, controlsBound, opening;
     private int page;
     private const int PageSize = 40;
     private readonly Color surface = new Color32(31, 45, 61, 255);
@@ -35,13 +37,15 @@ public class GlobalWarehouseUI : MonoBehaviour
     {
         Instance = this;
         UIBackHandler.Attach(gameObject, CloseWarehouse);
-        gameObject.SetActive(false);
+        if (!opening) gameObject.SetActive(false);
     }
 
     public void OpenWarehouse()
     {
         EnsureView();
+        opening = true;
         gameObject.SetActive(true);
+        opening = false;
         transform.SetAsLastSibling();
         BindInventory();
         dirty = true;
@@ -80,9 +84,26 @@ public class GlobalWarehouseUI : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
+    public void PrepareEditorView() => EnsureView();
+
+    private void BindControls()
+    {
+        if (!Application.isPlaying || controlsBound) return;
+        controlsBound = true;
+        types.Clear(); types.AddRange(Enum.GetValues(typeof(ComponentType)).Cast<ComponentType>());
+        tags.Clear(); tags.AddRange(Enum.GetValues(typeof(SubTag)).Cast<SubTag>());
+        closeButton.onClick.AddListener(CloseWarehouse);
+        logisticsButton.onClick.AddListener(() => LogisticsPanelUI.Instance?.Open());
+        previousButton.onClick.AddListener(() => ChangePage(-1));
+        nextButton.onClick.AddListener(() => ChangePage(1));
+        MainCategoryDropdown.onValueChanged.AddListener(_ => FilterChanged());
+        TypeDropdown.onValueChanged.AddListener(_ => FilterChanged());
+        TagDropdown.onValueChanged.AddListener(_ => FilterChanged());
+    }
+
     private void EnsureView()
     {
-        if (built) return;
+        if (built) { BindControls(); return; }
         font = MainCategoryDropdown != null && MainCategoryDropdown.captionText != null
             ? MainCategoryDropdown.captionText.font : TMP_Settings.defaultFontAsset;
         foreach (Transform child in transform) child.gameObject.SetActive(false);
@@ -107,7 +128,9 @@ public class GlobalWarehouseUI : MonoBehaviour
         Place(window, new Vector2(.09f, .1f), new Vector2(.91f, .9f));
         Text("仓 库", window, 30, new Vector2(.025f, .91f), new Vector2(.3f, .98f));
         summary = Text("", window, 18, new Vector2(.025f, .855f), new Vector2(.8f, .91f));
-        Button("关闭  ×", window, new Vector2(.86f, .91f), new Vector2(.975f, .98f), CloseWarehouse);
+        closeButton = Button("关闭  ×", window, new Vector2(.86f, .91f), new Vector2(.975f, .98f), null);
+
+        logisticsButton = Button("物流 / 资源", window, new Vector2(.69f, .91f), new Vector2(.84f, .98f), null);
 
         MainCategoryDropdown = Dropdown("资产类别", window, .025f, .25f);
         MainCategoryDropdown.ClearOptions();
@@ -120,10 +143,6 @@ public class GlobalWarehouseUI : MonoBehaviour
         tags.AddRange(Enum.GetValues(typeof(SubTag)).Cast<SubTag>());
         TagDropdown.ClearOptions();
         TagDropdown.AddOptions(new[] { "全部流派" }.Concat(tags.Select(TagName)).ToList());
-        MainCategoryDropdown.onValueChanged.AddListener(_ => FilterChanged());
-        TypeDropdown.onValueChanged.AddListener(_ => FilterChanged());
-        TagDropdown.onValueChanged.AddListener(_ => FilterChanged());
-
         itemScroll = Scroll(window, "ItemScroll", new Vector2(.025f, .115f), new Vector2(.64f, .77f));
         ContentRoot = itemScroll.content;
         var grid = ContentRoot.gameObject.AddComponent<GridLayoutGroup>();
@@ -155,11 +174,15 @@ public class GlobalWarehouseUI : MonoBehaviour
         bodyLayout.childForceExpandHeight = false;
         var bodyFit = detailScroll.content.gameObject.AddComponent<ContentSizeFitter>();
         bodyFit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        Button("上一页", window, new Vector2(.025f, .035f), new Vector2(.12f, .09f), () => ChangePage(-1));
+        previousButton = Button("上一页", window, new Vector2(.025f, .035f), new Vector2(.12f, .09f), null);
         pageText = Text("", window, 18, new Vector2(.135f, .035f), new Vector2(.34f, .09f));
-        Button("下一页", window, new Vector2(.36f, .035f), new Vector2(.455f, .09f), () => ChangePage(1));
+        nextButton = Button("下一页", window, new Vector2(.36f, .035f), new Vector2(.455f, .09f), null);
         Text("滚轮浏览  ·  点击查看详情", window, 17, new Vector2(.66f, .035f), new Vector2(.975f, .09f));
         built = true;
+        ClearDetail();
+        summary.text = "物品库存与品质信息";
+        pageText.text = "1 / 1 页";
+        BindControls();
         FilterChanged();
     }
 
@@ -203,7 +226,7 @@ public class GlobalWarehouseUI : MonoBehaviour
                 }
             }
         if (category == 0 || category == 2)
-            foreach (InstancedComponent component in inventory.GetAvailableComponents())
+            foreach (InstancedComponent component in inventory.GetAvailableComponents(true))
             {
                 if (TypeDropdown.value > 0 && component.BaseData.Type != types[TypeDropdown.value - 1]) continue;
                 if (!MatchesTags(component.BaseData.BaseSubTags)) continue;
@@ -225,7 +248,7 @@ public class GlobalWarehouseUI : MonoBehaviour
         int pages = Mathf.Max(1, Mathf.CeilToInt(visibleItems.Count / (float)PageSize));
         page = Mathf.Clamp(page, 0, pages - 1);
         for (int i = page * PageSize; i < Mathf.Min(visibleItems.Count, (page + 1) * PageSize); i++) visibleItems[i]();
-        summary.text = $"可用物品 {visibleItems.Count} 件   /   组件独立品质 · 底盘标准规格";
+        summary.text = $"资产总览 {visibleItems.Count} 件   /   组件独立品质 · 底盘标准规格";
         pageText.text = $"{page + 1} / {pages} 页";
         EmptyWarningText.SetActive(visibleItems.Count == 0);
         itemScroll.verticalNormalizedPosition = 1f;
@@ -268,7 +291,7 @@ public class GlobalWarehouseUI : MonoBehaviour
         string affixes = item.Affixes == null || item.Affixes.Count == 0 ? "无特殊词条" :
             string.Join("\n\n", item.Affixes.Where(a => a != null).Select(a => a.DisplayName + "\n" + a.Description));
         string identity = item.InstanceID ?? "";
-        string notes = (item.BaseData.GetModelData(item.CurrentMark)?.SpecialMechanicDesc ?? "") +
+        string notes = (LogisticsManager.Instance?.LocationLabel("component:" + item.InstanceID) ?? "仓库") + "\n\n" + (item.BaseData.GetModelData(item.CurrentMark)?.SpecialMechanicDesc ?? "") +
             "\n\n" + affixes + "\n\n编号 " + identity.Substring(0, Math.Min(8, identity.Length));
         ShowDetail(item.BaseData.ComponentName,
             $"{TypeName(item.BaseData.Type)} · Mk.{item.CurrentMark}\n{ComponentQualityUtility.GetSummary(item.Quality, item.QualityScore)}",
@@ -316,14 +339,15 @@ public class GlobalWarehouseUI : MonoBehaviour
         Place(label.rectTransform, min, max);
         return label;
     }
-    private void Button(string label, Transform parent, Vector2 min, Vector2 max, Action click)
+    private Button Button(string label, Transform parent, Vector2 min, Vector2 max, Action click)
     {
         var rect = Panel("ActionButton", parent, new Color32(47, 72, 90, 255));
         Place(rect, min, max);
         var button = rect.gameObject.AddComponent<Button>();
-        button.onClick.AddListener(() => click());
+        if (click != null) button.onClick.AddListener(() => click());
         var text = Text(label, rect, 20, Vector2.zero, Vector2.one);
         text.alignment = TextAlignmentOptions.Center;
+        return button;
     }
     private TMP_Dropdown Dropdown(string name, Transform parent, float left, float right)
     {

@@ -25,6 +25,26 @@ public class ResidentRosterPanelUI : MonoBehaviour
 
     private BuildingBase targetBuilding;
     private RosterFilter currentFilter;
+    private readonly Dictionary<string, ResidentRosterRowUI> rowsByID = new Dictionary<string, ResidentRosterRowUI>();
+    private PopulationManager subscribedPopulation;
+    private bool dirty;
+
+    private void MarkDirty() => dirty = true;
+    private void BindPopulation()
+    {
+        if (subscribedPopulation == PopulationManager.Instance) return;
+        if (subscribedPopulation != null) subscribedPopulation.OnPopulationChanged -= MarkDirty;
+        subscribedPopulation = PopulationManager.Instance;
+        if (subscribedPopulation != null) subscribedPopulation.OnPopulationChanged += MarkDirty;
+        dirty = true;
+    }
+    private void LateUpdate()
+    {
+        BindPopulation();
+        if (!dirty) return;
+        dirty = false;
+        RefreshRows();
+    }
 
     public static void OpenRoster()
     {
@@ -77,14 +97,14 @@ public class ResidentRosterPanelUI : MonoBehaviour
 
     private void OnEnable()
     {
-        if (PopulationManager.Instance != null)
-            PopulationManager.Instance.OnPopulationChanged += RefreshRows;
+        BindPopulation();
+        dirty = true;
     }
 
     private void OnDisable()
     {
-        if (PopulationManager.Instance != null)
-            PopulationManager.Instance.OnPopulationChanged -= RefreshRows;
+        if (subscribedPopulation != null) subscribedPopulation.OnPopulationChanged -= MarkDirty;
+        subscribedPopulation = null;
     }
 
     private void OnDestroy()
@@ -123,14 +143,6 @@ public class ResidentRosterPanelUI : MonoBehaviour
     {
         if (!isActiveAndEnabled || ListContent == null || RowTemplate == null) return;
 
-        for (int i = ListContent.childCount - 1; i >= 0; i--)
-        {
-            Transform child = ListContent.GetChild(i);
-            if (child == RowTemplate.transform) continue;
-            child.gameObject.SetActive(false);
-            Destroy(child.gameObject);
-        }
-
         PopulationManager population = PopulationManager.Instance;
         List<ResidentData> residents = population != null
             ? population.TotalResidents.Where(x => x != null).ToList()
@@ -168,10 +180,28 @@ public class ResidentRosterPanelUI : MonoBehaviour
             if (FilterButtonText != null) FilterButtonText.text = GetFilterLabel();
         }
 
+        bool layoutChanged = false;
+        var visibleIDs = new HashSet<string>(residents.Select(x => x.InstanceID));
+        foreach (string id in rowsByID.Keys.Where(id => !visibleIDs.Contains(id)).ToArray())
+        {
+            var removed = rowsByID[id];
+            if (removed != null) { removed.gameObject.SetActive(false); Destroy(removed.gameObject); }
+            rowsByID.Remove(id);
+            layoutChanged = true;
+        }
+        int sibling = RowTemplate.transform.GetSiblingIndex() == 0 ? 1 : 0;
         foreach (ResidentData resident in residents)
         {
-            ResidentRosterRowUI row = Instantiate(RowTemplate, ListContent);
-            row.gameObject.SetActive(true);
+            if (!rowsByID.TryGetValue(resident.InstanceID, out ResidentRosterRowUI row) || row == null)
+            {
+                row = Instantiate(RowTemplate, ListContent);
+                row.gameObject.SetActive(true);
+                rowsByID[resident.InstanceID] = row;
+                layoutChanged = true;
+            }
+            if (row.transform.GetSiblingIndex() != sibling)
+            { row.transform.SetSiblingIndex(sibling); layoutChanged = true; }
+            sibling++;
             BindRow(row, resident);
         }
 
@@ -180,7 +210,7 @@ public class ResidentRosterPanelUI : MonoBehaviour
             EmptyText.gameObject.SetActive(residents.Count == 0);
             EmptyText.text = targetBuilding != null ? "当前没有可派遣的赋闲居民" : "当前筛选条件下没有居民";
         }
-        LayoutRebuilder.ForceRebuildLayoutImmediate(ListContent);
+        if (layoutChanged) LayoutRebuilder.ForceRebuildLayoutImmediate(ListContent);
     }
 
     private IEnumerable<ResidentData> ApplyFilter(IEnumerable<ResidentData> residents)
@@ -276,7 +306,7 @@ public class ResidentRosterPanelUI : MonoBehaviour
     private static ResidentEntity FindResidentEntity(ResidentData resident)
     {
         if (resident == null) return null;
-        return FindObjectsOfType<ResidentEntity>().FirstOrDefault(x => x != null &&
+        return ResidentEntity.ActiveResidents.FirstOrDefault(x => x != null &&
             (x.MyData == resident || (x.MyData != null && x.MyData.InstanceID == resident.InstanceID)));
     }
 

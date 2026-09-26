@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -97,7 +97,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
         foreach (string componentID in snapshot_EquippedComponentIDs)
         {
             InstancedComponent component = PlayerInventoryManager.Instance.GetComponentInstance(componentID);
-            if (component != null) component.EquippedUnitID = currentEditingProfile.UnitID;
+            if (component != null)
+            {
+                LogisticsManager.Instance?.ReclaimEquippedComponent(component.InstanceID);
+                component.EquippedUnitID = currentEditingProfile.UnitID;
+            }
         }
 
         gameObject.SetActive(true);
@@ -327,7 +331,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
         RightInventoryPanelUI.Instance.OpenForChassisSelection(
             () => PlayerInventoryManager.Instance.GetChassisStacks(),
             (stack) => {
-                PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(stack.BaseData);
+                if (!PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(stack.BaseData))
+                {
+                    UIFeedback.Show("该底盘已不可用，请刷新库存后重试。");
+                    return;
+                }
                 // 🌟 修复：生成名字，解决 mechName 报错
                 string newName = "奇美拉-" + Random.Range(100, 999);
                 currentEditingProfile = new SavedUnitProfile(new InstancedChassis(stack.BaseData), newName);
@@ -521,7 +529,11 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 foreach (var originalCompID in snapshot_EquippedComponentIDs)
                 {
                     var comp = PlayerInventoryManager.Instance.GetComponentInstance(originalCompID);
-                    if (comp != null) comp.EquippedUnitID = currentEditingProfile.UnitID;
+                    if (comp != null)
+                    {
+                        LogisticsManager.Instance?.ReclaimEquippedComponent(comp.InstanceID);
+                        comp.EquippedUnitID = currentEditingProfile.UnitID;
+                    }
                 }
                 PlayerInventoryManager.Instance.ForceTriggerInventoryEvent();
             }

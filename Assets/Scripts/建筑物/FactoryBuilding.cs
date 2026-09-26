@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class FactoryBuilding : BuildingBase
 {
+    [Min(1)] public float InputCapacity = 2000f;
+    [Min(1)] public int OutputCapacity = 8;
     public bool SyncOrderFlag = false; // 用于通知 UI：顺序已变，不需要销毁重建，只需保持现状
 
     [Header("=== 生产任务队列 ===")]
@@ -91,7 +93,7 @@ public class FactoryBuilding : BuildingBase
         for (int i = 0; i < TaskQueue.Count && activeTasks.Count < availableLines; i++)
         {
             ProductionTask task = TaskQueue[i];
-            if (!task.IsPaused)
+            if (!task.IsPaused && LogisticsManager.Instance != null && LogisticsManager.Instance.TryStartProduction(this, task))
             {
                 task.IsActivelyProducing = true;
                 task.ActiveLineIndex = activeTasks.Count;
@@ -115,22 +117,23 @@ public class FactoryBuilding : BuildingBase
     {
         // 1. 实物入库
         if (task.SourceSO is ChassisDataSO chassis)
-            PlayerInventoryManager.Instance.AddChassisToWarehouse(chassis, 1);
+            LogisticsManager.Instance.CompleteProduction(this, task, "chassis:" + chassis.ChassisID);
         else if (task.SourceSO is ComponentDataSO component)
         {
             EnsureCraftSnapshot(task);
             InstancedComponent product = ComponentQualityGenerator.Create(component, 1, task.CraftSeed,
                 task.Craftsmanship, task.CraftedByResidentIDs, task.CraftedAtBuildingID);
-            PlayerInventoryManager.Instance.AddComponentInstance(product);
+            PlayerInventoryManager.Instance.AddComponentInstance(product, false);
+            LogisticsManager.Instance.CompleteProduction(this, task, "component:" + product.InstanceID);
             string affixes = product.Affixes.Count > 0
                 ? $" · {string.Join("、", product.Affixes.ConvertAll(affix => affix.DisplayName))}"
                 : string.Empty;
-            UIFeedback.Show($"{ComponentQualityUtility.GetName(product.Quality)} {component.ComponentName} 已入库{affixes}");
+            UIFeedback.Show($"{ComponentQualityUtility.GetName(product.Quality)} {component.ComponentName} 已完成，等待搬运{affixes}");
         }
 
         // 2. 从队列移除
         TaskQueue.Remove(task);
-        Debug.Log($"<color=green>【生产完成】</color> {task.ItemName} 已产出并出库。");
+        Debug.Log($"<color=green>【生产完成】</color> {task.ItemName} 已产出，等待搬运入库。");
         GlobalAudioManager.Instance?.PlayUISound(UISoundType.Loot_ItemEject);
     }
 
@@ -148,28 +151,18 @@ public class FactoryBuilding : BuildingBase
     // --- 给 UI 调用：添加新任务 ---
     public void AddToQueue(UnityEngine.Object so, string n, Sprite icon, float time, ResourceSet cost)
     {
-        // 1. 资源契约校验
-        if (GlobalResourceManager.Instance.TryConsume(cost))
-        {
-            TaskQueue.Add(new ProductionTask(so, n, icon, time, cost));
-            Debug.Log($"<color=cyan>【支付成功】</color> 消耗了 {cost.Scrap} 废料，开始生产 {n}");
-        }
-        else
-        {
-            Debug.LogWarning("【系统】 资源储备不足，无法开始生产任务。");
-            UIFeedback.Show(UIFeedback.Shortage(cost));
-        }
+        if (so == null || !LogisticsKeys.Valid(cost)) return;
+        var task = new ProductionTask(so, n, icon, time, cost) { UsesLogistics = true };
+        TaskQueue.Add(task);
+        UIFeedback.Show($"{n} 已加入订单，等待物流补料。");
     }
 
     public void CancelTask(ProductionTask task)
     {
-        if (TaskQueue.Contains(task))
-        {
-            // 2. 全额返还契约
-            GlobalResourceManager.Instance.Refund(task.PaidCost);
-            TaskQueue.Remove(task);
-            Debug.Log($"<color=orange>【任务撤回】</color> 已全额返还：{task.ItemName}");
-        }
+        if (!TaskQueue.Contains(task)) return;
+        LogisticsManager.Instance?.CancelOrder(this, task);
+        TaskQueue.Remove(task);
+        UIFeedback.Show("订单已取消，已领材料等待搬运退库。");
     }
 
     public List<ProductionTaskSaveData> CaptureProductionQueue()
@@ -200,6 +193,8 @@ public class FactoryBuilding : BuildingBase
                 CurrentProgress = task.CurrentProgress,
                 IsPaused = task.IsPaused,
                 PaidCost = task.PaidCost,
+                UsesLogistics = task.UsesLogistics,
+                MaterialsConsumed = task.MaterialsConsumed,
                 HasCraftSnapshot = task.HasCraftSnapshot,
                 CraftSeed = task.CraftSeed,
                 Craftsmanship = task.Craftsmanship,
@@ -235,6 +230,8 @@ public class FactoryBuilding : BuildingBase
                 saved.PaidCost, saved.TaskID, saved.CurrentProgress, saved.IsPaused,
                 saved.HasCraftSnapshot, saved.CraftSeed, saved.Craftsmanship,
                 saved.CraftedAtBuildingID, saved.CraftedByResidentIDs));
+            TaskQueue[TaskQueue.Count - 1].UsesLogistics = saved.UsesLogistics;
+            TaskQueue[TaskQueue.Count - 1].MaterialsConsumed = saved.MaterialsConsumed;
         }
     }
 }

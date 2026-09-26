@@ -1,0 +1,28 @@
+PASS checks begin in Edit mode
+PASS all five building sprites are persistent imported sub-assets
+PASS 基地.prefab reopens with saved building art
+PASS 工厂建筑.prefab reopens with saved building art
+PASS 房屋.prefab reopens with saved building art
+PASS 装配建筑.prefab reopens with saved building art
+PASS Warehouse.prefab reopens with saved building art
+PASS reopened gameplay scene displays the new art without Play mode
+PASS warehouse structure and references persist in scene
+PASS warehouse is also available as an editable prefab
+PASS logistics window exists in Edit mode
+PASS resident roster exists in scene for editor inspection
+PASS repeated authoring calls do not duplicate windows, buttons or HP labels
+PASS scene migration is idempotent
+PASS resident health label exists before Play mode
+PASS warehouse preview rendered entirely in Edit mode
+PASS Play mode preserves editor changes to building tint and scale
+PASS Play mode preserves editor changes to resident UI layout
+PASS logistics bootstrap reuses authored panel
+PASS authored warehouse opens
+PASS deserialized close button is bound and works
+PASS reopening warehouse never generates another window
+PASS deserialized dropdown callbacks still update filters
+PASS component filter re-enables after switching category
+PASS authored logistics tabs are bound
+PASS authored logistics close action works
+PASS editor-authored UI color survives multiple former theme refresh intervals
+PASS no periodic runtime theme controller is installed

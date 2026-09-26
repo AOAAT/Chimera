@@ -59,6 +59,10 @@ public static class GridPathfinder
                 }
                 // ------------------------------
 
+                // Exact interactions may lie inside the same cell as the resident.
+                // Replacing the sole node with startWorld must not erase the destination.
+                if (!allowNearbyTarget && (rawPath.Count == 0 || Vector3.Distance(rawPath[rawPath.Count - 1], endWorld) > .001f))
+                    rawPath.Add(endWorld);
                 return SimplifyPath(rawPath);
             }
 

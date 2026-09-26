@@ -15,7 +15,7 @@ MonoBehaviour:
   BuildingID: BLD_HOUSING
   BuildingName: "\u623F\u5C4B"
   Category: 1
-  Icon: {fileID: 21300000, guid: 094f09974f42a1648ad5d96c1d99c3a8, type: 3}
+  Icon: {fileID: -5807955927953558218, guid: 7e6b70a1b57597b46bfc557daa61df7d, type: 3}
   Prefab: {fileID: 4958857588703868900, guid: e1e0bb027daf3ea47a953bfc606bac20, type: 3}
   BuildTime: 0
   GoldCost: 0

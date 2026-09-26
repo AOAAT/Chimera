@@ -13,6 +13,9 @@ public class ProductionTask
     public float CurrentProgress;
     public bool IsPaused;
     public ResourceSet PaidCost;
+    public bool UsesLogistics;
+    public bool MaterialsConsumed;
+    [System.NonSerialized] public string LogisticsStatus;
 
     public bool HasCraftSnapshot;
     public int CraftSeed;

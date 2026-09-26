@@ -1,0 +1,1 @@
+Authored visual assets v1. Styles are applied explicitly in the editor, not periodically in Play mode.

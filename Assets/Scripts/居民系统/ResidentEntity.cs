@@ -6,6 +6,25 @@ public class ResidentEntity : MonoBehaviour
 {
     [Header("=== 绑定的数据 ===")]
     public ResidentData MyData;
+    public static readonly List<ResidentEntity> ActiveResidents = new List<ResidentEntity>();
+    public float LogisticsHoldUntil;
+    public string LogisticsIssue;
+    public bool ManualMoveActive => !logisticsMovement && currentPath != null && pathIndex < currentPath.Count;
+    private bool logisticsMovement;
+
+    public bool TryLogisticsMove(Vector3 target)
+    {
+        var route = GridPathfinder.FindPath(transform.position, target, false);
+        if (route == null) return false;
+        currentPath = route; pathIndex = 0; logisticsMovement = true; LogisticsIssue = null;
+        return true;
+    }
+    public void StopLogisticsMovement()
+    {
+        if (!logisticsMovement) return;
+        currentPath = null; logisticsMovement = false;
+        if (rb != null) rb.velocity = Vector2.zero;
+    }
 
     [Header("=== 物理与移动参数 ===")]
     public float MoveSpeed = 3.5f;
@@ -68,6 +87,8 @@ public class ResidentEntity : MonoBehaviour
 
     public void SetDestination(Vector2 worldPos) // 或者 SetManualMovePoint
     {
+        LogisticsManager.Instance?.Interrupt(this);
+        logisticsMovement = false;
         // 🌟 核心：在计算新路径前，立即切断当前所有物理惯性
         if (rb != null) rb.velocity = Vector2.zero;
 
@@ -93,6 +114,8 @@ public class ResidentEntity : MonoBehaviour
             UIFeedback.Show($"{carrier.GetCarrierName()} 的入口无法到达，请清理通道。");
             return;
         }
+        LogisticsManager.Instance?.Interrupt(this);
+        logisticsMovement = false;
         targetCarrier = carrier;
         workGate = gatePos;
         lastWorkPosition = transform.position;
@@ -228,6 +251,7 @@ public class ResidentEntity : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!ActiveResidents.Contains(this)) ActiveResidents.Add(this);
         // 🌟 订阅死亡事件
         var dr = GetComponent<DamageReceiver>();
         if (dr != null) dr.OnEntityDeath += HandleDeath;
@@ -235,6 +259,8 @@ public class ResidentEntity : MonoBehaviour
 
     private void OnDisable()
     {
+        LogisticsManager.Instance?.ReleaseResident(this);
+        ActiveResidents.Remove(this);
         // 取消订阅，防止内存泄漏
         var dr = GetComponent<DamageReceiver>();
         if (dr != null) dr.OnEntityDeath -= HandleDeath;

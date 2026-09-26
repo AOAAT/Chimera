@@ -10,6 +10,8 @@ public class ResidentRosterRowUI : MonoBehaviour
     public TMP_Text DetailText;
     public Button ActionButton;
     public TMP_Text ActionText;
+    private Action currentAction;
+    private bool actionBound;
 
     public void Bind(string residentName, string meta, string detail, string actionLabel,
         bool actionEnabled, Action action)
@@ -21,7 +23,11 @@ public class ResidentRosterRowUI : MonoBehaviour
         if (ActionButton == null) return;
 
         ActionButton.interactable = actionEnabled;
-        ActionButton.onClick.RemoveAllListeners();
-        if (action != null) ActionButton.onClick.AddListener(() => action());
+        currentAction = action;
+        if (!actionBound)
+        {
+            ActionButton.onClick.AddListener(() => currentAction?.Invoke());
+            actionBound = true;
+        }
     }
 }

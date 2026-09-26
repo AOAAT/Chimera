@@ -62,22 +62,32 @@ public class SelectionContextHUD : MonoBehaviour
     private HUDSubMode currentSubMode = HUDSubMode.Production;
     private ResidentData inspectingStaffData; // 当前正在“窥探”的员工数据
     private Coroutine rootFadeRoutine;
-    private Button staffDetailBackButton;
-    private TMP_Text residentHPValueText;
+    [SerializeField] private Button staffDetailBackButton;
+    [SerializeField] private TMP_Text residentHPValueText;
+    [SerializeField] private bool authoredLayout;
+    private float nextResidentStateRefresh;
 
     private void Awake()
     {
         Instance = this;
         if (BuildingUpgradeButton) BuildingUpgradeButton.onClick.AddListener(OnClickBuildingUpgrade);
         if (BuildingDismantleButton) BuildingDismantleButton.onClick.AddListener(OnClickBuildingDismantle);
-        EnsureStaffDetailBackButton();
-        ConfigureStaffListLayout();
-        ConfigureResidentInfoLayout();
+        if (!authoredLayout) PrepareEditorLayout();
+        if (staffDetailBackButton != null) staffDetailBackButton.onClick.AddListener(OnClickStaffDetailBack);
 
         // 初始化时强制关闭所有根节点，防止界面重叠
         if (BuildingRoot) BuildingRoot.SetActive(false);
         if (MechRoot) MechRoot.SetActive(false);
         if (ResidentRoot) ResidentRoot.SetActive(false);
+    }
+
+    public void PrepareEditorLayout()
+    {
+        if (authoredLayout) return;
+        EnsureStaffDetailBackButton();
+        ConfigureStaffListLayout();
+        ConfigureResidentInfoLayout();
+        authoredLayout = true;
     }
 
     private void OnDestroy()
@@ -235,6 +245,9 @@ public class SelectionContextHUD : MonoBehaviour
             if (constructionUI != null) constructionUI.Initialize();
         }
 
+        if (building is WarehouseBuilding warehouse)
+            WarehouseUIModule.Create(FunctionStage, warehouse, BuildingNameDisplay != null ? BuildingNameDisplay.font : TMP_Settings.defaultFontAsset);
+
         // 岗位系统权限：只有 SupportsStaff 为 true 的建筑才显示工作人员按钮
         if (StaffToggleButton) StaffToggleButton.gameObject.SetActive(building.SupportsStaff);
 
@@ -346,7 +359,6 @@ public class SelectionContextHUD : MonoBehaviour
         backObject.name = "返回岗位列表";
         staffDetailBackButton = backObject.GetComponent<Button>();
         staffDetailBackButton.onClick = new Button.ButtonClickedEvent();
-        staffDetailBackButton.onClick.AddListener(OnClickStaffDetailBack);
         TMP_Text text = backObject.GetComponentInChildren<TMP_Text>(true);
         if (text != null) text.text = "返回岗位";
         backObject.SetActive(false);
@@ -434,7 +446,8 @@ public class SelectionContextHUD : MonoBehaviour
             if (fillImage != null) fillImage.raycastTarget = false;
         }
 
-        GameObject valueObject = new GameObject("HP_Value", typeof(RectTransform), typeof(TextMeshProUGUI));
+        GameObject valueObject = ResHPBar.transform.Find("HP_Value")?.gameObject;
+        if (valueObject == null) valueObject = new GameObject("HP_Value", typeof(RectTransform), typeof(TextMeshProUGUI));
         valueObject.transform.SetParent(ResHPBar.transform, false);
         RectTransform valueRect = valueObject.GetComponent<RectTransform>();
         valueRect.anchorMin = Vector2.zero;
@@ -478,7 +491,7 @@ public class SelectionContextHUD : MonoBehaviour
     private void RefreshStaffListAvatars()
     {
         if (StaffListContainer == null || StaffAvatarPrefab == null) return;
-        ConfigureStaffListLayout();
+        if (!authoredLayout) ConfigureStaffListLayout();
         foreach (Transform child in StaffListContainer.transform)
         {
             child.gameObject.SetActive(false);
@@ -591,7 +604,7 @@ public class SelectionContextHUD : MonoBehaviour
             string traits = ResidentWorkCalculator.GetTraitSummary(data, library);
             float techPotential = ResidentWorkCalculator.CalculateContribution(data, ResidentWorkDomain.Tech, library);
             if (ResStatusText) ResStatusText.text =
-                $"<color=#5BBE6F>●</color> <size=22><b>赋闲</b></size>  <size=16><color=#516273>基地活动</color></size>\n" +
+                $"<color=#5BBE6F>●</color> <size=17>{(LogisticsManager.Instance != null ? LogisticsManager.Instance.WorkerSummary(data) : "基地活动")}</size>\n" +
                 $"<size=17>工业潜力 <b>{techPotential:0.00}</b>   ·   纪律 <b>{data.Discipline:P0}</b></size>\n" +
                 $"<size=15><color=#516273>特性</color>  {traits}</size>";
             ConfigureResidentActions(false);
@@ -697,6 +710,11 @@ public class SelectionContextHUD : MonoBehaviour
         {
             var dr = CurrentTargetResident.GetComponent<DamageReceiver>();
             if (dr) SetResidentHealth(dr.CurrentHP, dr.MaxHP);
+            if (Time.unscaledTime >= nextResidentStateRefresh)
+            {
+                nextResidentStateRefresh = Time.unscaledTime + .5f;
+                FillResidentDetail(CurrentTargetResident.MyData, dr);
+            }
         }
     }
 
@@ -790,7 +808,18 @@ public class SelectionContextHUD : MonoBehaviour
     // ==========================================
     public void OnClickResidentLog() => UIFeedback.Show("居民日志功能尚未实现。");
     public void OnClickBuildingUpgrade() => UIFeedback.Show("建筑升级功能尚未实现。");
-    public void OnClickBuildingDismantle() => UIFeedback.Show("建筑拆除功能尚未实现。");
+    public void OnClickBuildingDismantle()
+    {
+        if (!(CurrentTargetBuilding is WarehouseBuilding warehouse))
+        { UIFeedback.Show("此类建筑的拆除尚未实现。"); return; }
+        var manager = LogisticsManager.Instance;
+        var storage = manager != null ? manager.Get(warehouse.PersistentID) : null;
+        if (storage != null && (storage.Used > 0 || manager.ReservedIn(storage.ID) > 0))
+        { UIFeedback.Show("请先清空仓库并完成入库任务，再拆除。"); return; }
+        if (storage != null) manager.Data.Storages.Remove(storage);
+        Destroy(warehouse.gameObject);
+        Refresh(null);
+    }
     public void OnClickMechDetail() { if (CurrentTargetMech) UnitDetailPanelUI.Instance.OpenDetail(CurrentTargetMech, true); }
     public void OnClickMechRefit() { if (CurrentTargetMech) AssemblyWorkshopUI.Instance.OpenWorkshopWithUnit(CurrentTargetMech); }
     public void OnClickMechRecycle() { if (CurrentTargetMech) { CurrentTargetMech.RecycleToWarehouse(); Refresh(null); } }
