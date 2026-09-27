@@ -32,8 +32,6 @@ public class ChimeraUIThemeController : MonoBehaviour
             ChimeraUITheme.ApplyPanel(menu.gameObject, false);
         foreach (UnitDetailPanelUI detail in FindInRoot<UnitDetailPanelUI>(root))
             ChimeraUITheme.ApplyPanel(detail.gameObject);
-        foreach (ItemDetailPanelUI itemDetail in FindInRoot<ItemDetailPanelUI>(root))
-            ChimeraUITheme.ApplyPanel(itemDetail.gameObject, false, false);
 
         // 场景中还有仓库、建造与暂停等独立按钮，不属于上述任何面板。
         foreach (UnityEngine.UI.Button button in FindInRoot<UnityEngine.UI.Button>(root))

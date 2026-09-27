@@ -91,7 +91,9 @@ public static class LogisticsKeys
         if (key == Mana) return "魔晶";
         var inventory = PlayerInventoryManager.Instance;
         if (key != null && key.StartsWith("component:"))
-            return inventory?.GetComponentInstance(key.Substring(10))?.BaseData?.ComponentName ?? "组件";
+            return inventory?.GetComponentInstance(key.Substring(10))?.DisplayName ?? "组件";
+        if (key != null && key.StartsWith("chassis-instance:"))
+            return inventory?.GetChassisInstance(key.Substring(17))?.DisplayName ?? "底盘";
         if (key != null && key.StartsWith("chassis:"))
             return inventory?.AllChassisDatabase.Find(x => x != null && x.ChassisID == key.Substring(8))?.ChassisName ?? "底盘";
         return key ?? "货物";

@@ -81,9 +81,9 @@ public class SelectionContextHUD : MonoBehaviour
         if (ResidentRoot) ResidentRoot.SetActive(false);
     }
 
-    public void PrepareEditorLayout()
+    public void PrepareEditorLayout(bool force = false)
     {
-        if (authoredLayout) return;
+        if (authoredLayout && !force) return;
         EnsureStaffDetailBackButton();
         ConfigureStaffListLayout();
         ConfigureResidentInfoLayout();
@@ -107,7 +107,7 @@ public class SelectionContextHUD : MonoBehaviour
         ClearLogicReferences();
 
         // 隐藏详情面板 (UnitDetailPanelUI)，防止残留
-        if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
+        ItemHoverTooltip.Hide();
 
         if (target == null) return;
 
@@ -334,17 +334,17 @@ public class SelectionContextHUD : MonoBehaviour
             if (child is RectTransform rect) activeButtons.Add(rect);
         }
 
-        const float buttonHeight = 32f;
+        const float buttonHeight = 40f;
         const float spacing = 8f;
         float step = buttonHeight + spacing;
-        float top = (activeButtons.Count - 1) * step * 0.5f;
+        float top = -24f;
         float columnWidth = column is RectTransform columnRect ? columnRect.rect.width : 168f;
         float buttonWidth = Mathf.Max(80f, Mathf.Min(160f, columnWidth - 8f));
         for (int i = 0; i < activeButtons.Count; i++)
         {
             RectTransform rect = activeButtons[i];
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = new Vector2(0f, top - i * step);
             rect.sizeDelta = new Vector2(buttonWidth, buttonHeight);
@@ -450,15 +450,15 @@ public class SelectionContextHUD : MonoBehaviour
         if (valueObject == null) valueObject = new GameObject("HP_Value", typeof(RectTransform), typeof(TextMeshProUGUI));
         valueObject.transform.SetParent(ResHPBar.transform, false);
         RectTransform valueRect = valueObject.GetComponent<RectTransform>();
-        valueRect.anchorMin = Vector2.zero;
-        valueRect.anchorMax = Vector2.one;
-        valueRect.offsetMin = Vector2.zero;
-        valueRect.offsetMax = Vector2.zero;
+        valueRect.anchorMin = new Vector2(0, 1);
+        valueRect.anchorMax = new Vector2(1, 1);
+        valueRect.offsetMin = new Vector2(0, 4);
+        valueRect.offsetMax = new Vector2(0, 26);
         residentHPValueText = valueObject.GetComponent<TextMeshProUGUI>();
         residentHPValueText.alignment = TextAlignmentOptions.Center;
         residentHPValueText.fontSize = 14f;
         residentHPValueText.fontStyle = FontStyles.Bold;
-        residentHPValueText.color = Color.white;
+        residentHPValueText.color = ChimeraUITheme.PrimaryText;
         residentHPValueText.raycastTarget = false;
         if (ResStatusText != null && ResStatusText.font != null)
             residentHPValueText.font = ResStatusText.font;
@@ -516,7 +516,7 @@ public class SelectionContextHUD : MonoBehaviour
             layoutElement.flexibleWidth = 0f;
             layoutElement.flexibleHeight = 0f;
 
-            Transform icon = avatar.transform.Find("Icon");
+            Transform icon = avatar.transform.Find("Icon") ?? avatar.transform.Find("Avatar_Icon");
             if (icon is RectTransform iconRect)
             {
                 iconRect.sizeDelta = new Vector2(76f, 76f);
@@ -573,7 +573,7 @@ public class SelectionContextHUD : MonoBehaviour
         label.enableAutoSizing = true;
         label.fontSizeMin = 10f;
         label.fontSizeMax = 15f;
-        label.color = Color.white;
+        label.color = ChimeraUITheme.PrimaryText;
         if (StaffToggleText != null && StaffToggleText.font != null) label.font = StaffToggleText.font;
         label.raycastTarget = false;
         return label;
@@ -595,6 +595,14 @@ public class SelectionContextHUD : MonoBehaviour
     private void FillResidentDetail(ResidentData data, DamageReceiver dr)
     {
         if (ResNameText) ResNameText.text = data.ResidentName;
+        var sprites = PopulationManager.Instance != null && PopulationManager.Instance.ResidentPrefab != null
+            ? PopulationManager.Instance.ResidentPrefab.GetComponent<ResidentVisual2D>()?.Sprites : null;
+        if (ResIconImage != null && sprites != null && sprites.Portrait != null)
+        {
+            ResIconImage.sprite = sprites.Portrait;
+            ResIconImage.preserveAspect = true;
+            ResIconImage.color = Color.white;
+        }
 
         if (dr != null) // 处理世界中的赋闲实体
         {

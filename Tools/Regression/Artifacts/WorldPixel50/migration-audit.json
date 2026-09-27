@@ -1,0 +1,253 @@
+{
+  "nativeDefinitionsKept": 30,
+  "derivedDefinitions": 8,
+  "sizeToleranceWorldUnits": 0.01,
+  "allOriginalMechPNGsAndImportersUnchanged": true,
+  "balanceAndIdentityDataUnchanged": true,
+  "muzzleDefinitionsChanged": [
+    "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Weapon\\WPN3.asset",
+    "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Weapon\\WPN4_狙击枪\\WPN4_狙击枪.asset"
+  ],
+  "derived": [
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Core\\CORE1.asset",
+      "before": {
+        "image": "Assets\\Art\\CORE1.png",
+        "ppu": 100.0,
+        "scale": 0.9,
+        "pixels": [
+          135,
+          113
+        ],
+        "worldSize": [
+          1.215,
+          1.017
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\a30f32aa1e2c738499715a4e8104ab9c.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          61,
+          51
+        ],
+        "worldSize": [
+          1.22,
+          1.02
+        ]
+      },
+      "maxSizeError": 0.004999999999999893
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Core\\CORE2.asset",
+      "before": {
+        "image": "Assets\\Art\\CORE1.png",
+        "ppu": 100.0,
+        "scale": 0.9,
+        "pixels": [
+          135,
+          113
+        ],
+        "worldSize": [
+          1.215,
+          1.017
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\016930558f3654546addbd5abbb1ea75.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          61,
+          51
+        ],
+        "worldSize": [
+          1.22,
+          1.02
+        ]
+      },
+      "maxSizeError": 0.004999999999999893
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Move\\MOVE1.asset",
+      "before": {
+        "image": "Assets\\Art\\MOVE1.png",
+        "ppu": 100.0,
+        "scale": 0.9,
+        "pixels": [
+          191,
+          87
+        ],
+        "worldSize": [
+          1.7189999999999999,
+          0.783
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\b6eca2206cbf97549808a39fd8e66ef3.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          86,
+          39
+        ],
+        "worldSize": [
+          1.72,
+          0.78
+        ]
+      },
+      "maxSizeError": 0.0030000000000000027
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Move\\MOVE2.asset",
+      "before": {
+        "image": "Assets\\Art\\MOVE1.png",
+        "ppu": 100.0,
+        "scale": 0.9,
+        "pixels": [
+          191,
+          87
+        ],
+        "worldSize": [
+          1.7189999999999999,
+          0.783
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\aae027251feb331419616b3264c730ea.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          86,
+          39
+        ],
+        "worldSize": [
+          1.72,
+          0.78
+        ]
+      },
+      "maxSizeError": 0.0030000000000000027
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Support\\SUP1.asset",
+      "before": {
+        "image": "Assets\\Art\\SUP1.png",
+        "ppu": 100.0,
+        "scale": 0.9,
+        "pixels": [
+          82,
+          116
+        ],
+        "worldSize": [
+          0.738,
+          1.044
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\aa58a8c0a765bbd4c80c16e85e6becd0.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          37,
+          52
+        ],
+        "worldSize": [
+          0.74,
+          1.04
+        ]
+      },
+      "maxSizeError": 0.0040000000000000036
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Weapon\\WPN2.asset",
+      "before": {
+        "image": "Assets\\Art\\底盘与组件\\链锯.png",
+        "ppu": 50.0,
+        "scale": 0.9,
+        "pixels": [
+          48,
+          48
+        ],
+        "worldSize": [
+          0.864,
+          0.864
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\8ce937ce6a8b7214284054c18cbc3f49.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          43,
+          43
+        ],
+        "worldSize": [
+          0.86,
+          0.86
+        ]
+      },
+      "maxSizeError": 0.0040000000000000036
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Weapon\\WPN3.asset",
+      "before": {
+        "image": "Assets\\Art\\WPN1.png",
+        "ppu": 100.0,
+        "scale": 0.9,
+        "pixels": [
+          217,
+          86
+        ],
+        "worldSize": [
+          1.953,
+          0.774
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\bd397b17d4840894b96ba5e736f8a6f5.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          98,
+          39
+        ],
+        "worldSize": [
+          1.96,
+          0.78
+        ]
+      },
+      "maxSizeError": 0.006999999999999895
+    },
+    {
+      "definition": "Assets\\Data\\1_Blueprints (装备与底盘图纸)\\2_Components\\Weapon\\WPN4.asset",
+      "before": {
+        "image": "Assets\\Art\\像素武器测试.png",
+        "ppu": 50.0,
+        "scale": 1.6,
+        "pixels": [
+          48,
+          48
+        ],
+        "worldSize": [
+          1.536,
+          1.536
+        ]
+      },
+      "after": {
+        "image": "Assets\\Art\\World50\\Components\\2e4610e75b24e7948a77b744a6160726.png",
+        "ppu": 50.0,
+        "scale": 1.0,
+        "pixels": [
+          77,
+          77
+        ],
+        "worldSize": [
+          1.54,
+          1.54
+        ]
+      },
+      "maxSizeError": 0.0040000000000000036
+    }
+  ]
+}

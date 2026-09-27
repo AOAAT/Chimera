@@ -29,6 +29,7 @@ public class ResidentEntity : MonoBehaviour
     [Header("=== 物理与移动参数 ===")]
     public float MoveSpeed = 3.5f;
     private Rigidbody2D rb;
+    private ResidentVisual2D visualPresentation;
 
 
     [Header("=== UI 与选中反馈 ===")]
@@ -40,6 +41,7 @@ public class ResidentEntity : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        visualPresentation = GetComponent<ResidentVisual2D>();
         SetupPhysics();
     }
     private IResidentCarrier targetCarrier; // 当前准备前往的建筑
@@ -232,7 +234,7 @@ public class ResidentEntity : MonoBehaviour
             rb.velocity = dir * MoveSpeed;
 
             // 🌟 视觉平滑：根据移动方向水平翻转 Sprite
-            if (Mathf.Abs(dir.x) > 0.01f)
+            if (visualPresentation == null && Mathf.Abs(dir.x) > 0.01f)
             {
                 float targetScaleX = dir.x > 0 ? 1f : -1f;
                 Transform visual = transform.Find("Visual_Sprite");

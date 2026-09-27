@@ -11,15 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
   m_Name: WPN3
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   ComponentBaseID: 4
   ComponentName: "\u5C04\u9489\u67AA"
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
-  ComponentIcon: {fileID: 21300000, guid: bcb966f9ac22c334a883e1ad14a23796, type: 3}
+  ComponentIcon: {fileID: 21300000, guid: ac34dab267e583c469acee1d5c34c989, type: 3}
   Type: 1
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
-  MuzzleOffset: {x: 1.5, y: -0.3}
+  MuzzleOffset: {x: 1.3499999, y: -0.27}
   MacroCategory: 0
   BaseSubTags: 00000000
   MinDropLevel: 1
@@ -47,8 +47,8 @@ MonoBehaviour:
     - {fileID: 11400000, guid: ab4ef191557cbcb449f72c516a19b490, type: 2}
     - {fileID: 11400000, guid: 4efee5fa1b7107c4291bd544a51a1a83, type: 2}
     OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
+    BonusTags:
+    SpecialMechanicDesc:
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
@@ -62,9 +62,9 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
-  AnchorOffset: {x: -0.782968, y: 0.07131676}
+  AnchorOffset: {x: -0.70467114, y: 0.064185075}
   BaseRotationOffset: 103
-  VisualScaleMultiplier: 0.9
+  VisualScaleMultiplier: 1
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 [Serializable]
 public class GameSaveData
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     public int Version = CurrentVersion;
     public string SavedAtUtc;
@@ -85,6 +85,7 @@ public class ProductionTaskSaveData
 [Serializable]
 public class InventorySaveData
 {
+    public bool ChassisAreInstances;
     public List<ComponentStackSaveData> ComponentWarehouse = new List<ComponentStackSaveData>();
     public List<ChassisStackSaveData> ChassisWarehouse = new List<ChassisStackSaveData>();
     public List<InstancedComponentSaveData> Components = new List<InstancedComponentSaveData>();
@@ -110,6 +111,7 @@ public class ChassisStackSaveData
 [Serializable]
 public class InstancedComponentSaveData
 {
+    public string CustomName;
     public string InstanceID;
     public string DefinitionID;
     public string EquippedUnitID;
@@ -129,6 +131,7 @@ public class InstancedComponentSaveData
 [Serializable]
 public class InstancedChassisSaveData
 {
+    public string CustomName;
     public string InstanceID;
     public string DefinitionID;
     public string EquippedUnitID;

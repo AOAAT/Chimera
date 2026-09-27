@@ -1,0 +1,14 @@
+{
+  "unity": "2022.3.62f3c1",
+  "isolatedProject": ".utmp\\AssemblyRegression",
+  "checks": {
+    "SkinResults": 9,
+    "ThemeResults": 51,
+    "HoverResults": 50,
+    "ClarityResults": 37,
+    "AssemblyResults": 30
+  },
+  "total": 177,
+  "compileErrors": 0,
+  "logisticsPanelUnchanged": true
+}

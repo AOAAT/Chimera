@@ -1,0 +1,12 @@
+PASS WebGL study loads offline with all six source sprites
+PASS 42 browser corner/pivot/muzzle transforms agree with Unity within 0.00001 world unit
+PASS both rendering modes match Unity reference foreground pixels above 97% (RGB tolerance 8)
+PASS full rotation returns to the same image
+PASS single-component mode leaves the other weapon at its assembly angle
+PASS animation advances the inspection angle
+PASS pause holds the exact inspection angle
+PASS angle preset and inspection overlays work
+PASS detail zoom preserves the low-resolution render target
+PASS narrow page scrolls each image without overflowing the document
+PASS no browser runtime exceptions
+COMPLETE

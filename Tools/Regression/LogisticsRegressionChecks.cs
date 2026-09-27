@@ -21,7 +21,7 @@ public static class LogisticsRegressionChecks
     private static string productID, factoryID, workerID;
     private static float savedScrap;
     private static Vector3 firstStart;
-    private static bool moved, savedInTransit;
+    private static bool moved, savedInTransit, sawCarryingVisual;
     private static string Output => Path.Combine(Directory.GetCurrentDirectory(), "LogisticsResults");
     public static void Run()
     {
@@ -52,11 +52,14 @@ public static class LogisticsRegressionChecks
             if (stage == 1)
             {
                 moved |= Vector3.Distance(first.transform.position, firstStart) > 1;
+                sawCarryingVisual |= new[] { first, second }.Any(x =>
+                    (manager.Get(LogisticsManager.BagID(x.MyData.InstanceID))?.Used ?? 0) > 0 &&
+                    x.GetComponent<ResidentVisual2D>()?.IsCarrying == true);
                 if (!savedInTransit && manager.Data.Jobs.Any(x => x.PickedUp))
                 {
                     manager.enabled = false; factory.enabled = false;
                     var snapshot = JsonUtility.FromJson<GameSaveData>(JsonUtility.ToJson(Capture()));
-                    Check(snapshot.Version == 4 && snapshot.Logistics.Jobs.Any(x => x.PickedUp), "v4 snapshot includes in-transit jobs");
+                    Check(snapshot.Version == GameSaveData.CurrentVersion && snapshot.Logistics.Jobs.Any(x => x.PickedUp), "current snapshot includes in-transit jobs");
                     float cargoBefore = Total(LogisticsKeys.Scrap);
                     var definitions = new SaveDefinitionResolver(PlayerInventoryManager.Instance, BuildingManager.Instance);
                     factory.RestoreProductionQueue(snapshot.Buildings.First(x => x.InstanceID == factory.PersistentID).ProductionQueue, definitions);
@@ -72,6 +75,7 @@ public static class LogisticsRegressionChecks
                     productID = product.InstanceID;
                     Check(moved, "residents physically move along paths without teleporting");
                     Check(savedInTransit, "in-transit save/restore exercised before delivery");
+                    Check(sawCarryingVisual, "real pickup and delivery display the new carrying art");
                     Check(Mathf.Abs(Total(LogisticsKeys.Scrap) - 90) < .001f && Mathf.Abs(Total(LogisticsKeys.Biomass) - 20) < .001f, "production consumes exactly one recipe (50 scrap, 10 biomass)");
                     Check(manager.Data.Storages.Sum(x => x.Count("component:" + productID)) == 1, "finished quality component has exactly one physical location");
                     Check(product.CraftSeed != 0 && PlayerInventoryManager.Instance.GetAvailableComponents().Contains(product), "delivered component retains quality and becomes available to assembly");
@@ -102,6 +106,8 @@ public static class LogisticsRegressionChecks
                 Check(Mathf.Abs(Total(LogisticsKeys.Scrap) - savedScrap) < .001f, "full save/load preserves all resource locations and total");
                 Check(manager.Data.Storages.Sum(x => x.Count("component:" + productID)) == 1, "full save/load preserves component identity and physical location");
                 Check(PopulationManager.Instance.TotalResidents.Any(x => x.InstanceID == workerID && !x.HaulingEnabled && x.CarryCapacity == 10), "full save/load restores resident hauling permissions and capacity");
+                Check(ResidentEntity.ActiveResidents.All(x => x.GetComponent<ResidentVisual2D>()?.Body.sprite != null &&
+                    x.GetComponent<ResidentVisual2D>().Body.sprite.rect.size == new Vector2(48, 48)), "save/load recreates residents with the new 48-pixel sprites at 50 PPU");
                 Check(BuildingBase.AllPlacedBuildings.OfType<WarehouseBuilding>().Any(x => manager.Get(x.PersistentID) != null), "runtime-created warehouse reconstructed on scene reload");
                 Finish(0); return;
             }
@@ -202,7 +208,7 @@ public static class LogisticsRegressionChecks
             !PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(chassis), "chassis consumption cannot reuse a stale warehouse selection");
         var legacy = new GameSaveData { Version = 3, SceneName = "RTS_World_Master" };
         typeof(SaveGameManager).GetMethod("ValidateAndNormalize", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { legacy });
-        Check(legacy.Version == 4 && legacy.Logistics == null, "version 3 saves migrate to physical-storage initialization");
+        Check(legacy.Version == GameSaveData.CurrentVersion && legacy.Logistics == null, "version 3 saves migrate to physical-storage initialization");
         factory.AddToQueue(definition, "旧订单", null, 10, new ResourceSet(7, 0, 0)); task = factory.TaskQueue.Last(); task.UsesLogistics = false;
         var input = manager.EnsureInput(factory, task); manager.EnsureInput(factory, task);
         Check(input.Count(LogisticsKeys.Scrap) == 7 && task.UsesLogistics, "legacy paid order receives material exactly once");

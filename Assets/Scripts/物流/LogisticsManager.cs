@@ -145,6 +145,7 @@ public sealed class LogisticsManager : MonoBehaviour
         foreach (var store in Warehouses.Where(x => x.Accepts(key)).ToArray())
         {
             float move = Mathf.Min(amount, Free(store));
+            if (!LogisticsKeys.IsResource(key)) move = Mathf.Floor(move);
             store.Add(key, move); amount -= move;
             if (amount <= .0001f) break;
         }
@@ -186,16 +187,18 @@ public sealed class LogisticsManager : MonoBehaviour
             if (warehouse == null) return;
             RegisterWarehouse(warehouse);
         }
+        PlayerInventoryManager.Instance.MigrateLegacyChassisInventory();
         var resources = GlobalResourceManager.Instance;
         var initial = Warehouses.First();
         // Migration must not lose an over-capacity legacy inventory.
         initial.Capacity = Mathf.Max(initial.Capacity, resources.CurrentScrap + resources.CurrentBiomass + resources.CurrentManaStone +
             PlayerInventoryManager.Instance.ComponentInventory.Count + PlayerInventoryManager.Instance.GetChassisStacks().Sum(x => x.Quantity) + 100);
         foreach (var cargo in LogisticsKeys.Resources(new ResourceSet(resources.CurrentScrap, resources.CurrentBiomass, resources.CurrentManaStone))) initial.Add(cargo.Key, cargo.Amount);
-        foreach (var stack in PlayerInventoryManager.Instance.GetChassisStacks()) initial.Add("chassis:" + stack.BaseData.ChassisID, stack.Quantity);
+        foreach (var item in PlayerInventoryManager.Instance.GetAvailableChassis(true)) initial.Add(PlayerInventoryManager.ChassisKey(item), 1);
         foreach (var component in PlayerInventoryManager.Instance.ComponentInventory.Where(x => x != null && !x.IsEquipped))
             initial.Add("component:" + component.InstanceID, 1);
         Ready = true;
+        MigrateChassisLocations();
         EnsureUI();
         foreach (var factory in BuildingBase.AllPlacedBuildings.OfType<FactoryBuilding>())
             foreach (var task in factory.TaskQueue) EnsureInput(factory, task);
@@ -310,6 +313,7 @@ public sealed class LogisticsManager : MonoBehaviour
                 {
                     if (pathBudget <= 0) break;
                     float capacity = Mathf.Max(1, data.CarryCapacity);
+                    if (!LogisticsKeys.IsResource(job.Key)) capacity = Mathf.Floor(capacity);
                     if (job.Amount > capacity)
                     {
                         var remainder = new HaulJob { SourceID = job.SourceID, TargetID = job.TargetID, Key = job.Key,
@@ -330,6 +334,7 @@ public sealed class LogisticsManager : MonoBehaviour
     {
         if (source.ID == target.ID || !target.Accepts(key)) return null;
         amount = Mathf.Min(amount, Available(source, key), Free(target));
+        if (!LogisticsKeys.IsResource(key)) amount = Mathf.Floor(amount);
         if (amount <= .0001f) return null;
         var job = new HaulJob { SourceID = source.ID, TargetID = target.ID, Key = key, Amount = amount, OrderID = orderID };
         Data.Jobs.Add(job); return job;
@@ -468,6 +473,7 @@ public sealed class LogisticsManager : MonoBehaviour
         blockedDestinations.Clear();
         if (saved == null) { Ready = false; InitializeLegacy(); return; }
         Ready = true;
+        MigrateChassisLocations();
         EnsureUI();
         foreach (var job in Data.Jobs) { job.Moving = false; job.RetryAt = 0; job.Stalled = 0; }
         // No duplicate reservation counters to restore: live jobs reconstruct them on demand.
@@ -476,6 +482,24 @@ public sealed class LogisticsManager : MonoBehaviour
             if (!BuildingBase.AllPlacedBuildings.Any(x => x != null && x.PersistentID == store.OwnerID))
             { store.Kind = StorageKind.Recovery; store.Name += "遗留货物"; }
         Notify();
+    }
+    // Legacy aggregate cargo is split in-place, including bags/output/recovery.
+    // Old reservations are discarded and replanned from the same physical locations.
+    public void MigrateChassisLocations()
+    {
+        var inventory = PlayerInventoryManager.Instance;
+        if (inventory == null) return;
+        foreach (var store in Data.Storages)
+            foreach (var cargo in store.Cargo.Where(x => x.Key.StartsWith("chassis:")).ToArray())
+            {
+                var definition = inventory.ResolveChassis(cargo.Key.Substring(8));
+                if (definition == null) continue;
+                foreach (var job in Data.Jobs.Where(x => x.Key == cargo.Key).ToArray()) CancelJob(job);
+                for (int i = 0; i < Mathf.RoundToInt(cargo.Amount); i++)
+                    store.Add(PlayerInventoryManager.ChassisKey(inventory.CreateChassis(definition, false)), 1);
+                store.Cargo.Remove(cargo);
+            }
+        inventory.ClearLegacyChassisCounts();
     }
     private void SyncRecoveryMarkers()
     {

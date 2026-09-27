@@ -1,0 +1,23 @@
+{
+  "unity": "2022.3.62f3c1",
+  "testLocation": "isolated .utmp/AssemblyRegression",
+  "checks": {
+    "world-checks.txt": 29,
+    "resident-checks.txt": 38,
+    "assembly-checks.txt": 30,
+    "logistics-checks.txt": 41
+  },
+  "totalChecks": 138,
+  "originalHandDrawingsPreserved": 33,
+  "componentDefinitionsAudited": 38,
+  "componentTexturesDerived": 8,
+  "map": "64x64, CellSize=1, origin=(-31.5,-31.5)",
+  "resident": "48x48, 50 PPU, 8 directional idle/carry frames",
+  "productionScenesAndAssetsUpdated": 20,
+  "limitations": [
+    "No new walking animation or random resident appearance",
+    "Direct sprite rotation may still have angular resampling artifacts",
+    "Building footprints unchanged",
+    "Independent monster and legacy effect assets outside this batch"
+  ]
+}

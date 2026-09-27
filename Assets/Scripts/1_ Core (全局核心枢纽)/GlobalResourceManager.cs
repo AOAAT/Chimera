@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public class GlobalResourceManager : MonoBehaviour
@@ -20,6 +20,7 @@ public class GlobalResourceManager : MonoBehaviour
 
     private void Update()
     {
+        if (UIInputFocus.IsEditingText) return;
         // 🚀 R键：补给协议 (调试用)
         if (Input.GetKeyDown(KeyCode.R))
         {

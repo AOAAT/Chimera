@@ -1,0 +1,29 @@
+PASS assembler retains functional UI prefab binding
+PASS pointer reaches 进入组装工坊 (top hit: Text (TMP))
+PASS workshop opens from building button
+PASS pointer reaches GhostChassisPrompt (top hit: 文字提示)
+PASS chassis selector opens
+PASS reapplying theme preserves card hit area and decorative icon passthrough
+PASS pointer reaches InventoryItemSlot(Clone) (top hit: InventoryItemSlot(Clone))
+PASS click selects chassis
+PASS selecting chassis consumes exactly one warehouse item
+PASS pointer reaches UI_Socket_头部 (top hit: UI_Socket_头部)
+PASS pointer reaches InventoryItemSlot(Clone) (top hit: InventoryItemSlot(Clone))
+PASS click installs chosen core instance
+PASS pointer reaches UI_Socket_移动 (top hit: UI_Socket_移动)
+PASS pointer reaches InventoryItemSlot(Clone) (top hit: InventoryItemSlot(Clone))
+PASS click installs chosen movement instance
+PASS preview appearance changes to actual installed component sprites
+PASS pointer reaches Btn_SaveExit (top hit: 完成装配)
+PASS valid assembly closes workshop
+PASS confirmation spawns exactly one world mech
+PASS spawned mech retains chosen component identities
+PASS equipped component cannot be reused from warehouse
+PASS unit inspection uses shared tooltip for installed component
+PASS legacy panel is absent after inspecting a deployed mech
+PASS closing unit inspection hides shared tooltip
+PASS pointer reaches GhostChassisPrompt (top hit: 文字提示)
+PASS pointer reaches InventoryItemSlot(Clone) (top hit: InventoryItemSlot(Clone))
+PASS pointer reaches Btn_Cancel (top hit: 取消修改)
+PASS cancelling next assembly returns its chassis exactly once
+PASS cancel does not spawn another mech

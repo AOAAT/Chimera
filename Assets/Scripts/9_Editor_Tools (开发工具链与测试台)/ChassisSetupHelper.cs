@@ -107,7 +107,7 @@ public class ChassisSetupHelper : MonoBehaviour
             cpRenderer.sprite = comp.ComponentIcon;
 
             // 巧妙的层级处理：后装的组件稍微靠前一点，防止多组件Z轴闪烁
-            cpRenderer.sortingOrder = chassisRenderer.sortingOrder + 1 + i;
+            cpRenderer.sortingOrder = chassisRenderer.sortingOrder + WorldPixelMetrics.ComponentOrder(i);
 
             // 存入列表
             previewObjects[i] = hingeObj;

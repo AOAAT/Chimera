@@ -22,9 +22,10 @@ public class RightInventoryPanelUI : MonoBehaviour
 
     private Func<List<ComponentStack>> getComponentsFunc;
     private bool currentAllowUnequip;
+    private Func<InstancedComponent, ItemHoverContent> previewContent;
     private Action<ComponentStack> onComponentSelectedCallback;
 
-    private void Awake() { Instance = this; UIBackHandler.Attach(gameObject, () => { ItemDetailPanelUI.Instance?.HidePanel(); gameObject.SetActive(false); }); }
+    private void Awake() { Instance = this; UIBackHandler.Attach(gameObject, () => { ItemHoverTooltip.Hide(); gameObject.SetActive(false); }); }
 
     private void Start()
     {
@@ -61,9 +62,10 @@ public class RightInventoryPanelUI : MonoBehaviour
     // ==========================================
     // 🚀 打开面板入口：针对零件堆栈
     // ==========================================
-    public void OpenForComponentSelection(Func<List<ComponentStack>> getComponents, bool allowUnequip, Action<ComponentStack> onComponentSelected)
+    public void OpenForComponentSelection(Func<List<ComponentStack>> getComponents, bool allowUnequip, Action<ComponentStack> onComponentSelected, Func<InstancedComponent, ItemHoverContent> preview = null)
     {
         currentMode = PanelMode.Component;
+        previewContent = preview;
         getComponentsFunc = getComponents;
         currentAllowUnequip = allowUnequip;
         onComponentSelectedCallback = onComponentSelected;
@@ -88,7 +90,7 @@ public class RightInventoryPanelUI : MonoBehaviour
                 {
                 var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
                 // 底盘数量账本保持兼容，选配界面逐件展示。
-                slotObj.SetupChassisStack(new ChassisStack(stack.BaseData, 1), (selected) => {
+                slotObj.SetupChassisStack(stack, (selected) => {
                     gameObject.SetActive(false);
                     onChassisSelectedCallback?.Invoke(selected);
                 });
@@ -104,6 +106,7 @@ public class RightInventoryPanelUI : MonoBehaviour
             if (currentAllowUnequip)
             {
                 var unequipSlotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                if(previewContent!=null)unequipSlotObj.SetHoverContent(()=>previewContent(null));
                 unequipSlotObj.SetupUnequip(() => {
                     gameObject.SetActive(false);
                     onComponentSelectedCallback?.Invoke(null);
@@ -113,6 +116,7 @@ public class RightInventoryPanelUI : MonoBehaviour
             foreach (var stack in list)
             {
                 var slotObj = Instantiate(ItemSlotPrefab, ContentRoot);
+                if(previewContent!=null)slotObj.SetHoverContent(()=>previewContent(stack.Representative));
                 // 每张卡对应一个永久组件实例。
                 slotObj.SetupComponentStack(stack, (selected) => {
                     gameObject.SetActive(false);

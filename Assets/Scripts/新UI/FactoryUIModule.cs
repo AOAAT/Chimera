@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -14,15 +14,12 @@ public class FactoryUIModule : MonoBehaviour
     public Transform TaskQueueContainer; // 挂载 Vertical Layout Group 的队列根节点
     public GameObject TaskItemPrefab;    // 任务条预制体 (Progress Bar + Name + Cancel)
 
-    [Header("=== 详情页定位 ===")]
-    public RectTransform DetailAnchor;   // 详情页固定锚点
-
     // 内部缓存，用于减少不必要的 UI 刷新
     private int lastTaskCount = -1;
     private FactoryBuilding boundFactory;
-    private TMP_Text productivityText;
-    private Image nextLineProgressFill;
-    private GameObject productivityCard;
+    [SerializeField] private TMP_Text productivityText;
+    [SerializeField] private Image nextLineProgressFill;
+    [SerializeField] private GameObject productivityCard;
     private float nextSummaryRefresh;
 
     public void Initialize()
@@ -51,6 +48,7 @@ public class FactoryUIModule : MonoBehaviour
         if (boundFactory == factory) return;
         if (boundFactory != null) boundFactory.OnStaffChanged -= HandleStaffChanged;
         boundFactory = factory;
+        lastTaskCount = -1; // A different factory can have the same number of orders.
         if (boundFactory != null) boundFactory.OnStaffChanged += HandleStaffChanged;
     }
 
@@ -89,6 +87,12 @@ public class FactoryUIModule : MonoBehaviour
         }
     }
 
+    public void PrepareEditorView()
+    {
+        EnsureProductivityCard();
+        if (!Application.isPlaying) productivityText.text = "员工 0/4 · 产能 0.00\n并行 1/3 · 速度 1.00x\n等待居民入驻";
+    }
+
     private void EnsureProductivityCard()
     {
         if (productivityCard != null) return;
@@ -96,16 +100,13 @@ public class FactoryUIModule : MonoBehaviour
         productivityCard = new GameObject("产能概览", typeof(RectTransform), typeof(Image));
         productivityCard.transform.SetParent(transform, false);
         RectTransform cardRect = productivityCard.GetComponent<RectTransform>();
-        cardRect.anchorMin = new Vector2(0.5f, 0.5f);
-        cardRect.anchorMax = new Vector2(0.5f, 0.5f);
-        cardRect.pivot = new Vector2(0.5f, 0.5f);
-        cardRect.anchoredPosition = new Vector2(-246f, 5f);
-        cardRect.sizeDelta = new Vector2(160f, 80f);
+        cardRect.anchorMin = new Vector2(.01f, .25f);
+        cardRect.anchorMax = new Vector2(.18f, .76f);
+        cardRect.offsetMin = cardRect.offsetMax = Vector2.zero;
 
         Image cardImage = productivityCard.GetComponent<Image>();
-        cardImage.sprite = Resources.Load<Sprite>("UI/ChimeraRounded");
-        cardImage.type = cardImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-        cardImage.color = new Color(0.08f, 0.12f, 0.16f, 0.94f);
+        ChimeraUITheme.StyleSurface(cardImage, ChimeraUITheme.Surface);
+        cardImage.raycastTarget = true;
 
         GameObject textObject = new GameObject("产能文字", typeof(RectTransform), typeof(TextMeshProUGUI));
         textObject.transform.SetParent(productivityCard.transform, false);
@@ -116,10 +117,12 @@ public class FactoryUIModule : MonoBehaviour
         textRect.offsetMax = new Vector2(-8f, -5f);
         productivityText = textObject.GetComponent<TextMeshProUGUI>();
         productivityText.alignment = TextAlignmentOptions.Center;
-        productivityText.fontSize = 12f;
+        productivityText.fontSize = 14f;
+        productivityText.enableAutoSizing = true;
+        productivityText.fontSizeMin = 12; productivityText.fontSizeMax = 14;
         productivityText.fontStyle = FontStyles.Bold;
-        productivityText.color = Color.white;
-        productivityText.lineSpacing = -5f;
+        productivityText.color = ChimeraUITheme.PrimaryText;
+        productivityText.lineSpacing = 0;
         productivityText.raycastTarget = false;
         if (TaskItemPrefab != null)
         {
@@ -138,7 +141,7 @@ public class FactoryUIModule : MonoBehaviour
         Image backgroundImage = progressBackground.GetComponent<Image>();
         backgroundImage.sprite = cardImage.sprite;
         backgroundImage.type = cardImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-        backgroundImage.color = new Color(1f, 1f, 1f, 0.12f);
+        backgroundImage.color = ChimeraUITheme.SurfaceDark;
         backgroundImage.raycastTarget = false;
 
         GameObject progressFill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
@@ -155,6 +158,9 @@ public class FactoryUIModule : MonoBehaviour
         nextLineProgressFill.color = ChimeraUITheme.Accent;
         nextLineProgressFill.raycastTarget = false;
 
+        UIThemeBinding.Bind(productivityText, UIThemeRole.PrimaryText);
+        UIThemeBinding.Bind(backgroundImage, UIThemeRole.Inset);
+        UIThemeBinding.Bind(nextLineProgressFill, UIThemeRole.Accent);
         UIHoverHint.Set(productivityCard, "居民生产力会同时提高生产速度；达到阈值后会开启额外的并行生产线。");
         productivityCard.transform.SetAsLastSibling();
     }
@@ -200,9 +206,7 @@ public class FactoryUIModule : MonoBehaviour
         foreach (var data in PlayerInventoryManager.Instance.AllChassisDatabase)
         {
             // 传入：图标、名字、源数据、生产时间、悬停回调
-            CreateSlot(data.ChassisSprite, data.ChassisName, data, data.BaseProductionTime, () => {
-                ItemDetailPanelUI.Instance.ShowChassisDetail(data);
-            });
+            CreateSlot(data.ChassisSprite, data.ChassisName, data);
         }
     }
 
@@ -211,14 +215,11 @@ public class FactoryUIModule : MonoBehaviour
         ClearShelf();
         foreach (var data in PlayerInventoryManager.Instance.AllComponentDatabase)
         {
-            CreateSlot(data.ComponentIcon, data.ComponentName, data, data.BaseProductionTime, () => {
-                // 暂时造一个 InstancedComponent 给详情页看
-                ItemDetailPanelUI.Instance.ShowComponentDetail(new InstancedComponent(data, 1));
-            });
+            CreateSlot(data.ComponentIcon, data.ComponentName, data);
         }
     }
 
-    private void CreateSlot(Sprite icon, string itemName, Object sourceSO, float prodTime, System.Action onHover)
+    private void CreateSlot(Sprite icon, string itemName, Object sourceSO)
     {
         GameObject slotObj = Instantiate(ShelfSlotPrefab, ShelfGrid);
 
@@ -231,7 +232,11 @@ public class FactoryUIModule : MonoBehaviour
             img.preserveAspect = true; // 🌟 核心：确保不拉伸
         }
 
+        var recipeName = slotObj.transform.Find("RecipeName")?.GetComponent<TMP_Text>();
+        if(recipeName != null) { recipeName.text = itemName; recipeName.richText = false; }
+
         slotObj.GetComponent<Button>().onClick.AddListener(() => {
+            ItemHoverTooltip.Hide();
             if (SelectionContextHUD.Instance.CurrentTargetBuilding is FactoryBuilding factory)
             {
                 // --- 👇【核心修复逻辑】：提取成本数据 ---
@@ -257,29 +262,8 @@ public class FactoryUIModule : MonoBehaviour
             }
         });
 
-        // 3. 详情页重定向
-        var trigger = slotObj.GetComponent<UnityEngine.EventSystems.EventTrigger>() ?? slotObj.AddComponent<UnityEngine.EventSystems.EventTrigger>();
-
-        ResourceSet previewCost = new ResourceSet();
-        if (sourceSO is ComponentDataSO component) previewCost = component.GetModelData(1)?.ProductionCost ?? new ResourceSet();
-        else if (sourceSO is ChassisDataSO chassis) previewCost = chassis.ProductionCost;
-
-        // 鼠标进入
-        var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
-        enter.callback.AddListener((e) => {
-            ItemDetailPanelUI.Instance.SetFixedAnchor(DetailAnchor);
-            onHover.Invoke();
-            string duration = boundFactory != null
-                ? $"基础 {prodTime:0.#} 秒 · 当前 {boundFactory.GetEffectiveProductionTime(prodTime):0.#} 秒"
-                : $"{prodTime:0.#} 秒";
-            UIFeedback.Show($"{itemName} · 生产时间 {duration}\n成本：{UIFeedback.Cost(previewCost)}");
-        });
-        trigger.triggers.Add(enter);
-
-        // 鼠标移出
-        var exit = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
-        exit.callback.AddListener((e) => ItemDetailPanelUI.Instance.HidePanel());
-        trigger.triggers.Add(exit);
+        var font = GetComponentInParent<Canvas>()?.GetComponentInChildren<TMPro.TMP_Text>(true)?.font;
+        ItemHoverTarget.Bind(slotObj, () => ItemHoverContent.Recipe(sourceSO, boundFactory), font);
     }
 
     // ==========================================
@@ -289,7 +273,7 @@ public class FactoryUIModule : MonoBehaviour
     private void RefreshQueueUI(FactoryBuilding factory)
     {
         // 1. 彻底清理旧格子
-        foreach (Transform child in TaskQueueContainer) Destroy(child.gameObject);
+        foreach (Transform child in TaskQueueContainer) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
 
         // 2. 重新生成
         foreach (var task in factory.TaskQueue)
@@ -308,13 +292,13 @@ public class FactoryUIModule : MonoBehaviour
 
                     // 然后再刷新 UI 表现
                     RefreshQueueUI(factory);
-                });
+                }, factory);
             }
         }
     }
 
     private void ClearShelf()
     {
-        foreach (Transform child in ShelfGrid) Destroy(child.gameObject);
+        foreach (Transform child in ShelfGrid) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
     }
 }

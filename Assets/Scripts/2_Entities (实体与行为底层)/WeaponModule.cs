@@ -40,8 +40,8 @@ public class WeaponModule : MonoBehaviour
         GameObject muzzleObj = new GameObject("MuzzlePoint");
         muzzleObj.transform.SetParent(actualHinge, false);
 
-        float distMult = CombatSandbox.Instance != null ? CombatSandbox.Instance.DistanceMultiplier : 1f;
-        muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset * distMult;
+        // MuzzleOffset is authored in the hinge's local world units, not combat range units.
+        muzzleObj.transform.localPosition = data.SourceSO.MuzzleOffset;
         muzzlePoint = muzzleObj.transform;
 
         currentState = WeaponState.Idle;

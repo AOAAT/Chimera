@@ -1,0 +1,1 @@
+Native world art at 50 PPU: terrain, buildings, residents and modular mechs. Validated in isolated Unity project.

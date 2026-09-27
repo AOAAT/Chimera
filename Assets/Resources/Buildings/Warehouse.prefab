@@ -74,7 +74,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_Sprite: {fileID: 21300000, guid: b98cc6dfb90a9614382853cfc2ad6057, type: 3}
-  m_Color: {r: 0.36078432, g: 0.74509805, b: 0.5686275, a: 1}
+  m_Color: {r: 0.6784314, g: 0.4, b: 0.23137255, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -111,7 +111,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.15585491, y: 0.15585491, z: 0.15585491}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5456762078814570842}
@@ -157,7 +157,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 5
-  m_Sprite: {fileID: -7495336211055826167, guid: 7e6b70a1b57597b46bfc557daa61df7d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 652434239f0429d4294dad956ddb8acd, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -212,13 +212,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c8bf8c42e3c34dbf914067d2f9f53ab5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   SupportsStaff: 0
-  persistentID: 
-  definitionID: 
+  persistentID:
+  definitionID:
   BuildingName: "\u7EFC\u5408\u4ED3\u5E93"
-  BuildingIcon: {fileID: -7495336211055826167, guid: 7e6b70a1b57597b46bfc557daa61df7d, type: 3}
+  BuildingIcon: {fileID: 21300000, guid: 652434239f0429d4294dad956ddb8acd, type: 3}
   UseUnifiedBuildingArt: 1
   FunctionUIPrefab: {fileID: 0}
   FootprintOffsets:

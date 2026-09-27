@@ -38,7 +38,7 @@ public class UIFeedback : MonoBehaviour
         rect.anchorMax = new Vector2(0.85f, 0.92f);
         rect.offsetMin = rect.offsetMax = Vector2.zero;
         var bg = instance.panel.GetComponent<Image>();
-        bg.color = ChimeraUITheme.Window;
+        UIThemeBinding.Bind(bg, UIThemeRole.Window, true);
         bg.raycastTarget = false;
         var text = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
         text.transform.SetParent(rect, false);
@@ -51,7 +51,7 @@ public class UIFeedback : MonoBehaviour
         instance.label.fontSizeMin = 18;
         instance.label.fontSizeMax = 24;
         instance.label.alignment = TextAlignmentOptions.Center;
-        instance.label.color = ChimeraUITheme.PrimaryText;
+        UIThemeBinding.Bind(instance.label, UIThemeRole.PrimaryText);
         instance.label.richText = false;
         instance.label.raycastTarget = false;
         var tr = (RectTransform)text.transform;

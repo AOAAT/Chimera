@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
   m_Name: SUP1
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   ComponentBaseID: sup_001
   ComponentName: "\u8F85\u52A91"
   Description: "\u7EC4\u4EF6\u63CF\u8FF0..."
-  ComponentIcon: {fileID: 21300000, guid: d90bfac6071d040478b1a20594229c7f, type: 3}
+  ComponentIcon: {fileID: 21300000, guid: 7e39fab3a642a464dba6f8721469d511, type: 3}
   Type: 2
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
@@ -34,8 +34,8 @@ MonoBehaviour:
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
+    BonusTags:
+    SpecialMechanicDesc:
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
@@ -51,8 +51,8 @@ MonoBehaviour:
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
+    BonusTags:
+    SpecialMechanicDesc:
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
@@ -68,8 +68,8 @@ MonoBehaviour:
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
+    BonusTags:
+    SpecialMechanicDesc:
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
@@ -85,8 +85,8 @@ MonoBehaviour:
     OnFireActions: []
     OnHitActions: []
     OnAssembleActions: []
-    BonusTags: 
-    SpecialMechanicDesc: 
+    BonusTags:
+    SpecialMechanicDesc:
     ActiveSkill:
       HasActiveSkill: 0
       SkillName: "\u6838\u5FC3\u8FC7\u8F7D"
@@ -100,9 +100,9 @@ MonoBehaviour:
   StrikeAngle: 60
   WindupTimeRatio: 0.3
   StrikeTimeRatio: 0.1
-  AnchorOffset: {x: 0.008905817, y: -0.13181402}
+  AnchorOffset: {x: 0.008015235, y: -0.118632615}
   BaseRotationOffset: 0
-  VisualScaleMultiplier: 0.9
+  VisualScaleMultiplier: 1
   TargetingLogic: 0
   MovementLogic: 0
   SafeDodgeDistance: 8

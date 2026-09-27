@@ -462,6 +462,20 @@ public sealed class SaveGameManager : MonoBehaviour
                     save.Logistics = null;
                     save.Version = 4;
                     break;
+                case 4:
+                    // Physical aggregate cargo is converted after definitions and locations restore.
+                    // Record deployed chassis too, so recycling retains their stable identity.
+                    save.Inventory.Chassis = save.Inventory.Chassis ?? new List<InstancedChassisSaveData>();
+                    foreach (var mech in save.DeployedMechs)
+                    {
+                        if (string.IsNullOrEmpty(mech.ChassisInstanceID)) mech.ChassisInstanceID = Guid.NewGuid().ToString();
+                        if (!save.Inventory.Chassis.Any(x => x.InstanceID == mech.ChassisInstanceID))
+                            save.Inventory.Chassis.Add(new InstancedChassisSaveData {
+                                InstanceID = mech.ChassisInstanceID, DefinitionID = mech.ChassisDefinitionID, EquippedUnitID = mech.UnitID
+                            });
+                    }
+                    save.Version = 5;
+                    break;
                 default:
                     throw new InvalidDataException($"缺少从版本 {save.Version} 开始的存档迁移规则。");
             }

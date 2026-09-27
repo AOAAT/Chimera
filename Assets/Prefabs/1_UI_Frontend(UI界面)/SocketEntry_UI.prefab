@@ -48,6 +48,7 @@ GameObject:
   - component: {fileID: 3561330675283049638}
   - component: {fileID: 1990218642290143609}
   - component: {fileID: 3257618284070370333}
+  - component: {fileID: 3619065907013660233}
   m_Layer: 5
   m_Name: Name
   m_TagString: Untagged
@@ -112,7 +113,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.92156863, g: 0.94509804, b: 0.9647059, a: 1}
+  m_fontColor: {r: 0.24313726, g: 0.21960784, b: 0.18431373, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -171,6 +172,26 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &3619065907013660233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4600701478125024624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be30463f04fbc674abb3310401b967ad, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  Role: 9
+  DrawBorder: 0
+  ApplyColor: 1
+  captured: 1
+  authoredSprite: {fileID: 0}
+  lastAppliedSprite: {fileID: 0}
+  authoredType: 0
+  authoredFont: {fileID: 11400000, guid: a7c32fc9abfdbbb47821df70fb4640e0, type: 2}
 --- !u!1 &5388375072304706012
 GameObject:
   m_ObjectHideFlags: 0

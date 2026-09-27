@@ -1,0 +1,1 @@
+Worker48: eight native 48x48 directional idle/carry frames at 50 PPU; resident portraits and foot outline installed.

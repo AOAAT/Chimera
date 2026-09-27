@@ -1,0 +1,1 @@
+Legacy item detail view removed; unified hover only.

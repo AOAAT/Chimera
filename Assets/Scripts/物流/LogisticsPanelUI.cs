@@ -69,7 +69,7 @@ public sealed class LogisticsPanelUI : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = .5f;
         MakeButton("物流管理", transform, new Vector2(.46f, .95f), new Vector2(.54f, .99f), null);
-        window = Panel("LogisticsWindow", transform, ChimeraUITheme.Window, new Vector2(.12f, .12f), new Vector2(.88f, .88f));
+        window = Panel("LogisticsWindow", transform, new Color32(31, 42, 55, 252), new Vector2(.12f, .12f), new Vector2(.88f, .88f));
         Label("殖民地物流", window, 28, new Vector2(.025f, .9f), new Vector2(.4f, .98f));
         MakeButton("关闭 ×", window, new Vector2(.87f, .91f), new Vector2(.975f, .97f), null);
         string[] tabs = { "搬运居民", "仓库与暂存区", "货物位置", "运输任务" };
@@ -133,7 +133,7 @@ public sealed class LogisticsPanelUI : MonoBehaviour
             for (int index = page * PageSize; index < Mathf.Min(count, (page + 1) * PageSize); index++)
             {
                 int rowIndex = index - page * PageSize;
-                var row = Panel("Row", rows, ChimeraUITheme.SurfaceDark, new Vector2(0, 1 - (rowIndex + 1) / 7f + .008f), new Vector2(1, 1 - rowIndex / 7f - .008f));
+                var row = Panel("Row", rows, new Color32(22, 31, 41, 225), new Vector2(0, 1 - (rowIndex + 1) / 7f + .008f), new Vector2(1, 1 - rowIndex / 7f - .008f));
                 var label = Label("", row, 18, new Vector2(.015f, .06f), new Vector2(tab <= 1 ? .72f : .985f, .94f));
                 if (tab == 0)
                 {
@@ -195,13 +195,13 @@ public sealed class LogisticsPanelUI : MonoBehaviour
         var go = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI)); go.layer = LayerMask.NameToLayer("UI");
         go.transform.SetParent(parent, false);
         var label = go.GetComponent<TextMeshProUGUI>(); label.font = font; label.text = text; label.fontSize = size;
-        label.color = ChimeraUITheme.PrimaryText; label.raycastTarget = false;
+        label.color = new Color32(235, 241, 246, 255); label.raycastTarget = false;
         label.alignment = TextAlignmentOptions.MidlineLeft; label.overflowMode = TextOverflowModes.Ellipsis;
         Place(label.rectTransform, min, max); return label;
     }
     private TMP_Text MakeButton(string text, Transform parent, Vector2 min, Vector2 max, Action action)
     {
-        var rect = Panel(text, parent, ChimeraUITheme.Button, min, max);
+        var rect = Panel(text, parent, new Color32(65, 84, 104, 255), min, max);
         var button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = rect.GetComponent<Image>();
         if (action != null) button.onClick.AddListener(() => action());
         var label = Label(text, rect, 18, new Vector2(.03f, .05f), new Vector2(.97f, .95f)); label.alignment = TextAlignmentOptions.Center;

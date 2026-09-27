@@ -24,10 +24,10 @@ public sealed class WarehouseUIModule : MonoBehaviour
         var buttonRect = buttonObject.GetComponent<RectTransform>(); buttonRect.anchorMin = new Vector2(.72f, .3f); buttonRect.anchorMax = new Vector2(.98f, .7f);
         buttonRect.offsetMin = buttonRect.offsetMax = Vector2.zero;
         buttonObject.GetComponent<Image>().color = ChimeraUITheme.Button;
-        buttonObject.GetComponent<Button>().onClick.AddListener(() => LogisticsPanelUI.Instance?.Open(building.PersistentID));
+        buttonObject.GetComponent<Button>().onClick.AddListener(() => FindObjectOfType<GlobalWarehouseUI>(true)?.OpenWarehouse(building.PersistentID));
         var labelObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI)); labelObject.transform.SetParent(buttonObject.transform, false);
         var label = labelObject.GetComponent<TextMeshProUGUI>(); label.font = font; label.fontSize = 18;
-        label.text = "查看库存"; label.alignment = TextAlignmentOptions.Center; label.raycastTarget = false;
+        label.color = ChimeraUITheme.PrimaryText; label.text = "查看库存"; label.alignment = TextAlignmentOptions.Center; label.raycastTarget = false;
         label.rectTransform.anchorMin = Vector2.zero; label.rectTransform.anchorMax = Vector2.one;
         label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
     }

@@ -102,9 +102,13 @@ public class UnitDetailPanelUI : MonoBehaviour
         chassisObj.transform.SetParent(UnitVisualContainer, false);
         Image chassisImg = chassisObj.AddComponent<Image>();
         chassisImg.sprite = profile.ChassisData.ChassisSprite;
-        chassisImg.SetNativeSize();
+        WorldPixelMetrics.SizePreview(chassisImg, WorldToUIMultiplier);
+        ItemHoverTarget.Bind(chassisObj, () => ItemHoverContent.Chassis(profile.ChassisData), NameText != null ? NameText.font : null);
 
-        for (int i = 0; i < profile.SlotIndices.Count; i++)
+        var orderedSlots = new System.Collections.Generic.List<int>();
+        for (int index = 0; index < profile.SlotIndices.Count; index++) orderedSlots.Add(index);
+        orderedSlots.Sort((a, b) => profile.SlotIndices[a].CompareTo(profile.SlotIndices[b]));
+        foreach (int i in orderedSlots)
         {
             int slotIdx = profile.SlotIndices[i];
             string compID = profile.EquippedComponentIDs[i];
@@ -117,6 +121,7 @@ public class UnitDetailPanelUI : MonoBehaviour
             GameObject slotObj = new GameObject($"UI_Slot_{slotDef.SlotName}");
             slotObj.transform.SetParent(chassisObj.transform, false);
             RectTransform slotRect = slotObj.AddComponent<RectTransform>();
+            slotRect.anchorMin = slotRect.anchorMax = chassisImg.rectTransform.pivot;
             slotRect.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
             slotRect.localRotation = Quaternion.Euler(0, 0, slotDef.MountAngle);
 
@@ -129,22 +134,16 @@ public class UnitDetailPanelUI : MonoBehaviour
             visObj.transform.SetParent(hingeObj.transform, false);
             Image compImg = visObj.AddComponent<Image>();
             compImg.sprite = comp.BaseData.ComponentIcon;
-            compImg.SetNativeSize();
+            WorldPixelMetrics.SizePreview(compImg, WorldToUIMultiplier);
             compImg.rectTransform.anchoredPosition = -comp.BaseData.AnchorOffset * WorldToUIMultiplier;
 
-            Button compBtn = visObj.AddComponent<Button>();
-            InstancedComponent targetInstance = comp;
-
-            compBtn.onClick.AddListener(() =>
-            {
-                ItemDetailPanelUI.Instance.ShowComponentDetail(targetInstance);
-            });
+            ItemHoverTarget.Bind(visObj, () => ItemHoverContent.Socket(slotDef, comp), NameText != null ? NameText.font : null);
         }
     }
 
     public void OnClickRefit()
     {
-        if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
+        ItemHoverTooltip.Hide();
         gameObject.SetActive(false);
 
         // 🌟 修复：直接传入 bindedUnit 引用
@@ -153,7 +152,7 @@ public class UnitDetailPanelUI : MonoBehaviour
 
     public void CloseDetail()
     {
-        if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
+        ItemHoverTooltip.Hide();
         gameObject.SetActive(false);
     }
 

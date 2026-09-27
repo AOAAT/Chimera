@@ -18,6 +18,7 @@ public class GridCell
 public class RTSGridSystem : MonoBehaviour
 {
     public static RTSGridSystem Instance;
+    public const int MaxMapDimension = 512;
 
     [Header("地图规格（宽、高独立配置）")]
     [Min(1)] public int MapWidth = 100;
@@ -37,9 +38,7 @@ public class RTSGridSystem : MonoBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        MapWidth = Mathf.Max(1, MapWidth);
-        MapHeight = Mathf.Max(1, MapHeight);
-        CellSize = Mathf.Max(0.01f, CellSize);
+        ValidateSettings();
         grid = new GridCell[MapWidth, MapHeight];
         for (int x = 0; x < MapWidth; x++)
         for (int y = 0; y < MapHeight; y++)
@@ -53,6 +52,17 @@ public class RTSGridSystem : MonoBehaviour
         }
     }
 
+    public void ValidateSettings()
+    {
+        MapWidth = Mathf.Clamp(MapWidth, 1, MaxMapDimension);
+        MapHeight = Mathf.Clamp(MapHeight, 1, MaxMapDimension);
+        CellSize = float.IsNaN(CellSize) || float.IsInfinity(CellSize) ? 1 : Mathf.Max(0.01f, CellSize);
+        if (float.IsNaN(GridOrigin.x) || float.IsInfinity(GridOrigin.x)) GridOrigin.x = 0;
+        if (float.IsNaN(GridOrigin.y) || float.IsInfinity(GridOrigin.y)) GridOrigin.y = 0;
+    }
+    private void OnValidate() { if (!Application.isPlaying) ValidateSettings(); }
+    public Vector3 GridToWorld(int x, int y) => new Vector3(GridOrigin.x + x * CellSize, GridOrigin.y + y * CellSize, 0);
+
     private void OnDestroy()
     {
         if (Instance == this) Instance = null;
@@ -61,7 +71,7 @@ public class RTSGridSystem : MonoBehaviour
     public Vector3 GetSnappedWorldPos(Vector3 worldPos)
     {
         Vector2Int index = WorldToGrid(worldPos);
-        return grid[index.x, index.y].WorldPos;
+        return GridToWorld(index.x, index.y);
     }
 
     // 移动目标可吸附到边缘；建筑合法性检查使用 TryWorldToGrid。
@@ -80,14 +90,12 @@ public class RTSGridSystem : MonoBehaviour
 
     public GridCell GetCell(int x, int y)
     {
-        return grid != null && x >= 0 && x < MapWidth && y >= 0 && y < MapHeight ? grid[x, y] : null;
+        return grid != null && x >= 0 && x < grid.GetLength(0) && y >= 0 && y < grid.GetLength(1) ? grid[x, y] : null;
     }
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
-        if (grid == null) return;
-        Gizmos.color = new Color(1, 1, 1, 0.1f);
-        foreach (GridCell cell in grid)
-            Gizmos.DrawWireCube(cell.WorldPos, Vector3.one * CellSize * 0.95f);
+        Gizmos.color = new Color(1, .7f, .2f, .8f);
+        Gizmos.DrawWireCube(WorldBounds.center, WorldBounds.size);
     }
 }

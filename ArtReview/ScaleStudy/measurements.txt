@@ -1,0 +1,8 @@
+Isolated static art study. No collision/pathfinding validation; no production assets changed.
+A-source: mech scale=0.7, mech frame bounds=(2.43, 1.62, 0.14), mech source pixels/cell=71.42857, factory footprint=2x2
+A-32px: mech scale=0.7, mech frame bounds=(2.43, 1.62, 0.14), mech source pixels/cell=71.42857, factory footprint=2x2
+B-source: mech scale=1, mech frame bounds=(3.48, 2.32, 0.20), mech source pixels/cell=50, factory footprint=3x3
+B-32px: mech scale=1, mech frame bounds=(3.48, 2.32, 0.20), mech source pixels/cell=50, factory footprint=3x3
+C-source: mech scale=1.5625, mech frame bounds=(5.43, 3.62, 0.31), mech source pixels/cell=32, factory footprint=4x4
+C-32px: mech scale=1.5625, mech frame bounds=(5.43, 3.62, 0.31), mech source pixels/cell=32, factory footprint=4x4
+COMPLETE

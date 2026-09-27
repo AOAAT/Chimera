@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 1332941239372218481}
   - component: {fileID: 1270059699173038363}
   - component: {fileID: 5934029123980442046}
+  - component: {fileID: 2731562170926187726}
+  - component: {fileID: 8265597159093766042}
   m_Layer: 5
   m_Name: ButtonPrefab
   m_TagString: Untagged
@@ -60,15 +62,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.25490198, g: 0.32941177, b: 0.40784314, a: 1}
+  m_Color: {r: 0.90588236, g: 0.84705883, b: 0.7490196, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b98cc6dfb90a9614382853cfc2ad6057, type: 3}
-  m_Type: 1
+  m_Sprite: {fileID: 0}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -99,10 +101,10 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 1.12, g: 1.12, b: 1.12, a: 1}
-    m_PressedColor: {r: 0.76, g: 0.8, b: 0.84, a: 1}
-    m_SelectedColor: {r: 0.92, g: 1.06, b: 0.98, a: 1}
-    m_DisabledColor: {r: 0.45, g: 0.48, b: 0.52, a: 0.68}
+    m_HighlightedColor: {r: 1.08, g: 1.08, b: 1.08, a: 1}
+    m_PressedColor: {r: 0.78, g: 0.78, b: 0.78, a: 1}
+    m_SelectedColor: {r: 0.94, g: 1.02, b: 1.02, a: 1}
+    m_DisabledColor: {r: 0.65, g: 0.65, b: 0.65, a: 0.65}
     m_ColorMultiplier: 1
     m_FadeDuration: 0.08
   m_SpriteState:
@@ -121,6 +123,41 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2731562170926187726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885258213944764118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_EffectColor: {r: 0.54509807, g: 0.48235294, b: 0.39215687, a: 1}
+  m_EffectDistance: {x: 1, y: -1}
+  m_UseGraphicAlpha: 1
+--- !u!114 &8265597159093766042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885258213944764118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be30463f04fbc674abb3310401b967ad, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  Role: 6
+  DrawBorder: 1
+  ApplyColor: 1
+  captured: 1
+  authoredSprite: {fileID: 0}
+  lastAppliedSprite: {fileID: 0}
+  authoredType: 0
+  authoredFont: {fileID: 0}
 --- !u!1 &8491943067202247131
 GameObject:
   m_ObjectHideFlags: 0
@@ -132,6 +169,7 @@ GameObject:
   - component: {fileID: 2912367648430252680}
   - component: {fileID: 1902937501749720452}
   - component: {fileID: 2588722720290752846}
+  - component: {fileID: 2923450206323591983}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -196,7 +234,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4281479730
-  m_fontColor: {r: 0.92156863, g: 0.94509804, b: 0.9647059, a: 1}
+  m_fontColor: {r: 0.24313726, g: 0.21960784, b: 0.18431373, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -255,3 +293,23 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2923450206323591983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8491943067202247131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be30463f04fbc674abb3310401b967ad, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  Role: 9
+  DrawBorder: 0
+  ApplyColor: 1
+  captured: 1
+  authoredSprite: {fileID: 0}
+  lastAppliedSprite: {fileID: 0}
+  authoredType: 0
+  authoredFont: {fileID: 11400000, guid: a7c32fc9abfdbbb47821df70fb4640e0, type: 2}

@@ -1,0 +1,105 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chimera · 50 PPU 组件旋转检查</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eee7d7;color:#302f29;font:15px/1.6 "Microsoft YaHei",sans-serif}
+main{max-width:1300px;margin:22px auto;padding:0 20px}h1{font-size:27px;margin:0}p{margin:6px 0 12px}.muted{color:#655e50}
+.controls{padding:14px;background:#fff9ec;border:1px solid #b8aa90;border-radius:6px;display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap}
+button,select{font:inherit;border:1px solid #9d8f78;background:#fff9ec;color:#302f29;border-radius:4px;padding:6px 12px;cursor:pointer}
+button.primary{background:#98613b;color:white}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #378676}
+label{display:inline-flex;gap:7px;align-items:center}input[type=range]{width:240px;accent-color:#98613b}output{display:inline-block;min-width:60px;font-variant-numeric:tabular-nums}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}.card{min-width:0;background:#fff9ec;border:1px solid #b8aa90;border-radius:6px;overflow:hidden}
+.head{padding:12px 14px;font-size:18px;font-weight:bold}.sub{font-size:13px;font-weight:normal;color:#625c50}.scroll{overflow:auto;background:#333d40}
+.stage{position:relative;width:600px;height:600px;margin:auto}.stage canvas{position:absolute;top:0;left:0;width:600px;height:600px;image-rendering:pixelated;display:block}
+.stage .overlay{pointer-events:none}.caption{padding:10px 14px;font-size:14px}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.note{padding:12px 16px;background:#e2d8c3;border-left:4px solid #a77745}.note p{margin:2px 0}.note strong{color:#584127}
+details{margin:18px 0}summary{cursor:pointer;font-weight:bold}footer{font-size:13px;color:#625e54;padding:16px 0}.error{color:#8c2626;font-weight:bold}
+body.zoom .stage,body.zoom .stage canvas{width:1200px;height:1200px}
+@media(max-width:850px){.views,.bottom{grid-template-columns:1fr}main{padding:0 10px}.controls{gap:10px}.stage{margin:0}h1{font-size:23px}}
+</style><main>
+<h1>50 PPU · 组件绕轴旋转检查</h1>
+<p class="muted">使用项目原始贴图和挂点。两侧始终显示同一个角度、同一尺寸；只改变画面采样方式。</p>
+<div class="controls">
+<button id="play" class="primary" aria-pressed="false">播放旋转</button>
+<label>检查部件 <select id="target"><option value="both">双武器</option><option value="3">右侧狙击枪</option><option value="4">左侧链锯</option></select></label>
+<label>相对装配角度 <input id="angle" type="range" min="0" max="360" step="0.1" value="22.5"><output id="angleText">22.5°</output></label>
+<label>速度 <select id="speed"><option value="15">15° / 秒</option><option value="45" selected>45° / 秒</option><option value="90">90° / 秒</option></select></label>
+<button data-angle="0">0°</button><button data-angle="22.5">22.5°</button><button data-angle="45">45°</button><button data-angle="90">90°</button>
+<label><input id="guides" type="checkbox" checked>显示轴与发射点</label><label><input id="grid" type="checkbox" checked>显示一格网格</label>
+<button id="zoom" aria-pressed="false">细节放大 ×2</button>
+</div>
+<p id="status" class="muted">正在读取素材……</p>
+<div class="views">
+<article class="card"><div class="head">A · 直接旋转<div class="sub">600×600 渲染，50 PPU 素材以 2 倍显示</div></div>
+<div class="scroll"><div class="stage"><canvas id="direct" width="600" height="600"></canvas><canvas class="overlay" id="directOverlay" width="600" height="600"></canvas></div></div>
+<div class="caption">观察斜角枪管、锯齿与接口：细节较完整，源像素旋转后不再全部对齐屏幕方格。</div></article>
+<article class="card"><div class="head">B · 统一低分辨率画面<div class="sub">300×300 渲染，再用最近邻放大 2 倍</div></div>
+<div class="scroll"><div class="stage"><canvas id="low" width="300" height="300"></canvas><canvas class="overlay" id="lowOverlay" width="600" height="600"></canvas></div></div>
+<div class="caption">最终像素方格一致；旋转时轮廓仍会逐格变化，注意细枪管和孤立像素的丢失。</div></article>
+</div>
+<div class="bottom"><div class="note"><strong>标记说明</strong><p>青色十字：旋转轴。橙色圆环：数据配置的发射点。</p><p>白色短线：转轴自身的 +X 朝向。辅助标记单独覆盖，不参与像素效果比较。</p></div>
+<div class="note"><strong>发现的现有配置</strong><p>狙击枪与链锯的 MuzzleOffset 都是 (0, 0)，所以橙色圆环与青色转轴重合。</p><p>狙击枪应另外核对实际枪口位置；本小样保留原值。</p></div></div>
+<details><summary>小样范围与使用方法</summary><p>先用 22.5°、45° 比较斜边，再用 15° / 秒慢速播放。选择单件武器，可以检查其绕轴运动与底盘连接；“细节放大”只放大结果，不改变采样方式。</p>
+<p>这是离线 WebGL 演示：Point 采样、透明混合、关闭抗锯齿，复用 Unity 导出的原图、Pivot、插槽、旋转与偏移；另用 Unity 实际渲染图核对固定角度。两侧世界视野都是 6×6 格，浏览器默认缩放 100% 时画布以固定 CSS 尺寸显示。</p>
+<p>角度是相对安装姿态的检查角，不模拟战斗自动瞄准、攻击动画、转向速度限制或碰撞。连续转满一圈用于暴露连接问题，不代表正式武器允许无限旋转。样例固定遮挡顺序为底盘→核心→护甲→狙击枪→链锯→移动组件；正式工程的组件目前使用相同排序值，需要另外确定最终遮挡规则。</p></details>
+<footer>禁军＋陷阵核心＋厚实护甲＋狙击枪＋链锯＋刀锋。所有素材 50 PPU，示例总缩放为 1。正式工程的素材、预制体、战斗和存档均未修改。</footer>
+</main><script>
+const model=__MODEL__;
+const assetData=__ASSETS__;
+const state={angle:22.5,target:'both',playing:false,grid:true,guides:true,speed:45};
+const $=id=>document.getElementById(id);
+const rad=d=>d*Math.PI/180;
+function rotation(l,a,target){return l.angle+(l.weapon&&(target==='both'||Number(target)===model.layers.indexOf(l))?a:0);}
+function transform(l,x,y,a,target){const r=rad(rotation(l,a,target)),c=Math.cos(r),s=Math.sin(r);return [l.slotX+l.scale*(x*c-y*s),l.slotY+l.scale*(x*s+y*c)];}
+function corner(l,a,target){return transform(l,-l.pivotX/l.ppu-l.anchorX,-l.pivotY/l.ppu-l.anchorY,a,target);}
+class View{
+ constructor(canvas,assets){
+  const gl=this.gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:true});if(!gl)throw Error('浏览器无法启用 WebGL');
+  const compile=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;};
+  this.p=gl.createProgram();gl.attachShader(this.p,compile(gl.VERTEX_SHADER,'attribute vec2 pos;attribute vec2 uv;varying vec2 tex;void main(){tex=uv;gl_Position=vec4(pos/3.0,0.0,1.0);}'));
+  gl.attachShader(this.p,compile(gl.FRAGMENT_SHADER,'precision mediump float;varying vec2 tex;uniform sampler2D image;uniform vec4 tint;void main(){gl_FragColor=texture2D(image,tex)*tint;}'));gl.linkProgram(this.p);
+  if(!gl.getProgramParameter(this.p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(this.p));gl.useProgram(this.p);
+  this.buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
+  for(const [name,off] of [['pos',0],['uv',8]]){const loc=gl.getAttribLocation(this.p,name);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,16,off);}
+  this.tint=gl.getUniformLocation(this.p,'tint');gl.uniform1i(gl.getUniformLocation(this.p,'image'),0);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DITHER);
+  this.textures=assets.map(image=>this.texture(image));this.white=this.texture(null);
+ }
+ texture(image){const g=this.gl,t=g.createTexture();g.bindTexture(g.TEXTURE_2D,t);g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL,true);
+  if(image)g.texImage2D(g.TEXTURE_2D,0,g.RGBA,g.RGBA,g.UNSIGNED_BYTE,image);else g.texImage2D(g.TEXTURE_2D,0,g.RGBA,1,1,0,g.RGBA,g.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
+  for(const p of [g.TEXTURE_MIN_FILTER,g.TEXTURE_MAG_FILTER])g.texParameteri(g.TEXTURE_2D,p,g.NEAREST);
+  for(const p of [g.TEXTURE_WRAP_S,g.TEXTURE_WRAP_T])g.texParameteri(g.TEXTURE_2D,p,g.CLAMP_TO_EDGE);return t;
+ }
+ quad(points,texture,tint=[1,1,1,1]){const g=this.gl,uv=[[0,0],[1,0],[1,1],[0,1]],v=[];for(const i of [0,1,2,0,2,3])v.push(...points[i],...uv[i]);
+  g.bindTexture(g.TEXTURE_2D,texture);g.uniform4fv(this.tint,tint);g.bufferData(g.ARRAY_BUFFER,new Float32Array(v),g.STREAM_DRAW);g.drawArrays(g.TRIANGLES,0,6);
+ }
+ draw(){const g=this.gl;g.viewport(0,0,g.canvas.width,g.canvas.height);g.clearColor(51/255,61/255,64/255,1);g.clear(g.COLOR_BUFFER_BIT);
+  if(state.grid)for(let n=-3;n<=3;n++){const t=[.28,.32,.33,1];this.quad([[n-.01,-3],[n+.01,-3],[n+.01,3],[n-.01,3]],this.white,t);this.quad([[-3,n-.01],[3,n-.01],[3,n+.01],[-3,n+.01]],this.white,t);}
+  model.layers.forEach((l,i)=>{const x=-l.pivotX/l.ppu-l.anchorX,y=-l.pivotY/l.ppu-l.anchorY,w=l.width/l.ppu,h=l.height/l.ppu;
+   const points=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(p=>transform(l,...p,state.angle,state.target));this.quad(points,this.textures[i]);});
+ }
+}
+let views=[];
+function overlay(id){const c=$(id).getContext('2d');c.clearRect(0,0,600,600);if(!state.guides)return;
+ model.layers.forEach((l,i)=>{if(!l.weapon||state.target!=='both'&&Number(state.target)!==i)return;
+  const px=l.slotX*100+300,py=300-l.slotY*100,r=rad(rotation(l,state.angle,state.target));
+  c.strokeStyle='#ffffffaa';c.lineWidth=1;c.beginPath();c.moveTo(px,py);c.lineTo(px+Math.cos(r)*35,py-Math.sin(r)*35);c.stroke();
+  c.strokeStyle='#7ef5e0';c.lineWidth=2;c.beginPath();c.moveTo(px-7,py);c.lineTo(px+7,py);c.moveTo(px,py-7);c.lineTo(px,py+7);c.stroke();
+  const m=transform(l,l.muzzleX,l.muzzleY,state.angle,state.target);c.strokeStyle='#ffba65';c.beginPath();c.arc(m[0]*100+300,300-m[1]*100,10,0,Math.PI*2);c.stroke();
+ });
+}
+function render(){for(const view of views)view.draw();overlay('directOverlay');overlay('lowOverlay');$('angle').value=state.angle;$('angleText').textContent=state.angle.toFixed(1)+'°';}
+function pause(){state.playing=false;$('play').textContent='播放旋转';$('play').setAttribute('aria-pressed','false');}
+function setAngle(a){pause();state.angle=a;render();}
+$('play').onclick=()=>{state.playing=!state.playing;$('play').textContent=state.playing?'暂停':'播放旋转';$('play').setAttribute('aria-pressed',String(state.playing));};
+$('angle').oninput=e=>setAngle(Number(e.target.value));document.querySelectorAll('[data-angle]').forEach(b=>b.onclick=()=>setAngle(Number(b.dataset.angle)));
+$('target').onchange=e=>{state.target=e.target.value;render();};$('speed').onchange=e=>state.speed=Number(e.target.value);
+$('guides').onchange=e=>{state.guides=e.target.checked;render();};$('grid').onchange=e=>{state.grid=e.target.checked;render();};
+$('zoom').onclick=()=>{const on=document.body.classList.toggle('zoom');$('zoom').textContent=on?'恢复对照视图':'细节放大 ×2';$('zoom').setAttribute('aria-pressed',String(on));};
+let last=performance.now();function tick(now){const dt=Math.min(.1,(now-last)/1000);last=now;if(state.playing&&!document.hidden){state.angle=(state.angle+dt*state.speed)%360;render();}requestAnimationFrame(tick);}
+window.study={state,setAngle,render,model,transform,corner,ready:false};
+(async()=>{try{
+ const assets=await Promise.all(model.layers.map(l=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=assetData[l.file];})));
+ views=[new View($('direct'),assets),new View($('low'),assets)];render();requestAnimationFrame(tick);window.study.ready=true;
+ $('status').textContent='已就绪 · 两侧角度同步 · 每格为 50 个美术像素 · 暂停后可拖动角度滑条';
+}catch(error){$('status').textContent='加载失败：'+error.message;$('status').className='error';console.error(error);}})();
+</script></html>

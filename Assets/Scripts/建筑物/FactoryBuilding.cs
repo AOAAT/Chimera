@@ -117,7 +117,8 @@ public class FactoryBuilding : BuildingBase
     {
         // 1. 实物入库
         if (task.SourceSO is ChassisDataSO chassis)
-            LogisticsManager.Instance.CompleteProduction(this, task, "chassis:" + chassis.ChassisID);
+            LogisticsManager.Instance.CompleteProduction(this, task, PlayerInventoryManager.ChassisKey(
+                PlayerInventoryManager.Instance.CreateChassis(chassis, false)));
         else if (task.SourceSO is ComponentDataSO component)
         {
             EnsureCraftSnapshot(task);

@@ -135,7 +135,7 @@ public class MechUnit2D : MonoBehaviour
         Debug.Log($"<color=red>【回收协议】</color> 正在拆解机甲: {bindedData.UnitName}");
 
         // 1. 归还底盘实物
-        PlayerInventoryManager.Instance.AddChassisToWarehouse(bindedData.ChassisData, 1);
+        PlayerInventoryManager.Instance.ReleaseChassis(bindedData);
 
         // 2. 遍历并归还所有挂载的零件实物
         foreach (var instanceID in bindedData.EquippedComponentIDs)
@@ -187,6 +187,7 @@ public class MechUnit2D : MonoBehaviour
         SpriteRenderer chassisSR = chassisObj.AddComponent<SpriteRenderer>();
         chassisSR.sprite = data.ChassisData.ChassisSprite;
         chassisSR.sortingLayerName = SortingLayerName;
+        chassisSR.sortingOrder = BaseSortingOrder;
 
         BoxCollider2D hitboxCol = chassisObj.AddComponent<BoxCollider2D>();
         hitboxCol.isTrigger = true;
@@ -217,7 +218,7 @@ public class MechUnit2D : MonoBehaviour
             SpriteRenderer cpSR = visObj.AddComponent<SpriteRenderer>();
             cpSR.sprite = comp.BaseData.ComponentIcon;
             cpSR.sortingLayerName = SortingLayerName;
-            cpSR.sortingOrder = BaseSortingOrder + 1;
+            cpSR.sortingOrder = BaseSortingOrder + WorldPixelMetrics.ComponentOrder(i);
             visObj.transform.localPosition = -comp.BaseData.AnchorOffset;
         }
 

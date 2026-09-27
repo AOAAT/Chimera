@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -9,6 +9,8 @@ using UnityEngine;
 [Serializable]
 public class InstancedChassis
 {
+    public string CustomName;
+    public string DisplayName => string.IsNullOrWhiteSpace(CustomName) ? BaseData?.ChassisName : CustomName;
     public string InstanceID;
     public ChassisDataSO BaseData;
     public string EquippedUnitID;
@@ -24,6 +26,8 @@ public class InstancedChassis
 [Serializable]
 public class InstancedComponent
 {
+    public string CustomName;
+    public string DisplayName => string.IsNullOrWhiteSpace(CustomName) ? BaseData?.ComponentName : CustomName;
     public string InstanceID;
     public ComponentDataSO BaseData;
     public string EquippedUnitID;
@@ -123,6 +127,8 @@ public class ComponentStack
 [Serializable]
 public class ChassisStack
 {
+    public InstancedChassis Instance;
+    public ChassisStack(InstancedChassis item) { Instance = item; BaseData = item.BaseData; Quantity = 1; }
     public ChassisDataSO BaseData;
     public int Quantity;
     public ChassisStack(ChassisDataSO data, int qty)
@@ -173,10 +179,11 @@ public class PlayerInventoryManager : MonoBehaviour
     private void Update()
     {
 #if UNITY_EDITOR
+        if (UIInputFocus.IsEditingText) return;
         if (Input.GetKeyDown(KeyCode.T))
         {
             foreach (var so in DebugChassisBundle) if (so != null) AddChassisToWarehouse(so, 1);
-            Debug.Log("<color=cyan>【Debug】</color> 底盘已入库并堆叠。");
+            Debug.Log("<color=cyan>【Debug】</color> 底盘已按独立实例入库。");
         }
 
         if (Input.GetKeyDown(KeyCode.Y))
@@ -242,38 +249,85 @@ public class PlayerInventoryManager : MonoBehaviour
     public InstancedComponent GetComponentInstance(string instanceID) =>
         ComponentInventory.Find(item => item != null && item.InstanceID == instanceID);
 
+    public InstancedChassis GetChassisInstance(string id) => ChassisInventory.Find(x => x != null && x.InstanceID == id);
+    public static string ChassisKey(InstancedChassis item) => "chassis-instance:" + item.InstanceID;
+    public InstancedChassis CreateChassis(ChassisDataSO definition, bool deposit = true)
+    {
+        var item = new InstancedChassis(definition);
+        ChassisInventory.Add(item);
+        if (deposit && LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+            LogisticsManager.Instance.Deposit(ChassisKey(item), 1);
+        OnInventoryChanged?.Invoke();
+        return item;
+    }
     public void AddChassisToWarehouse(ChassisDataSO so, int qty = 1)
     {
-        if (so == null || qty <= 0) return;
-        if (LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
-        {
-            LogisticsManager.Instance.Deposit("chassis:" + so.ChassisID, qty);
-            OnInventoryChanged?.Invoke(); return;
-        }
-        if (chassisWarehouse.ContainsKey(so.ChassisID)) chassisWarehouse[so.ChassisID].Quantity += qty;
-        else chassisWarehouse[so.ChassisID] = new ChassisStack(so, qty);
+        if (so == null) return;
+        for (int i = 0; i < qty; i++) CreateChassis(so);
+    }
+    public bool TryTakeChassis(InstancedChassis item, string unitID)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(unitID) || item.IsEquipped || !ChassisInventory.Contains(item)) return false;
+        var manager = LogisticsManager.Instance;
+        if (manager != null && manager.Ready && !manager.ConsumeItem(ChassisKey(item))) return false;
+        item.EquippedUnitID = unitID;
         OnInventoryChanged?.Invoke();
+        return true;
     }
     public bool TryConsumeChassisFromWarehouse(ChassisDataSO so)
     {
-        if (so == null) return false;
+        return TryTakeChassis(GetAvailableChassis().FirstOrDefault(x => x.BaseData == so), "reserved");
+    }
+    public void ReleaseChassis(SavedUnitProfile profile)
+    {
+        var item = GetChassisInstance(profile.ChassisInstanceID);
+        if (item == null)
+        {
+            item = new InstancedChassis(profile.ChassisData) { InstanceID = profile.ChassisInstanceID, EquippedUnitID = profile.UnitID };
+            if (string.IsNullOrEmpty(item.InstanceID)) item.InstanceID = Guid.NewGuid().ToString();
+            ChassisInventory.Add(item);
+        }
+        if (!item.IsEquipped) return;
+        item.EquippedUnitID = string.Empty;
         if (LogisticsManager.Instance != null && LogisticsManager.Instance.Ready)
+            LogisticsManager.Instance.Deposit(ChassisKey(item), 1);
+        OnInventoryChanged?.Invoke();
+    }
+    public List<InstancedChassis> GetAvailableChassis(bool includeInTransit = false)
+    {
+        return ChassisInventory.Where(x => x?.BaseData != null && !x.IsEquipped)
+            .Where(x => includeInTransit || LogisticsManager.Instance == null || !LogisticsManager.Instance.Ready ||
+                LogisticsManager.Instance.ItemAvailable(ChassisKey(x))).ToList();
+    }
+    // Convert the legacy aggregate inventory only when no physical ledger exists.
+    public void MigrateLegacyChassisInventory()
+    {
+        foreach (var stack in chassisWarehouse.Values)
+            for (int i = 0; i < stack.Quantity; i++) CreateChassis(stack.BaseData, false);
+        chassisWarehouse.Clear();
+    }
+    public ChassisDataSO ResolveChassis(string id) => AllChassisDatabase.Concat(DebugChassisBundle)
+        .Concat(chassisWarehouse.Values.Select(x => x.BaseData)).FirstOrDefault(x => x != null && x.ChassisID == id);
+    public void ClearLegacyChassisCounts() => chassisWarehouse.Clear();
+    public bool RenameItem(string key, string name)
+    {
+        name = (name ?? "").Trim();
+        if (name.Length > 24 || name.Any(char.IsControl) || name.Contains("<") || name.Contains(">")) return false;
+        if (key.StartsWith("component:"))
         {
-            bool consumed = LogisticsManager.Instance.ConsumeItem("chassis:" + so.ChassisID);
-            if (consumed) OnInventoryChanged?.Invoke();
-            return consumed;
+            var item = GetComponentInstance(key.Substring(10));
+            if (item == null) return false;
+            item.CustomName = name;
         }
-
-        if (chassisWarehouse.ContainsKey(so.ChassisID) && chassisWarehouse[so.ChassisID].Quantity > 0)
+        else if (key.StartsWith("chassis-instance:"))
         {
-            chassisWarehouse[so.ChassisID].Quantity--;
-            OnInventoryChanged?.Invoke();
-            Debug.Log($"<color=red>【仓库】</color> 出库底盘: {so.ChassisName}，剩余: {chassisWarehouse[so.ChassisID].Quantity}");
-            return true;
+            var item = GetChassisInstance(key.Substring(17));
+            if (item == null) return false;
+            item.CustomName = name;
         }
-
-        Debug.LogWarning($"【仓库】底盘 {so.ChassisName} 库存不足！");
-        return false;
+        else return false;
+        OnInventoryChanged?.Invoke();
+        return true;
     }
     public List<InstancedComponent> GetAvailableComponents(bool includeInTransit = false)
     {
@@ -296,16 +350,7 @@ public class PlayerInventoryManager : MonoBehaviour
         .ThenByDescending(stack => stack.Level)
         .ThenBy(stack => stack.BaseData.ComponentName)
         .ToList();
-    public List<ChassisStack> GetChassisStacks()
-    {
-        var logistics = LogisticsManager.Instance;
-        if (logistics == null || !logistics.Ready) return chassisWarehouse.Values.Where(s => s.Quantity > 0).ToList();
-        return AllChassisDatabase.Concat(DebugChassisBundle).Concat(chassisWarehouse.Values.Select(x => x.BaseData))
-            .Where(x => x != null).GroupBy(x => x.ChassisID).Select(x => x.First())
-            .Select(x => new ChassisStack(x, (int)logistics.Warehouses.Sum(s => logistics.Available(s, "chassis:" + x.ChassisID))))
-            .Where(x => x.Quantity > 0).ToList();
-    }
-
+    public List<ChassisStack> GetChassisStacks() => GetAvailableChassis().Select(x => new ChassisStack(x)).ToList();
 
     public static float GetStatValue(List<StatEntry> stats, StatType targetStat)
     {
@@ -321,15 +366,7 @@ public class PlayerInventoryManager : MonoBehaviour
     public InventorySaveData CaptureSaveData()
     {
         InventorySaveData save = new InventorySaveData();
-        foreach (ChassisStack stack in GetChassisStacks())
-        {
-            if (stack?.BaseData == null) continue;
-            save.ChassisWarehouse.Add(new ChassisStackSaveData
-            {
-                DefinitionID = stack.BaseData.ChassisID,
-                Quantity = stack.Quantity
-            });
-        }
+        save.ChassisAreInstances = true;
         foreach (InstancedComponent item in ComponentInventory)
         {
             if (item?.BaseData == null) continue;
@@ -338,6 +375,7 @@ public class PlayerInventoryManager : MonoBehaviour
                 InstanceID = item.InstanceID,
                 DefinitionID = item.BaseData.ComponentBaseID,
                 EquippedUnitID = item.EquippedUnitID,
+                CustomName = item.CustomName,
                 CurrentMark = item.CurrentMark,
                 SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>()),
                 Quality = item.Quality,
@@ -358,7 +396,8 @@ public class PlayerInventoryManager : MonoBehaviour
             {
                 InstanceID = item.InstanceID,
                 DefinitionID = item.BaseData.ChassisID,
-                EquippedUnitID = item.EquippedUnitID
+                EquippedUnitID = item.EquippedUnitID,
+                CustomName = item.CustomName
             });
         }
         foreach (InstancedAccessory item in AccessoryInventory)
@@ -393,7 +432,7 @@ public class PlayerInventoryManager : MonoBehaviour
             for (int i = 0; i < item.Quantity; i++)
                 ComponentInventory.Add(new InstancedComponent(definition, item.Level));
         }
-        foreach (ChassisStackSaveData item in save.ChassisWarehouse)
+        foreach (ChassisStackSaveData item in save.ChassisAreInstances ? new List<ChassisStackSaveData>() : save.ChassisWarehouse)
         {
             ChassisDataSO definition = definitions.ResolveChassis(item.DefinitionID);
             if (definition != null && item.Quantity > 0)
@@ -407,6 +446,7 @@ public class PlayerInventoryManager : MonoBehaviour
             {
                 InstanceID = item.InstanceID,
                 EquippedUnitID = item.EquippedUnitID,
+                CustomName = item.CustomName,
                 SocketedAccessoryIDs = new List<string>(item.SocketedAccessoryIDs ?? new List<string>()),
                 Quality = item.Quality,
                 QualityScore = item.QualityScore,
@@ -429,7 +469,8 @@ public class PlayerInventoryManager : MonoBehaviour
             InstancedChassis restored = new InstancedChassis(definition)
             {
                 InstanceID = item.InstanceID,
-                EquippedUnitID = item.EquippedUnitID
+                EquippedUnitID = item.EquippedUnitID,
+                CustomName = item.CustomName
             };
             ChassisInventory.Add(restored);
         }

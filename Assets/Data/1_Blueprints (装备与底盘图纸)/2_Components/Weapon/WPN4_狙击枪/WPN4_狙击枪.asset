@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6871561f5468c540938f0ff7bc1f4fe, type: 3}
   m_Name: "WPN4_\u72D9\u51FB\u67AA"
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   ComponentBaseID: WPN_004
   ComponentName: "\u72D9\u51FB\u67AA"
   Description: "\u5BF9\u4E8E\u65E0\u6CD5\u5FEB\u901F\u6740\u6B7B\u7684\u654C\u4EBA\uFF0C\u4EBA\u7C7B\u5F80\u5F80\u4F1A\u9009\u62E9\u52A0\u5927\u5B50\u5F39\u53E3\u5F84\u3002\u8FD9\u4E00\u62DB\u5BF9\u90A3\u4E9B\u4E0D\u53EF\u540D\u72B6\u4E4B\u79FD\u7269\u540C\u6837\u6709\u6548\u3002"
@@ -19,7 +19,7 @@ MonoBehaviour:
   Type: 1
   TacticalRoleDesc: "\u8FDC\u7A0B\u5355\u4F53"
   AnimController: {fileID: 0}
-  MuzzleOffset: {x: 0, y: 0}
+  MuzzleOffset: {x: 1.2326792, y: 0.05}
   MacroCategory: 0
   BaseSubTags: 02000000070000000b000000
   MinDropLevel: 1
@@ -56,11 +56,11 @@ MonoBehaviour:
     OnAssembleActions: []
     OnBattleStartActions: []
     OnTickActions: []
-    BonusTags: 
+    BonusTags:
     SpecialMechanicDesc: "\u4E00\u67AA\u4E00\u4E2A\u3002"
     ActiveSkill:
       HasActiveSkill: 0
-      SkillName: 
+      SkillName:
       SkillIcon: {fileID: 0}
       CPCost: 0
       Cooldown: 0

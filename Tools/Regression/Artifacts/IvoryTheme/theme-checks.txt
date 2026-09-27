@@ -1,0 +1,46 @@
+PASS scene has serialized theme stamp
+PASS no legacy image: ProgressBarFill
+PASS no legacy image: 下一页
+PASS no legacy image: 上一页
+PASS no legacy image: Rows
+PASS no legacy image: 新建仓库
+PASS no legacy image: 运输任务
+PASS no legacy image: 货物位置
+PASS no legacy image: 仓库与暂存区
+PASS no legacy image: 搬运居民
+PASS no legacy image: 关闭 ×
+PASS no legacy image: LogisticsWindow
+PASS no legacy image: 物流管理
+PASS no legacy image: Handle
+PASS no legacy image: Fill
+PASS no legacy image: Fill
+PASS no legacy image: Fill
+PASS no legacy image: MechVisualContainer
+PASS no legacy image: Handle
+PASS no legacy image: Fill
+PASS no legacy image: Fill
+PASS single warehouse excludes another warehouse's item
+PASS large inventory only renders visible rows
+PASS old warehouse nodes removed
+PASS pagination removed
+PASS chassis shown individually
+PASS click reaches AssetCard (AssetCard, ItemScroll, WarehouseWindow, 仓库GlobalWarehousePanel)
+PASS click reaches Action_改名 (Action_改名, ItemDetail, WarehouseWindow, 仓库GlobalWarehousePanel)
+PASS click reaches Action_保存 (Action_保存, RenameRow, ItemDetail, WarehouseWindow, 仓库GlobalWarehousePanel)
+PASS rename UI updates the selected chassis instance
+PASS same model siblings keep their original names
+PASS custom name search works
+PASS original model name remains searchable after rename
+PASS scrolling does not materialize entire inventory
+PASS dropdown blocker stays transparent
+PASS switching warehouses shows only physical local cargo
+PASS rich-text names rejected
+PASS new save has one canonical chassis registry
+PASS chassis identity and name survive JSON restore
+PASS component name survives JSON restore
+PASS specific chassis can be taken for assembly
+PASS cancel/recycle return same named chassis exactly once
+PASS legacy physical stacks migrate in place idempotently
+PASS logistics keeps original palette
+PASS main menu scene opens with new theme
+COMPLETE

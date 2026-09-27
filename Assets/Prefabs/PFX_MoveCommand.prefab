@@ -48,4 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1167f5b00486adb48ad6605e09e07edb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Duration: 0.4
+  ReachThreshold: 0.6
+  RotationSpeed: 120
+  PulseSpeed: 2
+  PulseAmount: 0.2

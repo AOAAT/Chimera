@@ -1,0 +1,9 @@
+PASS assembler retains functional UI prefab binding
+PASS pointer reaches 进入组装工坊 (top hit: Text (TMP))
+PASS workshop opens from building button
+PASS pointer reaches GhostChassisPrompt (top hit: 文字提示)
+PASS chassis selector opens
+FAIL System.Exception: pointer reaches InventoryItemSlot(Clone) (top hit: none)
+  at AssemblyInteractionChecks.Check (System.Boolean result, System.String message) [0x0002e] in F:\UnityGame\Chimera\.utmp\AssemblyRegression\Assets\Editor\AssemblyInteractionChecks.cs:29 
+  at AssemblyInteractionChecks.Click (UnityEngine.GameObject target) [0x00096] in F:\UnityGame\Chimera\.utmp\AssemblyRegression\Assets\Editor\AssemblyInteractionChecks.cs:53 
+  at AssemblyInteractionChecks.Tick () [0x00297] in F:\UnityGame\Chimera\.utmp\AssemblyRegression\Assets\Editor\AssemblyInteractionChecks.cs:98 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 
@@ -56,7 +56,7 @@ public class GlobalResourceHUD : MonoBehaviour
             PopulationText.text = $"人口: {current}/{max}  [名册]";
 
             // 满员变色警告
-            PopulationText.color = (current >= max) ? Color.red : Color.white;
+            PopulationText.color = (current >= max) ? (Color)ChimeraUITheme.Danger : ChimeraUITheme.PrimaryText;
         }
     }
 }

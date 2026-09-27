@@ -1,0 +1,5 @@
+PASS six source sprites use 50 PPU
+PASS five components fit chassis slot types
+PASS sample scale multipliers are 1
+PASS exported 42 Unity transform references
+COMPLETE

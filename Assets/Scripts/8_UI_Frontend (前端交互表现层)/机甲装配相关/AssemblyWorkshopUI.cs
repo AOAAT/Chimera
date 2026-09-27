@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -20,6 +20,8 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private float snapshot_AP;
     private float previewMaxHP;
     private float previewMaxAP;
+    private int selectedSocket = -1;
+    [SerializeField] private TMP_Text socketHint;
 
     [Header("=== 左右分层 UI 面板 ===")]
     public GameObject LeftStatsPanel;
@@ -66,6 +68,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OpenEmptyWorkshop(AssemblerBuilding source)
     {
+        selectedSocket = -1;
         currentCallSource = source;
         targetWorldUnit = null;
         isCreatingNew = true;
@@ -84,6 +87,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
     public void OpenWorkshopWithUnit(MechUnit2D worldUnit)
     {
+        selectedSocket = -1;
         targetWorldUnit = worldUnit;
         currentEditingProfile = worldUnit.GetProfile();
         isCreatingNew = false;
@@ -111,6 +115,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     // --- AssemblyWorkshopUI.cs ---
     private void RefreshWorkshopState()
     {
+        PrepareEditorFeedback();
         ClearValidationMessage();
         if (RightInventoryPanel != null) RightInventoryPanel.SetActive(false);
 
@@ -124,6 +129,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             if (BlockText != null) BlockText.text = "格挡: --";
             if (MassText != null) MassText.text = "质量: --";
             if (SpeedText != null) SpeedText.text = "移速: --";
+            if (PowerText != null) PowerText.text = "动力: --";
 
             UnitNameInput.text = "等待选择底盘...";
             UnitNameInput.interactable = false;
@@ -191,6 +197,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
             if (BlockText != null) BlockText.text = $"格挡: {totalBlock:F0}";
             if (MassText != null) MassText.text = $"质量: {totalMass:F1}t";
+            if (PowerText != null) PowerText.text = $"动力: {totalEngine:0.##}";
             if (SpeedText != null) SpeedText.text = $"移速: {finalSpeed:F1} m/s";
 
             // 5. 交互与视觉
@@ -199,11 +206,12 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
             RenderMechAndSockets();
         }
+        UpdateSocketFeedback();
     }
     private void RenderMechAndSockets()
     {
         // 1. 彻底清理环境
-        foreach (Transform child in ChassisVisualRoot) Destroy(child.gameObject);
+        foreach (Transform child in ChassisVisualRoot) { child.gameObject.SetActive(false); Destroy(child.gameObject); }
         activeConduitMap.Clear();
 
         if (currentEditingProfile == null) return;
@@ -218,7 +226,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         chassisObj.transform.SetParent(scalerObj.transform, false);
         Image chassisImg = chassisObj.AddComponent<Image>();
         chassisImg.sprite = currentEditingProfile.ChassisData.ChassisSprite;
-        chassisImg.SetNativeSize();
+        WorldPixelMetrics.SizePreview(chassisImg, WorldToUIMultiplier);
         chassisImg.raycastTarget = false;
 
         RectTransform coreTrans = null;
@@ -236,6 +244,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             RectTransform slotRect = slotObj.AddComponent<RectTransform>();
 
             // 应用底盘定义的坐标
+            slotRect.anchorMin = slotRect.anchorMax = chassisImg.rectTransform.pivot;
             slotRect.anchoredPosition = slotDef.LocalPosition * WorldToUIMultiplier;
 
             // 👇【核心修复】：插槽本身的旋转必须先应用
@@ -245,7 +254,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
             // 按钮视觉
             Image slotVisual = slotObj.AddComponent<Image>();
             slotVisual.sprite = CircularSlotSprite;
-            slotVisual.color = new Color(1f, 1f, 1f, 0.3f);
+            slotVisual.color = ChimeraUITheme.Accent;
             slotVisual.raycastTarget = true;
 
             slotRects.Add(slotIdx, slotRect);
@@ -266,8 +275,17 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 }
             }
 
+            var badge=slotObj.AddComponent<AssemblySocketBadge>();
+            badge.Initialize(slotIdx,equippedIdx!=-1,CircularSlotSprite,HPText!=null?HPText.font:null);
+            badge.SetSelected(slotIdx==selectedSocket);
             Button btn = slotObj.AddComponent<Button>();
             btn.onClick.AddListener(() => OnSlotClicked(slotIdx));
+            ItemHoverTarget.Bind(slotObj, () => {
+                if (currentEditingProfile == null) return null;
+                int installed = currentEditingProfile.SlotIndices.IndexOf(slotIdx);
+                var item = installed < 0 ? null : PlayerInventoryManager.Instance.GetComponentInstance(currentEditingProfile.EquippedComponentIDs[installed]);
+                return ItemHoverContent.Socket(slotDef, item);
+            }, HPText != null ? HPText.font : null);
         }
 
         // 5. 第二遍循环：生成能量导线（确保在底盘上层，插槽下层）
@@ -282,6 +300,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 if (conduit != null) { conduit.Initialize(coreTrans, kvp.Value); activeConduitMap.Add(kvp.Key, conduit); }
             }
         }
+        WorldPixelMetrics.FitPreview(ChassisVisualRoot as RectTransform, scalerObj.transform, PreviewScale);
     }
 
     private void RenderComponentInSlot(RectTransform slotRect, InstancedComponent comp, SlotDefinition slotDef, int slotIdx)
@@ -304,7 +323,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
 
         Image compImg = compVisObj.AddComponent<Image>();
         compImg.sprite = comp.BaseData.ComponentIcon;
-        compImg.SetNativeSize();
+        WorldPixelMetrics.SizePreview(compImg, WorldToUIMultiplier);
 
         // 👇【核心修复】：重心锚点偏置
         // 注意：图片是在 Hinge 之下，其 anchoredPosition 必须反向应用 AnchorOffset
@@ -314,6 +333,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
         compImg.raycastTarget = true;
         Button compBtn = compVisObj.AddComponent<Button>();
         compBtn.onClick.AddListener(() => OnSlotClicked(slotIdx));
+        ItemHoverTarget.Bind(compVisObj, () => ItemHoverContent.Socket(slotDef, comp), HPText != null ? HPText.font : null);
 
         // DebugLog：验证旋转角度
         // Debug.Log($"<color=cyan>【装配视觉】</color> 插槽:[{slotDef.SlotName}] 底角:{slotDef.MountAngle} + 组件偏角:{comp.BaseData.BaseRotationOffset} = 总角度:{slotDef.MountAngle + comp.BaseData.BaseRotationOffset}");
@@ -330,23 +350,14 @@ public class AssemblyWorkshopUI : MonoBehaviour
     {
         RightInventoryPanelUI.Instance.OpenForChassisSelection(
             () => PlayerInventoryManager.Instance.GetChassisStacks(),
-            (stack) => {
-                if (!PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(stack.BaseData))
-                {
-                    UIFeedback.Show("该底盘已不可用，请刷新库存后重试。");
-                    return;
-                }
-                // 🌟 修复：生成名字，解决 mechName 报错
-                string newName = "奇美拉-" + Random.Range(100, 999);
-                currentEditingProfile = new SavedUnitProfile(new InstancedChassis(stack.BaseData), newName);
-                RefreshWorkshopState();
-            }
+            (stack) => OnChassisSelectedFromInventory(stack.Instance)
+
         );
     }
     public void OnChassisSelectedFromInventory(InstancedChassis selectedChassis)
     {
         // 🌟 核心修复：尝试从仓库扣除实物底盘
-        bool success = PlayerInventoryManager.Instance.TryConsumeChassisFromWarehouse(selectedChassis.BaseData);
+        bool success = PlayerInventoryManager.Instance.TryTakeChassis(selectedChassis, "assembly-reservation");
 
         if (!success)
         {
@@ -369,6 +380,9 @@ public class AssemblyWorkshopUI : MonoBehaviour
     }
     private void OnSlotClicked(int slotIndex)
     {
+        ItemHoverTooltip.Hide();
+        selectedSocket=slotIndex;
+        UpdateSocketFeedback();
         var slotDef = currentEditingProfile.ChassisData.Sockets[slotIndex];
         int existingIdx = currentEditingProfile.SlotIndices.IndexOf(slotIndex);
         bool hasEquippedComp = (existingIdx != -1);
@@ -382,8 +396,55 @@ public class AssemblyWorkshopUI : MonoBehaviour
             (selectedStack) => {
                 OnComponentSelectedFromInventory(slotIndex,
                     selectedStack != null ? selectedStack.Representative : null);
-            }
+            },
+            candidate => BuildCandidateHover(slotIndex,candidate)
         );
+    }
+
+    public void PrepareEditorFeedback()
+    {
+        if(socketHint!=null || CenterPreviewArea==null)return;
+        socketHint=new GameObject("SocketSelectionHint",typeof(RectTransform),typeof(TextMeshProUGUI)).GetComponent<TMP_Text>();
+        socketHint.transform.SetParent(CenterPreviewArea.transform,false);socketHint.font=HPText!=null?HPText.font:TMP_Settings.defaultFontAsset;
+        var rect=socketHint.rectTransform;rect.anchorMin=new Vector2(.04f,.79f);rect.anchorMax=new Vector2(.96f,.90f);
+        rect.offsetMin=rect.offsetMax=Vector2.zero;
+        socketHint.fontSize=17;socketHint.enableWordWrapping=true;socketHint.raycastTarget=false;
+        socketHint.alignment=TextAlignmentOptions.TopLeft;
+        UIThemeBinding.Bind(socketHint,UIThemeRole.SecondaryText);
+        UpdateSocketFeedback();
+    }
+    private void UpdateSocketFeedback()
+    {
+        if(socketHint==null)return;
+        string legend="浅色：空闲   绿色：已安装   铜色：当前节点";
+        if(currentEditingProfile==null || selectedSocket<0 || selectedSocket>=currentEditingProfile.ChassisData.Sockets.Count)
+            socketHint.text="点击节点选择组件\n"+legend;
+        else
+        {
+            var slot=currentEditingProfile.ChassisData.Sockets[selectedSocket];
+            string state=currentEditingProfile.SlotIndices.Contains(selectedSocket)?"已安装，可替换或卸下":"空闲";
+            socketHint.text=$"当前 #{selectedSocket+1} · {slot.SlotName} · {state}\n"+legend;
+        }
+        foreach(var badge in ChassisVisualRoot.GetComponentsInChildren<AssemblySocketBadge>())badge.SetSelected(badge.SlotIndex==selectedSocket);
+    }
+    public ItemHoverContent BuildCandidateHover(int slotIndex,InstancedComponent candidate)
+    {
+        var profile=currentEditingProfile;
+        if(profile==null || slotIndex<0 || slotIndex>=profile.ChassisData.Sockets.Count)return null;
+        var slot=profile.ChassisData.Sockets[slotIndex];
+        if(candidate!=null && !slot.AllowedTypes.Contains(candidate.BaseData.Type))return null;
+        var installed=new InstancedComponent[profile.ChassisData.Sockets.Count];
+        for(int i=0;i<profile.SlotIndices.Count;i++)
+        {
+            int index=profile.SlotIndices[i];
+            if(index>=0&&index<installed.Length)installed[index]=PlayerInventoryManager.Instance.GetComponentInstance(profile.EquippedComponentIDs[i]);
+        }
+        var comparison=AssemblyComparison.Evaluate(profile.ChassisData,installed,slotIndex,candidate);
+        var content=candidate!=null?ItemHoverContent.Component(candidate):new ItemHoverContent {Title="卸下当前组件",Subtitle=slot.SlotName,Body="卸下后组件返回仓库。"};
+        string replacement=installed[slotIndex]!=null ? "当前组件："+installed[slotIndex].DisplayName+"\n" : "当前节点为空。\n";
+        content.Body=$"<b>{(candidate==null?"卸下":"安装")}后的整机变化 · #{slotIndex+1}</b>\n"+replacement+
+            comparison.Summary+"\n点击后应用；特殊效果见下方说明。\n\n"+content.Body;
+        return content;
     }
 
     private void OnComponentSelectedFromInventory(int slotIndex, InstancedComponent selectedComp)
@@ -516,7 +577,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
                 // 2. 【新建模式】：归还底盘
                 if (currentEditingProfile.ChassisData != null)
                 {
-                    PlayerInventoryManager.Instance.AddChassisToWarehouse(currentEditingProfile.ChassisData, 1);
+                    PlayerInventoryManager.Instance.ReleaseChassis(currentEditingProfile);
                 }
             }
             else
@@ -546,7 +607,7 @@ public class AssemblyWorkshopUI : MonoBehaviour
     private void ExitWorkshopInternal()
     {
         // 1. 关闭详情页提示
-        if (ItemDetailPanelUI.Instance != null) ItemDetailPanelUI.Instance.HidePanel();
+        ItemHoverTooltip.Hide();
 
         // 2. 关闭车间界面
         gameObject.SetActive(false);

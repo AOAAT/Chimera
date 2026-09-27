@@ -1,0 +1,38 @@
+PASS missing stock ignores stale cached status (actual WaitingMaterials)
+PASS status provides a hint without mutating order or logistics
+PASS available stock waits for a hauler (actual WaitingHauler)
+PASS status provides a hint without mutating order or logistics
+PASS reserved stock is not reported as missing (actual WaitingHauler)
+PASS status provides a hint without mutating order or logistics
+PASS assigned hauler distinguishes pickup from transit
+PASS picked-up materials are in transit (actual InTransit)
+PASS status provides a hint without mutating order or logistics
+PASS partial shipment also explains remaining shortage
+PASS delivered ingredients wait for processing (actual Queued)
+PASS status provides a hint without mutating order or logistics
+PASS running line reports production (actual Producing)
+PASS status provides a hint without mutating order or logistics
+PASS remaining time reflects actual production speed
+PASS pause immediately overrides last-frame production flag (actual Paused)
+PASS status provides a hint without mutating order or logistics
+PASS full output explains blockage (actual OutputFull)
+PASS status provides a hint without mutating order or logistics
+PASS oversized recipe cannot be solved by more haulers (actual InputFull)
+PASS status provides a hint without mutating order or logistics
+PASS orders outside the admitted lines report queuing (actual Queued)
+PASS status provides a hint without mutating order or logistics
+PASS paused earlier order does not block admission (actual WaitingHauler)
+PASS status provides a hint without mutating order or logistics
+PASS in-progress reservations count toward output capacity (actual OutputFull)
+PASS status provides a hint without mutating order or logistics
+PASS another order's reserved input capacity is explained (actual InputFull)
+PASS status provides a hint without mutating order or logistics
+PASS candidate hover combines mech comparison and actual instance data
+PASS preview never writes the input slot array
+PASS preview matches actual assembler with instance quality and affix
+PASS unequip reverses all six preview attributes
+PASS replacing identical component does not double-count it
+PASS all preview paths preserve inventory, reservations and edited profile
+PASS node badges exist and never intercept clicks
+PASS card quality label stays compact with a readable fixed font
+COMPLETE

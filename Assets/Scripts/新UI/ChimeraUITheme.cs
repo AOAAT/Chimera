@@ -8,27 +8,41 @@ using UnityEngine.UI;
 /// </summary>
 public static class ChimeraUITheme
 {
-    public static readonly Color32 Backdrop = new Color32(5, 9, 13, 184);
-    public static readonly Color32 Window = new Color32(31, 42, 55, 252);
-    public static readonly Color32 Header = new Color32(40, 55, 72, 255);
-    public static readonly Color32 Surface = new Color32(48, 64, 81, 245);
-    public static readonly Color32 SurfaceDark = new Color32(22, 31, 41, 225);
-    public static readonly Color32 Button = new Color32(65, 84, 104, 255);
-    public static readonly Color32 Accent = new Color32(92, 190, 145, 255);
-    public static readonly Color32 Danger = new Color32(173, 74, 76, 255);
-    public static readonly Color32 PrimaryText = new Color32(235, 241, 246, 255);
-    public static readonly Color32 SecondaryText = new Color32(171, 187, 201, 255);
-    public static readonly Color32 MutedText = new Color32(126, 145, 160, 255);
-    public static readonly Color32 HP = new Color32(91, 190, 111, 255);
-    public static readonly Color32 AP = new Color32(82, 151, 214, 255);
+    private static ChimeraUIThemeConfig config;
+    public static ChimeraUIThemeConfig Config
+    {
+        get
+        {
+            if(config == null) config = Resources.Load<ChimeraUIThemeConfig>(ChimeraUIThemeConfig.ResourcePath);
+            if(config == null)
+            {
+                config = ScriptableObject.CreateInstance<ChimeraUIThemeConfig>();
+                config.hideFlags = HideFlags.HideAndDontSave;
+            }
+            return config;
+        }
+    }
+    public static void ReloadConfig() { config = null; }
 
-    private static Sprite uiSprite;
-    private static bool spriteLoadAttempted;
+    public static Color Backdrop => Config.Backdrop;
+    public static Color Window => Config.Window;
+    public static Color Header => Config.Header;
+    public static Color Surface => Config.Surface;
+    public static Color SurfaceDark => Config.SurfaceDark;
+    public static Color Button => Config.Button;
+    public static Color Accent => Config.Accent;
+    public static Color Danger => Config.Danger;
+    public static Color PrimaryText => Config.PrimaryText;
+    public static Color SecondaryText => Config.SecondaryText;
+    public static Color MutedText => Config.MutedText;
+    public static Color HP => Config.HP;
+    public static Color AP => Config.AP;
+    public static Color QualityTextColor(ComponentQuality quality) =>
+        Color.Lerp(ComponentQualityUtility.GetColor(quality), PrimaryText, .75f);
 
     public static void ApplyPanel(GameObject root, bool addRootSurface = true, bool styleNamedSurfaces = true)
     {
-        if (root == null || root.GetComponentInParent<LogisticsPanelUI>(true) != null ||
-            root.GetComponentInParent<ResidentRosterPanelUI>(true) != null) return;
+        if (root == null || root.GetComponentInParent<LogisticsPanelUI>(true) != null) return;
         // 仓库自行维护布局和配色；周期主题扫描不能改写下拉菜单、遮罩与品质色。
         if (root.GetComponentInParent<GlobalWarehouseUI>(true) != null) return;
 
@@ -36,7 +50,10 @@ public static class ChimeraUITheme
         {
             Image rootImage = root.GetComponent<Image>();
             if (rootImage == null && root.GetComponent<RectTransform>() != null)
+            {
                 rootImage = root.AddComponent<Image>();
+                rootImage.raycastTarget = false;
+            }
             StyleSurface(rootImage, Window);
         }
 
@@ -49,6 +66,13 @@ public static class ChimeraUITheme
             StyleButton(button);
         foreach (TMP_Dropdown dropdown in root.GetComponentsInChildren<TMP_Dropdown>(true))
             StyleDropdown(dropdown);
+        foreach (TMP_InputField input in root.GetComponentsInChildren<TMP_InputField>(true))
+        {
+            if (Protected(input)) continue;
+            StyleSurface(input.GetComponent<Image>(), Surface);
+            if (input.textComponent != null) input.textComponent.color = PrimaryText;
+            if (input.placeholder != null) input.placeholder.color = MutedText;
+        }
         foreach (Slider slider in root.GetComponentsInChildren<Slider>(true))
             StyleSlider(slider);
         foreach (Toggle toggle in root.GetComponentsInChildren<Toggle>(true))
@@ -59,10 +83,9 @@ public static class ChimeraUITheme
 
     public static void StyleButton(Button button)
     {
-        if (button == null || button.GetComponentInParent<LogisticsPanelUI>(true) != null ||
-            button.GetComponentInParent<ResidentRosterPanelUI>(true) != null) return;
+        if (button == null || button.GetComponentInParent<LogisticsPanelUI>(true) != null) return;
         // TMP 下拉菜单的全屏点击拦截层必须透明，不能当普通按钮填色。
-        if (button.name == "Blocker") return;
+        if (button.name == "Blocker" || button.name == "Backdrop") return;
         if (button.GetComponentInParent<GlobalWarehouseUI>(true) != null) return;
         Image image = button.targetGraphic as Image;
         if (image == null) image = button.GetComponent<Image>();
@@ -73,12 +96,12 @@ public static class ChimeraUITheme
         {
             Color color = ContainsAny(key, "pause", "暂停")
                 ? Button
-                : ContainsAny(key, "quit", "delete", "remove", "dismiss", "recycle", "dismantle", "退出", "拆除", "遣散", "下岗", "回收")
+                : ContainsAny(key, "quit", "delete", "remove", "dismiss", "recycle", "dismantle", "退出", "拆除", "遣散", "下岗", "回收", "放逐")
                     ? Danger
-                    : ContainsAny(key, "continue", "confirm", "start", "detail", "staff", "assign", "save", "继续", "确认", "开始", "详情", "工作人员", "派遣", "保存")
+                    : ContainsAny(key, "continue", "confirm", "start", "detail", "staff", "assign", "save", "继续", "确认", "开始", "详情", "工作人员", "派遣", "保存", "查看", "改名")
                         ? Accent
                         : Button;
-            StyleSurface(image, color);
+            UIThemeBinding.Bind(image, color == Danger ? UIThemeRole.DangerButton : color == Accent ? UIThemeRole.AccentButton : UIThemeRole.Button, true);
             image.raycastTarget = true;
             button.targetGraphic = image;
         }
@@ -88,14 +111,16 @@ public static class ChimeraUITheme
         colors.highlightedColor = new Color(1.12f, 1.12f, 1.12f, 1f);
         colors.pressedColor = new Color(0.76f, 0.80f, 0.84f, 1f);
         colors.selectedColor = new Color(0.92f, 1.06f, 0.98f, 1f);
-        colors.disabledColor = new Color(0.45f, 0.48f, 0.52f, 0.68f);
+        colors.disabledColor = new Color(0.78f, 0.78f, 0.78f, 1f);
         colors.colorMultiplier = 1f;
         colors.fadeDuration = 0.08f;
         button.colors = colors;
+        image?.GetComponent<UIThemeBinding>()?.Apply();
 
         foreach (TMP_Text label in button.GetComponentsInChildren<TMP_Text>(true))
         {
-            label.color = PrimaryText;
+            var role = image != null ? image.GetComponent<UIThemeBinding>()?.Role : null;
+            UIThemeBinding.Bind(label, role == UIThemeRole.AccentButton || role == UIThemeRole.DangerButton ? UIThemeRole.OnAccent : UIThemeRole.PrimaryText);
             label.fontStyle |= FontStyles.Bold;
             label.enableAutoSizing = true;
             label.fontSizeMin = 11f;
@@ -107,7 +132,7 @@ public static class ChimeraUITheme
 
     public static void StyleSlider(Slider slider)
     {
-        if (slider == null) return;
+        if (Protected(slider)) return;
         Transform background = slider.transform.Find("Background");
         if (background != null)
             StyleSurface(background.GetComponent<Image>(), SurfaceDark);
@@ -131,10 +156,10 @@ public static class ChimeraUITheme
 
     private static void StyleDropdown(TMP_Dropdown dropdown)
     {
-        if (dropdown == null) return;
+        if (Protected(dropdown)) return;
         StyleSurface(dropdown.targetGraphic as Image ?? dropdown.GetComponent<Image>(), Button);
         if (dropdown.captionText != null)
-            dropdown.captionText.color = dropdown.interactable ? PrimaryText : new Color32(126, 145, 160, 150);
+            dropdown.captionText.color = dropdown.interactable ? PrimaryText : MutedText;
         if (dropdown.itemText != null) dropdown.itemText.color = PrimaryText;
         if (dropdown.template != null)
         {
@@ -145,15 +170,15 @@ public static class ChimeraUITheme
 
     private static void StyleToggle(Toggle toggle)
     {
-        if (toggle == null) return;
+        if (Protected(toggle)) return;
         if (toggle.targetGraphic is Image background) StyleSurface(background, Button);
         if (toggle.graphic is Image check) check.color = Accent;
     }
 
     private static void StyleText(TMP_Text text)
     {
-        if (text == null || text.GetComponentInParent<Button>() != null) return;
-        if (text.GetComponentInParent<InventoryItemSlotUI>(true) != null) return;
+        if (Protected(text) || text.GetComponentInParent<Button>() != null) return;
+
         string key = text.name.ToLowerInvariant();
         if (ContainsAny(key, "name", "title", "header", "标题", "名称"))
         {
@@ -167,18 +192,13 @@ public static class ChimeraUITheme
             return;
         }
 
-        Color current = text.color;
-        Color.RGBToHSV(current, out _, out float saturation, out float value);
-        bool semanticColor = saturation > 0.45f && value > 0.45f;
-        if (!semanticColor)
-            text.color = ContainsAny(key, "description", "summary", "status", "hint", "empty", "描述", "状态", "提示")
-                ? SecondaryText
-                : PrimaryText;
+        text.color = ContainsAny(key, "description", "summary", "status", "hint", "empty", "描述", "状态", "提示")
+            ? SecondaryText : PrimaryText;
     }
 
     private static void StyleNamedSurface(Image image)
     {
-        if (image == null || image.GetComponentInParent<Slider>() != null) return;
+        if (image == null || image.GetComponentInParent<LogisticsPanelUI>(true) != null || image.GetComponentInParent<Slider>() != null || image.GetComponent<Mask>() != null) return;
         if (image.GetComponent<Button>() != null || image.GetComponent<TMP_Dropdown>() != null) return;
 
         string key = image.name.ToLowerInvariant();
@@ -196,28 +216,25 @@ public static class ChimeraUITheme
             StyleSurface(image, Window);
     }
 
-    private static void StyleSurface(Image image, Color color)
+    public static void StyleSurface(Image image, Color color)
     {
         if (image == null) return;
-        Sprite sprite = GetUISprite();
-        if (sprite != null)
-        {
-            image.sprite = sprite;
-            image.type = Image.Type.Sliced;
-        }
-        image.color = color;
-        if (image.GetComponent<Selectable>() == null) image.raycastTarget = false;
+        var role = RoleForColor(color);
+        if(role == UIThemeRole.None) { image.color = color; return; }
+        UIThemeBinding.Bind(image, role, true);
     }
 
-    private static Sprite GetUISprite()
+    public static UIThemeRole RoleForColor(Color color)
     {
-        if (!spriteLoadAttempted)
-        {
-            spriteLoadAttempted = true;
-            uiSprite = Resources.Load<Sprite>("UI/ChimeraRounded");
-        }
-        return uiSprite;
+        foreach(var role in new[]{UIThemeRole.Backdrop, UIThemeRole.Window, UIThemeRole.Header,
+            UIThemeRole.Surface, UIThemeRole.Inset, UIThemeRole.Button, UIThemeRole.Accent,
+            UIThemeRole.DangerButton, UIThemeRole.PrimaryText, UIThemeRole.SecondaryText,
+            UIThemeRole.MutedText, UIThemeRole.OnAccent, UIThemeRole.Health, UIThemeRole.Armor, UIThemeRole.Border})
+            if(color == Config.ColorFor(role)) return role;
+        return UIThemeRole.None;
     }
+
+    private static bool Protected(Component value) => value == null || value.GetComponentInParent<LogisticsPanelUI>(true) != null || value.GetComponentInParent<GlobalWarehouseUI>(true) != null;
 
     private static string GetSemanticKey(GameObject gameObject)
     {

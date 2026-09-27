@@ -1,0 +1,7 @@
+PASS all three Unity renders loaded at the expected size
+PASS original-art mode is the initial selection
+PASS building density button switches all comparison images
+PASS detail zoom shows exact doubled raster size
+PASS zoom and original-art mode restore correctly
+PASS narrow layout does not overflow the page
+COMPLETE

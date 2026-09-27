@@ -1,0 +1,22 @@
+{
+  "geometry": {
+    "count": 42,
+    "max": 1.402230147368323e-7
+  },
+  "comparisons": [
+    {
+      "size": 600,
+      "foreground": 19899,
+      "mismatch": 44,
+      "allMismatch": 44,
+      "foregroundAgreement": 0.9977888336097291
+    },
+    {
+      "size": 300,
+      "foreground": 4971,
+      "mismatch": 130,
+      "allMismatch": 130,
+      "foregroundAgreement": 0.9738483202574935
+    }
+  ]
+}

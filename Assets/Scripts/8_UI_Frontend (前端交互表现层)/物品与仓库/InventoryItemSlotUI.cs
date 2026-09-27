@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -16,6 +16,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     public GameObject HighlightFrame;
 
     private Action onClickCallback;
+    private Func<ItemHoverContent> hoverContent;
+    public void SetHoverContent(Func<ItemHoverContent> provider) => hoverContent = provider;
     private InstancedChassis cachedChassis;
     private InstancedComponent cachedComponent;
     private InstancedAccessory cachedAccessory;
@@ -33,8 +35,16 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     public GameObject QuantityBadge; // UI上的数字底框
     public TMP_Text QuantityText;    // 数量文字，如 x5
 
-    private void Awake()
+    [SerializeField, HideInInspector] private bool layoutPrepared;
+    private void Awake() { if(!layoutPrepared) PrepareEditorLayout(); }
+
+    public void PrepareEditorLayout()
     {
+        layoutPrepared = true;
+        // The background owns pointer events; icon and text intentionally let clicks pass through.
+        // Also repairs already-saved panels affected by the former theme's blanket raycast disable.
+        var background = GetComponent<Image>();
+        if (background != null) background.raycastTarget = true;
         if (ItemIcon != null)
         {
             Fit(ItemIcon.rectTransform, new Vector2(.18f, .4f), new Vector2(.82f, .94f));
@@ -45,11 +55,14 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         {
             Fit(ItemNameText.rectTransform, new Vector2(.06f, .2f), new Vector2(.94f, .4f));
             StyleLabel(ItemNameText, 17f, 22f);
+            ItemNameText.enableAutoSizing = false; ItemNameText.fontSize = 18;
         }
         if (ItemLevelText != null)
         {
             Fit(ItemLevelText.rectTransform, new Vector2(.04f, .02f), new Vector2(.96f, .2f));
-            StyleLabel(ItemLevelText, 14f, 17f);
+            StyleLabel(ItemLevelText, 16f, 17f);
+            ItemLevelText.enableAutoSizing = false; ItemLevelText.fontSize = 16;
+            ItemLevelText.enableWordWrapping = false;
         }
     }
 
@@ -84,8 +97,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         if (chassis != null && chassis.BaseData != null)
         {
             ItemIcon.sprite = chassis.BaseData.ChassisSprite;
-            ItemNameText.text = chassis.BaseData.ChassisName;
-            ItemNameText.color = Color.white;
+            ItemNameText.text = chassis.DisplayName;
+            ItemNameText.color = ChimeraUITheme.PrimaryText;
 
             if (ItemLevelText != null)
             {
@@ -114,17 +127,16 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         if (component != null && component.BaseData != null)
         {
             ItemIcon.sprite = component.BaseData.ComponentIcon;
-            ItemNameText.text = component.BaseData.ComponentName;
+            ItemNameText.text = component.DisplayName;
 
-            Color qualityColor = ComponentQualityUtility.GetColor(component.Quality);
-            ItemNameText.color = qualityColor;
+            ItemNameText.color = ChimeraUITheme.PrimaryText;
 
             if (ItemLevelText != null)
             {
                 ItemLevelText.gameObject.SetActive(true);
                 ItemLevelText.text = $"Mk.{component.CurrentMark} · " +
-                    ComponentQualityUtility.GetSummary(component.Quality, component.QualityScore);
-                ItemLevelText.color = qualityColor;
+                    ComponentQualityUtility.GetName(component.Quality);
+                ItemLevelText.color = ChimeraUITheme.QualityTextColor(component.Quality);
             }
         }
 
@@ -160,18 +172,16 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         isUnequipSlot = false;
 
         ItemIcon.sprite = stack.BaseData.ComponentIcon;
-        ItemNameText.text = stack.BaseData.ComponentName;
+        ItemNameText.text = stack.Representative?.DisplayName ?? stack.BaseData.ComponentName;
 
-        Color qualityColor = ComponentQualityUtility.GetColor(stack.Quality);
-        ItemNameText.color = qualityColor;
+        ItemNameText.color = ChimeraUITheme.PrimaryText;
 
         if (ItemLevelText != null)
         {
             ItemLevelText.gameObject.SetActive(true);
-            float qualityScore = stack.Representative != null ? stack.Representative.QualityScore : 0f;
             ItemLevelText.text = $"Mk.{stack.Level} · " +
-                ComponentQualityUtility.GetSummary(stack.Quality, qualityScore);
-            ItemLevelText.color = qualityColor;
+                ComponentQualityUtility.GetName(stack.Quality);
+            ItemLevelText.color = ChimeraUITheme.QualityTextColor(stack.Quality);
         }
 
         // 组件按永久实例逐件显示，不再出现数量堆叠。
@@ -190,13 +200,13 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
     // --- 4. 核心：底盘堆叠显示 (用于仓库) ---
     public void SetupChassisStack(ChassisStack stack, Action<ChassisStack> onSelected)
     {
-        cachedChassis = new InstancedChassis(stack.BaseData);
+        cachedChassis = stack.Instance ?? new InstancedChassis(stack.BaseData);
         cachedComponent = null;
         isUnequipSlot = false;
 
         ItemIcon.sprite = stack.BaseData.ChassisSprite;
-        ItemNameText.text = stack.BaseData.ChassisName;
-        ItemNameText.color = Color.white;
+        ItemNameText.text = cachedChassis.DisplayName;
+        ItemNameText.color = ChimeraUITheme.PrimaryText;
 
         if (QuantityBadge != null && QuantityText != null)
         {
@@ -219,8 +229,8 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
         if (EquippedOverlay != null) EquippedOverlay.SetActive(false);
         if (QuantityBadge != null) QuantityBadge.SetActive(false);
         ItemIcon.color = new Color(1, 1, 1, 0);
-        ItemNameText.text = "【 卸载当前组件 】";
-        ItemNameText.color = Color.red;
+        ItemNameText.text = "卸下当前组件";
+        ItemNameText.color = ChimeraUITheme.Danger;
 
         if (ItemLevelText != null) ItemLevelText.gameObject.SetActive(false);
         onClickCallback = () => onSelected?.Invoke();
@@ -265,20 +275,25 @@ public class InventoryItemSlotUI : MonoBehaviour, IPointerClickHandler, IPointer
 
         if (eventData.button == PointerEventData.InputButton.Left)
         {
+            ItemHoverTooltip.HideFor(transform as RectTransform);
             onClickCallback?.Invoke();
-            if (!isUnequipSlot) ItemDetailPanelUI.Instance?.HidePanel();
+            if (!isUnequipSlot) ItemHoverTooltip.Hide();
         }
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (hoverContent != null)
+        { ItemHoverTooltip.Request(transform as RectTransform,hoverContent,ItemNameText!=null?ItemNameText.font:null); return; }
         if (isUnequipSlot) return;
-        if (cachedComponent != null) ItemDetailPanelUI.Instance?.ShowComponentDetail(cachedComponent);
-        else if (cachedChassis != null) ItemDetailPanelUI.Instance?.ShowChassisDetail(cachedChassis.BaseData);
-        else if (cachedAccessory != null) ItemDetailPanelUI.Instance?.ShowAccessoryDetail(cachedAccessory);
+        ItemHoverTooltip.Request(transform as RectTransform, () =>
+            cachedComponent != null ? ItemHoverContent.Component(cachedComponent) :
+            cachedChassis != null ? ItemHoverContent.Chassis(cachedChassis.BaseData, cachedChassis.DisplayName) :
+            ItemHoverContent.Accessory(cachedAccessory), ItemNameText != null ? ItemNameText.font : null);
     }
 
-    public void OnPointerExit(PointerEventData eventData) => ItemDetailPanelUI.Instance?.HidePanel();
+    public void OnPointerExit(PointerEventData eventData) => ItemHoverTooltip.HideFor(transform as RectTransform);
+    private void OnDisable() => ItemHoverTooltip.HideFor(transform as RectTransform);
 
     private Color GetRarityColor(int rarity)
     {

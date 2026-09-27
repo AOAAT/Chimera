@@ -1,0 +1,26 @@
+{
+  "unity": "2022.3.62f3c1",
+  "residentChecksPassed": 38,
+  "logisticsChecksPassed": 41,
+  "scope": "Isolated clone; main editor not switched into Play; no user save files modified.",
+  "assets": {
+    "atlas": "128x64 RGBA",
+    "frames": 8,
+    "frameSize": "32x32",
+    "maxSilhouette": "24x28",
+    "directions": [
+      "front",
+      "left",
+      "right",
+      "back"
+    ],
+    "poses": [
+      "idle",
+      "carrying"
+    ]
+  },
+  "limitations": [
+    "One shared base appearance",
+    "No frame-by-frame walk cycle"
+  ]
+}

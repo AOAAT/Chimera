@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class RTSTestBench : MonoBehaviour
@@ -11,6 +11,7 @@ public class RTSTestBench : MonoBehaviour
 
     private void Update()
     {
+        if (UIInputFocus.IsEditingText) return;
 
         // --- E 键：生成敌对单位 ---
         if (Input.GetKeyDown(KeyCode.E))

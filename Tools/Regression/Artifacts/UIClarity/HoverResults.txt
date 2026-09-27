@@ -1,0 +1,51 @@
+PASS placement avoids target and viewport edges at (1920.00, 1080.00) / (12.00, 12.00)
+PASS placement avoids target and viewport edges at (1920.00, 1080.00) / (1808.00, 12.00)
+PASS placement avoids target and viewport edges at (1920.00, 1080.00) / (12.00, 968.00)
+PASS placement avoids target and viewport edges at (1920.00, 1080.00) / (1808.00, 968.00)
+PASS placement avoids target and viewport edges at (1920.00, 1080.00) / (960.00, 540.00)
+PASS placement avoids target and viewport edges at (1280.00, 720.00) / (12.00, 12.00)
+PASS placement avoids target and viewport edges at (1280.00, 720.00) / (1168.00, 12.00)
+PASS placement avoids target and viewport edges at (1280.00, 720.00) / (12.00, 608.00)
+PASS placement avoids target and viewport edges at (1280.00, 720.00) / (1168.00, 608.00)
+PASS placement avoids target and viewport edges at (1280.00, 720.00) / (640.00, 360.00)
+PASS placement avoids target and viewport edges at (1024.00, 768.00) / (12.00, 12.00)
+PASS placement avoids target and viewport edges at (1024.00, 768.00) / (912.00, 12.00)
+PASS placement avoids target and viewport edges at (1024.00, 768.00) / (12.00, 656.00)
+PASS placement avoids target and viewport edges at (1024.00, 768.00) / (912.00, 656.00)
+PASS placement avoids target and viewport edges at (1024.00, 768.00) / (512.00, 384.00)
+PASS placement avoids protected controls when alternate space exists
+PASS hover raycast reaches 物品小图(Clone)
+PASS hover starts hidden for delay
+PASS tooltip delay uses unscaled time while paused
+PASS recipe uses blueprint stats, cost and effective production time
+PASS recipe does not invent random instance quality
+PASS opaque readable card is non-blocking
+PASS legacy floating panel is absent, including inactive objects
+PASS card remains stable while hovering same item
+PASS hover raycast reaches 物品小图(Clone)
+PASS late exit from old item does not hide new item
+PASS scrolling dismisses tooltip immediately
+PASS hover raycast reaches 物品小图(Clone)
+PASS closing source panel cancels pending hover
+PASS tooltip does not block click on GhostChassisPrompt; top hit: 文字提示
+PASS hover raycast reaches InventoryItemSlot(Clone)
+PASS assembly chassis uses same shared tooltip
+PASS tooltip does not block click on InventoryItemSlot(Clone); top hit: InventoryItemSlot(Clone)
+PASS hover raycast reaches UI_Socket_头部
+PASS empty node describes compatible components
+PASS tooltip does not block click on UI_Socket_头部; top hit: UI_Socket_头部
+PASS hover raycast reaches InventoryItemSlot(Clone)
+PASS actual component shows its own name, resolved stats and quality
+PASS instance affix description is displayed
+PASS component tooltip avoids action button Btn_SaveExit
+PASS component tooltip avoids action button Btn_Cancel
+PASS tooltip does not block click on InventoryItemSlot(Clone); top hit: InventoryItemSlot(Clone)
+PASS hovering still allows actual component installation
+PASS hover raycast reaches Sprite_Visual
+PASS installed component visual has matching hover information
+PASS closing workshop removes tooltip
+PASS hover raycast reaches 生产进度预制体(Clone)
+PASS production row has a readable status tooltip
+PASS visible production tooltip refreshes when state changes without moving the pointer
+PASS continue action immediately clears paused row state
+COMPLETE

@@ -1,0 +1,10 @@
+PASS logistics prefab remains byte-identical
+PASS theme roles are serialized in the scene before play
+PASS runtime resolves the editable theme resource
+PASS colored nine-slice artwork preserves its own color
+PASS artwork removes duplicate border and preserves hit testing
+PASS button sprite states are wired
+PASS removing optional art restores the pure fallback
+PASS old button state sprites do not leak after removing a skin
+PASS applying a theme preserves a manually assigned new sprite
+EDITOR COMPLETE

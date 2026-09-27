@@ -17,8 +17,11 @@ public static class BuildingVisualTheme
         int index = building is HeadquartersBuilding ? 0 : building is FactoryBuilding ? 1 :
             building is AssemblerBuilding ? 2 : building is HousingBuilding ? 3 : building is WarehouseBuilding ? 4 : -1;
         if (index < 0) return null;
-        if (sprites.TryGetValue(index, out Sprite cached) && cached != null) return cached;
         string spriteName = new[] { "Command", "Factory", "Assembly", "Habitat", "Warehouse" }[index];
+        // Native-density game asset; the high-resolution atlas remains the retained source.
+        Sprite native = Resources.Load<Sprite>("Buildings/Pixel50/" + spriteName);
+        if (native != null) return native;
+        if (sprites.TryGetValue(index, out Sprite cached) && cached != null) return cached;
         Sprite imported = Resources.LoadAll<Sprite>(ResourcePath).FirstOrDefault(x => x.name == spriteName);
         if (imported != null) { sprites[index] = imported; return imported; }
         if (atlas == null) atlas = Resources.Load<Texture2D>(ResourcePath);
@@ -69,7 +72,8 @@ public static class BuildingVisualTheme
         int minX = offsets.Count > 0 ? offsets.Min(x => x.x) : 0, maxX = offsets.Count > 0 ? offsets.Max(x => x.x) : 0;
         int minY = offsets.Count > 0 ? offsets.Min(x => x.y) : 0, maxY = offsets.Count > 0 ? offsets.Max(x => x.y) : 0;
         visual.localPosition = new Vector3((minX + maxX) * cell * .5f, (minY + maxY) * cell * .5f, 0);
-        float scale = Mathf.Min((maxX - minX + 1) * cell / icon.bounds.size.x, (maxY - minY + 1) * cell / icon.bounds.size.y) * .94f;
+        float scale = Mathf.Approximately(icon.pixelsPerUnit, WorldPixelMetrics.PixelsPerUnit) ? 1f :
+            Mathf.Min((maxX - minX + 1) * cell / icon.bounds.size.x, (maxY - minY + 1) * cell / icon.bounds.size.y) * .94f;
         visual.localScale = Vector3.one * scale;
         var spriteRenderer = visual.GetComponent<SpriteRenderer>();
         spriteRenderer.sprite = icon; spriteRenderer.color = Color.white; spriteRenderer.enabled = true;
