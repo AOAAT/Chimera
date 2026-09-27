@@ -1,0 +1,40 @@
+PASS sprite set has four idle and four carrying directions
+PASS all frames are 48x48 with consistent foot pivot and 50 PPU
+PASS pixel art is point-filtered without mipmaps or compression
+PASS reimport preserves sprite references and file IDs
+PASS atlas is native 192x96 pixels, not the enlarged concept sheet
+PASS sprite edges have clean binary alpha
+PASS frame 0 fits one tile with aligned feet and transparent margins
+PASS frame 1 fits one tile with aligned feet and transparent margins
+PASS frame 2 fits one tile with aligned feet and transparent margins
+PASS frame 3 fits one tile with aligned feet and transparent margins
+PASS frame 4 fits one tile with aligned feet and transparent margins
+PASS frame 5 fits one tile with aligned feet and transparent margins
+PASS frame 6 fits one tile with aligned feet and transparent margins
+PASS frame 7 fits one tile with aligned feet and transparent margins
+PASS prefab already shows new art before Play
+PASS movement and selection colliders are unchanged
+PASS scene resident portrait is serialized before Play
+EDITOR COMPLETE
+PASS velocity selects independent direction 0 without legacy flipping
+PASS full frame remains centred within one cell in direction 0
+PASS velocity selects independent direction 1 without legacy flipping
+PASS full frame remains centred within one cell in direction 1
+PASS velocity selects independent direction 2 without legacy flipping
+PASS full frame remains centred within one cell in direction 2
+PASS velocity selects independent direction 3 without legacy flipping
+PASS full frame remains centred within one cell in direction 3
+PASS stopping preserves the last facing
+PASS visual updates do not mutate resident or logistics data
+PASS non-default cell size preserves native pixel density and root physics
+PASS actual backpack cargo activates carrying pose
+PASS interrupted order keeps carrying pose while cargo remains in backpack
+PASS empty backpack restores idle pose
+PASS real path movement changes facing and reaches destination
+PASS resident remains selectable with visible selection marker
+PASS resident HUD uses the new portrait
+PASS new art does not interfere with entering a workplace
+PASS staff cards show new portraits only for occupied slots
+PASS dismissal recreates the same resident with new art and preserved health
+PASS selected resident uses a foot outline instead of the old heart sprite
+COMPLETE

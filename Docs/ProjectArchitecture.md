@@ -1,5 +1,7 @@
 # Chimera 项目代码与架构学习记录
 
+> 历史分析记录：本文描述最初阅读时的状态。现行目录与层级请看 [ProjectStructure.md](ProjectStructure.md)，当前功能进度请看 [阶段总结](ProjectProgress-2026-09-27.md)。
+
 分析日期：2026-09-26。依据当前工作区代码、正式场景、Prefab、ScriptableObject 配置及现有文档。用于后续开发定位，不是完整功能验收报告。
 
 本轮仅新增本文档，未修改游戏代码、场景或配置。开始分析时已有 UI 修整相关未提交修改；这些修改属于本次阅读基线。未发现项目内 `AGENTS.md`。
@@ -34,7 +36,7 @@
 | 初始资源 | 废料、生物质、魔石均为 0 |
 | 图纸资产盘点 | 全 Assets 有 4 个底盘、38 个组件、3 个配件、11 个敌人、12 个 Buff 配置 |
 | 实际生产货架 | 场景的图纸库引用 4 个底盘、28 个组件；资产存在不等于已接入货架 |
-| 建造图纸位置 | 3 份 `BuildingDataSO` 位于 `Assets/Scripts/建筑物Data`，不在 `Assets/Data` |
+| 建造图纸位置 | 3 份 `BuildingDataSO` 位于 `Assets/Data/Buildings`，不在 `Assets/Data` |
 | 保存能力 | 无磁盘存档；`SavedUnitProfile` 是内存档案，`11_Save` 当前实际承担菜单/暂停/控制台 |
 
 主要管理器随基地场景创建与卸载。音频、音乐及控制台存在 `DontDestroyOnLoad` 用法，不应据此推断人口、库存也会跨场景保留。
@@ -189,7 +191,7 @@ ECA 的实际结构是“事件触发 + 按 Priority 执行的 SO 动作链 + �
 
 本轮没有启动 Unity、重新编译、运行 Play Mode 或构建 Player。静态引用检查通过不代表战斗、装配事务及画面已完整验收。
 
-已有 Unity 验证入口为 `Assets/Editor/ProjectCleanupValidation.cs` 的 `ProjectCleanupValidation.Run`，包含资源引用、菜单进出基地、建筑注册、招募、暂停、网格形状、相机、测试敌人和部分 UI 交互检查。按现有项目文档，应在只复制 Assets / Packages / ProjectSettings 的隔离项目中执行，不修改原项目缓存；异步验证器自行退出，命令不加 `-quit`。旧验证结果属于历史记录，不是本轮重跑结果。
+已有 Unity 验证入口为 `Assets/Editor/Validation/ProjectCleanupValidation.cs` 的 `ProjectCleanupValidation.Run`，包含资源引用、菜单进出基地、建筑注册、招募、暂停、网格形状、相机、测试敌人和部分 UI 交互检查。按现有项目文档，应在只复制 Assets / Packages / ProjectSettings 的隔离项目中执行，不修改原项目缓存；异步验证器自行退出，命令不加 `-quit`。旧验证结果属于历史记录，不是本轮重跑结果。
 
 调试操作：WASD/方向键与中键移动相机；右键下达移动/攻击/派驻或设置集合点；Esc 分层返回或暂停；R 注入 500 废料、200 生物质、50 魔石；E 在鼠标处生成测试敌人。T/Y 发放调试底盘/组件仅在 UNITY_EDITOR 分支内，R/E 当前没有同样的编译限制。
 

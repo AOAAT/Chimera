@@ -30,7 +30,7 @@ public static class EditorVisualAssetChecks
             Check(!EditorApplication.isPlaying, "checks begin in Edit mode");
             var sprites = AssetDatabase.LoadAllAssetsAtPath("Assets/Resources/Buildings/ColonyBuildings.png").OfType<Sprite>().ToArray();
             Check(sprites.Length == 5 && sprites.All(EditorUtility.IsPersistent), "all five building sprites are persistent imported sub-assets");
-            foreach (string path in Directory.GetFiles("Assets/Prefabs/建筑物预制体", "*.prefab").Concat(new[] { "Assets/Resources/Buildings/Warehouse.prefab" }))
+            foreach (string path in Directory.GetFiles("Assets/Prefabs/Buildings", "*.prefab").Concat(new[] { "Assets/Resources/Buildings/Warehouse.prefab" }))
             {
                 var go = PrefabUtility.LoadPrefabContents(path);
                 try

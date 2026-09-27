@@ -5,7 +5,7 @@
 ## 使用
 
 - 直接打开 `Assets/Scenes/RTS_World_Master.unity`，现有建筑已经引用新图样。
-- 建筑预制体在 `Assets/Prefabs/建筑物预制体`，仓库建筑在 `Assets/Resources/Buildings/Warehouse.prefab`。
+- 建筑预制体在 `Assets/Prefabs/Buildings`，仓库建筑在 `Assets/Resources/Buildings/Warehouse.prefab`。
 - 仓库、物流与名册的可编辑预制体在 `Assets/Resources/UI`，名称分别为 `GlobalWarehousePanel`、`LogisticsPanel`、`ResidentRosterPanel`。场景中的窗口可能处于关闭状态；可以选中并启用，或使用 `Tools/Chimera/美术与UI/预览…（编辑模式）` 定位并显示。预览激活状态支持撤销。
 - 地图中的仓库仍由物流系统按可达性安排初始位置；仓库的外观与结构已经是正式预制体，不再是临时绘制的箱子。
 - 调整 SpriteRenderer、Image、RectTransform、TMP_Text 后照常保存场景或预制体。Play 模式不再周期覆盖配色，已保存的建筑缩放与居民信息区尺寸也会保留。

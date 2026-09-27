@@ -1,0 +1,16 @@
+PASS migration completed
+PASS all original assets exist at mapped destinations
+PASS all original asset metas are byte-identical, including importer settings and GUIDs
+PASS all original art, prefabs, definitions and other non-code assets are byte-identical
+PASS no gameplay configuration assets mixed into code directories
+PASS Scene_MainMenu: all existing objects, transforms, UI sizes, active flags and serialized references preserved
+PASS Scene_MainMenu: persistent audio/music/console managers remain roots
+PASS Scene_MainMenu: existing authoring stamps remain discoverable after grouping
+PASS Scene_MainMenu: organize is idempotent
+PASS RTS_World_Master: all existing objects, transforms, UI sizes, active flags and serialized references preserved
+PASS RTS_World_Master: persistent audio/music/console managers remain roots
+PASS RTS_World_Master: existing authoring stamps remain discoverable after grouping
+PASS RTS_World_Master: organize is idempotent
+PASS organizing unopened scenes preserves the active scene, its unsaved state and open scene set
+PASS ready callbacks do not reopen already organized closed scenes
+PASS completed asset migration is a no-op when invoked again

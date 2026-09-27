@@ -1,0 +1,30 @@
+PASS all component definitions use 50 PPU with scale one
+PASS resident has eight native 48x48 frames at 50 PPU
+PASS map dimensions and origin remain unchanged
+PASS 50-pixel map tiles are baked in edit mode
+PASS scene buildings use native density before Play
+PASS deployed mech uses scale one
+PASS chassis hitbox follows the enlarged body
+PASS movement collision still fits a one-cell corridor
+PASS component 0 uses native world density
+PASS component 0 has stable draw order
+PASS component 1 uses native world density
+PASS component 1 has stable draw order
+PASS component 2 uses native world density
+PASS component 2 has stable draw order
+PASS component 3 uses native world density
+PASS component 3 has stable draw order
+PASS component 4 uses native world density
+PASS component 4 has stable draw order
+PASS sniper muzzle is at the barrel and independent of combat range multiplier
+PASS muzzle follows drawn barrel at 0 degrees
+PASS muzzle follows drawn barrel at 22.5 degrees
+PASS muzzle follows drawn barrel at 45 degrees
+PASS muzzle follows drawn barrel at 90 degrees
+PASS muzzle follows drawn barrel at 180 degrees
+PASS muzzle follows drawn barrel at 270 degrees
+PASS enlarged mech follows a real grid path and reaches its destination
+PASS assembly preview uses explicit world-to-UI sizing
+PASS assembly dimensions remain stable with a different canvas reference PPU
+PASS fully assembled preview fits inside its viewport
+COMPLETE

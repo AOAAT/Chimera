@@ -23,23 +23,23 @@ Unity 2022.3.62f3c1 最终结果：`UI_INTERACTIONS_VALIDATED`、`CLEANUP_VALIDA
 
 ## 本轮文件清单
 
-- `Assets/Editor/ProjectCleanupValidation.cs`
+- `Assets/Editor/Validation/ProjectCleanupValidation.cs`
 - `Assets/Scenes/RTS_World_Master.unity`
 - `Assets/Scenes/Scene_MainMenu.unity`
-- `Assets/Scripts/11_Save/PauseMenuUI.cs`
-- `Assets/Scripts/8_UI_Frontend (前端交互表现层)/GlobalResourceHUD.cs`
-- `Assets/Scripts/8_UI_Frontend (前端交互表现层)/机甲装配相关/AssemblyWorkshopUI.cs`
-- `Assets/Scripts/8_UI_Frontend (前端交互表现层)/物品与仓库/GlobalWarehouseUI.cs`
-- `Assets/Scripts/8_UI_Frontend (前端交互表现层)/物品与仓库/RightInventoryPanelUI.cs`
-- `Assets/Scripts/8_UI_Frontend (前端交互表现层)/详情页UI/UnitDetailPanelUI.cs`
-- `Assets/Scripts/建筑物/BuildingManager.cs`
-- `Assets/Scripts/建筑物/FactoryBuilding.cs`
-- `Assets/Scripts/新UI/FactoryUIModule.cs`
-- `Assets/Scripts/新UI/SelectionContextHUD.cs`
-- `Assets/Scripts/新UI/UIBackHandler.cs`
-- `Assets/Scripts/新UI/UIBackHandler.cs.meta`
-- `Assets/Scripts/新UI/UIFeedback.cs`
-- `Assets/Scripts/新UI/UIFeedback.cs.meta`
-- `Assets/Scripts/新UI/UIHoverHint.cs`
-- `Assets/Scripts/新UI/UIHoverHint.cs.meta`
+- `Assets/Scripts/UI/Menus/PauseMenuUI.cs`
+- `Assets/Scripts/UI/HUD/GlobalResourceHUD.cs`
+- `Assets/Scripts/UI/Assembly/AssemblyWorkshopUI.cs`
+- `Assets/Scripts/UI/Inventory/GlobalWarehouseUI.cs`
+- `Assets/Scripts/UI/Inventory/RightInventoryPanelUI.cs`
+- `Assets/Scripts/UI/HUD/UnitDetailPanelUI.cs`
+- `Assets/Scripts/Buildings/BuildingManager.cs`
+- `Assets/Scripts/Buildings/FactoryBuilding.cs`
+- `Assets/Scripts/UI/Production/FactoryUIModule.cs`
+- `Assets/Scripts/UI/HUD/SelectionContextHUD.cs`
+- `Assets/Scripts/UI/Common/UIBackHandler.cs`
+- `Assets/Scripts/UI/Common/UIBackHandler.cs.meta`
+- `Assets/Scripts/UI/Common/UIFeedback.cs`
+- `Assets/Scripts/UI/Common/UIFeedback.cs.meta`
+- `Assets/Scripts/UI/Common/UIHoverHint.cs`
+- `Assets/Scripts/UI/Common/UIHoverHint.cs.meta`
 - `Docs/UIUsabilityFixes.md`

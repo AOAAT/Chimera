@@ -25,9 +25,9 @@
 ## 参考素材
 
 1. E:/xwechat_files/wxid_0x5dlnepnokj22_f06c/temp/RWTemp/2026-09/9d6a6d20fc90c0bac8bd092eb15dd718/630e2b25e8dec9fa41b204d331c887bb.jpg
-2. F:/UnityGame/Chimera/Assets/Art/背景图/底盘详情页.png
-3. F:/UnityGame/Chimera/Assets/Art/底盘与组件/底盘1.png
-4. F:/UnityGame/Chimera/Assets/Art/底盘与组件/底盘2.png
+2. F:/UnityGame/Chimera/Assets/Art/Backgrounds/底盘详情页.png
+3. F:/UnityGame/Chimera/Assets/Art/Mechs/HandDrawn/底盘1.png
+4. F:/UnityGame/Chimera/Assets/Art/Mechs/HandDrawn/底盘2.png
 
 ## 最终提示词
 

@@ -60,7 +60,7 @@
 - RTSCameraMover 改为移动 Camera_Root；ScreenEffectManager 继续控制子相机的局部震屏偏移，避免每帧将玩家移动复位。保留方向键/WASD、中键拖动与网格边界限制。
 - RTS_World_Master 的 RTS_Logic 恢复 RTSTestBench 挂载及原敌人池、敌人 Prefab 配置，E 键在鼠标位置生成测试敌人。
 - ProjectCleanupValidation 增加连续移动、鼠标位移换算、震屏后位置保持、边界限制与敌人生成/初始化检查。隔离副本 Unity 批处理通过，标记为 CAMERA_AND_TEST_ENEMY_VALIDATED 与 CLEANUP_VALIDATION_COMPLETE errors=0；静态引用审计无错误。测试调用输入对应的方法，未模拟真实键鼠事件。
-- 本轮修改：Assets/Scripts/RTS/RTSCameraMover.cs、Assets/Scenes/RTS_World_Master.unity、Assets/Editor/ProjectCleanupValidation.cs，以及本报告和 CleanupValidation.json。
+- 本轮修改：Assets/Scripts/World/RTS/RTSCameraMover.cs、Assets/Scenes/RTS_World_Master.unity、Assets/Editor/ProjectCleanupValidation.cs，以及本报告和 CleanupValidation.json。
 
 以下按 Git 实际状态逐项列出全部 294 个路径（包含 .meta 和迁移前后路径）。其中直接修改 30 个路径；真正删除 229 个文件；7 组资源/脚本连同 .meta 迁移；新增 7 个非迁移文件。未执行 git add 或 commit。
 
@@ -86,16 +86,16 @@
 | 删除 | `F:/UnityGame/Chimera/Assets/Art/地图测试.png.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Art/战斗图标.png` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Art/战斗图标.png.meta` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Art/背景图/事件背景图.png` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Art/背景图/事件背景图.png.meta` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Art/Backgrounds/事件背景图.png` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Art/Backgrounds/事件背景图.png.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Art/问号图标.png` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Art/问号图标.png.meta` |
 | 迁移来源 | `F:/UnityGame/Chimera/Assets/Audio/BGM/BGM_地图.mp3` |
 | 迁移来源 | `F:/UnityGame/Chimera/Assets/Audio/BGM/BGM_地图.mp3.meta` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/1_Blueprints (装备与底盘图纸)/2_Components/Core/CORE1_陷阵核心/ECA/ACT_施加攻速buff.asset` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/1_Blueprints (装备与底盘图纸)/2_Components/Weapon/WPN1.asset` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Data/1_Blueprints (装备与底盘图纸)/2_Components/Weapon/WPN1_聚能电磁炮/ECA/L1_BoostDamageByPower.asset` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Data/1_Blueprints (装备与底盘图纸)/2_Components/Weapon/WPN1_聚能电磁炮/ECA/L1_BoostDamageByPower.asset.meta` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/Mechs/Components/Core/CORE1_陷阵核心/ECA/ACT_施加攻速buff.asset` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/Mechs/Components/Weapon/WPN1.asset` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Data/Mechs/Components/Weapon/WPN1_聚能电磁炮/ECA/L1_BoostDamageByPower.asset` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Data/Mechs/Components/Weapon/WPN1_聚能电磁炮/ECA/L1_BoostDamageByPower.asset.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Data/3_Economy_Bazaar (经济与掉落管线).meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Data/3_Economy_Bazaar (经济与掉落管线)/LootTables.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Data/3_Economy_Bazaar (经济与掉落管线)/LootTables/LootSequence.asset` |
@@ -254,50 +254,50 @@
 | 删除 | `F:/UnityGame/Chimera/Assets/Data/5_Meta_Events (文字冒险事件)/EventPools/EventPool1.asset.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Data/5_Meta_Events (文字冒险事件)/EventPools/引导事件.asset` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Data/5_Meta_Events (文字冒险事件)/EventPools/引导事件.asset.meta` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/BuffECA/Action_ApplyAcid.asset` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/BuffECA/ApplyBuff.asset` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/CombatECA/ApplyBuff.asset` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/CombatECA/ApplyBuff2.asset` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/CombatECA/BoostDamageByPower.asset` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/CombatECA/BoostDamageByPower.asset.meta` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/EffortECA/HitPlaySound.asset` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/EffortECA/ShootPlaySound.asset` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Data/6_ECA_Blocks (行为逻辑积木)/主动技能/ACT_ApplyOverclock.asset` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Hangar.meta` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Hangar/HangarSlot.prefab` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Hangar/HangarSlot.prefab.meta` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map.meta` |
-| 迁移来源 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map/LineDotPrefab.prefab` |
-| 迁移来源 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map/LineDotPrefab.prefab.meta` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map/MapLinePrefab.prefab` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map/MapLinePrefab.prefab.meta` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map/MapNodeUI.prefab` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Map/MapNodeUI.prefab.meta` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/BuffECA/Action_ApplyAcid.asset` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/BuffECA/ApplyBuff.asset` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/CombatECA/ApplyBuff.asset` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/CombatECA/ApplyBuff2.asset` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Data/ECA/CombatECA/BoostDamageByPower.asset` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Data/ECA/CombatECA/BoostDamageByPower.asset.meta` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/EffortECA/HitPlaySound.asset` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/EffortECA/ShootPlaySound.asset` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Data/ECA/主动技能/ACT_ApplyOverclock.asset` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Hangar.meta` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Hangar/HangarSlot.prefab` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Hangar/HangarSlot.prefab.meta` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map.meta` |
+| 迁移来源 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map/LineDotPrefab.prefab` |
+| 迁移来源 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map/LineDotPrefab.prefab.meta` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map/MapLinePrefab.prefab` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map/MapLinePrefab.prefab.meta` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map/MapNodeUI.prefab` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Map/MapNodeUI.prefab.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/EventOptionPrefab.prefab` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Prefabs/EventOptionPrefab.prefab.meta` |
 | 修改 | `F:/UnityGame/Chimera/Assets/Scenes/RTS_World_Master.unity` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Scenes/Scene_MainGame.unity` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Scenes/Scene_MainGame.unity.meta` |
 | 修改 | `F:/UnityGame/Chimera/Assets/Scenes/Scene_MainMenu.unity` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/10_Effort/Audio/UISoundAtlasSO.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/10_Effort/Music/MusicManager.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/10_Effort/Music/MusicState.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/11_Save/MainMenuUI.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/1_ Core (全局核心枢纽)/GameCoreTypes.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/2_Entities (实体与行为底层)/MechUnit2D.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/4_ Combat_Director (战斗沙盘导演)/CombatDirector.cs` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Scripts/8_UI_Frontend (前端交互表现层)/MapNodeUI.cs` |
-| 删除 | `F:/UnityGame/Chimera/Assets/Scripts/8_UI_Frontend (前端交互表现层)/MapNodeUI.cs.meta` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/8_UI_Frontend (前端交互表现层)/机甲装配相关/AssemblyWorkshopUI.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/8_UI_Frontend (前端交互表现层)/物品与仓库/GlobalWarehouseUI.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/RTS/RTSCameraMover.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/RTS/RTSGridSystem.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/RTS/RTSMapVisuals.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/建筑物/BuildingBase.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/建筑物/BuildingManager.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/建筑物/ConnectivityManager.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/建筑物/HousingBuilding.cs` |
-| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/新UI/SelectionContextHUD.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Presentation/Audio/UISoundAtlasSO.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Presentation/Music/MusicManager.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Presentation/Music/MusicState.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/UI/Menus/MainMenuUI.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Core/GameCoreTypes.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Mechs/MechUnit2D.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Combat/Directors/CombatDirector.cs` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Scripts/UI/Views/MapNodeUI.cs` |
+| 删除 | `F:/UnityGame/Chimera/Assets/Scripts/UI/Views/MapNodeUI.cs.meta` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/UI/Assembly/AssemblyWorkshopUI.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/UI/Inventory/GlobalWarehouseUI.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/World/RTS/RTSCameraMover.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/World/RTS/RTSGridSystem.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/World/RTS/RTSMapVisuals.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Buildings/BuildingBase.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Buildings/BuildingManager.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Buildings/ConnectivityManager.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/Buildings/HousingBuilding.cs` |
+| 修改 | `F:/UnityGame/Chimera/Assets/Scripts/UI/HUD/SelectionContextHUD.cs` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Scripts/遗老_事件系统.meta` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Scripts/遗老_事件系统/EventDirector.cs` |
 | 删除 | `F:/UnityGame/Chimera/Assets/Scripts/遗老_事件系统/EventDirector.cs.meta` |
@@ -339,14 +339,14 @@
 | 删除 | `F:/UnityGame/Chimera/Assets/Scripts/遗老_节点地图系统/MapVisualizer.cs.meta` |
 | 修改 | `F:/UnityGame/Chimera/ProjectSettings/EditorBuildSettings.asset` |
 | 修改 | `F:/UnityGame/Chimera/README.md` |
-| 迁移目标 | `F:/UnityGame/Chimera/Assets/Art/ResidentMarker.png` |
+| 迁移目标 | `F:/UnityGame/Chimera/Assets/Art/Prototypes/ResidentMarker.png` |
 | 迁移目标 | `F:/UnityGame/Chimera/Assets/Art/ResidentMarker.png.meta` |
 | 迁移目标 | `F:/UnityGame/Chimera/Assets/Audio/BGM/BGM_Base.mp3` |
 | 迁移目标 | `F:/UnityGame/Chimera/Assets/Audio/BGM/BGM_Base.mp3.meta` |
-| 新增 | `F:/UnityGame/Chimera/Assets/Editor/ProjectCleanupValidation.cs` |
+| 新增 | `F:/UnityGame/Chimera/Assets/Editor/Validation/ProjectCleanupValidation.cs` |
 | 新增 | `F:/UnityGame/Chimera/Assets/Editor/ProjectCleanupValidation.cs.meta` |
-| 迁移目标 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Warehouse/SocketDot.prefab` |
-| 迁移目标 | `F:/UnityGame/Chimera/Assets/Prefabs/1_UI_Frontend(UI界面)/Warehouse/SocketDot.prefab.meta` |
+| 迁移目标 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Warehouse/SocketDot.prefab` |
+| 迁移目标 | `F:/UnityGame/Chimera/Assets/Prefabs/UI/Items/Warehouse/SocketDot.prefab.meta` |
 | 新增 | `F:/UnityGame/Chimera/Assets/Scripts/GameplayEvents.meta` |
 | 迁移目标 | `F:/UnityGame/Chimera/Assets/Scripts/GameplayEvents/EventAction_UniversalModify.cs` |
 | 迁移目标 | `F:/UnityGame/Chimera/Assets/Scripts/GameplayEvents/EventAction_UniversalModify.cs.meta` |

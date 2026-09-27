@@ -1,5 +1,7 @@
 # 存档系统基础
 
+> 本文记录存档基础初次交付。当前 `GameSaveData.CurrentVersion` 为 5，已增加品质实例、物流容器/任务和独立底盘命名；相关后续规则见 [自动物流](../Tools/Regression/自动物流说明.md) 和 [单仓库界面](UI/米白主题与单仓库界面实现说明.md)。
+
 ## 当前范围
 
 `SaveGameManager` 将运行时对象转换为纯数据快照并写入 JSON。当前版本号为 `2`，默认文件名为 `chimera_save_0.json`，位置由 `Application.persistentDataPath` 决定。版本 1 会在读取时自动补齐居民性格字段并迁移到版本 2。

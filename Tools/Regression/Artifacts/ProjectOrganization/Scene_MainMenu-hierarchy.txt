@@ -1,0 +1,17 @@
+[Global_Managers] [Transform, MusicManager, AudioSource, GlobalAudioManager]
+01_Systems [Transform]
+02_World [Transform]
+  Main Camera
+03_Buildings [Transform]
+04_Units [Transform]
+05_UI [Transform]
+  Canvas_Background
+  Canvas
+  EventSystem
+06_Debug [Transform]
+90_Editor [Transform]
+  Chimera_AuthoredVisuals_v1
+  Chimera_UI_Ivory_v2
+  Chimera_UI_Skin_v1
+  Chimera_UI_Skin_v2
+  Chimera_Organization_v1

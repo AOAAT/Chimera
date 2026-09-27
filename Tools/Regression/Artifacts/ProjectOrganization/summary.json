@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-27",
+  "unity": "2022.3.62f3c1",
+  "relocatedAssets": 589,
+  "originalAssetsAudited": 826,
+  "checks": {
+    "organization-checks.txt": 16,
+    "assembly-checks.txt": 30,
+    "logistics-checks.txt": 41,
+    "world-checks.txt": 29,
+    "resident-checks.txt": 38
+  },
+  "totalChecks": 154,
+  "menuSmoke": "CLEANUP_VALIDATION_COMPLETE errors=0",
+  "mainDelivery": "completed; exact delivered scenes and code verified in isolated Unity",
+  "assetReferenceErrors": []
+}

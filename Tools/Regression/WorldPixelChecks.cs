@@ -30,7 +30,7 @@ public static class WorldPixelChecks
         Directory.CreateDirectory(Output); File.WriteAllText(Output + "/checks.txt", "");
         try
         {
-            var components = AssetDatabase.FindAssets("t:ComponentDataSO", new[] { "Assets/Data/1_Blueprints (装备与底盘图纸)" })
+            var components = AssetDatabase.FindAssets("t:ComponentDataSO", new[] { "Assets/Data/Mechs" })
                 .Select(g => AssetDatabase.LoadAssetAtPath<ComponentDataSO>(AssetDatabase.GUIDToAssetPath(g))).ToArray();
             var oldRefs = components.Select(c => c.ComponentIcon).ToArray();
             if (bake) WorldPixelArtAuthoring.BakeProject();

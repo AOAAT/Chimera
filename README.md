@@ -1,21 +1,28 @@
 # Chimera
 
-Unity 2022.3.62f3c1，模拟经营与塔防方向的机甲项目。
+Unity 2022.3.62f3c1，殖民地居民管理、资源经营与模块化机甲塔防原型。
 
-正式启动顺序：`Scene_MainMenu` → 点击“进入基地” → `RTS_World_Master`。
-Build Settings 只包含这两个场景。也可以直接打开基地场景运行。
+启动顺序：`Scene_MainMenu` → “进入基地” → `RTS_World_Master`。Build Settings 仅包含这两个正式场景，也可直接运行基地场景。
 
-基地保留建筑放置、居民、工厂生产、机甲装配、库存与独立战斗能力。
-资源采集、敌袭波次和胜负条件尚未设计，本次清洗没有补充这些玩法。
-尚无磁盘存档实现，主菜单不展示不可用的读档按钮。
+当前已接通居民工作、工厂并行生产、自动物流、独立品质组件、单仓库库存、机甲装配与存档恢复。正式资源采集、居民驾驶、敌袭波次和胜负闭环尚未接通。
 
-网格宽、高、格子尺寸与原点独立配置；现有场景尺寸只是样例。
-相机支持 WASD／方向键和鼠标中键二维移动。建筑通路检查同等对待四侧边界，
-不定义敌人出生方向或路线数量。节点地图、爬塔推进及其场景、事件和 UI 已移除。
+## 阅读入口
 
-只读资源检查：`python Tools/validate_assets.py`。
-Unity 批处理检查入口：`ProjectCleanupValidation.Run`，应在仅复制 Assets、Packages、
-ProjectSettings 的临时项目中执行；它会检查资源和场景，并自动运行主菜单进入基地、
-建筑注册、招募、暂停、返回与再次进入的冒烟测试。
+- [项目目录与 Hierarchy](Docs/ProjectStructure.md)：当前文件位置、分组约定及整理菜单。
+- [阶段进度](Docs/ProjectProgress-2026-09-27.md)：已完成范围、尚未实现内容和建议顺序。
+- [50 PPU 美术规范](Docs/WorldPixel50.md)：世界素材、手绘原图、挂点和旋转规则。
+- [UI 主题与美术替换](Docs/UI/主题与美术替换.md)：主题、字体、图片和九宫格配置。
+- [自动物流](Tools/Regression/自动物流说明.md)：运输规则与当前边界。
+- [存档基础](Docs/SaveSystem.md)：稳定 ID 与捕获/恢复约定；当前代码版本为 5。
 
-详细范围、验证结果与完整文件清单见 `Docs/LegacyCleanupReport.md`。
+`Assets/Scripts` 按功能组织；配置实例放 `Assets/Data`；编辑器工具集中在 `Assets/Editor`。运行时按路径加载的资源留在 `Assets/Resources`。项目外的 `ArtSource` 保留源稿，`ArtReview` 保存美术审阅页面。
+
+当前基地地图为 64×64，可在 **Tools → Chimera → 地图 → 地图设置** 中调整矩形尺寸并更新编辑器预览。地图规格目前属于场景配置。
+
+## 检查
+
+只读引用检查：`python Tools/validate_assets.py`。
+
+功能回归在隔离工程运行，说明见 [Tools/Regression/README.md](Tools/Regression/README.md)。测试会创建临时居民、库存或切换场景，不在正在编辑的主项目运行。最新目录整理记录位于 `Tools/Regression/Artifacts/ProjectOrganization`。
+
+早期清洗与代码分析文档作为历史记录保留，其中的旧路径、旧存档版本和功能缺口不应直接作为当前状态依据。

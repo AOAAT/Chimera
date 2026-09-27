@@ -1,0 +1,1 @@
+Chimera_Organization_v1: preserve GUIDs, source art and unsaved scene edits.

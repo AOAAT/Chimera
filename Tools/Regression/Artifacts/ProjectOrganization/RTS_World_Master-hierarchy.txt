@@ -1,0 +1,42 @@
+[5. MusicManager] [Transform, MusicManager, AudioSource]
+[6. AudioEffectManager] [Transform, GlobalAudioManager]
+[DebugConsole] [Transform, IngameConsole]
+01_Systems [Transform]
+  [CombatSandbox]
+  [1. Meta & Resource] 
+  [3. Combat & Feedback]
+  [BuildingManager]
+02_World [Transform]
+  Global Light 2D
+  Camera_Root
+  [RTS_Logic]
+03_Buildings [Transform]
+  基地
+  房屋
+  工厂建筑
+  装配建筑
+04_Units [Transform]
+05_UI [Transform]
+  Canvas_Pause
+  Canvas_Efforts
+  Canvas_Combat
+  Canvas_HUD
+  Canvas_EnterButton
+  Canvas_Management
+  Canvas_底部信息栏
+  EventSystem
+  Button
+  Fill
+  仓库GlobalWarehousePanel
+  LogisticsPanel
+  ResidentRosterPanel
+06_Debug [Transform]
+  [Workshop Desk]
+  [EnemyTest Desk]
+  Enemy
+90_Editor [Transform]
+  Chimera_AuthoredVisuals_v1
+  Chimera_UI_Ivory_v2
+  Chimera_UI_Skin_v1
+  Chimera_UI_Skin_v2
+  Chimera_Organization_v1
